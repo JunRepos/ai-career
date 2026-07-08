@@ -62,10 +62,10 @@ async function openUnitApp(refType, refId, unitKey, section){
   } else if(refType === 'aicode'){
     ST_TAB = 'aicode';
     UNIT_RETURN = { unitKey, section };
-    AIC_MESSAGES = []; AIC_CODE = ''; AIC_TURN_COUNT = 0; AIC_RUN_RESULT = null; AIC_RUN_STDIN = ''; AIC_VIEW = 'entry';
+    _aicResetState();
     render();
     Promise.all([loadAicActive(SEL_CLS.id), loadAicSession(SEL_CLS.id, ST_USER.number)]).then(([_a, s]) => {
-      if(s){ AIC_MESSAGES = Array.isArray(s.messages) ? s.messages : []; AIC_CODE = s.code || ''; AIC_TURN_COUNT = s.turnCount || 0; }
+      _aicApplySession(s);  // brief 등 모든 필드 복원 — 기존엔 brief 누락으로 저장 시 유실되던 버그 수정
       AIC_VIEW = _aicInitialStudentView(s);
       render();
     });

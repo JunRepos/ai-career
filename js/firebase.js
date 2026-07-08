@@ -507,7 +507,8 @@ async function loadMyAsmtScores(cid, studentNum){
 
 // ── 🤖 AI 코딩 (자유 실습 메뉴) ──
 // active/{cid} : bool — 선생님이 켜야 학생에게 노출
-// sessions/{cid}/{학번} : { messages, code, turnCount, updatedAt }
+// sessions/{cid}/{학번} : { messages, code, turnCount, brief, runsLog, reflect, done, challengeUsed, tcNote, updatedAt }
+//   tcNote 는 선생님 전용 키워드 메모 — 학생 저장은 update() 라 지워지지 않음
 async function loadAicActive(cid){
   try {
     const s = await db.ref(`aicode/active/${cid}`).get();
@@ -537,10 +538,17 @@ async function loadAicSession(cid, studentNum){
 }
 
 async function saveAicSession(cid, studentNum, data){
-  await db.ref(`aicode/sessions/${cid}/${studentNum}`).set({
+  // set() 대신 update(): 전달하지 않은 키(선생님 메모 tcNote 등)를 보존.
+  // 값이 null 인 키는 삭제됨(RTDB 규칙) — 새로 시작 시 의도적으로 null 을 넘겨 비움.
+  await db.ref(`aicode/sessions/${cid}/${studentNum}`).update({
     ...data,
     updatedAt: new Date().toISOString()
   });
+}
+
+// 선생님: 학생별 세특 키워드 메모 (해당 키만 갱신)
+async function saveAicTcNote(cid, studentNum, note){
+  await db.ref(`aicode/sessions/${cid}/${studentNum}/tcNote`).set(note || null);
 }
 
 async function loadAllAicSessions(cid){

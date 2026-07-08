@@ -244,23 +244,12 @@ function setST(t){
     _loadCrProgress().then(render); // 퀴즈 진도 로드 후 갱신
   } else if(t === 'aicode' && SEL_CLS && ST_USER){
     // AI 코딩 탭 — active + 저장 세션 로드 후 적절한 화면 결정
-    AIC_MESSAGES = [];
-    AIC_CODE = '';
-    AIC_TURN_COUNT = 0;
-    AIC_RUN_RESULT = null;
-    AIC_RUN_STDIN = '';
-    AIC_BRIEF = null;
-    AIC_VIEW = 'entry';
+    _aicResetState();
     Promise.all([
       loadAicActive(SEL_CLS.id),
       loadAicSession(SEL_CLS.id, ST_USER.number)
     ]).then(([_active, s]) => {
-      if(s){
-        AIC_MESSAGES = Array.isArray(s.messages) ? s.messages : [];
-        AIC_CODE = s.code || '';
-        AIC_TURN_COUNT = s.turnCount || 0;
-        AIC_BRIEF = s.brief || null;
-      }
+      _aicApplySession(s);  // 모든 저장 필드 복원 — 누락 시 다음 저장 때 유실됨
       AIC_VIEW = _aicInitialStudentView(s);
       render();
     });
