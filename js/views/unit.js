@@ -40,7 +40,7 @@ const UC_APP_FEATURE = ['aicode', 'ml', 'aia'];
 // ══════════════════════════════════════
 
 function vStUnit(unitKey){
-  const u = ASSIGN_UNIT_MAP[unitKey];
+  const u = assignUnit(unitKey);
   if(!u) return emptyBox('📖', '단원을 찾을 수 없습니다.');
   const sec = ST_UNIT_SEC === 'practice' ? 'practice' : 'material';
   const data = UNIT_CONTENT[unitKey] || { material: [], practice: [] };
@@ -114,8 +114,12 @@ function _ucStudentCard(it, unitKey){
 // ══════════════════════════════════════
 
 function vTcUnit(){
-  const unit = ASSIGN_UNIT_MAP[UC_TC_UNIT] || ASSIGN_UNITS[0];
-  const unitChips = ASSIGN_UNITS.map(u =>
+  const units = assignUnits();
+  if(!units.length) return emptyBox('📚', '이 반은 단원을 사용하지 않습니다.');
+  // 다른 과목의 단원 key 가 남아 있으면(반을 바꾼 경우) 이 과목 첫 단원으로 맞춤
+  if(!assignUnit(UC_TC_UNIT)) UC_TC_UNIT = units[0].key;
+  const unit = assignUnit(UC_TC_UNIT);
+  const unitChips = units.map(u =>
     `<button class="btn-sm ${u.key === UC_TC_UNIT ? 'btn-p' : ''}" data-action="uc-pick-unit" data-unit="${u.key}">${u.roman}. ${esc(u.label)}</button>`
   ).join(' ');
   const secTabs = _subTabs([

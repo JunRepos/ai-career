@@ -46,10 +46,10 @@ function drawerNavHtml(){
     ? '👩‍🏫 선생님'
     : `${esc(ST_USER?.number || '')} ${esc(ST_USER?.name || '')}`;
   const brand = `<div class="drawer-brand">
-      <div class="hicon">📂</div>
+      <div class="hicon">🧠</div>
       <div style="min-width:0">
         <div style="color:var(--side-text-strong);font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${who}</div>
-        <div style="color:var(--side-sub);font-size:12px">${esc(cls?.label || '학급 파일함')}</div>
+        <div style="color:var(--side-sub);font-size:12px">${esc(cls?.label || '인공지능 기초 · 진로')}</div>
       </div>
     </div>`;
   const nav = groups.map(g => {
@@ -73,7 +73,7 @@ function currentTitle(){
   const isTC = IS_TC;
   const key = isTC ? TC_TAB : ST_TAB;
   if(!isTC && key.indexOf('unit-') === 0){
-    const u = ASSIGN_UNIT_MAP[key.slice(5)];
+    const u = assignUnit(key.slice(5));
     return u ? `${u.roman}. ${u.label}` : '수업';
   }
   const groups = isTC ? _tcNavGroups((TC_CLS?.type || 'normal') === 'info') : _stNavGroups();

@@ -36,6 +36,12 @@ function _tcNavGroups(isInfo){
     {key:'attend',   ico:'🗓️', label:'출결'},
     {key:'students', ico:'👥', label:'학생관리'},
   ]}];
+  // 정보 외 교과반(인공지능 기초·진로): 단원 구성만 — 정보 전용 콘텐츠 도구는 숨김
+  if(!isInfo && isSubjectCls(TC_CLS)){
+    groups.push({ label: '콘텐츠', items: [
+      {key:'unit', ico:'📚', label:'단원 구성'},
+    ]});
+  }
   if(isInfo){
     groups.push({ label: '콘텐츠', items: [
       {key:'unit',     ico:'📚', label:'단원 구성'},
@@ -53,10 +59,11 @@ function _tcNavGroups(isInfo){
       {key:'scores',   ico:'🏆', label:'점수 관리'},
     ]});
   }
-  groups.push({ label: '전체', items: [
-    {key:'curriculum', ico:'📅', label:'진도 계획'},
-    {key:'settings',   ico:'⚙️', label:'설정'},
-  ]});
+  // 진도 계획은 정보 2-A/2-B 시간표를 전제로 만든 화면 — 정보반이 있을 때만 노출
+  const allItems = CLASSES.some(c => c.type === 'info')
+    ? [{key:'curriculum', ico:'📅', label:'진도 계획'}, {key:'settings', ico:'⚙️', label:'설정'}]
+    : [{key:'settings', ico:'⚙️', label:'설정'}];
+  groups.push({ label: '전체', items: allItems });
   return groups;
 }
 
@@ -252,7 +259,7 @@ function vTcAssign(){
       <div class="field"><label>단원 <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(정보반 학생 메뉴 분류용 · 미지정이면 모든 단원에 표시)</span></label>
         <select id="ac-unit">
           <option value="">— 단원 미지정 —</option>
-          ${ASSIGN_UNITS.map(u => `<option value="${u.key}" ${editData?.unit === u.key ? 'selected' : ''}>${u.roman}. ${u.label}</option>`).join('')}
+          ${assignUnits().map(u => `<option value="${u.key}" ${editData?.unit === u.key ? 'selected' : ''}>${u.roman}. ${u.label}</option>`).join('')}
         </select>
       </div>
       <div class="form-row">
@@ -280,7 +287,7 @@ function vTcAssign(){
     const aFiles = a.files && a.files.length > 1 ? a.files : a.fileName ? [{name: a.fileName, url: a.fileUrl}] : [];
     const fileChip = aFiles.length ? `<span style="font-size:11px;color:var(--text3)">📎 ${aFiles.length}개 파일</span>` : '';
     const classDateStr = a.classDate ? `📅 ${fmtDay(a.classDate)}` : '';
-    const u = a.unit && ASSIGN_UNIT_MAP[a.unit];
+    const u = a.unit && assignUnit(a.unit);
     const unitChip = u
       ? `<span class="chip chip-blue" style="font-size:10px">${u.roman}. ${esc(u.label)}</span>`
       : `<span class="chip chip-gray" style="font-size:10px">단원 미지정</span>`;

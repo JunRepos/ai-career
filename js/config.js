@@ -16,15 +16,21 @@ const FIREBASE_CONFIG = {
 };
 
 // 반 목록 — 반을 추가/제거하려면 여기를 수정
+//
+// type 은 어떤 단원 체계·메뉴를 쓸지 결정합니다 (constants.js 의 SUBJECT_UNITS 와 짝).
+//   'ai'     → 인공지능 기초
+//   'career' → 진로와 직업
+//   'info'   → 정보 (이 앱에는 반이 없음. informatics 레포가 담당)
+//   'normal' → 일반 학급 (단원 없이 '수업' 단일 탭)
+//
+// ⚠ 반 id 를 새로 만들면 database.rules.json 과 storage.rules 의 반 id 정규식에도
+//   같은 id 를 추가하고 firebase deploy 를 해야 저장이 됩니다.
+//   Firebase 프로젝트는 informatics 와 공유하지만, 데이터는 반 id 로 완전히 갈립니다.
 const CLASSES = [
-  {id:'c2-1',  label:'2-1반',   emoji:'🏫',type:'normal'},
-  {id:'c2-2',  label:'2-2반',   emoji:'🏫',type:'normal'},
-  {id:'c2-3',  label:'2-3반',   emoji:'🏫',type:'normal'},
-  {id:'c2-4',  label:'2-4반',   emoji:'🏫',type:'normal'},
-  {id:'c2-5',  label:'2-5반',   emoji:'🏫',type:'normal'},
-  {id:'c2-6',  label:'2-6반',   emoji:'🏫',type:'normal'},
-  {id:'info-2A',label:'정보 2-A',emoji:'💻',type:'info',classDays:[3,4,5]},
-  {id:'info-2B',label:'정보 2-B',emoji:'💻',type:'info',classDays:[1,2,5]},
+  {id:'ai-2A',    label:'인공지능 기초 2-A',emoji:'🧠',type:'ai'},
+  {id:'ai-2B',    label:'인공지능 기초 2-B',emoji:'🧠',type:'ai'},
+  {id:'career-2A',label:'진로 2-A',        emoji:'🧭',type:'career'},
+  {id:'career-2B',label:'진로 2-B',        emoji:'🧭',type:'career'},
 ];
 
 const KNOWN_CLS = new Set(CLASSES.map(c=>c.id));

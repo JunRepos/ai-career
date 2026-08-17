@@ -702,12 +702,12 @@ async function setMlRlDesc(cid, text){
 async function loadUnitContent(cid){
   UNIT_CONTENT = {};
   // 단원·섹션 골격은 항상 만들어 둠 (없어도 빈 배열)
-  for(const u of ASSIGN_UNITS) UNIT_CONTENT[u.key] = { material: [], practice: [] };
+  for(const u of assignUnits()) UNIT_CONTENT[u.key] = { material: [], practice: [] };
   try {
     const s = await db.ref(`aiactivity/submissions/${cid}/unitContent`).get();
     if(!s.exists()) return;
     const raw = s.val() || {};
-    for(const u of ASSIGN_UNITS){
+    for(const u of assignUnits()){
       const uu = raw[u.key] || {};
       ['material', 'practice'].forEach(sec => {
         const items = uu[sec] || {};

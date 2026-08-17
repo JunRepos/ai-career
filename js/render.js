@@ -57,7 +57,7 @@ function render(){
   // 헤더 좌측
   let hLeft = '', hRight = '';
   if(VIEW === 'home'){
-    hLeft = `<div class="htitle">학급 파일함</div><div class="hsub">반을 선택해 시작하세요</div>`;
+    hLeft = `<div class="htitle">인공지능 기초 · 진로</div><div class="hsub">과목과 반을 선택해 시작하세요</div>`;
   } else if(IS_TC){
     hLeft = `<span class="hbadge">👩‍🏫 선생님</span>`;
     if(TC_CLS) hLeft += `<span style="font-size:13px;font-weight:600;color:var(--text2)">${esc(TC_CLS.label)}</span>`;
@@ -112,7 +112,7 @@ function render(){
     // 인증 전(홈/로그인/비번변경): 기존 중앙 카드 레이아웃
     document.getElementById('root').innerHTML = `
       <div class="header">
-        <div class="hbrand"><div class="hicon">📂</div><div>${hLeft}</div></div>
+        <div class="hbrand"><div class="hicon">🧠</div><div>${hLeft}</div></div>
         <div class="hright">${hRight}</div>
       </div>${body}`;
   }

@@ -22,19 +22,21 @@ function _stNavGroups(){
 
   const groups = [{ items:[{key:'dashboard', ico:'🏠', label:'홈'}] }];
 
-  if(isInfo){
-    // 정보반: 수업을 단원별(Ⅰ~Ⅳ)로 분리한 '수업' 그룹.
-    //   노트북·미션·OJ·퀴즈·AI코딩·기계학습·AI활동지는 이제 각 단원 '실습'의 앱연결로만 노출
-    //   (글로벌 실습·AI 탐구 그룹 없앰).
+  if(isSubjectCls(SEL_CLS)){
+    // 교과반(인공지능 기초·진로·정보): 수업을 단원별(Ⅰ~Ⅳ)로 분리한 '수업' 그룹.
+    //   정보반은 노트북·미션·OJ·퀴즈·AI코딩·기계학습·AI활동지가 각 단원 '실습'의
+    //   앱연결로만 노출됨(글로벌 실습·AI 탐구 그룹 없앰).
     groups.push({ label:'학급', items:[
       {key:'notice', ico:'📢', label:'공지'},
       {key:'board',  ico:'❓', label:'궁금증'},
     ]});
-    groups.push({ label:'수업', items: ASSIGN_UNITS.map(u => ({key:'unit-'+u.key, ico:u.roman, label:u.label})) });
+    groups.push({ label:'수업', items: assignUnits().map(u => ({key:'unit-'+u.key, ico:u.roman, label:u.label})) });
+    // 인공지능 기초·진로: 과제 제출을 단원과 별개로 한눈에 (정보반은 단원 안 앱연결로 도달)
+    if(!isInfo) groups.push({ items:[{key:'assign', ico:'📝', label:'과제 제출'}] });
     // 평가 그룹: 진행 중인 항목이 하나라도 있을 때만 노출(시즌성). 점은 항상 진행 중 의미.
     if(asmtItems.length) groups.push({ label:'평가', dot:true, items: asmtItems });
     // 내 점수 (정보반 — 공개된 수행평가 점수)
-    groups.push({ items:[{key:'myscore', ico:'📊', label:'내 점수'}] });
+    if(isInfo) groups.push({ items:[{key:'myscore', ico:'📊', label:'내 점수'}] });
   } else {
     // 일반반: 수업 단일 탭 유지
     groups.push({ label:'학급', items:[
@@ -84,7 +86,11 @@ function _stNormalizeTab(){
   else if(ST_TAB === 'attend'){ ST_TAB = 'dashboard'; } // 내 출결 삭제 → 홈
   else if(ST_TAB === 'asmt-guide'){ ST_TAB = 'asmt'; ASMT_MODE = 'guide'; }
   // 정보반의 옛 '수업' 단일 탭 → 첫 단원
-  if(ST_TAB === 'assign' && (SEL_CLS?.type || 'normal') === 'info') ST_TAB = 'unit-' + ASSIGN_UNITS[0].key;
+  if(ST_TAB === 'assign' && (SEL_CLS?.type || 'normal') === 'info') ST_TAB = 'unit-' + assignUnits()[0].key;
+  // 다른 과목의 단원 탭이 남아 있으면(반을 바꿔 로그인한 경우) 이 과목 첫 단원으로
+  if(ST_TAB.indexOf('unit-') === 0 && !assignUnit(ST_TAB.slice(5))){
+    ST_TAB = assignUnits().length ? 'unit-' + assignUnits()[0].key : 'dashboard';
+  }
   // 일반반은 내 점수가 없으니 홈으로
   if(ST_TAB === 'myscore' && (SEL_CLS?.type || 'normal') !== 'info') ST_TAB = 'dashboard';
 }
@@ -147,7 +153,7 @@ function vStudent(){
   // 단원 화면에 와 있으면 복귀 마커는 의미 없으니 해제
   if(ST_TAB.indexOf('unit-') === 0) UNIT_RETURN = null;
   const backBar = UNIT_RETURN
-    ? `<div class="unit-return-bar" onclick="returnToUnit()">← ${esc((ASSIGN_UNIT_MAP[UNIT_RETURN.unitKey] || {}).label || '단원')}(으)로 돌아가기</div>`
+    ? `<div class="unit-return-bar" onclick="returnToUnit()">← ${esc((assignUnit(UNIT_RETURN.unitKey) || {}).label || '단원')}(으)로 돌아가기</div>`
     : '';
   return backBar + _stTabBody();
 }
@@ -321,12 +327,23 @@ function setST(t){
   }
 }
 
-// 단원 카드 비주얼 (이모지·색)
+// 단원 카드 비주얼 (이모지·색) — key 는 constants.js 의 SUBJECT_UNITS 단원 key
 const DASH_UNIT_VIS = {
+  // 정보
   computing:   { emoji: '🖥️', color: '#3B82F6' },
   bigdata:     { emoji: '📊', color: '#10B981' },
   programming: { emoji: '💻', color: '#8B5CF6' },
   ai:          { emoji: '🤖', color: '#EC4899' },
+  // 인공지능 기초
+  'aib-understand': { emoji: '🧠', color: '#6366F1' },
+  'aib-learning':   { emoji: '📈', color: '#10B981' },
+  'aib-impact':     { emoji: '⚖️', color: '#F59E0B' },
+  'aib-project':    { emoji: '🛠️', color: '#EC4899' },
+  // 진로와 직업
+  'car-self':    { emoji: '🪞', color: '#8B5CF6' },
+  'car-world':   { emoji: '🏢', color: '#3B82F6' },
+  'car-explore': { emoji: '🔍', color: '#10B981' },
+  'car-design':  { emoji: '🧭', color: '#F59E0B' },
 };
 
 // ── 📊 내 점수 — 대시보드용 lazy 로드 (한 번만 트리거, 완료 시 재렌더) ──
@@ -384,10 +401,10 @@ function vStDashboard(){
       <div class="dash-qna-go">→</div>
     </div>`;
 
-  // ③ 단원 카드 (정보반: 2×2) / 일반반: 수업 바로가기
+  // ③ 단원 카드 (교과반: 2×2) / 일반반: 수업 바로가기
   let unitsBlock = '';
-  if(isInfo){
-    const cards = ASSIGN_UNITS.map(u => {
+  if(isSubjectCls(SEL_CLS)){
+    const cards = assignUnits().map(u => {
       const vis = DASH_UNIT_VIS[u.key] || { emoji: '📚', color: '#6366F1' };
       const list = ASSIGNMENTS.filter(a => a.unit === u.key || !a.unit);
       const done = list.filter(a => SUBMISSIONS[a.id] && SUBMISSIONS[a.id][ST_USER?.number]).length;
@@ -456,7 +473,7 @@ function vStNotice(){
 //   unitKey 지정 시 그 단원으로 태그된 수업 + 아직 단원 미지정인 수업을 함께 표시
 //   (선생님이 태그하기 전엔 모든 단원에 보여 기존 수업이 사라지지 않게 함)
 function vStAssign(unitKey){
-  const u = unitKey ? ASSIGN_UNIT_MAP[unitKey] : null;
+  const u = unitKey ? assignUnit(unitKey) : null;
   const head = u ? `<div class="sec-title" style="margin-bottom:10px">${u.roman}. ${esc(u.label)}</div>` : '';
   const src = u ? ASSIGNMENTS.filter(a => a.unit === unitKey || !a.unit) : ASSIGNMENTS;
   if(!src.length) return head + emptyBox('📖', u ? '이 단원에 등록된 수업이 없습니다.' : '등록된 수업이 없습니다.');
