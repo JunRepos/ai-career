@@ -143,6 +143,10 @@ function _pageCount(){
   if(key === 'assign')   return ASSIGNMENTS.length ? `수업 ${ASSIGNMENTS.length}개` : '';
   if(key === 'board')    return POSTS.length     ? `궁금증 ${POSTS.length}개` : '';
   if(key === 'students') return STUDENTS.length  ? `학생 ${STUDENTS.length}명` : '';
+  if(key === 'portfolio' && !IS_TC && ASSIGNMENTS.length){
+    const done = ASSIGNMENTS.filter(a => SUBMISSIONS[a.id]?.[ST_USER?.number]).length;
+    return `제출 ${done} / ${ASSIGNMENTS.length}`;
+  }
   return '';
 }
 

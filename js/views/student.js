@@ -20,7 +20,11 @@ function _stNavGroups(){
   if(on(ASMT_ACTIVE) || on(AG_ACTIVE)) asmtItems.push({key:'asmt',     ico:'📝', label:'수행평가'});
   if(on(MLA_ACTIVE))                   asmtItems.push({key:'mlassess', ico:'🧪', label:'ML 수행평가'});
 
-  const groups = [{ items:[{key:'dashboard', ico:'🏠', label:'홈'}] }];
+  // 최상단 — 나의 포트폴리오 (차시별로 내가 한 활동 모아보기)
+  const groups = [{ items:[
+    {key:'portfolio', ico:'🗂️', label:'나의 포트폴리오'},
+    {key:'dashboard', ico:'🏠', label:'홈'},
+  ]}];
 
   if(isSubjectCls(SEL_CLS)){
     // 교과반(인공지능 기초·진로·정보): 수업을 단원별(Ⅰ~Ⅳ)로 분리한 '수업' 그룹.
@@ -104,7 +108,8 @@ function _stNormalizeTab(){
 
 // 본문 탭 내용
 function _stTabBody(){
-  if     (ST_TAB === 'dashboard') return vStDashboard();
+  if     (ST_TAB === 'portfolio') return vStPortfolio();
+  else if(ST_TAB === 'dashboard') return vStDashboard();
   else if(ST_TAB === 'notice')  return vStNotice();
   else if(ST_TAB === 'assign')  return vStAssign();
   else if(ST_TAB === 'board')   return vStBoard();
@@ -468,6 +473,97 @@ function vStDashboard(){
     ${unitsBlock}
     ${scoreBlock}
   `;
+}
+
+/* ── 🗂️ 나의 포트폴리오 ──────────────────────────────────────
+   차시(수업) 순서대로 "이 시간에 내가 무엇을 했는지"를 모아 보여줍니다.
+   새로 저장하는 데이터는 없고, 이미 있는 수업·제출물·궁금증을 엮기만 합니다.
+     차시 = assignments 를 수업 날짜(classDate) 오름차순으로 번호 매김
+     내 활동 = submissions/{반}/{수업}/{내 학번}
+─────────────────────────────────────────────────────────── */
+function vStPortfolio(){
+  const me = ST_USER?.number;
+
+  // 차시 정렬 — 수업 날짜 기준, 없으면 등록순
+  const sessions = [...ASSIGNMENTS].sort((a, b) => {
+    const da = a.classDate || a.createdAt?.slice(0, 10) || '9999';
+    const db = b.classDate || b.createdAt?.slice(0, 10) || '9999';
+    return da.localeCompare(db);
+  });
+
+  const myPosts = POSTS.filter(p => p.authorId === me);
+  const doneCnt = sessions.filter(a => SUBMISSIONS[a.id]?.[me]).length;
+  const withDue = sessions.filter(a => a.dueDate).length;
+  const pct = withDue ? Math.round(doneCnt / withDue * 100) : 0;
+
+  const stats = `<div class="pf-stats">
+    ${_pfStat(sessions.length, '차시')}
+    ${_pfStat(doneCnt, '제출한 활동')}
+    ${_pfStat(myPosts.length, '남긴 궁금증')}
+    ${_pfStat(withDue ? pct + '%' : '–', '제출률')}
+  </div>`;
+
+  if(!sessions.length){
+    return stats + emptyBox('🗂️', '아직 수업이 등록되지 않았어요. 수업이 시작되면 여기에 차시별 기록이 쌓입니다.');
+  }
+
+  const items = sessions.map((a, i) => {
+    const sub = SUBMISSIONS[a.id]?.[me];
+    const u = a.unit ? assignUnit(a.unit) : null;
+    const dateDisp = a.classDate ? fmtDay(a.classDate) : '날짜 미정';
+    const overdue = !sub && a.dueDate && isPastDue(a.dueDate);
+
+    // 이 차시에 내가 남긴 흔적
+    let act;
+    if(sub){
+      const files = sub.files && sub.files.length ? sub.files : (sub.fileName ? [{name: sub.fileName}] : []);
+      const names = files.map(f => esc(f.name)).join(', ');
+      act = `<div class="pf-act done">
+        <div class="pf-act-line"><b>제출 완료</b> · ${fmtDt(sub.uploadedAt)}${sub.resubCount ? ` · ${sub.resubCount}번 다시 냄` : ''}</div>
+        ${names ? `<div class="pf-files">📎 ${names}</div>` : ''}
+        ${sub.memo ? `<div class="pf-memo">“${esc(sub.memo)}”</div>` : ''}
+      </div>`;
+    } else if(overdue){
+      act = `<div class="pf-act miss"><div class="pf-act-line">제출하지 않음 · 마감 ${fmtDay(a.dueDate)}</div></div>`;
+    } else if(a.dueDate){
+      act = `<div class="pf-act todo"><div class="pf-act-line">아직 제출 전 · 마감 ${fmtDay(a.dueDate)}</div></div>`;
+    } else {
+      act = `<div class="pf-act none"><div class="pf-act-line">제출물이 없는 활동</div></div>`;
+    }
+
+    const state = sub ? 'done' : overdue ? 'miss' : 'todo';
+    return `<div class="pf-item ${state}" data-action="pick-assign" data-aid="${a.id}">
+      <div class="pf-rail"><span class="pf-no">${i + 1}</span></div>
+      <div class="pf-card">
+        <div class="pf-meta">${esc(dateDisp)}${u ? ` · <span class="pf-unit">${u.roman}. ${esc(u.label)}</span>` : ''}</div>
+        <div class="pf-title">${esc(a.title)}</div>
+        ${act}
+      </div>
+    </div>`;
+  }).join('');
+
+  // 궁금증은 차시에 묶이지 않으므로 따로 모아서
+  const qna = myPosts.length ? `
+    <div class="pf-sec">내가 남긴 궁금증</div>
+    <div class="pl-grid">${myPosts.map(p => {
+      const answered = p.answer && p.answer.length;
+      return `<div class="list-row click" data-action="pick-post" data-pid="${p.id}">
+        <div class="row-icon">${answered ? '💬' : '❓'}</div>
+        <div class="row-info">
+          <div class="row-title">${esc(p.title)}</div>
+          <div class="row-meta">${fmtDt(p.uploadedAt)}</div>
+        </div>
+        <div class="row-right">${answered
+          ? `<span class="chip chip-green">✓ 답변완료</span>`
+          : `<span class="chip chip-gray">답변대기</span>`}</div>
+      </div>`;
+    }).join('')}</div>` : '';
+
+  return stats + `<div class="pf-sec">차시별 기록</div><div class="pf-line">${items}</div>` + qna;
+}
+
+function _pfStat(num, label){
+  return `<div class="pf-stat"><div class="pf-stat-num">${esc(String(num))}</div><div class="pf-stat-label">${esc(label)}</div></div>`;
 }
 
 // ── 공지 탭 ──

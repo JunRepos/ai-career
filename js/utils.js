@@ -53,7 +53,10 @@ function fmtDt(iso){
 // 날짜만 포맷 (4월 3일)
 function fmtDay(iso){
   if(!iso) return '';
-  return new Date(iso).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
+  const d = new Date(iso);
+  // 잘못된 날짜가 들어와도 학생 화면에 'Invalid Date' 가 뜨지 않게
+  if(isNaN(d)) return String(iso);
+  return d.toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
 }
 
 // 고유 ID 생성
