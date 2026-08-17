@@ -131,7 +131,8 @@ document.addEventListener('click', async e => {
     if(!SEL_CLS || !ST_USER || !AIA_SEL) return;
     if(AIA_SAVING) return;
     // 작성된 답안이 있는지 확인 (다 빈 칸이면 제출 막기)
-    const hasAny = aiaFieldIds(AIA_SEL).some(fid => (AIA_ANSWERS[fid] || '').trim());
+    const hasAny = (AIA_SEL.questions || []).filter(q => q.type !== 'note')
+      .some(q => (aiaAnswerText(q, AIA_ANSWERS[q.id]) || '').trim());
     if(!hasAny){
       toast('아직 작성된 내용이 없어요. 한 칸이라도 채운 뒤 제출해주세요.', 'err');
       return;
@@ -229,6 +230,18 @@ document.addEventListener('input', e => {
 });
 
 document.addEventListener('change', async e => {
+  // 학생: 보기 고르기
+  const chk = e.target.closest('[data-action="aia-check"]');
+  if(chk){
+    const fid = chk.dataset.fid;
+    const cur = Array.isArray(AIA_ANSWERS[fid]) ? AIA_ANSWERS[fid] : [];
+    AIA_ANSWERS[fid] = chk.checked
+      ? [...cur, chk.value]
+      : cur.filter(v => v !== chk.value);
+    chk.closest('.ws-check')?.classList.toggle('on', chk.checked);
+    _aiaQueueSave();
+    return;
+  }
   // 답변 칸 줄 수
   const sel = e.target.closest('[data-action="qb-rows"]');
   if(sel && AIA_DRAFT){
@@ -257,16 +270,31 @@ document.addEventListener('change', async e => {
   }
 });
 
+// 학생: 표 칸 입력
+document.addEventListener('input', e => {
+  const cell = e.target.closest('[data-action="aia-cell"]');
+  if(!cell) return;
+  const fid = cell.dataset.fid, r = cell.dataset.r, c = cell.dataset.c;
+  if(!AIA_ANSWERS[fid] || typeof AIA_ANSWERS[fid] !== 'object' || Array.isArray(AIA_ANSWERS[fid])) AIA_ANSWERS[fid] = {};
+  if(!AIA_ANSWERS[fid][r]) AIA_ANSWERS[fid][r] = {};
+  AIA_ANSWERS[fid][r][c] = cell.value;
+  _aiaQueueSave();
+});
+
 document.addEventListener('input', e => {
   const el = e.target.closest('[data-action="aia-input"]');
   if(!el) return;
   const fid = el.dataset.fid;
   if(!fid) return;
   AIA_ANSWERS[fid] = el.value;
-  // 자동 저장 (1.5초 후) — 학생 입력 중에는 저장 안 함
+  _aiaQueueSave();
+});
+
+// 자동 저장 예약 (1.5초 후) — 입력 중에는 저장하지 않음
+function _aiaQueueSave(){
   if(AIA_SAVE_TIMER) clearTimeout(AIA_SAVE_TIMER);
   AIA_SAVE_TIMER = setTimeout(() => { _aiaSaveNow(true); }, 1500);
-});
+}
 
 // 임시 저장 로직 (submittedAt 보존)
 async function _aiaSaveNow(silent){
@@ -302,7 +330,7 @@ function _aiaExportCSV(){
     const sub = AIA_ALL_SUBS[st.number];
     const ans = sub?.answers || {};
     const row = [st.number, st.name];
-    for(const fid of fieldIds) row.push(ans[fid] || '');
+    for(const q of (act.questions || []).filter(x => x.type !== 'note')) row.push(aiaAnswerText(q, ans[q.id]));
     row.push(sub?.submittedAt ? fmtDt(sub.submittedAt) : '');
     row.push(sub?.updatedAt ? fmtDt(sub.updatedAt) : '');
     rows.push(row);

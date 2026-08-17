@@ -457,9 +457,9 @@ function vStDashboard(){
     <div class="now-label">이번 시간 활동</div>
     <div class="now-grid">${openActs.map(a => {
       const st = PF_ACTS[ST_USER?.number]?.[a.id];
-      const state = st?.submittedAt ? '제출 완료'
-                  : st && Object.values(st.answers || {}).some(v => (v || '').trim()) ? '작성 중'
-                  : '아직 작성 전';
+      const wrote = st && Object.values(st.answers || {}).some(v =>
+        typeof v === 'string' ? v.trim() : (v && (Array.isArray(v) ? v.length : Object.keys(v).length)));
+      const state = st?.submittedAt ? '제출 완료' : wrote ? '작성 중' : '아직 작성 전';
       return `<button class="now-card" data-action="aia-pick" data-aid="${esc(a.id)}">
         <div class="now-card-sub">${esc(a.subtitle || '활동지')}</div>
         <div class="now-card-title">${esc(a.title)}</div>
@@ -587,7 +587,8 @@ function _pfActivities(snum){
   const rows = list.map(a => {
     const sub = cache[a.id];
     const done = !!sub?.submittedAt;
-    const wrote = sub && Object.values(sub.answers || {}).some(v => (v || '').trim());
+    const wrote = sub && Object.values(sub.answers || {}).some(v =>
+      typeof v === 'string' ? v.trim() : (v && (Array.isArray(v) ? v.length : Object.keys(v).length)));
     const state = done ? 'done' : wrote ? 'todo' : 'miss';
     const note = done ? `제출 완료 · ${fmtDt(sub.submittedAt)}`
                : wrote ? `작성 중 · 마지막 저장 ${fmtDt(sub.updatedAt)}`

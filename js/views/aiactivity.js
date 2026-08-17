@@ -58,15 +58,9 @@ function _vStAiaDo(){
   const qs = act.questions || [];
   const submitted = !!AIA_SUB?.submittedAt;
 
-  const body = qs.map((q, i) => `
-    <div class="rep-q">
-      <div class="rep-q-no">${_dotNum(i + 1)}</div>
-      <div class="rep-q-main">
-        <div class="rep-q-text">${esc(q.text)}</div>
-        ${q.imageUrl ? `<img class="rep-q-img" src="${esc(q.imageUrl)}" alt="" data-action="preview-img" data-url="${esc(q.imageUrl)}" data-name="문항 ${i + 1}"/>` : ''}
-        <textarea class="rep-q-input" data-action="aia-input" data-fid="${esc(q.id)}" rows="${q.rows || 3}">${esc(AIA_ANSWERS[q.id] || '')}</textarea>
-      </div>
-    </div>`).join('');
+  // 안내(note)는 번호를 안 매기고, 답을 쓰는 문항만 1,2,3… 으로 셉니다
+  let no = 0;
+  const body = qs.map(q => _aiaQuestion(q, (q.type === 'note') ? null : ++no)).join('');
 
   const status = submitted
     ? `<span class="rep-chip done">제출 완료 · ${fmtDt(AIA_SUB.submittedAt)}</span>`
@@ -89,6 +83,91 @@ function _vStAiaDo(){
         <button class="btn-p btn-sm" data-action="aia-submit" ${AIA_SAVING ? 'disabled' : ''}>${submitted ? '다시 제출' : '제출하기'}</button>
       </div>
     </div>`;
+}
+
+
+/* ── 문항 렌더 (유형별) ── */
+function _aiaQuestion(q, no){
+  const head = `<div class="ws-q-head">
+    ${no ? `<span class="ws-q-no">${_dotNum(no)}</span>` : ''}
+    <span class="ws-q-text">${esc(q.text)}</span>
+  </div>${q.desc ? `<div class="ws-q-desc">${esc(q.desc)}</div>` : ''}`;
+
+  // 안내 상자 — 읽기만 함
+  if(q.type === 'note'){
+    return `<div class="ws-block">
+      <div class="ws-sec-title">${esc(q.text)}</div>
+      <div class="ws-note">
+        ${q.desc ? `<div class="ws-note-body">${esc(q.desc)}</div>` : ''}
+        ${q.url ? `<a class="ws-note-url" href="${esc(q.url)}" target="_blank" rel="noopener">${esc(q.url)}</a>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // 보기 고르기
+  if(q.type === 'check'){
+    const picked = Array.isArray(AIA_ANSWERS[q.id]) ? AIA_ANSWERS[q.id] : [];
+    const opts = (q.options || []).map(o => `
+      <label class="ws-check${picked.includes(o) ? ' on' : ''}">
+        <input type="checkbox" data-action="aia-check" data-fid="${esc(q.id)}" value="${esc(o)}" ${picked.includes(o) ? 'checked' : ''}/>
+        <span class="ws-check-box"></span><span>${esc(o)}</span>
+      </label>`).join('');
+    return `<div class="ws-block">
+      <div class="ws-choice">
+        <div class="ws-choice-title">${esc(q.text)}</div>
+        <div class="ws-choice-grid" style="--cols:${q.cols || 2}">${opts}</div>
+      </div>
+    </div>`;
+  }
+
+  // 표 채우기
+  if(q.type === 'table'){
+    const cols = q.cols || [];
+    const fixed = q.fixed || [];
+    const rows = fixed.length + (q.extra || 0);
+    const val = AIA_ANSWERS[q.id] || {};
+    const head2 = `<tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr>`;
+    let bodyRows = '';
+    for(let r = 0; r < rows; r++){
+      const label = fixed[r];
+      bodyRows += `<tr>${cols.map((_, c) => {
+        if(c === 0 && label !== undefined){
+          return `<td class="ws-td-fixed">${esc(label)}</td>`;
+        }
+        const v = val[r]?.[c] || '';
+        return `<td><input type="text" class="ws-cell" data-action="aia-cell" data-fid="${esc(q.id)}" data-r="${r}" data-c="${c}" value="${esc(v)}"/></td>`;
+      }).join('')}</tr>`;
+    }
+    return `<div class="ws-block">
+      ${head}
+      <div class="ws-table-wrap"><table class="ws-table">
+        <thead>${head2}</thead><tbody>${bodyRows}</tbody>
+      </table></div>
+    </div>`;
+  }
+
+  // 기본 — 줄노트 답변칸
+  return `<div class="ws-block">
+    ${head}
+    ${q.imageUrl ? `<img class="ws-img" src="${esc(q.imageUrl)}" alt="" data-action="preview-img" data-url="${esc(q.imageUrl)}" data-name="${esc(q.text)}"/>` : ''}
+    <textarea class="ws-lines" data-action="aia-input" data-fid="${esc(q.id)}" rows="${q.rows || 3}">${esc(AIA_ANSWERS[q.id] || '')}</textarea>
+  </div>`;
+}
+
+/* 답안을 사람이 읽는 글로 — 선생님 화면·CSV·세특 복사에서 공용 */
+function aiaAnswerText(q, v){
+  if(q.type === 'check') return Array.isArray(v) ? v.join(', ') : (v || '');
+  if(q.type === 'table'){
+    if(!v || typeof v !== 'object') return '';
+    const cols = q.cols || [], fixed = q.fixed || [];
+    const lines = [];
+    Object.keys(v).sort((a,b) => a - b).forEach(r => {
+      const cells = cols.map((c, ci) => (ci === 0 && fixed[r] !== undefined) ? fixed[r] : (v[r]?.[ci] || ''));
+      if(cells.some(x => (x || '').trim())) lines.push(cells.filter(x => (x||'').trim()).join(' / '));
+    });
+    return lines.join('\n');
+  }
+  return v || '';
 }
 
 /* ═══════════════════════════════════════
@@ -198,7 +277,8 @@ function _vTcAiaStudentList(){
   const rows = STUDENTS.map(st => {
     const sub = subs[st.number];
     const answers = sub?.answers || {};
-    const filled = fieldIds.filter(fid => (answers[fid] || '').trim()).length;
+    const qs = (act.questions || []).filter(q => q.type !== 'note');
+    const filled = qs.filter(q => (aiaAnswerText(q, answers[q.id]) || '').trim()).length;
     const pct = fieldIds.length ? Math.round(filled / fieldIds.length * 100) : 0;
     const submitted = !!sub?.submittedAt;
     return `<tr>
@@ -261,14 +341,12 @@ function _vTcAiaStudent(){
   if(!sub) return back + emptyBox('📭', '아직 작성된 답안이 없어요.');
 
   const answers = sub.answers || {};
-  const qs = (act.questions || []).map((q, i) => {
-    const v = (answers[q.id] || '').trim();
-    return `<div class="rep-q">
-      <div class="rep-q-no">${_dotNum(i + 1)}</div>
-      <div class="rep-q-main">
-        <div class="rep-q-text">${esc(q.text)}</div>
-        <pre class="rep-a${v ? '' : ' empty'}">${v ? esc(v) : '(무응답)'}</pre>
-      </div>
+  let no = 0;
+  const qs = (act.questions || []).filter(q => q.type !== 'note').map(q => {
+    const v = (aiaAnswerText(q, answers[q.id]) || '').trim();
+    return `<div class="ws-block">
+      <div class="ws-q-head"><span class="ws-q-no">${_dotNum(++no)}</span><span class="ws-q-text">${esc(q.text)}</span></div>
+      <pre class="rep-a${v ? '' : ' empty'}">${v ? esc(v) : '(무응답)'}</pre>
     </div>`;
   }).join('');
 
