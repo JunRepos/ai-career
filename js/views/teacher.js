@@ -66,7 +66,6 @@ function _tcNavGroups(isInfo){
   ]}, { label: '학급', items: [
     {key:'notice',   ico:'📢', label:'공지'},
     {key:'assign',   ico:'📖', label:'수업'},
-    {key:'board',    ico:'❓', label:'궁금증'},
     {key:'attend',   ico:'🗓️', label:'출결'},
     {key:'students', ico:'👥', label:'학생관리'},
   ]}];

@@ -138,7 +138,6 @@ function _pageCount(){
   const key = IS_TC ? TC_TAB : ST_TAB;
   if(key === 'notice')   return NOTICES.length   ? `공지 ${NOTICES.length}개` : '';
   if(key === 'assign')   return ASSIGNMENTS.length ? `수업 ${ASSIGNMENTS.length}개` : '';
-  if(key === 'board')    return POSTS.length     ? `궁금증 ${POSTS.length}개` : '';
   if(key === 'students') return STUDENTS.length  ? `학생 ${STUDENTS.length}명` : '';
   if(key === 'portfolio'){
     const snum = IS_TC ? TC_PF_SNUM : ST_USER?.number;

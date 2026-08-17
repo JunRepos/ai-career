@@ -3562,3 +3562,53 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   box-shadow:inset 3px 0 0 var(--pl-yellow)}
 .aia-row.is-open .aia-row-sub{color:var(--pl-yellow)}
 
+
+/* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??   ?쇱씠??紐⑤뱶 蹂댁젙
+
+   Padlet ???좏겙???ㅽ겕 釉붾줉 ?덉뿉留??뺤쓽?댁꽌, ?쇱씠??紐⑤뱶?먯꽌??   var(--pl-yellow) 媛 鍮?媛믪씠 ?섏뼱 移대뱶 諛곌꼍???듭㎏濡??щ씪議뚯뒿?덈떎.
+   (informatics ?깃낵 ?꾨찓?몄씠 媛숈븘 洹몄そ ?뚮쭏 ?ㅼ젙???섏뼱?듬땲??
+   ?????뚮쭏 紐⑤몢?먯꽌 媛믪씠 ?덈룄濡?:root ???뺤쓽?⑸땲??
+     --pl-yellow : 湲?먃룻뀒?먮━??(?쇱씠?몄뿉?쒕뒗 吏꾪븳 湲덉깋?대씪???쏀옒)
+     --pl-solid  : 移대뱶 諛뷀깢??(???뚮쭏 紐⑤몢 諛앹? ?몃옉, 湲?먮뒗 寃??
+?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??*/
+:root{ --pl-yellow:#9A6B00; --pl-solid:#FFC83D; }
+[data-theme="dark"]{ --pl-yellow:#FFC83D; --pl-solid:#FFC83D; }
+
+/* 諛뷀깢???몃옉???붿냼??--pl-solid 濡?(?쇱씠?몄뿉??湲???鍮??좎?) */
+.now-card{background:var(--pl-solid)}
+.now-card:hover{background:var(--pl-solid)}
+.pf-item.done .pf-no{background:var(--pl-solid);color:#1B1B1D}
+[data-theme="dark"] .tab.active{background:var(--pl-solid);border-color:var(--pl-solid)}
+.pf-st.mid .pf-st-fill{background:var(--pl-solid)}
+.dnum-d i.on{background:var(--pl-yellow)}
+
+/* ?? ?대쾲 ?쒓컙 ?쒕룞 移대뱶 ??移대뱶泥섎읆 蹂댁씠寃??? */
+.now-label{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:800;
+  color:var(--text2);letter-spacing:.02em;margin-bottom:11px}
+.now-label::before{content:'';width:7px;height:7px;border-radius:50%;
+  background:var(--pl-solid);box-shadow:0 0 0 4px rgba(255,200,61,.25)}
+.now-card{position:relative;overflow:hidden;padding:22px 24px;border-radius:16px;
+  border:1px solid rgba(20,20,22,.10);
+  box-shadow:0 6px 18px rgba(255,170,0,.22)}
+.now-card:hover{box-shadow:0 10px 26px rgba(255,170,0,.3)}
+/* ?ㅻⅨ履??꾨옒???꾪듃 臾대뒳瑜?源붿븘 '洹몃깷 ?띿뒪?? 濡???蹂댁씠寃?*/
+.now-card::after{content:'';position:absolute;right:-14px;bottom:-14px;
+  width:120px;height:120px;pointer-events:none;opacity:.16;
+  background-image:radial-gradient(circle,#1B1B1D 2.2px,transparent 2.6px);
+  background-size:15px 15px}
+.now-card-sub{position:relative;font-size:12px;font-weight:800;color:rgba(20,20,22,.62)}
+.now-card-title{position:relative;margin-top:5px;font-size:22px;font-weight:800;
+  letter-spacing:-.6px;line-height:1.25;color:#141416}
+.now-card-foot{position:relative;margin-top:18px;padding-top:14px;
+  border-top:1px solid rgba(20,20,22,.16);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  font-size:12.5px;font-weight:700;color:rgba(20,20,22,.72)}
+.now-card-go{font-weight:800;color:#141416}
+
+/* ?쇱씠??紐⑤뱶?먯꽌???ъ씠?쒕컮 ?쒖꽦 ?쒖떆媛 蹂댁씠?꾨줉 (?ъ씠?쒕컮????긽 ?대몢?) */
+.drawer-item.active{background:transparent;color:var(--pl-solid)}
+.drawer-item.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;
+  width:2px;border-radius:0 3px 3px 0;background:var(--pl-solid)}
+.drawer-item.active .ico{opacity:1}
+.aia-row-sub,.rep-kicker,.page-count{color:var(--pl-yellow)}
+

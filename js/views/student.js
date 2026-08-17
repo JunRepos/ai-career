@@ -33,7 +33,6 @@ function _stNavGroups(){
     const units = assignUnits();
     groups.push({ label:'학급', items:[
       {key:'notice', ico:'📢', label:'공지'},
-      {key:'board',  ico:'❓', label:'궁금증'},
     ]});
     if(units.length){
       groups.push({ label:'수업', items: units.map(u => ({key:'unit-'+u.key, ico:u.roman, label:u.label})) });
@@ -56,7 +55,6 @@ function _stNavGroups(){
     groups.push({ label:'학급', items:[
       {key:'notice', ico:'📢', label:'공지'},
       {key:'assign', ico:'📖', label:'수업'},
-      {key:'board',  ico:'❓', label:'궁금증'},
     ]});
   }
   return groups;
@@ -401,21 +399,7 @@ function vStDashboard(){
         <div class="dash-notice-go">공지 →</div>
       </div>`;
 
-  // ② 내 궁금증 — 개수 + 답변 여부
-  const myQ = POSTS.filter(p => p.authorId === ST_USER?.number);
-  const qTotal = myQ.length;
-  const qAnswered = myQ.filter(p => p.answer && p.answer.length).length;
-  const qWaiting = qTotal - qAnswered;
-  const qnaCard = `<div class="dash-qna" onclick="setST('board')">
-      <div class="dash-qna-ico">❓</div>
-      <div class="dash-qna-body">
-        <div class="dash-qna-title">내 궁금증 ${qTotal}개</div>
-        <div class="dash-qna-sub">${qTotal
-          ? `<span class="dash-q-done">✓ 답변완료 ${qAnswered}</span> · <span class="dash-q-wait">⏳ 답변대기 ${qWaiting}</span>`
-          : '궁금한 점을 남기면 선생님이 답변해줘요'}</div>
-      </div>
-      <div class="dash-qna-go">→</div>
-    </div>`;
+  const qnaCard = '';
 
   // ③ 단원 카드 (교과반: 2×2) / 일반반: 수업 바로가기
   let unitsBlock = '';
@@ -490,7 +474,6 @@ function vStDashboard(){
       <div class="dash-class">${esc(SEL_CLS?.emoji)} ${esc(SEL_CLS?.label)}</div>
     </div>
     ${noticeBanner}
-    ${qnaCard}
     ${unitsBlock}
     ${scoreBlock}
   `;
@@ -517,7 +500,6 @@ function _pfBody(me, opts = {}){
     return da.localeCompare(db);
   });
 
-  const myPosts = POSTS.filter(p => p.authorId === me);
   const doneCnt = sessions.filter(a => SUBMISSIONS[a.id]?.[me]).length;
   const withDue = sessions.filter(a => a.dueDate).length;
   const pct = withDue ? Math.round(doneCnt / withDue * 100) : 0;
@@ -525,7 +507,6 @@ function _pfBody(me, opts = {}){
   const stats = `<div class="pf-stats">
     ${_pfStat(sessions.length, '차시')}
     ${_pfStat(doneCnt, '제출한 활동')}
-    ${_pfStat(myPosts.length, '남긴 궁금증')}
     ${_pfStat(withDue ? pct + '%' : '–', '제출률')}
   </div>`;
 
@@ -573,22 +554,7 @@ function _pfBody(me, opts = {}){
     </div>`;
   }).join('');
 
-  // 궁금증은 차시에 묶이지 않으므로 따로 모아서
-  const qna = myPosts.length ? `
-    <div class="pf-sec">내가 남긴 궁금증</div>
-    <div class="pl-grid">${myPosts.map(p => {
-      const answered = p.answer && p.answer.length;
-      return `<div class="list-row click" data-action="pick-post" data-pid="${p.id}">
-        <div class="row-icon">${answered ? '💬' : '❓'}</div>
-        <div class="row-info">
-          <div class="row-title">${esc(p.title)}</div>
-          <div class="row-meta">${fmtDt(p.uploadedAt)}</div>
-        </div>
-        <div class="row-right">${answered
-          ? `<span class="chip chip-green">✓ 답변완료</span>`
-          : `<span class="chip chip-gray">답변대기</span>`}</div>
-      </div>`;
-    }).join('')}</div>` : '';
+  const qna = '';
 
   return stats + acts + `<div class="pf-sec">차시별 기록</div><div class="pf-line">${items}</div>` + qna;
 }
@@ -665,11 +631,6 @@ function _pfPlainText(snum){
     }
   });
 
-  const myQ = POSTS.filter(p => p.authorId === snum);
-  if(myQ.length){
-    lines.push('', '남긴 궁금증');
-    myQ.forEach(p => lines.push(`  - ${p.title}${p.answer ? ' (답변함)' : ''}`));
-  }
   return lines.join('\n');
 }
 
