@@ -8,7 +8,7 @@
 // 선생님 대시보드 메인
 function vTeacher(){
   const clsOpts = CLASSES.map(c =>
-    `<option value="${c.id}"${TC_CLS?.id === c.id ? ' selected' : ''}>${c.emoji} ${c.label}</option>`
+    `<option value="${c.id}"${TC_CLS?.id === c.id ? ' selected' : ''}>${c.label}</option>`
   ).join('');
 
   const clsBar = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 14px;margin-bottom:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:var(--sh)">

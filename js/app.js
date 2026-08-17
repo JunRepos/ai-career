@@ -140,7 +140,7 @@ async function bindMigration(){
   body.innerHTML = '<div style="color:var(--text3);font-size:13px">불러오는 중...</div>';
   const legacy = await loadLegacyPosts();
   if(!legacy.length){ body.innerHTML = '<div class="box-ok">복구할 게시물이 없습니다.</div>'; return; }
-  const opts = CLASSES.map(c => `<option value="${c.id}">${c.emoji} ${c.label}</option>`).join('');
+  const opts = CLASSES.map(c => `<option value="${c.id}">${c.label}</option>`).join('');
   body.innerHTML = legacy.map(p => `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap" data-mpid="${p.id}">
       <div style="font-size:13px;font-weight:600;flex:1;min-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.title)}</div>

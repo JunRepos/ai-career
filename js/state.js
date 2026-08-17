@@ -9,6 +9,9 @@
 // 현재 화면
 let VIEW = 'home';
 
+// 선택된 과목 — 첫 화면에서 고른 과목 key ('career' | 'ai'). 반 선택 화면의 대상.
+let SEL_SUBJECT = null;
+
 // 선택된 반 / 선생님 활성 반
 let SEL_CLS = null;   // 학생이 선택한 반 객체
 let TC_CLS  = null;   // 선생님이 관리중인 반 객체
@@ -324,7 +327,7 @@ let AIA_ALL_SUBS    = {};       // 선생님: { [학번]: submission } 전체 �
 
 // ── 세션 저장/복원 (새로고침 시 로그인 유지) ──
 function saveSession(){
-  const data = { VIEW, IS_TC, ST_USER, FORCE_PW, ST_TAB, TC_TAB, OJ_CODE, OJ_CUSTOM_STDIN };
+  const data = { VIEW, IS_TC, ST_USER, FORCE_PW, ST_TAB, TC_TAB, OJ_CODE, OJ_CUSTOM_STDIN, SEL_SUBJECT };
   if(SEL_CLS) data.SEL_CLS_ID = SEL_CLS.id;
   if(TC_CLS)  data.TC_CLS_ID  = TC_CLS.id;
   sessionStorage.setItem('session', JSON.stringify(data));
@@ -347,6 +350,7 @@ function restoreSession(){
     TC_TAB   = s.TC_TAB   || 'notice';
     OJ_CODE  = s.OJ_CODE || '';
     OJ_CUSTOM_STDIN = s.OJ_CUSTOM_STDIN || '';
+    SEL_SUBJECT = s.SEL_SUBJECT || null;
     if(s.SEL_CLS_ID) SEL_CLS = classById(s.SEL_CLS_ID);
     if(s.TC_CLS_ID)  TC_CLS  = classById(s.TC_CLS_ID);
     return true;

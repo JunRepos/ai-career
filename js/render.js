@@ -7,9 +7,9 @@
 
 // ── 테마 초기화 ──
 (()=>{
+  // 이 앱은 다크(Padlet 톤)가 기본 — 사용자가 직접 바꾼 경우에만 라이트
   const saved = localStorage.getItem('theme');
-  const sys = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.setAttribute('data-theme', saved || (sys ? 'dark' : 'light'));
+  document.documentElement.setAttribute('data-theme', saved || 'dark');
 })();
 
 function toggleTheme(){
@@ -45,7 +45,9 @@ function applyWrapWidth(){
   const wrap = document.querySelector('.wrap');
   if(!wrap) return;
   if(SHELL_VIEWS.includes(VIEW)){ wrap.className = 'wrap app-mode'; return; }
-  wrap.className = 'wrap';   // 인증 전(홈/로그인) — 중앙 카드
+  // 과목/반 선택 — 카드 그리드라 조금 더 넓게
+  if(VIEW === 'home' || VIEW === 'classes'){ wrap.className = 'wrap enter-mode'; return; }
+  wrap.className = 'wrap';   // 인증 전(로그인) — 중앙 카드
 }
 
 // ── 메인 렌더링 ──
@@ -56,8 +58,8 @@ function render(){
 
   // 헤더 좌측
   let hLeft = '', hRight = '';
-  if(VIEW === 'home'){
-    hLeft = `<div class="htitle">인공지능 기초 · 진로</div><div class="hsub">과목과 반을 선택해 시작하세요</div>`;
+  if(VIEW === 'home' || VIEW === 'classes'){
+    hLeft = `<div class="htitle">인공지능 기초 · 진로</div><div class="hsub">신동고등학교</div>`;
   } else if(IS_TC){
     hLeft = `<span class="hbadge">👩‍🏫 선생님</span>`;
     if(TC_CLS) hLeft += `<span style="font-size:13px;font-weight:600;color:var(--text2)">${esc(TC_CLS.label)}</span>`;
@@ -85,6 +87,7 @@ function render(){
   // 본문
   let body = '';
   if     (VIEW === 'home')           body = vHome();
+  else if(VIEW === 'classes')        body = vClasses();
   else if(VIEW === 'student-login')  body = vStudentLogin();
   else if(VIEW === 'change-pw')      body = vChangePw();
   else if(VIEW === 'student')        body = vStudent();
@@ -112,7 +115,7 @@ function render(){
     // 인증 전(홈/로그인/비번변경): 기존 중앙 카드 레이아웃
     document.getElementById('root').innerHTML = `
       <div class="header">
-        <div class="hbrand"><div class="hicon">🧠</div><div>${hLeft}</div></div>
+        <div class="hbrand"><div>${hLeft}</div></div>
         <div class="hright">${hRight}</div>
       </div>${body}`;
   }
@@ -132,10 +135,19 @@ function go(v, extra = {}){
 // ── 홈으로 ──
 async function goHome(){
   VIEW = 'home'; SEL_CLS = null; TC_CLS = null; ST_USER = null; SEL_POST = null; SEL_ASSIGN = null;
+  SEL_SUBJECT = null;
   clearSession();
   history.pushState({view: 'home'}, '', '#home');
   await loadPostCounts();
   render();
+}
+
+// ── 반 선택 화면으로 (로그인 화면의 '← 반 선택으로') ──
+//   고른 과목은 유지하고 반만 다시 고르게 함. 과목 정보가 없으면 과목 선택으로.
+function backToClasses(){
+  SEL_CLS = null;
+  if(!SEL_SUBJECT){ goHome(); return; }
+  go('classes');
 }
 
 // ── 브라우저 뒤로가기/앞으로가기 ──

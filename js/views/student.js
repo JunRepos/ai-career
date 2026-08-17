@@ -410,9 +410,9 @@ function vStDashboard(){
       const done = list.filter(a => SUBMISSIONS[a.id] && SUBMISSIONS[a.id][ST_USER?.number]).length;
       const meta = list.length ? `수업 ${list.length}개 · 제출 ${done}/${list.length}` : '수업 준비 중';
       return `<div class="dash-unit" onclick="setST('unit-${u.key}')">
-        <div class="dash-unit-top">
-          <div class="dash-unit-emoji" style="background:${vis.color}1A">${vis.emoji}</div>
-          <div class="dash-unit-roman" style="color:${vis.color};background:${vis.color}1A">${u.roman}</div>
+        <div class="dash-unit-top" style="background:${vis.color}">
+          ${_dotGrid(u.key)}
+          <div class="dash-unit-roman">${u.roman}</div>
         </div>
         <div>
           <div class="dash-unit-label">${esc(u.label)}</div>

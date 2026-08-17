@@ -45,8 +45,9 @@ function drawerNavHtml(){
   const who = isTC
     ? '👩‍🏫 선생님'
     : `${esc(ST_USER?.number || '')} ${esc(ST_USER?.name || '')}`;
+  const subjTint = SUBJECT_MAP[cls?.type]?.tint || 'var(--accent)';
   const brand = `<div class="drawer-brand">
-      <div class="hicon">🧠</div>
+      <div class="brand-mark" style="background:${subjTint}"></div>
       <div style="min-width:0">
         <div style="color:var(--side-text-strong);font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${who}</div>
         <div style="color:var(--side-sub);font-size:12px">${esc(cls?.label || '인공지능 기초 · 진로')}</div>

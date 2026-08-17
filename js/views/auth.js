@@ -7,7 +7,7 @@
 // 학생 로그인
 function vStudentLogin(){
   return `
-    <div class="back-btn" onclick="goHome()">← 반 선택으로</div>
+    <div class="back-btn" onclick="backToClasses()">← 반 선택으로</div>
     <div class="login-wrap">
       <div class="section">
         <div class="sec-title">${esc(SEL_CLS?.label)} 로그인</div>

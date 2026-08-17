@@ -10,6 +10,20 @@ document.addEventListener('click', async e => {
   if(!el) return;
   const act = el.dataset;
 
+  // 홈: 과목 선택 → 도트 전환 후 반 선택 화면
+  if(act.action === 'pick-subject'){
+    const subj = SUBJECT_MAP[act.key]; if(!subj) return;
+    dotTransition(subj.tint, () => { SEL_SUBJECT = subj.key; go('classes'); });
+    return;
+  }
+
+  // 반 선택 → 과목 선택으로 되돌아가기
+  if(act.action === 'back-subjects'){
+    SEL_SUBJECT = null;
+    go('home');
+    return;
+  }
+
   // 홈: 반 선택
   if(act.action === 'pick-class'){
     const cls = classById(act.cid); if(!cls) return;

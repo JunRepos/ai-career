@@ -27,11 +27,31 @@ const FIREBASE_CONFIG = {
 //   같은 id 를 추가하고 firebase deploy 를 해야 저장이 됩니다.
 //   Firebase 프로젝트는 informatics 와 공유하지만, 데이터는 반 id 로 완전히 갈립니다.
 const CLASSES = [
-  {id:'ai-2A',    label:'인공지능 기초 2-A',emoji:'🧠',type:'ai'},
-  {id:'ai-2B',    label:'인공지능 기초 2-B',emoji:'🧠',type:'ai'},
-  {id:'career-2A',label:'진로 2-A',        emoji:'🧭',type:'career'},
-  {id:'career-2B',label:'진로 2-B',        emoji:'🧭',type:'career'},
+  // 인공지능 기초 — 수강반 2개
+  {id:'ai-2A', label:'인공지능 기초 2-A', short:'2-A', type:'ai'},
+  {id:'ai-2B', label:'인공지능 기초 2-B', short:'2-B', type:'ai'},
+  // 진로와 직업 — 학급 6개
+  {id:'career-2-1', label:'진로 2-1', short:'2-1', type:'career'},
+  {id:'career-2-2', label:'진로 2-2', short:'2-2', type:'career'},
+  {id:'career-2-3', label:'진로 2-3', short:'2-3', type:'career'},
+  {id:'career-2-4', label:'진로 2-4', short:'2-4', type:'career'},
+  {id:'career-2-5', label:'진로 2-5', short:'2-5', type:'career'},
+  {id:'career-2-6', label:'진로 2-6', short:'2-6', type:'career'},
 ];
+
+// 과목 — 첫 화면(과목 선택)과 반 선택 화면에서 사용.
+// key 는 CLASSES 의 type 및 SUBJECT_UNITS(constants.js) 의 키와 같아야 합니다.
+const SUBJECTS = [
+  { key:'career', label:'진로와 직업',  tagline:'나를 알고 직업 세계를 탐색합니다', tint:'#F2A65A' },
+  { key:'ai',     label:'인공지능 기초', tagline:'인공지능의 원리를 배우고 직접 만듭니다', tint:'#B08BEB' },
+];
+
+const SUBJECT_MAP = Object.fromEntries(SUBJECTS.map(s => [s.key, s]));
+
+// 과목에 속한 반 목록
+function classesOf(subjectKey){
+  return CLASSES.filter(c => c.type === subjectKey);
+}
 
 const KNOWN_CLS = new Set(CLASSES.map(c=>c.id));
 

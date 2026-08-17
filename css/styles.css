@@ -2965,3 +2965,146 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .mla-answer:focus{border-color:#2E9E68 !important;box-shadow:0 0 0 3px rgba(46,158,104,.18) !important;outline:none}
 .mla-answer::placeholder{color:var(--text3);opacity:.7}
 
+
+/* ═══════════════════════════════════════════════════════════════
+   Padlet 톤 레이어 (2026-08) — 인공지능 기초 · 진로
+
+   위쪽 원본 스타일은 그대로 두고, 이 블록에서만 색/형태를 덮어씁니다.
+   되돌리려면 이 블록만 지우면 원래 디자인으로 돌아갑니다.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 팔레트 ── */
+[data-theme="dark"]{
+  --bg:#1B1B1D; --surface:#232326; --surface2:#2A2A2E;
+  --border:#323236; --border2:#3C3C41;
+  --text:#F1F1F3; --text2:#A6A6AD; --text3:#74747B;
+  --accent:#FF3D87; --accent-h:#FF5C9A; --accent-lt:#3A1224; --accent-txt:#FFF;
+  --pl-yellow:#FFC83D;
+  --side-bg:#1B1B1D; --side-text:#B9B9C0; --side-text-strong:#F3F3F5;
+  --side-label:#6E6E76; --side-active-bg:transparent; --side-active-text:var(--pl-yellow);
+  --side-sub:#7C7C84;
+  --sh:none;
+}
+[data-theme="dark"] body{background:var(--bg)}
+
+/* ── 진입 화면 공통 ── */
+.wrap.enter-mode{max-width:1040px;padding:18px 20px 80px}
+.enter{margin-top:14px}
+.enter-head{margin-bottom:26px}
+.enter-title{font-size:30px;font-weight:800;letter-spacing:-.6px;color:var(--text);
+  display:flex;align-items:center;gap:10px}
+.enter-dot{width:11px;height:11px;border-radius:50%;background:var(--tint,var(--accent));flex:none}
+.enter-sub{margin-top:6px;font-size:14px;color:var(--text2)}
+.enter-back{background:none;border:none;color:var(--text3);font-size:13px;font-weight:600;
+  cursor:pointer;padding:0 0 12px;font-family:inherit}
+.enter-back:hover{color:var(--pl-yellow)}
+
+/* ── 과목 선택 카드 ── */
+.subj-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:18px}
+.subj-card{position:relative;display:flex;align-items:center;gap:18px;text-align:left;white-space:normal;
+  padding:22px;border:1px solid var(--border);border-radius:16px;background:var(--surface);
+  cursor:pointer;font-family:inherit;color:var(--text);overflow:hidden;
+  transition:border-color .18s,transform .18s,background .18s}
+.subj-card::after{content:'';position:absolute;inset:0;border-radius:16px;pointer-events:none;
+  box-shadow:inset 0 0 0 0 var(--tint);transition:box-shadow .18s}
+.subj-card:hover{transform:translateY(-3px);background:var(--surface2);border-color:var(--tint)}
+.subj-card:hover::after{box-shadow:inset 0 0 0 1px var(--tint)}
+.subj-body{flex:1;min-width:0}
+.subj-label{font-size:19px;font-weight:800;letter-spacing:-.4px}
+.subj-tagline{margin-top:5px;font-size:13px;color:var(--text2);line-height:1.5}
+.subj-meta{margin-top:10px;display:inline-block;font-size:11.5px;font-weight:700;
+  color:var(--tint);background:color-mix(in srgb,var(--tint) 16%,transparent);
+  padding:3px 9px;border-radius:99px}
+.subj-go{font-size:20px;color:var(--text3);flex:none;transition:transform .18s,color .18s}
+.subj-card:hover .subj-go{color:var(--tint);transform:translateX(4px)}
+
+/* 카드 안 장식 도트 (6×6) */
+.subj-dots{flex:none;display:grid;grid-template-columns:repeat(6,1fr);gap:5px;
+  width:74px;height:74px}
+.subj-dots .sd{display:block;width:100%;height:100%;border-radius:50%;
+  background:var(--border2);transition:background .3s,transform .3s;transition-delay:var(--d)}
+.subj-dots .sd.on{background:var(--tint)}
+.subj-card:hover .sd{transform:scale(.72)}
+.subj-card:hover .sd.on{transform:scale(1.14)}
+
+/* ── 반 선택 카드 ── */
+.cls-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:16px}
+/* 전역 button 이 inline-flex 라 카드형 버튼은 block 으로 되돌립니다 */
+.cls-card{display:block;white-space:normal;padding:0;border:none;background:none;
+  cursor:pointer;font-family:inherit;text-align:left;color:var(--text);
+  animation:clsIn .34s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i) * 45ms)}
+@keyframes clsIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.cls-thumb{display:grid;grid-template-columns:repeat(6,1fr);align-content:center;
+  justify-content:center;gap:7px;padding:0 22%;aspect-ratio:16/10;
+  border-radius:11px;background:var(--tint);
+  transition:transform .18s,filter .18s}
+.cls-thumb .sd{display:block;width:100%;aspect-ratio:1;border-radius:50%;
+  background:rgba(27,27,29,.16)}
+.cls-thumb .sd.on{background:rgba(27,27,29,.62)}
+.cls-card:hover .cls-thumb{transform:translateY(-3px);filter:brightness(1.08)}
+.cls-name{margin-top:10px;font-size:14px;font-weight:700;letter-spacing:-.2px}
+.cls-sub{margin-top:2px;font-size:12px;color:var(--text3)}
+
+/* ── 도트 전환 애니메이션 ── */
+.dotfx{position:fixed;inset:0;z-index:200;display:grid;
+  grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(10,1fr);
+  pointer-events:none}
+.dotfx i{display:block;width:100%;height:100%;border-radius:50%;background:var(--tint);
+  transform:scale(0);transition:transform .32s ease-out;transition-delay:var(--d)}
+.dotfx.in i{transform:scale(1.6)}
+.dotfx.out i{transform:scale(0);transition-duration:.3s}
+@media (prefers-reduced-motion:reduce){
+  .dotfx i{transition-duration:.01ms;transition-delay:0ms}
+  .cls-card{animation:none}
+}
+
+/* ── 헤더(진입 화면) ── */
+.wrap.enter-mode .header{border:none;background:none;padding:6px 0 22px;box-shadow:none}
+.htitle{font-size:14px;font-weight:800;letter-spacing:-.3px}
+.hsub{font-size:12px;color:var(--text3)}
+
+/* ── 로그인 후 셸 — Padlet 톤 ── */
+[data-theme="dark"] .topbar{background:var(--bg);border-bottom:1px solid var(--border)}
+[data-theme="dark"] .topbar-menu{background:var(--surface)}
+.drawer-brand{display:flex;align-items:center;gap:11px;padding:18px 18px 16px;
+  border-bottom:1px solid var(--border)}
+.brand-mark{width:30px;height:30px;border-radius:9px;flex:none}
+.drawer-label{color:var(--side-label);font-size:11px;font-weight:700;letter-spacing:.4px;
+  padding:16px 18px 7px}
+.drawer-item{border-radius:0;padding:11px 18px;font-weight:600;position:relative}
+[data-theme="dark"] .drawer-item.active{background:transparent;color:var(--pl-yellow)}
+[data-theme="dark"] .drawer-item.active::before{content:'';position:absolute;left:0;top:8px;bottom:8px;
+  width:3px;border-radius:0 3px 3px 0;background:var(--pl-yellow)}
+
+/* 대시보드 단원 카드 → Padlet 카드 그리드 */
+.dash-sec-label{font-size:13px;font-weight:700;color:var(--text2);margin:26px 0 12px}
+.dash-units{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:18px}
+.dash-unit{display:block;padding:0;border:none;background:none;cursor:pointer;border-radius:0;
+  box-shadow:none;transition:transform .18s}
+.dash-unit:hover{transform:translateY(-3px)}
+.dash-unit-top{position:relative;aspect-ratio:16/10;border-radius:11px;margin:0;
+  display:grid;grid-template-columns:repeat(6,1fr);align-content:center;gap:7px;padding:0 24%}
+.dash-unit-top .sd{display:block;width:100%;aspect-ratio:1;border-radius:50%;
+  background:rgba(27,27,29,.16)}
+.dash-unit-top .sd.on{background:rgba(27,27,29,.6)}
+.dash-unit-roman{position:absolute;top:9px;left:11px;font-size:12px;font-weight:800;
+  color:rgba(27,27,29,.75)}
+.dash-unit-label{margin-top:10px;font-size:14px;font-weight:700;letter-spacing:-.2px;color:var(--text)}
+.dash-unit-meta{margin-top:2px;font-size:12px;color:var(--text3)}
+
+/* 목록 행 — 카드 톤 통일 */
+[data-theme="dark"] .list-row{background:var(--surface);border-color:var(--border);border-radius:11px}
+[data-theme="dark"] .list-row.click:hover{background:var(--surface2);border-color:var(--border2)}
+[data-theme="dark"] .section{background:var(--surface);border-color:var(--border);border-radius:14px}
+[data-theme="dark"] .dash-notice,[data-theme="dark"] .dash-qna,[data-theme="dark"] .dash-cta{
+  background:var(--surface);border-color:var(--border);border-radius:14px}
+
+/* 대시보드 인사말 — 좌측 정렬(Padlet 홈과 동일) */
+.dash-greeting{text-align:left;margin-bottom:20px}
+.dash-hello{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.dash-class{margin-top:4px;font-size:13px;color:var(--text3)}
+
+/* 카드 그리드가 화면을 채우도록 콘텐츠 폭 확대 (Padlet 홈과 동일한 인상) */
+@media(min-width:1024px){
+  .content{max-width:1180px;padding:28px 34px}
+}
