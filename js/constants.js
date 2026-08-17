@@ -39,13 +39,8 @@ const SUBJECT_UNITS = {
     { key: 'aib-impact',     roman: 'Ⅲ', label: '인공지능의 사회적 영향' },
     { key: 'aib-project',    roman: 'Ⅳ', label: '인공지능 프로젝트' },
   ],
-  // 진로와 직업
-  career: [
-    { key: 'car-self',    roman: 'Ⅰ', label: '자아이해와 사회적 역량' },
-    { key: 'car-world',   roman: 'Ⅱ', label: '일과 직업세계의 이해' },
-    { key: 'car-explore', roman: 'Ⅲ', label: '진로 탐색' },
-    { key: 'car-design',  roman: 'Ⅳ', label: '진로 디자인과 준비' },
-  ],
+  // 진로와 직업 — 단원 구분 없이 '수업' 하나로 운영 (빈 배열이면 단원 메뉴가 안 나옴)
+  career: [],
 };
 
 // 단원 체계를 쓰는 반(=교과 수업 반)인지. 일반 학급은 단원 없이 '수업' 단일 탭.

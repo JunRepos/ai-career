@@ -26,13 +26,19 @@ function _stNavGroups(){
     // 교과반(인공지능 기초·진로·정보): 수업을 단원별(Ⅰ~Ⅳ)로 분리한 '수업' 그룹.
     //   정보반은 노트북·미션·OJ·퀴즈·AI코딩·기계학습·AI활동지가 각 단원 '실습'의
     //   앱연결로만 노출됨(글로벌 실습·AI 탐구 그룹 없앰).
+    const units = assignUnits();
     groups.push({ label:'학급', items:[
       {key:'notice', ico:'📢', label:'공지'},
       {key:'board',  ico:'❓', label:'궁금증'},
     ]});
-    groups.push({ label:'수업', items: assignUnits().map(u => ({key:'unit-'+u.key, ico:u.roman, label:u.label})) });
-    // 인공지능 기초·진로: 과제 제출을 단원과 별개로 한눈에 (정보반은 단원 안 앱연결로 도달)
-    if(!isInfo) groups.push({ items:[{key:'assign', ico:'📝', label:'과제 제출'}] });
+    if(units.length){
+      groups.push({ label:'수업', items: units.map(u => ({key:'unit-'+u.key, ico:u.roman, label:u.label})) });
+      // 인공지능 기초: 과제 제출을 단원과 별개로 한눈에 (정보반은 단원 안 앱연결로 도달)
+      if(!isInfo) groups.push({ items:[{key:'assign', ico:'📝', label:'과제 제출'}] });
+    } else {
+      // 진로처럼 단원을 안 쓰는 과목 — 수업 하나로
+      groups.push({ items:[{key:'assign', ico:'📖', label:'수업'}] });
+    }
     // 평가 그룹: 진행 중인 항목이 하나라도 있을 때만 노출(시즌성). 점은 항상 진행 중 의미.
     if(asmtItems.length) groups.push({ label:'평가', dot:true, items: asmtItems });
     // 내 점수 (정보반 — 공개된 수행평가 점수)
@@ -87,9 +93,10 @@ function _stNormalizeTab(){
   else if(ST_TAB === 'asmt-guide'){ ST_TAB = 'asmt'; ASMT_MODE = 'guide'; }
   // 정보반의 옛 '수업' 단일 탭 → 첫 단원
   if(ST_TAB === 'assign' && (SEL_CLS?.type || 'normal') === 'info') ST_TAB = 'unit-' + assignUnits()[0].key;
-  // 다른 과목의 단원 탭이 남아 있으면(반을 바꿔 로그인한 경우) 이 과목 첫 단원으로
+  // 다른 과목의 단원 탭이 남아 있으면(반을 바꿔 로그인한 경우) 이 과목 첫 단원으로.
+  // 단원을 안 쓰는 과목이면 '수업' 탭으로.
   if(ST_TAB.indexOf('unit-') === 0 && !assignUnit(ST_TAB.slice(5))){
-    ST_TAB = assignUnits().length ? 'unit-' + assignUnits()[0].key : 'dashboard';
+    ST_TAB = assignUnits().length ? 'unit-' + assignUnits()[0].key : 'assign';
   }
   // 일반반은 내 점수가 없으니 홈으로
   if(ST_TAB === 'myscore' && (SEL_CLS?.type || 'normal') !== 'info') ST_TAB = 'dashboard';
@@ -403,7 +410,7 @@ function vStDashboard(){
 
   // ③ 단원 카드 (교과반: 2×2) / 일반반: 수업 바로가기
   let unitsBlock = '';
-  if(isSubjectCls(SEL_CLS)){
+  if(isSubjectCls(SEL_CLS) && assignUnits().length){
     const cards = assignUnits().map(u => {
       const vis = DASH_UNIT_VIS[u.key] || { emoji: '📚', color: '#6366F1' };
       const list = ASSIGNMENTS.filter(a => a.unit === u.key || !a.unit);

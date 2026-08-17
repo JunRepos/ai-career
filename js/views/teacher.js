@@ -16,6 +16,7 @@ function vTeacher(){
       <div class="tc-empty-sub">왼쪽 메뉴 위쪽의 <b>관리 반</b>에서 선택하면 이 자리에 내용이 나옵니다.</div>
     </div>`;
   }
+  _tcNormalizeTab();
   return _tcTabBody();
 }
 
@@ -28,8 +29,9 @@ function _tcNavGroups(isInfo){
     {key:'attend',   ico:'🗓️', label:'출결'},
     {key:'students', ico:'👥', label:'학생관리'},
   ]}];
-  // 정보 외 교과반(인공지능 기초·진로): 단원 구성만 — 정보 전용 콘텐츠 도구는 숨김
-  if(!isInfo && isSubjectCls(TC_CLS)){
+  // 정보 외 교과반: 단원을 쓰는 과목(인공지능 기초)만 '단원 구성' 노출.
+  // 진로는 단원이 없어서 '수업' 탭으로만 운영합니다.
+  if(!isInfo && isSubjectCls(TC_CLS) && assignUnits().length){
     groups.push({ label: '콘텐츠', items: [
       {key:'unit', ico:'📚', label:'단원 구성'},
     ]});
@@ -87,6 +89,11 @@ function _tcTabBody(){
   else if(TC_TAB === 'curriculum') return vTcCurriculum();
   else if(TC_TAB === 'settings')   return vTcSettings();
   return '';
+}
+
+// 단원을 안 쓰는 반(진로)에서 '단원 구성' 탭이 남아 있으면 '수업'으로 되돌림
+function _tcNormalizeTab(){
+  if(TC_TAB === 'unit' && TC_CLS && !assignUnits().length) TC_TAB = 'assign';
 }
 
 function setTC(t){

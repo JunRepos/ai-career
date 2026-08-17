@@ -27,9 +27,9 @@ const FIREBASE_CONFIG = {
 //   같은 id 를 추가하고 firebase deploy 를 해야 저장이 됩니다.
 //   Firebase 프로젝트는 informatics 와 공유하지만, 데이터는 반 id 로 완전히 갈립니다.
 const CLASSES = [
-  // 인공지능 기초 — 수강반 2개
-  {id:'ai-2A', label:'인공지능 기초 2-A', short:'2-A', type:'ai'},
-  {id:'ai-2B', label:'인공지능 기초 2-B', short:'2-B', type:'ai'},
+  // 인공지능 기초 — 수강반 2개 (2026학년도 2학기)
+  {id:'ai-2B', label:'인공지능 기초 2B', short:'2B', type:'ai', room:'203', when:'수요일 3교시'},
+  {id:'ai-2D', label:'인공지능 기초 2D', short:'2D', type:'ai', room:'202', when:'월요일 2교시'},
   // 진로와 직업 — 학급 6개
   {id:'career-2-1', label:'진로 2-1', short:'2-1', type:'career'},
   {id:'career-2-2', label:'진로 2-2', short:'2-2', type:'career'},

@@ -3040,7 +3040,7 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .cls-thumb .dot-icon{width:auto;height:100%}
 
 /* 7×7 도트 아이콘 (나침반 / 신경망) — 담는 상자 안에서 항상 정사각 */
-.dot-icon{display:grid;grid-template-columns:repeat(7,1fr);gap:11%;
+.dot-icon{display:grid;grid-template-columns:repeat(9,1fr);gap:9%;
   width:100%;aspect-ratio:1}
 /* 도트 3단계 — 없음 / 보통 / 강조(나침반 바늘·신경망 노드) */
 .dot-icon .sd{display:block;width:100%;aspect-ratio:1;border-radius:50%;
@@ -3178,6 +3178,8 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .drawer-switch select{width:100%;font-size:13px;padding:9px 11px;border-radius:10px;
   background:var(--surface);border:1px solid var(--border2);color:var(--side-text-strong)}
 .drawer-switch select:focus{border-color:var(--pl-yellow)}
+/* 펼친 목록은 OS가 흰 배경으로 그리므로 글자색을 따로 지정해야 보입니다 */
+.drawer-switch select option{background:#FFFFFF;color:#1B1B1D}
 
 .drawer-nav{display:block;padding:0 0 8px}
 .drawer-label{color:var(--side-label);font-size:11px;font-weight:700;letter-spacing:.06em;
@@ -3255,3 +3257,36 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   color:var(--text)}
 .cls-chip-actions{display:flex;gap:7px;padding-top:2px;border-top:1px solid var(--border);
   margin-top:2px;padding-top:12px}
+
+/* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??   ?ъ씠?쒕컮 3李?????룰??먃룹뿬諛?異뺤냼 (???щ컯?섍쾶)
+?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??*/
+:root{--drawer-w:212px}
+
+.drawer-brand{gap:9px;padding:14px 14px 13px}
+.brand-mark{width:28px;height:28px;border-radius:8px;font-size:10.5px}
+.brand-name{font-size:12.5px;font-weight:700}
+.brand-sub{font-size:11px;margin-top:1px}
+
+.drawer-switch{padding:11px 14px}
+.drawer-switch label{font-size:10px;letter-spacing:.05em;margin-bottom:5px}
+.drawer-switch select{font-size:12px;padding:7px 9px;border-radius:8px}
+
+.drawer-nav{padding:4px 0 6px}
+.drawer-label{font-size:10px;letter-spacing:.06em;padding:13px 14px 5px}
+.drawer-gap{height:6px}
+.drawer-item{gap:9px;padding:7px 14px;font-size:12.5px;font-weight:500}
+.drawer-item .ico{font-size:13px;width:16px;opacity:.85}
+[data-theme="dark"] .drawer-item.active{font-weight:700}
+[data-theme="dark"] .drawer-item.active .ico{opacity:1}
+[data-theme="dark"] .drawer-item.active::before{top:5px;bottom:5px;width:2px}
+
+.drawer-foot{gap:6px;padding:10px 14px 14px}
+.drawer-foot-btn{font-size:11.5px;font-weight:500;padding:7px 8px;border-radius:7px}
+
+/* ?곷떒諛붾룄 ?ъ씠?쒕컮??留욎떠 議곌툑 ??쾶 */
+[data-theme="dark"] .topbar{padding:14px 24px}
+[data-theme="dark"] .topbar-title{font-size:19px}
+@media(min-width:1024px){
+  .content{padding:24px 28px}
+}
+
