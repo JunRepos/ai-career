@@ -12,7 +12,7 @@
      text  — 질문 + 줄노트 답변칸        { text, desc, rows, imageUrl }
      note  — 읽기만 하는 안내 상자        { text, desc, url }
      check — 보기 중 고르기(여러 개 가능) { text, desc, options:[], cols }
-     table — 표 채우기                   { text, desc, cols:[], fixed:[], extra }
+     table — 표 채우기                   { text, desc, cols:[], fixed:[], extra, fillFrom:[] }
 
    답안은 문항 id 를 키로 저장됩니다.
      text  → 문자열
@@ -74,6 +74,8 @@ const AIA_LIST = [
         desc: '진로와 교과를 연계한 아이디어가 있나요?',
         cols: ['선택 과목', '목표 등급', '하고 싶은 세부 탐구 활동(있으면 적기!)'],
         fixed: ['독서와 작문(공통)', '미적분Ⅰ(공통)', '영어Ⅱ(공통)', '스포츠 생활2(공통, ABCDE)'],
+        // 위에서 고른 과목이 '선택 과목' 칸에 자동으로 들어옵니다 (이 학습지 전용)
+        fillFrom: ['pick2', 'pick3'],
         extra: 5 },
 
       { id: 'wantDo', text: '2학기 동안 하고 싶은 활동이 있나요?',

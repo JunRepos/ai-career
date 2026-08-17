@@ -132,7 +132,7 @@ document.addEventListener('click', async e => {
     if(AIA_SAVING) return;
     // 작성된 답안이 있는지 확인 (다 빈 칸이면 제출 막기)
     const hasAny = (AIA_SEL.questions || []).filter(q => q.type !== 'note')
-      .some(q => (aiaAnswerText(q, AIA_ANSWERS[q.id]) || '').trim());
+      .some(q => (aiaAnswerText(q, AIA_ANSWERS[q.id], AIA_ANSWERS) || '').trim());
     if(!hasAny){
       toast('아직 작성된 내용이 없어요. 한 칸이라도 채운 뒤 제출해주세요.', 'err');
       return;
@@ -238,8 +238,8 @@ document.addEventListener('change', async e => {
     AIA_ANSWERS[fid] = chk.checked
       ? [...cur, chk.value]
       : cur.filter(v => v !== chk.value);
-    chk.closest('.ws-check')?.classList.toggle('on', chk.checked);
     _aiaQueueSave();
+    render();   // 고른 과목이 아래 표에 바로 들어가도록 다시 그림
     return;
   }
   // 답변 칸 줄 수
@@ -330,7 +330,7 @@ function _aiaExportCSV(){
     const sub = AIA_ALL_SUBS[st.number];
     const ans = sub?.answers || {};
     const row = [st.number, st.name];
-    for(const q of (act.questions || []).filter(x => x.type !== 'note')) row.push(aiaAnswerText(q, ans[q.id]));
+    for(const q of (act.questions || []).filter(x => x.type !== 'note')) row.push(aiaAnswerText(q, ans[q.id], ans));
     row.push(sub?.submittedAt ? fmtDt(sub.submittedAt) : '');
     row.push(sub?.updatedAt ? fmtDt(sub.updatedAt) : '');
     rows.push(row);

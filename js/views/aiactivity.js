@@ -123,8 +123,8 @@ function _aiaQuestion(q, no){
   // 표 채우기
   if(q.type === 'table'){
     const cols = q.cols || [];
-    const fixed = q.fixed || [];
-    const rows = fixed.length + (q.extra || 0);
+    const fixed = _tableLabels(q, AIA_ANSWERS);
+    const rows = Math.max(fixed.length, (q.fixed || []).length + (q.extra || 0));
     const val = AIA_ANSWERS[q.id] || {};
     const head2 = `<tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr>`;
     let bodyRows = '';
@@ -154,12 +154,25 @@ function _aiaQuestion(q, no){
   </div>`;
 }
 
+/* 표 첫 칸에 미리 박아둘 이름들.
+   fillFrom 이 있으면 그 문항에서 고른 보기가 이어서 들어갑니다.
+   (진로 학습지의 '고른 과목이 표에 자동으로' 요구사항 — 이 학습지 전용) */
+function _tableLabels(q, answers){
+  const base = q.fixed || [];
+  if(!q.fillFrom) return base;
+  const picked = q.fillFrom.flatMap(fid => {
+    const v = (answers || {})[fid];
+    return Array.isArray(v) ? v : [];
+  });
+  return [...base, ...picked];
+}
+
 /* 답안을 사람이 읽는 글로 — 선생님 화면·CSV·세특 복사에서 공용 */
-function aiaAnswerText(q, v){
+function aiaAnswerText(q, v, answers){
   if(q.type === 'check') return Array.isArray(v) ? v.join(', ') : (v || '');
   if(q.type === 'table'){
     if(!v || typeof v !== 'object') return '';
-    const cols = q.cols || [], fixed = q.fixed || [];
+    const cols = q.cols || [], fixed = _tableLabels(q, answers);
     const lines = [];
     Object.keys(v).sort((a,b) => a - b).forEach(r => {
       const cells = cols.map((c, ci) => (ci === 0 && fixed[r] !== undefined) ? fixed[r] : (v[r]?.[ci] || ''));
@@ -278,7 +291,7 @@ function _vTcAiaStudentList(){
     const sub = subs[st.number];
     const answers = sub?.answers || {};
     const qs = (act.questions || []).filter(q => q.type !== 'note');
-    const filled = qs.filter(q => (aiaAnswerText(q, answers[q.id]) || '').trim()).length;
+    const filled = qs.filter(q => (aiaAnswerText(q, answers[q.id], answers) || '').trim()).length;
     const pct = fieldIds.length ? Math.round(filled / fieldIds.length * 100) : 0;
     const submitted = !!sub?.submittedAt;
     return `<tr>
@@ -343,7 +356,7 @@ function _vTcAiaStudent(){
   const answers = sub.answers || {};
   let no = 0;
   const qs = (act.questions || []).filter(q => q.type !== 'note').map(q => {
-    const v = (aiaAnswerText(q, answers[q.id]) || '').trim();
+    const v = (aiaAnswerText(q, answers[q.id], answers) || '').trim();
     return `<div class="ws-block">
       <div class="ws-q-head"><span class="ws-q-no">${_dotNum(++no)}</span><span class="ws-q-text">${esc(q.text)}</span></div>
       <pre class="rep-a${v ? '' : ' empty'}">${v ? esc(v) : '(무응답)'}</pre>
