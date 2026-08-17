@@ -37,6 +37,20 @@ document.addEventListener('focusout', async e => {
 
 // ── 날짜/파일 변경 이벤트 ──
 document.addEventListener('change', async e => {
+  // 사이드바 '관리 반' 전환 — 고르는 즉시 이동 (예전 '이동' 버튼 대체)
+  if(e.target.id === 'tc-cls-sel'){
+    const sel = e.target;
+    const cls = classById(sel.value);
+    if(!cls){ TC_CLS = null; render(); return; }
+    sel.disabled = true;
+    TC_CLS = cls;
+    await loadAllClassData(cls.id);
+    for(const a of ASSIGNMENTS) await loadSubmissions(cls.id, a.id);
+    if(TC_TAB === 'attend') await loadAttendance(cls.id, AT_DATE);
+    closeDrawer();
+    render();
+    return;
+  }
   if(e.target.id === 'at-date-input'){
     AT_DATE = e.target.value;
     if(TC_CLS) await loadAttendance(TC_CLS.id, AT_DATE);

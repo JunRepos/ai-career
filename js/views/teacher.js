@@ -7,24 +7,16 @@
 
 // 선생님 대시보드 메인
 function vTeacher(){
-  const clsOpts = CLASSES.map(c =>
-    `<option value="${c.id}"${TC_CLS?.id === c.id ? ' selected' : ''}>${c.label}</option>`
-  ).join('');
-
-  const clsBar = `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:10px 14px;margin-bottom:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;box-shadow:var(--sh)">
-    <label style="font-size:12px">관리 반:</label>
-    <select id="tc-cls-sel" style="flex:1;min-width:130px;font-size:13px;padding:6px 10px">${clsOpts}</select>
-    <button class="btn-p btn-sm" id="tc-cls-go">이동</button>
-  </div>`;
-
-  // 진도계획/설정은 반 선택 없이 접근 가능
+  // 반 전환은 사이드바('관리 반' 선택)로 옮겼습니다 — views/shared.js
   const globalTabs = ['settings', 'curriculum'];
-  const body = (!TC_CLS && !globalTabs.includes(TC_TAB))
-    ? emptyBox('👆', '관리할 반을 선택하세요.')
-    : _tcTabBody();
-
-  // 본문만 반환 (내비는 드로어, 셸은 render.js). 반 선택 바는 콘텐츠 상단에 유지.
-  return clsBar + body;
+  if(!TC_CLS && !globalTabs.includes(TC_TAB)){
+    return `<div class="tc-empty">
+      <div class="tc-empty-dots">${_dotGrid('pick-a-class')}</div>
+      <div class="tc-empty-title">관리할 반을 골라주세요</div>
+      <div class="tc-empty-sub">왼쪽 메뉴 위쪽의 <b>관리 반</b>에서 선택하면 이 자리에 내용이 나옵니다.</div>
+    </div>`;
+  }
+  return _tcTabBody();
 }
 
 // 선생님 사이드바 그룹

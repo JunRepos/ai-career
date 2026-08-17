@@ -6,19 +6,31 @@
 ═══════════════════════════════════════ */
 
 // 다중 반 선택 체크박스 (신규 등록 시에만 표시)
+//   과목별로 묶어서 보여줍니다 — 반이 8개라 한 줄로 늘어놓으면 찾기 어려움.
 function multiClassPicker(idPrefix, currentClassId){
-  const checks = CLASSES.map(c => {
-    const checked = c.id === currentClassId ? 'checked' : '';
-    return `<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;color:var(--text2);font-weight:500;text-transform:none;letter-spacing:0">
-      <input type="checkbox" class="${idPrefix}-cls-chk" value="${c.id}" style="width:auto" ${checked}/> ${c.emoji} ${c.label}
-    </label>`;
+  const groups = SUBJECTS.map(s => {
+    const chips = classesOf(s.key).map(c => {
+      const checked = c.id === currentClassId ? 'checked' : '';
+      return `<label class="cls-chip">
+        <input type="checkbox" class="${idPrefix}-cls-chk" value="${c.id}" ${checked}/>
+        <span>${esc(c.short || c.label)}</span>
+      </label>`;
+    }).join('');
+    if(!chips) return '';
+    return `<div class="cls-chip-group">
+      <div class="cls-chip-label" style="color:${s.tint}">${esc(s.label)}</div>
+      <div class="cls-chip-row">${chips}</div>
+    </div>`;
   }).join('');
+
   return `<div class="field">
     <label>등록할 반 선택</label>
-    <div style="display:flex;flex-wrap:wrap;gap:8px 14px;padding:8px 0">
-      ${checks}
-      <button type="button" class="btn-xs" onclick="document.querySelectorAll('.${idPrefix}-cls-chk').forEach(c=>c.checked=true)" style="margin-left:4px">전체 선택</button>
-      <button type="button" class="btn-xs" onclick="document.querySelectorAll('.${idPrefix}-cls-chk').forEach(c=>c.checked=false)">전체 해제</button>
+    <div class="cls-chip-box">
+      ${groups}
+      <div class="cls-chip-actions">
+        <button type="button" class="btn-xs" onclick="document.querySelectorAll('.${idPrefix}-cls-chk').forEach(c=>c.checked=true)">전체 선택</button>
+        <button type="button" class="btn-xs" onclick="document.querySelectorAll('.${idPrefix}-cls-chk').forEach(c=>c.checked=false)">전체 해제</button>
+      </div>
     </div>
   </div>`;
 }
@@ -45,24 +57,50 @@ function drawerNavHtml(){
   const who = isTC
     ? '👩‍🏫 선생님'
     : `${esc(ST_USER?.number || '')} ${esc(ST_USER?.name || '')}`;
-  const subjTint = SUBJECT_MAP[cls?.type]?.tint || 'var(--accent)';
+  const subjKey = cls?.type;
+  const subj = SUBJECT_MAP[subjKey];
+  const subjTint = subj?.tint || 'var(--pl-yellow)';
+  // 반 도트 아이콘 — 반 선택 화면에서 본 것과 같은 그림이라 "지금 어느 반인지"가 바로 보임
+  const idx = cls ? Math.max(0, classesOf(subjKey).findIndex(c => c.id === cls.id)) : 0;
+  // 작은 정사각 색 타일 — 지금 어느 과목을 보고 있는지 색으로 구분.
+  // (도트 아이콘은 38px 에서는 뭉개져서 반 번호를 대신 씁니다)
+  const mark = `<div class="brand-mark" style="background:${subjTint}">${cls ? esc(cls.short || '') : ''}</div>`;
+
   const brand = `<div class="drawer-brand">
-      <div class="brand-mark" style="background:${subjTint}"></div>
-      <div style="min-width:0">
-        <div style="color:var(--side-text-strong);font-weight:700;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${who}</div>
-        <div style="color:var(--side-sub);font-size:12px">${esc(cls?.label || '인공지능 기초 · 진로')}</div>
+      ${mark}
+      <div class="brand-who">
+        <div class="brand-name">${who}</div>
+        <div class="brand-sub">${esc(cls?.label || '인공지능 기초 · 진로')}</div>
       </div>
     </div>`;
+
+  // 선생님: 반 전환을 사이드바에서 바로 (예전 콘텐츠 상단 '관리 반' 바를 대체)
+  const switcher = isTC
+    ? `<div class="drawer-switch">
+        <label for="tc-cls-sel">관리 반</label>
+        <select id="tc-cls-sel">
+          <option value=""${!TC_CLS ? ' selected' : ''}>반 선택…</option>
+          ${CLASSES.map(c => `<option value="${c.id}"${TC_CLS?.id === c.id ? ' selected' : ''}>${esc(c.label)}</option>`).join('')}
+        </select>
+      </div>`
+    : '';
+
   const nav = groups.map(g => {
     const head = g.label
-      ? `<div class="drawer-label">${g.dot ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#22c55e;margin-right:5px;vertical-align:middle"></span>' : ''}${esc(g.label)}</div>`
-      : '';
+      ? `<div class="drawer-label">${g.dot ? '<span class="drawer-dot"></span>' : ''}${esc(g.label)}</div>`
+      : '<div class="drawer-gap"></div>';
     const items = g.items.map(it =>
-      `<button class="drawer-item${activeKey === it.key ? ' active' : ''}" onclick="${setter}('${it.key}');closeDrawer()"><span class="ico">${it.ico}</span>${esc(it.label)}</button>`
+      `<button class="drawer-item${activeKey === it.key ? ' active' : ''}" onclick="${setter}('${it.key}');closeDrawer()"><span class="ico">${it.ico}</span><span class="drawer-text">${esc(it.label)}</span></button>`
     ).join('');
     return head + items;
   }).join('');
-  return brand + `<nav class="drawer-nav">${nav}</nav>`;
+
+  const foot = `<div class="drawer-foot">
+      <button class="drawer-foot-btn" onclick="goHome()">처음으로</button>
+      <button class="drawer-foot-btn danger" onclick="${isTC ? 'logoutTeacher()' : 'logoutStudent()'}">로그아웃</button>
+    </div>`;
+
+  return brand + switcher + `<nav class="drawer-nav">${nav}</nav>` + foot;
 }
 
 // 현재 탭 라벨 (상단바 제목)

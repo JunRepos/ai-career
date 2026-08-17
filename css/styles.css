@@ -3034,13 +3034,19 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   cursor:pointer;font-family:inherit;text-align:left;color:var(--text);
   animation:clsIn .34s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(var(--i) * 45ms)}
 @keyframes clsIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.cls-thumb{display:grid;grid-template-columns:repeat(6,1fr);align-content:center;
-  justify-content:center;gap:7px;padding:0 22%;aspect-ratio:16/10;
-  border-radius:11px;background:var(--tint);
+.cls-thumb{display:flex;align-items:center;justify-content:center;padding:8%;
+  aspect-ratio:16/10;border-radius:11px;background:var(--tint);
   transition:transform .18s,filter .18s}
-.cls-thumb .sd{display:block;width:100%;aspect-ratio:1;border-radius:50%;
-  background:rgba(27,27,29,.16)}
-.cls-thumb .sd.on{background:rgba(27,27,29,.62)}
+.cls-thumb .dot-icon{width:auto;height:100%}
+
+/* 7×7 도트 아이콘 (나침반 / 신경망) — 담는 상자 안에서 항상 정사각 */
+.dot-icon{display:grid;grid-template-columns:repeat(7,1fr);gap:11%;
+  width:100%;aspect-ratio:1}
+/* 도트 3단계 — 없음 / 보통 / 강조(나침반 바늘·신경망 노드) */
+.dot-icon .sd{display:block;width:100%;aspect-ratio:1;border-radius:50%;
+  background:rgba(27,27,29,.10)}
+.dot-icon .sd.on{background:rgba(24,24,26,.52)}
+.dot-icon .sd.hi{background:rgba(15,15,17,.95)}
 .cls-card:hover .cls-thumb{transform:translateY(-3px);filter:brightness(1.08)}
 .cls-name{margin-top:10px;font-size:14px;font-weight:700;letter-spacing:-.2px}
 .cls-sub{margin-top:2px;font-size:12px;color:var(--text3)}
@@ -3058,8 +3064,8 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .cls-card{animation:none}
 }
 
-/* ── 헤더(진입 화면) ── */
-.wrap.enter-mode .header{border:none;background:none;padding:6px 0 22px;box-shadow:none}
+/* ── 헤더(로그인 전 화면 전부) ── */
+.wrap:not(.app-mode) .header{border:none;background:none;padding:6px 0 22px;box-shadow:none}
 .htitle{font-size:14px;font-weight:800;letter-spacing:-.3px}
 .hsub{font-size:12px;color:var(--text3)}
 
@@ -3108,3 +3114,144 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 @media(min-width:1024px){
   .content{max-width:1180px;padding:28px 34px}
 }
+
+/* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??   Padlet ??2李???濡쒓렇??쨌 ?ъ씠?쒕컮 쨌 ?좎깮???섏씠吏 ?꾨㈃ 媛쒗렪
+?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??*/
+
+/* ?? 濡쒓렇??/ 鍮꾨?踰덊샇 ?붾㈃ ?? */
+.auth{max-width:420px;margin:6vh auto 0}
+.auth-back{background:none;border:none;color:var(--text3);font-size:13px;font-weight:600;
+  cursor:pointer;padding:0 0 14px;font-family:inherit}
+.auth-back:hover{color:var(--pl-yellow);background:none}
+.auth-card{position:relative;overflow:hidden;background:var(--surface);
+  border:1px solid var(--border);border-radius:20px;padding:30px 28px 26px}
+/* 移대뱶 ?꾩そ??怨쇰ぉ??踰덉쭚 ???대뒓 怨쇰ぉ?쇰줈 ?ㅼ뼱媛?붿? ?됱쑝濡?癒쇱? 蹂댁씠寃?*/
+.auth-glow{position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+  width:280px;height:220px;border-radius:50%;pointer-events:none;
+  background:var(--tint);opacity:.16;filter:blur(46px)}
+.auth-icon{position:relative;width:80px;height:80px;padding:12px;margin-bottom:18px;
+  border-radius:16px;background:var(--tint);display:flex;align-items:center}
+.auth-eyebrow{position:relative;font-size:12px;font-weight:700;color:var(--tint);
+  letter-spacing:.02em}
+.auth-title{position:relative;font-size:26px;font-weight:800;letter-spacing:-.7px;
+  margin:2px 0 22px;color:var(--text)}
+.auth-lead{position:relative;font-size:13px;line-height:1.65;color:var(--text2);
+  margin:-12px 0 20px}
+.auth-form{position:relative;display:flex;flex-direction:column;gap:14px}
+.auth-field{display:flex;flex-direction:column;gap:7px}
+.auth-field label{font-size:12px;font-weight:600;color:var(--text2);
+  letter-spacing:0;text-transform:none}
+.auth-field input{width:100%;font-family:inherit;font-size:15px;padding:13px 15px;
+  border:1px solid var(--border2);border-radius:12px;background:var(--bg);
+  color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s}
+.auth-field input::placeholder{color:var(--text3)}
+.auth-field input:focus{border-color:var(--tint);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--tint) 22%,transparent)}
+.auth-err{font-size:12.5px;color:#FF6B6B;min-height:17px}
+.auth-submit{width:100%;justify-content:center;font-size:15px;font-weight:700;
+  padding:14px;border:none;border-radius:12px;background:var(--accent);color:#fff;
+  cursor:pointer;font-family:inherit;transition:filter .15s}
+.auth-submit:hover{background:var(--accent);filter:brightness(1.1)}
+.auth-note{position:relative;margin-top:20px;padding-top:18px;
+  border-top:1px solid var(--border);font-size:12.5px;color:var(--text3);text-align:center}
+
+/* ?? ?ъ씠?쒕컮 (Padlet ?뺤떇) ?? */
+/* 사이드바 자체는 스크롤하지 않고, 메뉴 목록만 스크롤 → 로그아웃 버튼이 항상 아래 고정 */
+.drawer{padding:0;gap:0;overflow:hidden;background:var(--side-bg);
+  display:flex;flex-direction:column}
+.drawer-nav{flex:1 1 auto;min-height:0;overflow-y:auto}
+.drawer-brand,.drawer-switch,.drawer-foot{flex:none}
+.drawer-brand{display:flex;align-items:center;gap:12px;padding:20px 18px;margin:0;
+  border-bottom:1px solid var(--border)}
+.brand-mark{width:38px;height:38px;border-radius:11px;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12.5px;font-weight:800;letter-spacing:-.3px;color:rgba(20,20,22,.82)}
+.brand-who{min-width:0}
+.brand-name{color:var(--side-text-strong);font-weight:700;font-size:13.5px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand-sub{color:var(--side-sub);font-size:12px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.drawer-switch{padding:14px 18px;border-bottom:1px solid var(--border)}
+.drawer-switch label{display:block;font-size:11px;font-weight:700;color:var(--side-label);
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}
+.drawer-switch select{width:100%;font-size:13px;padding:9px 11px;border-radius:10px;
+  background:var(--surface);border:1px solid var(--border2);color:var(--side-text-strong)}
+.drawer-switch select:focus{border-color:var(--pl-yellow)}
+
+.drawer-nav{display:block;padding:0 0 8px}
+.drawer-label{color:var(--side-label);font-size:11px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;padding:18px 18px 8px}
+.drawer-gap{height:10px}
+.drawer-dot{display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:#22c55e;margin-right:5px;vertical-align:middle}
+.drawer-item{display:flex;align-items:center;gap:11px;width:100%;padding:11px 18px;
+  border:none;border-radius:0;background:none;color:var(--side-text);
+  font-size:13.5px;font-weight:600;text-align:left;cursor:pointer;position:relative;
+  transition:background .12s,color .12s}
+.drawer-item:hover{background:rgba(255,255,255,.05);color:var(--side-text-strong)}
+.drawer-item .ico{font-size:15px;width:19px;text-align:center;flex-shrink:0}
+.drawer-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+[data-theme="dark"] .drawer-item.active{background:transparent;color:var(--pl-yellow)}
+[data-theme="dark"] .drawer-item.active::before{content:'';position:absolute;left:0;
+  top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:var(--pl-yellow)}
+
+.drawer-foot{margin-top:auto;display:flex;gap:8px;padding:14px 18px 20px;
+  border-top:1px solid var(--border)}
+.drawer-foot-btn{flex:1;justify-content:center;font-size:12.5px;font-weight:600;
+  padding:9px 10px;border-radius:9px;background:var(--surface);
+  border:1px solid var(--border2);color:var(--side-text);cursor:pointer;font-family:inherit}
+.drawer-foot-btn:hover{background:var(--surface2);color:var(--side-text-strong)}
+.drawer-foot-btn.danger:hover{color:#FF8FB1;border-color:#7A2C48}
+
+/* ?? ?좎깮?? 諛?誘몄꽑???덈궡 ?? */
+.tc-empty{max-width:420px;margin:8vh auto 0;text-align:center}
+.tc-empty-dots{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;
+  width:120px;margin:0 auto 22px}
+.tc-empty-dots .sd{display:block;width:100%;aspect-ratio:1;border-radius:50%;
+  background:var(--border2)}
+.tc-empty-dots .sd.on{background:var(--pl-yellow)}
+.tc-empty-title{font-size:19px;font-weight:800;letter-spacing:-.4px}
+.tc-empty-sub{margin-top:8px;font-size:13.5px;color:var(--text2);line-height:1.65}
+.tc-empty-sub b{color:var(--pl-yellow)}
+
+/* ?? 怨듯넻 ?붿냼 ???숈깮쨌?좎깮?????섏씠吏 ?꾨????곸슜 ?? */
+[data-theme="dark"] .topbar{padding:18px 26px}
+[data-theme="dark"] .topbar-title{font-size:22px;font-weight:800;letter-spacing:-.5px}
+[data-theme="dark"] input[type=text],[data-theme="dark"] input[type=password],
+[data-theme="dark"] input[type=date],[data-theme="dark"] textarea,
+[data-theme="dark"] select{background:var(--bg);border-color:var(--border2);
+  border-radius:10px;padding:10px 13px}
+[data-theme="dark"] input:focus,[data-theme="dark"] textarea:focus,
+[data-theme="dark"] select:focus{border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(255,61,135,.18)}
+[data-theme="dark"] label{text-transform:none;letter-spacing:0;font-size:12px}
+[data-theme="dark"] .btn-p{border:none;border-radius:9px;font-weight:700;padding:9px 16px}
+[data-theme="dark"] .btn-p:hover{background:var(--accent);filter:brightness(1.1)}
+[data-theme="dark"] button{border-radius:9px}
+[data-theme="dark"] .tab{border-radius:99px;padding:7px 15px;font-weight:600;
+  border-color:var(--border2)}
+[data-theme="dark"] .tab.active{background:var(--pl-yellow);border-color:var(--pl-yellow);
+  color:#1B1B1D}
+[data-theme="dark"] .sec-title{font-size:16px;font-weight:800;letter-spacing:-.3px}
+[data-theme="dark"] .row-icon{background:var(--surface2);border-radius:9px}
+[data-theme="dark"] .divider{background:var(--border)}
+[data-theme="dark"] th{background:var(--surface2);color:var(--text2);border-color:var(--border)}
+[data-theme="dark"] td{border-color:var(--border)}
+
+
+/* ── 다중 반 선택 칩 (공지·수업 등록 시) ── */
+.cls-chip-box{display:flex;flex-direction:column;gap:12px;padding:12px 14px;
+  background:var(--bg);border:1px solid var(--border);border-radius:12px}
+.cls-chip-label{font-size:11.5px;font-weight:700;margin-bottom:7px}
+.cls-chip-row{display:flex;flex-wrap:wrap;gap:7px}
+.cls-chip{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+  padding:6px 12px;border-radius:99px;border:1px solid var(--border2);
+  background:var(--surface);font-size:12.5px;font-weight:600;color:var(--text2);
+  transition:border-color .12s,color .12s,background .12s}
+.cls-chip:hover{border-color:var(--text3);color:var(--text)}
+.cls-chip input{width:14px;height:14px;margin:0;accent-color:var(--accent);cursor:pointer}
+.cls-chip:has(input:checked){background:var(--accent-lt);border-color:var(--accent);
+  color:var(--text)}
+.cls-chip-actions{display:flex;gap:7px;padding-top:2px;border-top:1px solid var(--border);
+  margin-top:2px;padding-top:12px}

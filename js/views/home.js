@@ -52,7 +52,7 @@ function vClasses(){
 
   const cards = classesOf(SEL_SUBJECT).map((c, i) => `
     <button class="cls-card" data-action="pick-class" data-cid="${c.id}" style="--tint:${subj.tint};--i:${i}">
-      <div class="cls-thumb">${_dotGrid(c.id)}</div>
+      <div class="cls-thumb" title="${esc(_iconCaption(SEL_SUBJECT, i))}">${_dotIcon(SEL_SUBJECT, i)}</div>
       <div class="cls-name">${esc(c.short || c.label)}반</div>
       <div class="cls-sub">${esc(subj.label)}</div>
     </button>`).join('');
@@ -65,6 +65,82 @@ function vClasses(){
     </div>
     <div class="cls-grid">${cards}</div>
   </div>`;
+}
+
+// ── 반 썸네일 도트 아이콘 ──
+//   7×7 도트로 과목을 상징하는 그림을 그립니다. 반마다 한 군데씩만 달라지게 해서
+//   "같은 과목인데 다른 반"이 한눈에 보이도록 했습니다.
+//     진로   = 나침반. 바늘이 가리키는 방향이 반마다 다름 (6개 반 = 6방향)
+//     인공지능 = 신경망. 층 구성이 반마다 다름 (2-A는 3-2-1, 2-B는 2-3-1)
+//   기호: '.' 없음 / 'o' 보통 / '#' 강조
+
+// 나침반 테두리 (바늘 없는 상태)
+const ICON_COMPASS_RING = [
+  '..ooo..',
+  '.o...o.',
+  'o.....o',
+  'o.....o',
+  'o.....o',
+  '.o...o.',
+  '..ooo..',
+];
+// 바늘 방향 8개 중 반 순서대로 사용 — [행,열] 2칸
+const COMPASS_NEEDLES = [
+  [[2,3],[1,3]],  // 북
+  [[2,4],[1,5]],  // 북동
+  [[3,4],[3,5]],  // 동
+  [[4,4],[5,5]],  // 남동
+  [[4,3],[5,3]],  // 남
+  [[4,2],[5,1]],  // 남서
+  [[3,2],[3,1]],  // 서
+  [[2,2],[1,1]],  // 북서
+];
+const COMPASS_DIRS = ['북', '북동', '동', '남동', '남', '남서', '서', '북서'];
+
+// 신경망 — 층 구성별 패턴
+const ICON_NETS = [
+  [ // 3-2-1
+    '.......',
+    '#.o....',
+    '.o.#.o.',
+    '#.o.o.#',
+    '.o.#.o.',
+    '#.o....',
+    '.......',
+  ],
+  [ // 2-3-1
+    '.......',
+    '...#.o.',
+    '#.o....',
+    '.o.#.o#',
+    '#.o....',
+    '...#.o.',
+    '.......',
+  ],
+];
+
+// 반 index 로 7×7 패턴(문자열 배열) 만들기
+function _iconPattern(subjectKey, idx){
+  if(subjectKey === 'ai') return ICON_NETS[idx % ICON_NETS.length];
+  // 진로 — 나침반 테두리에 바늘을 얹음
+  const grid = ICON_COMPASS_RING.map(r => r.split(''));
+  grid[3][3] = '#';                                   // 축
+  for(const [r, c] of COMPASS_NEEDLES[idx % COMPASS_NEEDLES.length]) grid[r][c] = '#';
+  return grid.map(r => r.join(''));
+}
+
+// 패턴 → 7×7 정사각 도트 아이콘. 담는 곳(썸네일/사이드바/로그인)마다 크기만 다름.
+function _dotIcon(subjectKey, idx){
+  const cells = _iconPattern(subjectKey, idx).join('').split('')
+    .map(ch => `<i class="sd${ch === '#' ? ' hi' : ch === 'o' ? ' on' : ''}"></i>`)
+    .join('');
+  return `<div class="dot-icon">${cells}</div>`;
+}
+
+// 카드 아래 설명 — 아이콘이 무엇을 뜻하는지
+function _iconCaption(subjectKey, idx){
+  if(subjectKey === 'ai') return idx % 2 === 0 ? '신경망 3-2-1' : '신경망 2-3-1';
+  return `나침반 ${COMPASS_DIRS[idx % COMPASS_DIRS.length]}쪽`;
 }
 
 // ── 3) 도트 전환 애니메이션 ──
