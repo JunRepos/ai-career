@@ -296,7 +296,7 @@ function setST(t){
       render();
     });
   } else if(t === 'aia' && SEL_CLS && ST_USER){
-    // 🧠 AI 활동지 — active 확인 + 목록으로 초기화
+    // AI 활동지 — active 확인 + 목록으로 초기화
     AIA_VIEW = 'list';
     AIA_SEL = null;
     AIA_ANSWERS = {};
@@ -351,7 +351,7 @@ const DASH_UNIT_VIS = {
   programming: { emoji: '💻', color: '#8B5CF6' },
   ai:          { emoji: '🤖', color: '#EC4899' },
   // 인공지능 기초
-  'aib-understand': { emoji: '🧠', color: '#6366F1' },
+  'aib-understand': { color: '#6366F1' },
   'aib-learning':   { emoji: '📈', color: '#10B981' },
   'aib-impact':     { emoji: '⚖️', color: '#F59E0B' },
   'aib-project':    { emoji: '🛠️', color: '#EC4899' },

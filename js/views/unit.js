@@ -27,7 +27,7 @@ const UC_APP_META = {
   quiz:     { ico: '🧩', label: '퀴즈',       list: () => CR_READINGS },
   aicode:   { ico: '💬', label: 'AI 코딩',    list: () => null },
   ml:       { ico: '🤖', label: '기계학습',   list: () => null },
-  aia:      { ico: '🧠', label: 'AI 활동지',  list: () => null },
+  aia:      { ico: '📋', label: '활동지',  list: () => null },
   assign:   { ico: '📝', label: '과제',       list: () => ASSIGNMENTS },
 };
 // '전체 목록 통째로 연결'(refId='*') 지원 종류 — 목록 화면이 있는 기능

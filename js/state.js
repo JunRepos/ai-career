@@ -315,7 +315,7 @@ let MLA_TC_SAVING  = null;   // 저장 중 학번
 let MLA_EDIT_DRAFT = null;   // 편집 중 config 작업본
 let MLA_EDIT_SAVING= false;  // config 저장 중
 
-// 🧠 AI 활동지 (인공지능 단원 학습지) — 정의는 aiactivity-data.js
+// AI 활동지 (인공지능 단원 학습지) — 정의는 aiactivity-data.js
 let AIA_ACTIVE      = {};       // { [classId]: bool } 메뉴 노출 캐시
 let AIA_VIEW        = 'list';   // 'list'|'do' (학생) / 'list'|'tcStudent' (선생님)
 let AIA_SEL         = null;     // 선택된 활동 객체 (학생: 풀이 중 / 선생님: 보고 있는 활동)
@@ -323,6 +323,8 @@ let AIA_ANSWERS     = {};       // 학생: 작성 중 답안 { [fieldId]: value 
 let AIA_SUB         = null;     // 학생: 본인 제출 캐시 { answers, updatedAt }
 let AIA_SAVE_TIMER  = null;     // 학생: 자동 저장 debounce
 let AIA_SAVING      = false;    // 저장 중 표시
+let AIA_EDIT        = null;     // 선생님: 만들기·수정 중인 활동지 id ('new'=신규, null=목록)
+let AIA_DRAFT       = null;     // 작성 중 활동지 { title, subtitle, intro, questions[] }
 let AIA_TC_SEL_SNUM = null;     // 선생님: 보고 있는 학생 학번
 let AIA_ALL_SUBS    = {};       // 선생님: { [학번]: submission } 전체 답안 캐시
 

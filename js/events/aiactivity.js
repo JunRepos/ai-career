@@ -1,11 +1,88 @@
 /* ═══════════════════════════════════════
-   events/aiactivity.js — 🧠 AI 활동지 이벤트
+   events/aiactivity.js — AI 활동지 이벤트
 ═══════════════════════════════════════ */
 
 document.addEventListener('click', async e => {
   const el = e.target.closest('[data-action]');
   if(!el) return;
   const act = el.dataset.action;
+
+  /* ── 선생님: 활동지 만들기·수정 ── */
+  if(act === 'aia-new'){
+    AIA_EDIT = 'new';
+    AIA_DRAFT = { title: '', subtitle: '', intro: '', questions: [] };
+    render(); return;
+  }
+  if(act === 'aia-edit'){
+    const a = aiaById(el.dataset.aid);
+    if(!a) return;
+    AIA_EDIT = a.id;
+    AIA_DRAFT = {
+      title: a.title || '', subtitle: a.subtitle || '', intro: a.intro || '',
+      questions: (a.questions || []).map(q => ({ ...q })),
+    };
+    render(); return;
+  }
+  if(act === 'aia-edit-cancel'){
+    AIA_EDIT = null; AIA_DRAFT = null; render(); return;
+  }
+  if(act === 'qb-add'){
+    AIA_DRAFT.questions.push({ id: 'q' + genId(), text: '', rows: 3 });
+    render(); return;
+  }
+  if(act === 'qb-del'){
+    AIA_DRAFT.questions.splice(+el.dataset.i, 1);
+    render(); return;
+  }
+  if(act === 'qb-move'){
+    const i = +el.dataset.i, j = el.dataset.dir === 'up' ? i - 1 : i + 1;
+    const q = AIA_DRAFT.questions;
+    if(j < 0 || j >= q.length) return;
+    [q[i], q[j]] = [q[j], q[i]];
+    render(); return;
+  }
+  if(act === 'qb-img-del'){
+    const q = AIA_DRAFT.questions[+el.dataset.i];
+    if(q){ delete q.imageUrl; delete q.imagePath; }
+    render(); return;
+  }
+  if(act === 'aia-edit-save'){
+    if(!TC_CLS || !AIA_DRAFT || AIA_SAVING) return;
+    const err = document.getElementById('qb-err');
+    const d = AIA_DRAFT;
+    if(!d.title.trim()){ if(err) err.textContent = '제목을 입력하세요.'; return; }
+    const qs = d.questions.filter(q => (q.text || '').trim());
+    if(!qs.length){ if(err) err.textContent = '문항을 한 개 이상 추가하세요.'; return; }
+
+    AIA_SAVING = 'edit'; render();
+    try {
+      const actId = AIA_EDIT === 'new' ? 'act' + genId() : AIA_EDIT;
+      const payload = {
+        title: d.title.trim(),
+        subtitle: (d.subtitle || '').trim() || '활동지',
+        intro: (d.intro || '').trim(),
+        createdAt: new Date().toISOString(),
+        questions: Object.fromEntries(qs.map((q, i) => {
+          const o = { text: q.text.trim(), rows: q.rows || 3, order: i };
+          if(q.imageUrl){ o.imageUrl = q.imageUrl; o.imagePath = q.imagePath || ''; }
+          return [q.id, o];
+        })),
+      };
+      await saveCustomActivity(TC_CLS.id, actId, payload);
+      await loadCustomActivities(TC_CLS.id);
+      AIA_EDIT = null; AIA_DRAFT = null;
+    } catch(e2){
+      if(err) err.textContent = '저장 실패: ' + (e2.message || e2);
+    }
+    AIA_SAVING = false; render(); return;
+  }
+  if(act === 'aia-del'){
+    if(!TC_CLS) return;
+    if(!confirm(`"${el.dataset.title}" 활동지를 삭제할까요?\n학생들이 작성한 답안도 함께 지워집니다.`)) return;
+    await deleteCustomActivity(TC_CLS.id, el.dataset.aid);
+    await loadCustomActivities(TC_CLS.id);
+    render(); return;
+  }
 
   // 학생: 활동 선택
   if(act === 'aia-pick'){
@@ -131,6 +208,47 @@ document.addEventListener('click', async e => {
 });
 
 // 학생: 입력 (debounce 자동 저장)
+/* ── 활동지 만들기 — 입력은 다시 그리지 않고 초안에만 반영(커서 유지) ── */
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-action="qb-meta"], [data-action="qb-text"]');
+  if(!el || !AIA_DRAFT) return;
+  if(el.dataset.action === 'qb-meta'){
+    AIA_DRAFT[el.dataset.k] = el.value;
+  } else {
+    const q = AIA_DRAFT.questions[+el.dataset.i];
+    if(q) q.text = el.value;
+  }
+});
+
+document.addEventListener('change', async e => {
+  // 답변 칸 줄 수
+  const sel = e.target.closest('[data-action="qb-rows"]');
+  if(sel && AIA_DRAFT){
+    const q = AIA_DRAFT.questions[+sel.dataset.i];
+    if(q) q.rows = +sel.value;
+    return;
+  }
+  // 문항 이미지 업로드
+  const img = e.target.closest('[data-action="qb-img"]');
+  if(img && AIA_DRAFT && TC_CLS){
+    const file = img.files?.[0];
+    if(!file) return;
+    const i = +img.dataset.i;
+    const q = AIA_DRAFT.questions[i];
+    if(!q) return;
+    if(file.size > MAX_FILE_SIZE){ toast('이미지가 너무 큽니다 (50MB 이하).', 'err'); return; }
+    q._uploading = true; render();
+    try {
+      const { url, path } = await uploadActivityImage(TC_CLS.id, file);
+      q.imageUrl = url; q.imagePath = path;
+    } catch(err2){
+      toast('이미지 업로드 실패: ' + (err2.message || err2), 'err');
+    }
+    delete q._uploading;
+    render();
+  }
+});
+
 document.addEventListener('input', e => {
   const el = e.target.closest('[data-action="aia-input"]');
   if(!el) return;
@@ -167,15 +285,9 @@ function _aiaExportCSV(){
   if(!TC_CLS || !AIA_SEL) return;
   const act = AIA_SEL;
   const fieldIds = aiaFieldIds(act);
-  // 헤더 라벨 만들기
+  // 헤더 라벨 = 문항 글
   const labels = {};
-  for(const sec of act.sections || []){
-    if(sec.type === 'card-fields'){
-      (sec.fields || []).forEach(f => { labels[f.id] = f.label; });
-    } else if(sec.type === 'single-text' || sec.type === 'rich-text'){
-      labels[sec.id] = sec.title;
-    }
-  }
+  (act.questions || []).forEach(q => { labels[q.id] = q.text; });
   const header = ['학번', '이름', ...fieldIds.map(fid => labels[fid] || fid), '제출시각', '마지막수정'];
   const rows = [header];
   for(const st of STUDENTS){

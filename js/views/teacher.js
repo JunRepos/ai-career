@@ -89,7 +89,7 @@ function _tcNavGroups(isInfo){
     ]});
     groups.push({ label: 'AI·평가', items: [
       {key:'ml',       ico:'🤖', label:'기계학습'},
-      {key:'aia',      ico:'🧠', label:'AI 활동지'},
+      {key:"aia",      ico:"📋", label:"활동지"},
       {key:'asmt',     ico:'📝', label:'수행평가'},
       {key:'mlassess', ico:'🧪', label:'ML 수행평가'},
       {key:'scores',   ico:'🏆', label:'점수 관리'},
@@ -177,12 +177,13 @@ function setTC(t){
       render();
     });
   } else if(t === 'aia' && TC_CLS){
-    // 🧠 AI 활동지 관리 — active 확인, 활동 목록으로 초기화
+    // AI 활동지 관리 — active 확인, 활동 목록으로 초기화
     AIA_VIEW = 'list';
     AIA_SEL = null;
     AIA_TC_SEL_SNUM = null;
     AIA_ALL_SUBS = {};
-    loadAiaActive(TC_CLS.id).then(() => render());
+    AIA_EDIT = null; AIA_DRAFT = null;
+    Promise.all([loadAiaActive(TC_CLS.id), loadCustomActivities(TC_CLS.id)]).then(() => render());
   } else if(t === 'ml' && TC_CLS){
     // 🤖 기계학습 체험 관리 — active 토글 + 강화학습 설명
     Promise.all([loadMlActive(TC_CLS.id), loadMlRlDesc(TC_CLS.id)]).then(() => render());

@@ -561,7 +561,7 @@ async function loadAllAicSessions(cid){
   }
 }
 
-// ── 🧠 AI 활동지 ──
+// ── AI 활동지 ──
 //   aiactivity/active/{cid}                    : bool — 메뉴 노출 토글
 //   aiactivity/submissions/{cid}/{actId}/{학번} : { answers, updatedAt }
 async function loadAiaActive(cid){
@@ -619,6 +619,50 @@ async function setMlaConfig(cid, cfg){
   await db.ref(`aiactivity/submissions/${cid}/mlassessConfig`).set(payload);
   MLA_CONFIG[cid] = payload;
   return payload;
+}
+
+/* ── 선생님이 직접 만든 활동지 ──
+   저장: aiactivity/submissions/{cid}/customActivities/{actId}
+     (이미 쓰기가 열려 있는 가지라 보안 규칙을 다시 배포할 필요가 없습니다)
+   문항 이미지는 Storage 의 teacherFiles/{cid}/... 아래에 올립니다. */
+async function loadCustomActivities(cid){
+  AIA_CUSTOM = [];
+  try {
+    const s = await db.ref(`aiactivity/submissions/${cid}/customActivities`).get();
+    if(!s.exists()) return;
+    AIA_CUSTOM = Object.entries(s.val() || {})
+      .map(([id, v]) => ({
+        id,
+        title: v.title || '제목 없음',
+        subtitle: v.subtitle || '활동지',
+        intro: v.intro || '',
+        custom: true,
+        createdAt: v.createdAt || '',
+        questions: Object.entries(v.questions || {})
+          .map(([qid, q]) => ({ id: qid, ...q }))
+          .sort((a, b) => (a.order || 0) - (b.order || 0)),
+      }))
+      .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  } catch(err){
+    console.warn('[활동지] 목록 로드 실패:', err.message || err);
+  }
+}
+
+async function saveCustomActivity(cid, actId, data){
+  await db.ref(`aiactivity/submissions/${cid}/customActivities/${actId}`).set(data);
+}
+
+async function deleteCustomActivity(cid, actId){
+  await db.ref(`aiactivity/submissions/${cid}/customActivities/${actId}`).remove();
+  // 학생 답안도 함께 정리 (활동이 사라지면 답안만 남아 있을 이유가 없음)
+  await db.ref(`aiactivity/submissions/${cid}/${actId}`).remove().catch(() => {});
+}
+
+// 문항 이미지 업로드 — 규칙이 열려 있는 teacherFiles 경로 사용
+async function uploadActivityImage(cid, file){
+  const path = `teacherFiles/${cid}/activity-${genId()}/${file.name}`;
+  const url = await uploadFile(file, path);
+  return { url, path };
 }
 
 async function loadAiaSubmission(cid, actId, studentNum){
@@ -753,7 +797,8 @@ async function loadAllClassData(cid){
     loadAiaActive(cid),
     loadMlActive(cid),
     loadMlaActive(cid),
-    loadUnitContent(cid)
+    loadUnitContent(cid),
+    loadCustomActivities(cid)
   ]);
 }
 

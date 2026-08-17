@@ -2044,7 +2044,7 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .sc-tc-pub-btn:disabled:hover{background:var(--surface)}
 
 /* ═══════════════════════════════════════
-   🧠 AI 활동지 (aiactivity.js)
+   AI 활동지 (aiactivity.js)
 ═══════════════════════════════════════ */
 .aia-list{display:flex;flex-direction:column;gap:10px}
 .aia-card{display:flex;align-items:center;gap:13px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh);transition:all .15s}
@@ -3443,3 +3443,99 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 /* 포트폴리오 — 활동지 줄 (번호 대신 아이콘) */
 .pf-act-load{font-size:13px;color:var(--text3);padding:4px 0 20px}
 .pf-line .pf-item .pf-no{font-size:12px}
+
+/* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??   ?쒕룞吏 ??蹂닿퀬??+ ?꾪듃 ?묒떇
+     쨌 臾명빆 踰덊샇瑜?3횞5 ?꾪듃 ?レ옄濡?     쨌 ?꾩씠肄샕룹븞?대Ц援??놁씠 吏덈Ц怨??듬? 移몃쭔
+?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??*/
+
+/* ?꾪듃 ?レ옄 */
+.dnum{display:inline-flex;gap:3px;vertical-align:middle}
+.dnum-d{display:grid;grid-template-columns:repeat(3,3px);grid-auto-rows:3px;gap:2px}
+.dnum-d i{display:block;width:3px;height:3px;border-radius:50%;background:var(--border2)}
+.dnum-d i.on{background:var(--pl-yellow)}
+
+/* ?쒕룞吏 紐⑸줉 */
+.aia-rows{display:flex;flex-direction:column;gap:10px}
+.aia-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+  white-space:normal;padding:16px 18px;border-radius:13px;background:var(--surface);
+  border:1px solid var(--border);color:var(--text);font-family:inherit;cursor:pointer;
+  transition:border-color .14s,transform .14s}
+.aia-row:hover{background:var(--surface);border-color:var(--border2);transform:translateY(-2px)}
+.aia-row-body{flex:1;min-width:0}
+.aia-row-sub{font-size:11.5px;color:var(--pl-yellow);font-weight:700}
+.aia-row-title{margin-top:3px;font-size:16px;font-weight:800;letter-spacing:-.3px}
+.aia-row-meta{margin-top:4px;font-size:12px;color:var(--text3)}
+.aia-row-go{color:var(--text3);font-size:16px;flex:none}
+.aia-row-acts{display:flex;gap:5px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+
+/* 蹂닿퀬??蹂몃Ц */
+.rep-back{background:none;border:none;color:var(--text3);font-size:13px;font-weight:600;
+  cursor:pointer;padding:0 0 14px;font-family:inherit}
+.rep-back:hover{color:var(--pl-yellow);background:none}
+.rep{background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:34px 38px 26px;max-width:780px}
+.rep-head{padding-bottom:26px;margin-bottom:8px;border-bottom:1px solid var(--border)}
+.rep-kicker{font-size:12px;font-weight:700;color:var(--pl-yellow);letter-spacing:.02em}
+.rep-title{margin-top:5px;font-size:27px;font-weight:800;letter-spacing:-.8px;line-height:1.25}
+.rep-intro{margin-top:14px;font-size:13.5px;line-height:1.75;color:var(--text2);
+  white-space:pre-line}
+.rep-status{margin-top:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.rep-chip{font-size:12px;font-weight:700;padding:5px 11px;border-radius:99px;
+  background:var(--surface2);color:var(--text3)}
+.rep-chip.done{background:rgba(255,200,61,.14);color:var(--pl-yellow)}
+.rep-hint{font-size:12px;color:var(--text3)}
+
+/* 臾명빆 */
+.rep-qs{display:flex;flex-direction:column}
+.rep-q{display:flex;gap:16px;padding:24px 0;border-bottom:1px solid var(--border)}
+.rep-q:last-child{border-bottom:none}
+.rep-q-no{flex:none;padding-top:5px;min-width:26px}
+.rep-q-main{flex:1;min-width:0}
+.rep-q-text{font-size:15px;font-weight:700;line-height:1.6;letter-spacing:-.2px;
+  color:var(--text)}
+.rep-q-img{display:block;max-width:100%;margin-top:12px;border-radius:10px;
+  border:1px solid var(--border);cursor:zoom-in}
+.rep-q-input{width:100%;margin-top:12px;font-family:inherit;font-size:14.5px;
+  line-height:1.85;padding:12px 14px;border:1px solid var(--border2);border-radius:10px;
+  background:var(--bg);color:var(--text);outline:none;resize:vertical;
+  transition:border-color .14s,box-shadow .14s}
+.rep-q-input:focus{border-color:var(--pl-yellow);
+  box-shadow:0 0 0 3px rgba(255,200,61,.16)}
+/* ?좎깮?섏씠 蹂??뚯쓽 ?듬? */
+.rep-a{margin-top:12px;padding:12px 14px;border-radius:10px;background:var(--bg);
+  border-left:3px solid var(--pl-yellow);font-family:inherit;font-size:14px;
+  line-height:1.8;color:var(--text2);white-space:pre-wrap;word-break:break-word}
+.rep-a.empty{border-left-color:var(--border2);color:var(--text3);font-style:italic}
+
+.rep-foot{display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+  margin-top:22px;padding-top:20px;border-top:1px solid var(--border)}
+.rep-saved,.rep-saving{flex:1;font-size:12px;color:var(--text3)}
+
+/* ?? ?쒕룞吏 留뚮뱾湲??? */
+.aia-tc-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin:22px 0 14px}
+.qb-list{display:flex;flex-direction:column;gap:12px}
+.qb{display:flex;gap:14px;padding:16px 18px;border-radius:13px;background:var(--surface);
+  border:1px solid var(--border)}
+.qb-no{flex:none;padding-top:8px;min-width:26px}
+.qb-main{flex:1;min-width:0}
+.qb-text{width:100%;font-family:inherit;font-size:14.5px;font-weight:600;line-height:1.6;
+  padding:10px 12px;border:1px solid var(--border2);border-radius:9px;
+  background:var(--bg);color:var(--text);outline:none;resize:vertical}
+.qb-text:focus{border-color:var(--pl-yellow)}
+.qb-tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:9px}
+.qb-spacer{flex:1}
+.qb-rows{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;
+  color:var(--text3);text-transform:none;letter-spacing:0}
+.qb-rows select{width:auto;font-size:12px;padding:5px 26px 5px 9px;border-radius:7px}
+.qb-img-btn{cursor:pointer;display:inline-flex;align-items:center}
+.qb-img{display:block;max-width:260px;margin-top:11px;border-radius:9px;
+  border:1px solid var(--border)}
+.qb-uploading{margin-top:9px;font-size:12px;color:var(--pl-yellow)}
+
+@media(max-width:640px){
+  .rep{padding:24px 20px 20px}
+  .rep-title{font-size:22px}
+  .rep-q{gap:12px}
+}
+
