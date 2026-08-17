@@ -43,6 +43,10 @@ function _stNavGroups(){
       // 진로처럼 단원을 안 쓰는 과목 — 수업 하나로
       groups.push({ items:[{key:'assign', ico:'📖', label:'수업'}] });
     }
+    // 활동지 — 선생님이 열어줬고, 이 과목에 해당하는 활동이 있을 때만
+    if(!isInfo && AIA_ACTIVE[cid] && aiaListFor(SEL_CLS).length){
+      groups.push({ items:[{key:'aia', ico:'📋', label:'활동지'}] });
+    }
     // 평가 그룹: 진행 중인 항목이 하나라도 있을 때만 노출(시즌성). 점은 항상 진행 중 의미.
     if(asmtItems.length) groups.push({ label:'평가', dot:true, items: asmtItems });
     // 내 점수 (정보반 — 공개된 수행평가 점수)
@@ -508,8 +512,11 @@ function _pfBody(me, opts = {}){
     ${_pfStat(withDue ? pct + '%' : '–', '제출률')}
   </div>`;
 
+  // 활동지(오리엔테이션 등)는 수업 목록과 별개로 저장되므로 따로 읽어옵니다
+  const acts = _pfActivities(me);
+
   if(!sessions.length){
-    return stats + emptyBox('🗂️', '아직 수업이 등록되지 않았어요. 수업이 시작되면 여기에 차시별 기록이 쌓입니다.');
+    return stats + acts + emptyBox('🗂️', '아직 수업이 등록되지 않았어요. 수업이 시작되면 여기에 차시별 기록이 쌓입니다.');
   }
 
   const items = sessions.map((a, i) => {
@@ -566,7 +573,55 @@ function _pfBody(me, opts = {}){
       </div>`;
     }).join('')}</div>` : '';
 
-  return stats + `<div class="pf-sec">차시별 기록</div><div class="pf-line">${items}</div>` + qna;
+  return stats + acts + `<div class="pf-sec">차시별 기록</div><div class="pf-line">${items}</div>` + qna;
+}
+
+/* 활동지 기록 — aiactivity/submissions 에 따로 저장돼 있어서 포트폴리오에서 lazy 로드.
+   PF_ACTS[학번][활동id] 에 캐시하고, 다 읽으면 한 번 다시 그립니다. */
+let PF_ACTS = {};
+let _pfActsLoading = null;
+function _pfActivities(snum){
+  const cid = (IS_TC ? TC_CLS : SEL_CLS)?.id;
+  const list = aiaListFor(IS_TC ? TC_CLS : SEL_CLS);
+  if(!cid || !snum || !list.length) return '';
+
+  const cache = PF_ACTS[snum];
+  if(!cache){
+    // 아직 안 읽었으면 한 번만 읽고 다시 렌더
+    if(_pfActsLoading !== snum){
+      _pfActsLoading = snum;
+      Promise.all(list.map(a => loadAiaSubmission(cid, a.id, snum)))
+        .then(res => {
+          PF_ACTS[snum] = Object.fromEntries(list.map((a, i) => [a.id, res[i]]));
+          _pfActsLoading = null;
+          if((IS_TC ? TC_TAB : ST_TAB) === 'portfolio') render();
+        })
+        .catch(() => { _pfActsLoading = null; });
+    }
+    return `<div class="pf-sec">활동지</div><div class="pf-act-load">불러오는 중…</div>`;
+  }
+
+  const rows = list.map(a => {
+    const sub = cache[a.id];
+    const done = !!sub?.submittedAt;
+    const wrote = sub && Object.values(sub.answers || {}).some(v => (v || '').trim());
+    const state = done ? 'done' : wrote ? 'todo' : 'miss';
+    const note = done ? `제출 완료 · ${fmtDt(sub.submittedAt)}`
+               : wrote ? `작성 중 · 마지막 저장 ${fmtDt(sub.updatedAt)}`
+               : '아직 작성하지 않음';
+    return `<div class="pf-item ${state}" data-static="1">
+      <div class="pf-rail"><span class="pf-no">${a.icon || '📋'}</span></div>
+      <div class="pf-card">
+        <div class="pf-meta">${esc(a.subtitle || '활동')}</div>
+        <div class="pf-title">${esc(a.title)}</div>
+        <div class="pf-act ${state === 'done' ? 'done' : state === 'todo' ? 'todo' : 'miss'}">
+          <div class="pf-act-line">${esc(note)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="pf-sec">활동지</div><div class="pf-line">${rows}</div>`;
 }
 
 function _pfStat(num, label){

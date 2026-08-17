@@ -72,10 +72,11 @@ function _tcNavGroups(isInfo){
   ]}];
   // 정보 외 교과반: 단원을 쓰는 과목(인공지능 기초)만 '단원 구성' 노출.
   // 진로는 단원이 없어서 '수업' 탭으로만 운영합니다.
-  if(!isInfo && isSubjectCls(TC_CLS) && assignUnits().length){
-    groups.push({ label: '콘텐츠', items: [
-      {key:'unit', ico:'📚', label:'단원 구성'},
-    ]});
+  if(!isInfo && isSubjectCls(TC_CLS)){
+    const items = [];
+    if(assignUnits().length) items.push({key:'unit', ico:'📚', label:'단원 구성'});
+    if(aiaListFor(TC_CLS).length) items.push({key:'aia', ico:'📋', label:'활동지'});
+    if(items.length) groups.push({ label: '콘텐츠', items });
   }
   if(isInfo){
     groups.push({ label: '콘텐츠', items: [

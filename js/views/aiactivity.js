@@ -20,12 +20,13 @@ function _aiaSectionLabel(sec){
 
 function vStAiActivity(){
   if(!AIA_ACTIVE[SEL_CLS?.id]) return emptyBox('🔒', 'AI 활동지가 아직 열리지 않았어요. 선생님 안내를 기다려주세요.');
-  if(!AIA_LIST.length) return emptyBox('📭', '등록된 활동이 없습니다.');
+  const list = aiaListFor(SEL_CLS);
+  if(!list.length) return emptyBox('📭', '등록된 활동이 없습니다.');
 
   if(AIA_VIEW === 'do' && AIA_SEL) return _vStAiaDo();
 
   // 활동 목록
-  const cards = AIA_LIST.map(a => {
+  const cards = list.map(a => {
     return `<div class="aia-card click" data-action="aia-pick" data-aid="${esc(a.id)}">
       <div class="aia-card-icon">${a.icon || '🧠'}</div>
       <div class="aia-card-body">
@@ -134,9 +135,10 @@ function vTcAiActivity(){
   }
 
   // 활동 목록 (선택용)
-  if(!AIA_LIST.length) return phaseRow + emptyBox('📭', '등록된 활동이 없습니다. js/aiactivity-data.js 에 활동을 추가하세요.');
+  const list = aiaListFor(TC_CLS);
+  if(!list.length) return phaseRow + emptyBox('📭', '이 과목에 등록된 활동이 없습니다. js/aiactivity-data.js 에 활동을 추가하세요.');
 
-  const cards = AIA_LIST.map(a => {
+  const cards = list.map(a => {
     return `<div class="aia-card click" data-action="aia-tc-pick" data-aid="${esc(a.id)}">
       <div class="aia-card-icon">${a.icon || '🧠'}</div>
       <div class="aia-card-body">

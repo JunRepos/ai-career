@@ -3439,3 +3439,7 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .pf-item[data-static]{cursor:default}
 .pf-item[data-static]:hover .pf-card{transform:none;border-color:var(--border)}
 
+
+/* 포트폴리오 — 활동지 줄 (번호 대신 아이콘) */
+.pf-act-load{font-size:13px;color:var(--text3);padding:4px 0 20px}
+.pf-line .pf-item .pf-no{font-size:12px}

@@ -14,7 +14,53 @@
 
 const AIA_LIST = [
   {
+    id: 'orientation-ai',
+    icon: '🧭',
+    title: '나와 인공지능',
+    subtitle: '1차시 오리엔테이션',
+    subjects: ['ai'],          // 이 활동을 보여줄 과목 (CLASSES 의 type)
+    intro: '한 학기를 함께 시작하기 전에, 여러분이 어떤 사람이고 인공지능을 어떻게 만나고 있는지 듣고 싶습니다. 정답이 없는 질문이니 솔직하게 적어주세요. 여기 적은 내용은 선생님만 봅니다.',
+    sections: [
+      {
+        id: 'aboutMe',
+        title: '① 나에 대해',
+        type: 'card-fields',
+        fields: [
+          { id: 'careerField', icon: '🧭', label: '진로 및 관심 분야는?',
+            placeholder: '아직 정하지 못했다면 "요즘 관심 가는 것" 을 적어도 좋아요.', rows: 3 },
+          { id: 'whyThisClass', icon: '🙋', label: '인공지능 기초 과목을 선택한 이유',
+            placeholder: '거창하지 않아도 됩니다. 솔직한 이유를 적어주세요.', rows: 3 },
+        ],
+      },
+      {
+        id: 'myAI',
+        title: '② 내가 만난 인공지능',
+        type: 'card-fields',
+        fields: [
+          { id: 'usingAI', icon: '💬', label: '자주 사용하고 있는 인공지능은?',
+            placeholder: '예: ChatGPT, 유튜브 추천, 번역기, 사진 보정 앱 … 무엇을 할 때 쓰는지도 적어주세요.', rows: 3 },
+          { id: 'curious', icon: '❓', label: '인공지능 서비스를 쓰면서 궁금했던 점이 있었나요?',
+            placeholder: '"이건 어떻게 아는 거지?", "왜 이런 걸 추천하지?" 처럼 지나쳤던 의문도 좋습니다.', rows: 4 },
+          { id: 'wantExplore', icon: '🔍', label: '한번 탐구해보고 싶은 인공지능 프로그램·서비스는?',
+            placeholder: '직접 써보고 싶거나, 어떻게 만들어졌는지 뜯어보고 싶은 것.', rows: 3 },
+        ],
+      },
+      {
+        id: 'semester',
+        title: '③ 이번 학기',
+        type: 'card-fields',
+        fields: [
+          { id: 'goal', icon: '🎯', label: '2학기 인공지능 과목을 들으면서 목표는?',
+            placeholder: '학기가 끝났을 때 "이건 할 수 있게 됐다" 고 말하고 싶은 것.', rows: 3 },
+          { id: 'toTeacher', icon: '✉️', label: '선생님에게 하고 싶은 말이 있나요?',
+            placeholder: '바라는 점, 걱정되는 점, 부탁하고 싶은 것 무엇이든 좋아요. (없으면 비워두세요)', rows: 3 },
+        ],
+      },
+    ],
+  },
+  {
     id: 'agent-design',
+    subjects: ['ai', 'info'],
     icon: '🎯',
     title: '실생활 및 진로 분야에서 필요한 지능 에이전트를 설계해보기',
     subtitle: '활동',
@@ -54,6 +100,12 @@ const AIA_LIST = [
 ];
 
 function aiaById(id){ return AIA_LIST.find(a => a.id === id) || null; }
+
+// 지금 보고 있는 반의 과목에 해당하는 활동만 — subjects 가 없으면 모든 과목에 노출
+function aiaListFor(cls){
+  const t = cls?.type;
+  return AIA_LIST.filter(a => !a.subjects || a.subjects.includes(t));
+}
 
 // 활동지 답안에서 모든 필드 id 추출 (CSV 내보내기 등에서 사용)
 function aiaFieldIds(act){
