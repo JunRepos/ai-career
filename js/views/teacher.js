@@ -279,7 +279,7 @@ function vTcAssign(){
     </div>
   </div>`;
 
-  const list = !ASSIGNMENTS.length ? emptyBox('📖','등록된 수업이 없습니다.') : ASSIGNMENTS.map(a => {
+  const list = !ASSIGNMENTS.length ? emptyBox('📖','등록된 수업이 없습니다.') : `<div class="pl-grid">` + ASSIGNMENTS.map(a => {
     const subCount = SUBMISSIONS[a.id] ? Object.keys(SUBMISSIONS[a.id]).length : 0;
     const total = STUDENTS.length;
     const pct = total ? Math.round(subCount / total * 100) : 0;
@@ -310,7 +310,7 @@ function vTcAssign(){
         <button class="btn-xs btn-danger" data-action="del-assign" data-aid="${a.id}" data-atitle="${esc(a.title)}">삭제</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + `</div>`;
 
   return form + `<div class="sec-title" style="margin-top:4px">등록된 수업</div>` + list;
 }
@@ -365,7 +365,7 @@ function vTcBoard(){
   if(!POSTS.length) return emptyBox('❓','학생이 올린 궁금증이 없습니다.');
   const waiting = POSTS.filter(p => !(p.answer && p.answer.length)).length;
   return `<div class="box-ok">🔓 학생들이 남긴 궁금증이에요. 학생끼리는 서로 볼 수 없고 <b>선생님만</b> 봐요 (작성자 <b>실명</b> 표시). ${waiting ? `<b>답변 대기 ${waiting}건</b> — 궁금증을 눌러 답변을 달아주세요.` : '모든 궁금증에 답변했어요. 👍'}</div>`
-    + POSTS.map(p => {
+    + `<div class="pl-grid">` + POSTS.map(p => {
       const hasFile = p.fileName && p.fileName.length;
       const answered = p.answer && p.answer.length;
       return `<div class="list-row click" data-action="pick-post" data-pid="${p.id}">
@@ -378,7 +378,7 @@ function vTcBoard(){
           ${answered ? `<span class="chip chip-green">✓ 답변완료</span>` : `<span class="chip chip-gray">답변대기</span>`}
         </div>
       </div>`;
-    }).join('');
+    }).join('') + `</div>`;
 }
 
 // ── 출결 관리 ──

@@ -107,7 +107,7 @@ function render(){
           <div class="topbar-title">${esc(currentTitle())}</div>
           <div class="topbar-actions">${hRight}</div>
         </header>
-        <main class="content ${contentWidthClass()}">${body}</main>
+        <main class="content ${contentWidthClass()}">${pageHead()}${body}</main>
         <div class="scrim" id="drawer-scrim"></div>
         <aside class="drawer">${drawerNavHtml()}</aside>
       </div>`;

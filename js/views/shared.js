@@ -66,11 +66,22 @@ function drawerNavHtml(){
   // (도트 아이콘은 38px 에서는 뭉개져서 반 번호를 대신 씁니다)
   const mark = `<div class="brand-mark" style="background:${subjTint}">${cls ? esc(cls.short || '') : ''}</div>`;
 
-  const brand = `<div class="drawer-brand">
+  // Padlet 사이드바처럼 인사말 → 그 아래 반 타일. 요일별 한 줄이 매번 조금씩 달라집니다.
+  const DAYS = ['일', '월', '화', '수', '목', '금', '토'];
+  const d = new Date();
+  const hello = isTC
+    ? `안녕하세요 선생님`
+    : `안녕하세요 ${esc(ST_USER?.name || '')} 님`;
+  const greet = `<div class="drawer-greet">
+      <div class="greet-hi">${hello}</div>
+      <div class="greet-sub">즐거운 ${DAYS[d.getDay()]}요일입니다!</div>
+    </div>`;
+
+  const brand = greet + `<div class="drawer-brand">
       ${mark}
       <div class="brand-who">
-        <div class="brand-name">${who}</div>
-        <div class="brand-sub">${esc(cls?.label || '인공지능 기초 · 진로')}</div>
+        <div class="brand-name">${esc(cls?.label || '인공지능 기초 · 진로')}</div>
+        <div class="brand-sub">${isTC ? '관리 중' : esc(ST_USER?.number || '')}</div>
       </div>
     </div>`;
 
@@ -101,6 +112,38 @@ function drawerNavHtml(){
     </div>`;
 
   return brand + switcher + `<nav class="drawer-nav">${nav}</nav>` + foot;
+}
+
+// ── 콘텐츠 페이지 헤더 ──
+//   Padlet 홈의 큰 "최근" 제목 자리. 모든 탭 위에 같은 형식으로 붙습니다.
+//   (render.js 가 <main> 맨 앞에 한 번만 넣으므로 각 탭 뷰는 손댈 필요 없음)
+function pageHead(){
+  const cls = IS_TC ? TC_CLS : SEL_CLS;
+  const title = currentTitle();
+  // 부제 — 학생은 반 이름, 선생님은 반 + 시간표
+  let sub = cls?.label || '';
+  if(IS_TC && cls?.when) sub += ` · ${cls.when}${cls.room ? ` · ${cls.room}실` : ''}`;
+  if(!IS_TC && cls?.when) sub += ` · ${cls.when}`;
+
+  // 우측 보조 정보 — 목록 개수 (Padlet 의 정렬 링크 자리)
+  const count = _pageCount();
+  return `<div class="page-head">
+    <div>
+      <div class="page-title">${esc(title)}</div>
+      ${sub ? `<div class="page-sub">${esc(sub)}</div>` : ''}
+    </div>
+    ${count ? `<div class="page-count">${esc(count)}</div>` : ''}
+  </div>`;
+}
+
+// 헤더 우측에 띄울 개수 표시 (탭마다 의미가 다름)
+function _pageCount(){
+  const key = IS_TC ? TC_TAB : ST_TAB;
+  if(key === 'notice')   return NOTICES.length   ? `공지 ${NOTICES.length}개` : '';
+  if(key === 'assign')   return ASSIGNMENTS.length ? `수업 ${ASSIGNMENTS.length}개` : '';
+  if(key === 'board')    return POSTS.length     ? `궁금증 ${POSTS.length}개` : '';
+  if(key === 'students') return STUDENTS.length  ? `학생 ${STUDENTS.length}명` : '';
+  return '';
 }
 
 // 현재 탭 라벨 (상단바 제목)

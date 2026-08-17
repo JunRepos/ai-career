@@ -3290,3 +3290,58 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .content{padding:24px 28px}
 }
 
+
+/* ?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??   Padlet ?덉씠?꾩썐 ??罹≪쿂 ?붾㈃??援ъ“瑜??ㅼ젣濡???릿 遺遺?     ??肄섑뀗痢??곷떒 ???쒕ぉ (罹≪쿂??"理쒓렐")
+     ??紐⑸줉??移대뱶 洹몃━?쒕줈 (?몃꽕??+ ?쒕ぉ + 硫뷀?)
+     ???ъ씠?쒕컮 ?몄궗留?(罹≪쿂??"?덈뀞?섏꽭??以????)
+?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧?먥븧??*/
+
+/* ???섏씠吏 ?ㅻ뜑 ?????쒕ぉ 醫뚯륫, 遺媛 ?뺣낫 ?곗륫 */
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  margin:0 0 22px}
+.page-title{font-size:30px;font-weight:800;letter-spacing:-.8px;color:var(--text);line-height:1.2}
+.page-sub{margin-top:5px;font-size:13px;color:var(--text3)}
+.page-count{font-size:12.5px;font-weight:700;color:var(--pl-yellow);white-space:nowrap;
+  padding-bottom:4px}
+/* ?곷떒諛붾뒗 ?쒕ぉ??肄섑뀗痢좊줈 ?섍꼈?쇰땲 ?≪뀡 以꾨줈留?*/
+[data-theme="dark"] .topbar{padding:10px 24px;background:var(--bg);border-bottom:none}
+[data-theme="dark"] .topbar-title{display:none}
+.topbar-actions{margin-left:auto}
+@media(max-width:1023px){
+  [data-theme="dark"] .topbar-title{display:block;font-size:16px}
+}
+
+/* ??紐⑸줉 ??移대뱶 洹몃━??*/
+.pl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));
+  gap:20px 18px;align-items:start}
+.pl-grid .list-row{display:block;padding:0;margin:0;border:none;background:none;
+  box-shadow:none;transition:transform .16s}
+.pl-grid .list-row.click:hover{background:none;border:none;box-shadow:none;
+  transform:translateY(-3px)}
+/* ?꾩씠肄??먮━瑜?移대뱶 ?몃꽕?쇰줈 ???됱? 移대뱶 ?쒖꽌?濡??뚯븘媛硫?*/
+.pl-grid .row-icon{width:100%;height:auto;min-width:0;aspect-ratio:16/10;
+  border-radius:11px;font-size:30px;color:rgba(20,20,22,.75)}
+.pl-grid .list-row:nth-child(6n+1) .row-icon{background:#B08BEB}
+.pl-grid .list-row:nth-child(6n+2) .row-icon{background:#6FCF97}
+.pl-grid .list-row:nth-child(6n+3) .row-icon{background:#F2A65A}
+.pl-grid .list-row:nth-child(6n+4) .row-icon{background:#7BB8F5}
+.pl-grid .list-row:nth-child(6n+5) .row-icon{background:#F58BB4}
+.pl-grid .list-row:nth-child(6n+6) .row-icon{background:#E9D26B}
+.pl-grid .row-info{margin-top:11px;min-width:0}
+.pl-grid .row-title{white-space:normal;font-size:14px;font-weight:700;line-height:1.4;
+  letter-spacing:-.2px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pl-grid .row-meta{margin-top:4px;font-size:12px;color:var(--text3);white-space:normal}
+.pl-grid .row-right{margin-top:9px;justify-content:flex-start;gap:5px}
+.pl-grid .sbar{margin-top:7px}
+/* ?붾퀎 洹몃９ ?덉뿉?쒕룄 洹몃━?쒓? ?섎룄濡?*/
+.month-group{margin-bottom:22px}
+.month-body.pl-grid{padding:0}
+.month-header{margin-bottom:12px}
+
+/* ???ъ씠?쒕컮 ?몄궗留?*/
+.drawer-greet{padding:16px 14px 12px}
+.greet-hi{font-size:13.5px;font-weight:800;color:var(--side-text-strong);letter-spacing:-.2px}
+.greet-sub{margin-top:2px;font-size:11.5px;color:var(--side-sub)}
+.drawer-brand{padding:0 14px 13px}
+

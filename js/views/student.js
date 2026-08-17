@@ -513,7 +513,7 @@ function vStAssign(unitKey){
         <span class="month-label">${label}</span>
         <span class="month-count">${items.length}개</span>
       </div>
-      <div class="month-body">
+      <div class="month-body pl-grid">
         ${items.map(a => {
           const done = SUBMISSIONS[a.id] && SUBMISSIONS[a.id][ST_USER.number];
           const dateDisp = a.classDate ? fmtDay(a.classDate) : '';
@@ -545,7 +545,7 @@ function vStBoard(){
   const intro = `<div class="box-info" style="margin-bottom:10px">💡 여기 남긴 궁금증은 <b>선생님만</b> 봐요. 다른 친구들에게는 보이지 않아요. 아래는 <b>내가 남긴 궁금증</b>이에요.</div>`;
   const mine = POSTS.filter(p => p.authorId === ST_USER?.number);
   if(!mine.length) return btn + intro + emptyBox('❓','아직 남긴 궁금증이 없어요.');
-  return btn + intro + mine.map(p => {
+  return btn + intro + `<div class="pl-grid">` + mine.map(p => {
     const hasFile = p.fileName && p.fileName.length;
     const answered = p.answer && p.answer.length;
     return `<div class="list-row click" data-action="pick-post" data-pid="${p.id}">
@@ -558,7 +558,7 @@ function vStBoard(){
         ${answered ? `<span class="chip chip-green">✓ 답변완료</span>` : `<span class="chip chip-gray">답변대기</span>`}
       </div>
     </div>`;
-  }).join('');
+  }).join('') + `</div>`;
 }
 
 // ── 출결 탭 ──
