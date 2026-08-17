@@ -120,10 +120,7 @@ function drawerNavHtml(){
 function pageHead(){
   const cls = IS_TC ? TC_CLS : SEL_CLS;
   const title = currentTitle();
-  // 부제 — 학생은 반 이름, 선생님은 반 + 시간표
-  let sub = cls?.label || '';
-  if(IS_TC && cls?.when) sub += ` · ${cls.when}${cls.room ? ` · ${cls.room}실` : ''}`;
-  if(!IS_TC && cls?.when) sub += ` · ${cls.when}`;
+  const sub = cls?.label || '';
 
   // 우측 보조 정보 — 목록 개수 (Padlet 의 정렬 링크 자리)
   const count = _pageCount();

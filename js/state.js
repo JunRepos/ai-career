@@ -323,6 +323,7 @@ let AIA_ANSWERS     = {};       // 학생: 작성 중 답안 { [fieldId]: value 
 let AIA_SUB         = null;     // 학생: 본인 제출 캐시 { answers, updatedAt }
 let AIA_SAVE_TIMER  = null;     // 학생: 자동 저장 debounce
 let AIA_SAVING      = false;    // 저장 중 표시
+let AIA_OPEN        = {};       // { [활동지id]: true } — 학생에게 열어둔 활동지 (반별)
 let AIA_EDIT        = null;     // 선생님: 만들기·수정 중인 활동지 id ('new'=신규, null=목록)
 let AIA_DRAFT       = null;     // 작성 중 활동지 { title, subtitle, intro, questions[] }
 let AIA_TC_SEL_SNUM = null;     // 선생님: 보고 있는 학생 학번

@@ -49,3 +49,8 @@ function aiaById(id){
 function aiaFieldIds(act){
   return (act.questions || []).map(q => q.id);
 }
+
+// 학생에게 열어둔 활동지만 (선생님이 '학생에게 보내기' 를 누른 것)
+function aiaOpenFor(cls){
+  return aiaListFor(cls).filter(a => AIA_OPEN[a.id]);
+}

@@ -648,6 +648,23 @@ async function loadCustomActivities(cid){
   }
 }
 
+/* 활동지별 열기/닫기 — 반 전체 토글 대신 활동지 하나하나를 열고 닫습니다.
+   "이번 시간엔 이거" 를 한 번 눌러 학생 홈에 띄우는 게 목적. */
+async function loadActivityOpen(cid){
+  AIA_OPEN = {};
+  try {
+    const s = await db.ref(`aiactivity/submissions/${cid}/activityOpen`).get();
+    if(s.exists()) AIA_OPEN = s.val() || {};
+  } catch(err){
+    console.warn('[활동지] 열림 상태 로드 실패:', err.message || err);
+  }
+}
+
+async function setActivityOpen(cid, actId, on){
+  await db.ref(`aiactivity/submissions/${cid}/activityOpen/${actId}`).set(!!on);
+  AIA_OPEN[actId] = !!on;
+}
+
 async function saveCustomActivity(cid, actId, data){
   await db.ref(`aiactivity/submissions/${cid}/customActivities/${actId}`).set(data);
 }
@@ -798,7 +815,8 @@ async function loadAllClassData(cid){
     loadMlActive(cid),
     loadMlaActive(cid),
     loadUnitContent(cid),
-    loadCustomActivities(cid)
+    loadCustomActivities(cid),
+    loadActivityOpen(cid)
   ]);
 }
 

@@ -3539,3 +3539,26 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .rep-q{gap:12px}
 }
 
+
+/* ?? ?숈깮 ??留??? ?대쾲 ?쒓컙 ?쒕룞 ?? */
+.now-label{font-size:12px;font-weight:800;color:var(--pl-yellow);letter-spacing:.02em;
+  margin-bottom:10px}
+.now-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;
+  margin-bottom:30px}
+.now-card{display:block;width:100%;text-align:left;white-space:normal;cursor:pointer;
+  padding:20px 22px;border-radius:16px;font-family:inherit;color:#1B1B1D;
+  background:var(--pl-yellow);border:none;
+  transition:transform .16s,filter .16s}
+.now-card:hover{transform:translateY(-3px);filter:brightness(1.05);background:var(--pl-yellow)}
+.now-card-sub{font-size:12px;font-weight:700;opacity:.66}
+.now-card-title{margin-top:4px;font-size:20px;font-weight:800;letter-spacing:-.5px;
+  line-height:1.3}
+.now-card-foot{margin-top:16px;display:flex;align-items:center;justify-content:space-between;
+  gap:10px;font-size:12.5px;font-weight:600;opacity:.78}
+.now-card-go{font-weight:800;opacity:1}
+
+/* ?좎깮???쒕룞吏 紐⑸줉 ???대젮 ?덈뒗 寃?媛뺤“ */
+.aia-row.is-open{border-color:var(--pl-yellow);
+  box-shadow:inset 3px 0 0 var(--pl-yellow)}
+.aia-row.is-open .aia-row-sub{color:var(--pl-yellow)}
+

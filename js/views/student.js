@@ -43,8 +43,8 @@ function _stNavGroups(){
       // 진로처럼 단원을 안 쓰는 과목 — 수업 하나로
       groups.push({ items:[{key:'assign', ico:'📖', label:'수업'}] });
     }
-    // 활동지 — 선생님이 열어줬고, 이 과목에 해당하는 활동이 있을 때만
-    if(!isInfo && AIA_ACTIVE[cid] && aiaListFor(SEL_CLS).length){
+    // 활동지 — 선생님이 '학생에게 보내기' 한 것이 있을 때만
+    if(!isInfo && aiaOpenFor(SEL_CLS).length){
       groups.push({ items:[{key:'aia', ico:'📋', label:'활동지'}] });
     }
     // 평가 그룹: 진행 중인 항목이 하나라도 있을 때만 노출(시즌성). 점은 항상 진행 중 의미.
@@ -467,7 +467,24 @@ function vStDashboard(){
       </div>`;
   }
 
+  // ⓪ 이번 시간 활동 — 선생님이 열어둔 활동지로 홈에서 바로 진입
+  const openActs = aiaOpenFor(SEL_CLS);
+  const nowBlock = openActs.length ? `
+    <div class="now-label">이번 시간 활동</div>
+    <div class="now-grid">${openActs.map(a => {
+      const st = PF_ACTS[ST_USER?.number]?.[a.id];
+      const state = st?.submittedAt ? '제출 완료'
+                  : st && Object.values(st.answers || {}).some(v => (v || '').trim()) ? '작성 중'
+                  : '아직 작성 전';
+      return `<button class="now-card" data-action="aia-pick" data-aid="${esc(a.id)}">
+        <div class="now-card-sub">${esc(a.subtitle || '활동지')}</div>
+        <div class="now-card-title">${esc(a.title)}</div>
+        <div class="now-card-foot"><span>문항 ${(a.questions || []).length}개 · ${state}</span><span class="now-card-go">바로 쓰기 →</span></div>
+      </button>`;
+    }).join('')}</div>` : '';
+
   return `
+    ${nowBlock}
     <div class="dash-greeting">
       <div class="dash-hello">안녕하세요, <strong>${esc(ST_USER?.name)}</strong>님! 👋</div>
       <div class="dash-class">${esc(SEL_CLS?.emoji)} ${esc(SEL_CLS?.label)}</div>

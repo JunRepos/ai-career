@@ -178,7 +178,9 @@ function _ucForm(){
   }
   const d = UC_DRAFT || { type: 'file', title: '', desc: '', url: '', body: '' };
   const editing = UC_EDIT !== 'new';
-  const typeBtns = [['file', '📎 파일'], ['link', '🔗 링크'], ['text', '📝 글'], ['app', '🔌 앱연결']].map(([k, l]) =>
+  // '앱연결'(노트북·OJ·미션 등)은 정보 교과 전용 기능이라 이 앱에서는 빼둡니다.
+  // 코드는 그대로 남아 있어 필요하면 아래 목록에 ['app','앱연결'] 을 다시 넣으면 됩니다.
+  const typeBtns = [['file', '파일'], ['link', '링크'], ['text', '글']].map(([k, l]) =>
     `<button class="btn-sm ${d.type === k ? 'btn-p' : ''}" data-action="uc-type" data-type="${k}">${l}</button>`
   ).join(' ');
 

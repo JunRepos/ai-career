@@ -7,7 +7,14 @@ document.addEventListener('click', async e => {
   if(!el) return;
   const act = el.dataset.action;
 
-  /* ── 선생님: 활동지 만들기·수정 ── */
+  // 선생님: 활동지를 학생에게 보내기 / 숨기기
+  if(act === 'aia-toggle-open'){
+    if(!TC_CLS) return;
+    await setActivityOpen(TC_CLS.id, el.dataset.aid, el.dataset.on === '1');
+    render(); return;
+  }
+
+  /* ── 선생님: 만들기·수정 ── */
   if(act === 'aia-new'){
     AIA_EDIT = 'new';
     AIA_DRAFT = { title: '', subtitle: '', intro: '', questions: [] };
@@ -92,6 +99,7 @@ document.addEventListener('click', async e => {
     AIA_SEL = def;
     AIA_ANSWERS = {};
     AIA_VIEW = 'do';
+    ST_TAB = 'aia';        // 홈 바로가기로 들어와도 활동지 탭으로 맞춰줌
     AIA_SAVING = false;
     // 본인 답안 로드
     const sub = await loadAiaSubmission(SEL_CLS.id, def.id, ST_USER.number);

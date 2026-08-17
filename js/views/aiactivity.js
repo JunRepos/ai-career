@@ -35,9 +35,8 @@ function _dotNum(n){
 ═══════════════════════════════════════ */
 
 function vStAiActivity(){
-  if(!AIA_ACTIVE[SEL_CLS?.id]) return emptyBox('🔒', '활동지가 아직 열리지 않았어요. 선생님 안내를 기다려주세요.');
-  const list = aiaListFor(SEL_CLS);
-  if(!list.length) return emptyBox('📭', '등록된 활동지가 없습니다.');
+  const list = aiaOpenFor(SEL_CLS);
+  if(!list.length) return emptyBox('🔒', '지금 열려 있는 활동지가 없어요. 선생님 안내를 기다려주세요.');
 
   if(AIA_VIEW === 'do' && AIA_SEL) return _vStAiaDo();
 
@@ -101,38 +100,30 @@ function vTcAiActivity(){
   if(AIA_EDIT) return _vTcAiaEditor();
   if(AIA_VIEW === 'tcStudent' && AIA_SEL && AIA_TC_SEL_SNUM) return _vTcAiaStudent();
 
-  const active = !!AIA_ACTIVE[TC_CLS.id];
-  const phaseRow = `<div class="asmt-phase-row">
-    <div class="asmt-phase-info">
-      <div class="asmt-phase-title">활동지 탭</div>
-      <div class="asmt-phase-cur">${active
-        ? '<b style="color:var(--ok)">● 열림</b> — 학생 화면에 활동지 탭이 보여요.'
-        : '<b style="color:var(--text3)">● 닫힘</b> — 학생 화면에 보이지 않습니다. (작성한 답안은 그대로 보존)'}</div>
-    </div>
-    <div class="asmt-phase-seg">
-      <button class="asmt-phase-btn ${!active ? 'on' : ''}" data-action="aia-set-active" data-on="0">닫기</button>
-      <button class="asmt-phase-btn ${active ? 'on prep' : ''}" data-action="aia-set-active" data-on="1">열기</button>
-    </div>
-  </div>`;
-
-  if(AIA_SEL) return phaseRow + _vTcAiaStudentList();
+  if(AIA_SEL) return _vTcAiaStudentList();
 
   const list = aiaListFor(TC_CLS);
-  const cards = list.map(a => `
-    <div class="aia-row">
+  const cards = list.map(a => {
+    const open = !!AIA_OPEN[a.id];
+    return `<div class="aia-row ${open ? 'is-open' : ''}">
       <div class="aia-row-body" data-action="aia-tc-pick" data-aid="${esc(a.id)}" style="cursor:pointer">
-        <div class="aia-row-sub">${esc(a.subtitle || '활동지')}${a.custom ? '' : ' · 기본 제공'}</div>
+        <div class="aia-row-sub">${esc(a.subtitle || '활동지')}</div>
         <div class="aia-row-title">${esc(a.title)}</div>
-        <div class="aia-row-meta">문항 ${(a.questions || []).length}개</div>
+        <div class="aia-row-meta">문항 ${(a.questions || []).length}개 · ${open ? '학생 화면에 보이는 중' : '학생에게 안 보임'}</div>
       </div>
       <div class="aia-row-acts">
+        <button class="${open ? 'btn-xs' : 'btn-p btn-sm'}" data-action="aia-toggle-open" data-aid="${esc(a.id)}" data-on="${open ? '0' : '1'}">
+          ${open ? '학생에게 숨기기' : '학생에게 보내기'}
+        </button>
+        <button class="btn-xs" data-action="aia-tc-pick" data-aid="${esc(a.id)}">답안</button>
         ${a.custom ? `<button class="btn-xs" data-action="aia-edit" data-aid="${esc(a.id)}">수정</button>
           <button class="btn-xs btn-danger" data-action="aia-del" data-aid="${esc(a.id)}" data-title="${esc(a.title)}">삭제</button>` : ''}
-        <button class="btn-xs" data-action="aia-tc-pick" data-aid="${esc(a.id)}">답안 보기</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
-  return phaseRow + `<div class="aia-tc-bar">
+  return `<div class="box-info" style="margin-bottom:16px"><b>학생에게 보내기</b>를 누르면 그 활동지가 학생 홈 맨 위에 바로 뜹니다. 수업이 끝나면 <b>숨기기</b>를 누르세요. (작성한 답안은 그대로 남습니다)</div>
+    <div class="aia-tc-bar">
       <div class="sec-title" style="margin:0">활동지 ${list.length}개</div>
       <button class="btn-p btn-sm" data-action="aia-new">+ 활동지 만들기</button>
     </div>
