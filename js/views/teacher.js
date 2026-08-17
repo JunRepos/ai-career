@@ -20,9 +20,50 @@ function vTeacher(){
   return _tcTabBody();
 }
 
+/* ── 🗂️ 포트폴리오 (선생님) ────────────────────────────────
+   학생을 고르면 그 학생의 차시별 기록을 학생 화면과 똑같이 보여줍니다.
+   세특 쓸 때 근거로 쓰라고 '텍스트로 복사' 버튼을 붙였습니다.
+──────────────────────────────────────────────────────── */
+function vTcPortfolio(){
+  if(!STUDENTS.length) return emptyBox('👥', '등록된 학생이 없습니다. 학생관리에서 먼저 등록하세요.');
+
+  // ① 학생을 고르지 않았으면 명단 그리드
+  if(!TC_PF_SNUM){
+    const total = ASSIGNMENTS.length;
+    const cards = [...STUDENTS].sort((a, b) => a.number.localeCompare(b.number)).map(st => {
+      const done = ASSIGNMENTS.filter(a => SUBMISSIONS[a.id]?.[st.number]).length;
+      const pct = total ? Math.round(done / total * 100) : 0;
+      const tone = !total ? 'none' : pct >= 80 ? 'good' : pct >= 40 ? 'mid' : 'low';
+      return `<button class="pf-st ${tone}" data-action="tc-pf-pick" data-snum="${esc(st.number)}">
+        <div class="pf-st-top">
+          <div class="pf-st-name">${esc(st.name)}</div>
+          <div class="pf-st-num">${esc(st.number)}</div>
+        </div>
+        <div class="pf-st-bar"><div class="pf-st-fill" style="width:${pct}%"></div></div>
+        <div class="pf-st-meta">${total ? `제출 ${done} / ${total}` : '수업 없음'}</div>
+      </button>`;
+    }).join('');
+    return `<div class="box-info" style="margin-bottom:16px">학생을 누르면 그 학생이 차시별로 무엇을 했는지 볼 수 있어요. 세특 근거 자료로 그대로 복사할 수 있습니다.</div>
+      <div class="pf-st-grid">${cards}</div>`;
+  }
+
+  // ② 선택한 학생의 기록
+  const st = STUDENTS.find(s => s.number === TC_PF_SNUM);
+  if(!st){ TC_PF_SNUM = null; return vTcPortfolio(); }
+
+  return `<div class="pf-head">
+      <button class="btn-sm" data-action="tc-pf-back">← 명단으로</button>
+      <div class="pf-head-who"><b>${esc(st.name)}</b> · ${esc(st.number)}</div>
+      <button class="btn-p btn-sm" data-action="tc-pf-copy" data-snum="${esc(st.number)}">📋 텍스트로 복사</button>
+    </div>`
+    + _pfBody(TC_PF_SNUM, { clickable: false });
+}
+
 // 선생님 사이드바 그룹
 function _tcNavGroups(isInfo){
-  const groups = [{ label: '학급', items: [
+  const groups = [{ items: [
+    {key:'portfolio', ico:'🗂️', label:'포트폴리오'},
+  ]}, { label: '학급', items: [
     {key:'notice',   ico:'📢', label:'공지'},
     {key:'assign',   ico:'📖', label:'수업'},
     {key:'board',    ico:'❓', label:'궁금증'},
@@ -70,7 +111,8 @@ function toggleTcNav(){ TC_NAV_COLLAPSED = !TC_NAV_COLLAPSED; render(); }
 
 // 선생님 본문 탭 내용
 function _tcTabBody(){
-  if     (TC_TAB === 'notice')     return vTcNotice();
+  if     (TC_TAB === 'portfolio')  return vTcPortfolio();
+  else if(TC_TAB === 'notice')     return vTcNotice();
   else if(TC_TAB === 'assign')     return vTcAssign();
   else if(TC_TAB === 'unit')       return vTcUnit();
   else if(TC_TAB === 'board')      return vTcBoard();
@@ -98,6 +140,7 @@ function _tcNormalizeTab(){
 
 function setTC(t){
   TC_TAB = t;
+  if(t === 'portfolio') TC_PF_SNUM = null;   // 탭 다시 누르면 명단부터
   if(t === 'mission'){
     // 미션 탭 진입 시 그리드 목록으로 — 편집/플레이 모드 잔재 정리
     MISSION_VIEW = 'list';

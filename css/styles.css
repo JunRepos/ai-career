@@ -3403,3 +3403,39 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .pf-no{width:24px;height:24px;font-size:11px}
 }
 
+
+/* ?? ?뾺截??좎깮???ы듃?대━?????숈깮 紐낅떒 + ?곸꽭 ?ㅻ뜑 ?? */
+.pf-st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.pf-st{display:block;width:100%;text-align:left;white-space:normal;cursor:pointer;
+  padding:14px 15px;border-radius:13px;background:var(--surface);
+  border:1px solid var(--border);color:var(--text);font-family:inherit;
+  transition:border-color .14s,transform .14s}
+.pf-st:hover{background:var(--surface);border-color:var(--border2);transform:translateY(-2px)}
+.pf-st-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pf-st-name{font-size:14.5px;font-weight:700;letter-spacing:-.2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-st-num{font-size:11.5px;color:var(--text3);font-variant-numeric:tabular-nums;flex:none}
+.pf-st-bar{margin-top:11px;height:4px;border-radius:4px;background:var(--surface2);
+  overflow:hidden}
+.pf-st-fill{height:100%;border-radius:4px;background:var(--text3);transition:width .2s}
+.pf-st.good .pf-st-fill{background:#6FCF97}
+.pf-st.mid  .pf-st-fill{background:var(--pl-yellow)}
+.pf-st.low  .pf-st-fill{background:#E0698E}
+.pf-st-meta{margin-top:7px;font-size:11.5px;color:var(--text3)}
+
+.pf-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;
+  padding-bottom:16px;border-bottom:1px solid var(--border)}
+.pf-head-who{flex:1;min-width:0;font-size:14px;color:var(--text2)}
+.pf-head-who b{font-size:16px;color:var(--text);letter-spacing:-.3px}
+
+/* ?대┰蹂대뱶瑜?紐??????⑤뒗 蹂듭궗??李?*/
+.pf-copy-box{max-width:640px;width:92%;margin:8vh auto;padding:20px;
+  background:var(--surface);border:1px solid var(--border);border-radius:16px}
+.pf-copy-head{font-size:15px;font-weight:800;margin-bottom:12px}
+.pf-copy-text{width:100%;height:52vh;font-family:monospace;font-size:12.5px;
+  line-height:1.7;margin-bottom:12px}
+
+/* ?좎깮???대엺 紐⑤뱶?먯꽌??李⑥떆 移대뱶媛 ?뚮━吏 ?딆쑝誘濡?而ㅼ꽌??湲곕낯媛?*/
+.pf-item[data-static]{cursor:default}
+.pf-item[data-static]:hover .pf-card{transform:none;border-color:var(--border)}
+

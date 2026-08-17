@@ -70,6 +70,30 @@ document.addEventListener('click', async e => {
   if(act.action === 'dl-notice-file'){ dlFile(act.name, act.url); return; }
 
   // 게시물 선택
+  // 🗂️ 선생님 포트폴리오 — 학생 선택 / 명단 복귀 / 텍스트 복사
+  if(act.action === 'tc-pf-pick'){ TC_PF_SNUM = act.snum; render(); return; }
+  if(act.action === 'tc-pf-back'){ TC_PF_SNUM = null; render(); return; }
+  if(act.action === 'tc-pf-copy'){
+    const text = _pfPlainText(act.snum);
+    try {
+      await navigator.clipboard.writeText(text);
+      el.textContent = '✓ 복사됨';
+      setTimeout(() => { el.textContent = '📋 텍스트로 복사'; }, 1600);
+    } catch(e){
+      // 클립보드 권한이 없는 환경 — 직접 골라 복사하도록 창을 띄웁니다
+      document.getElementById('modal-root').innerHTML =
+        `<div class="modal-ov" onclick="closeModal()">
+          <div class="pf-copy-box" onclick="event.stopPropagation()">
+            <div class="pf-copy-head">복사해서 쓰세요</div>
+            <textarea class="pf-copy-text" readonly>${esc(text)}</textarea>
+            <button class="btn-p btn-sm" onclick="closeModal()">닫기</button>
+          </div>
+        </div>`;
+      document.querySelector('.pf-copy-text')?.select();
+    }
+    return;
+  }
+
   if(act.action === 'pick-post'){
     const p = POSTS.find(x => x.id === act.pid); if(!p) return;
     go('post-detail', {post: p}); return;

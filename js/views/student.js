@@ -482,7 +482,12 @@ function vStDashboard(){
      내 활동 = submissions/{반}/{수업}/{내 학번}
 ─────────────────────────────────────────────────────────── */
 function vStPortfolio(){
-  const me = ST_USER?.number;
+  return _pfBody(ST_USER?.number, { clickable: true });
+}
+
+// 포트폴리오 본문 — 학생 본인(clickable)과 선생님의 학생별 열람(비클릭)이 함께 씁니다.
+function _pfBody(me, opts = {}){
+  const clickable = opts.clickable !== false;
 
   // 차시 정렬 — 수업 날짜 기준, 없으면 등록순
   const sessions = [...ASSIGNMENTS].sort((a, b) => {
@@ -532,7 +537,9 @@ function vStPortfolio(){
     }
 
     const state = sub ? 'done' : overdue ? 'miss' : 'todo';
-    return `<div class="pf-item ${state}" data-action="pick-assign" data-aid="${a.id}">
+    // 선생님 열람 모드에서는 수업 상세로 넘어가지 않게 클릭을 뺍니다(학생 화면 전용 흐름이라)
+    const click = clickable ? ` data-action="pick-assign" data-aid="${a.id}"` : ' data-static="1"';
+    return `<div class="pf-item ${state}"${click}>
       <div class="pf-rail"><span class="pf-no">${i + 1}</span></div>
       <div class="pf-card">
         <div class="pf-meta">${esc(dateDisp)}${u ? ` · <span class="pf-unit">${u.roman}. ${esc(u.label)}</span>` : ''}</div>
@@ -564,6 +571,34 @@ function vStPortfolio(){
 
 function _pfStat(num, label){
   return `<div class="pf-stat"><div class="pf-stat-num">${esc(String(num))}</div><div class="pf-stat-label">${esc(label)}</div></div>`;
+}
+
+// 포트폴리오를 평문으로 — 선생님이 세특 근거로 옮겨 적을 때 씁니다.
+function _pfPlainText(snum){
+  const st = STUDENTS.find(s => s.number === snum);
+  const sessions = [...ASSIGNMENTS].sort((a, b) =>
+    (a.classDate || a.createdAt?.slice(0,10) || '9999').localeCompare(b.classDate || b.createdAt?.slice(0,10) || '9999'));
+
+  const lines = [`${TC_CLS?.label || ''} ${snum} ${st?.name || ''}`, ''];
+  sessions.forEach((a, i) => {
+    const sub = SUBMISSIONS[a.id]?.[snum];
+    const u = a.unit ? assignUnit(a.unit) : null;
+    lines.push(`${i + 1}차시 (${a.classDate || '날짜 미정'})${u ? ` [${u.label}]` : ''} ${a.title}`);
+    if(sub){
+      const files = sub.files && sub.files.length ? sub.files : (sub.fileName ? [{name: sub.fileName}] : []);
+      lines.push(`  - 제출: ${fmtDt(sub.uploadedAt)}${files.length ? ` / ${files.map(f => f.name).join(', ')}` : ''}`);
+      if(sub.memo) lines.push(`  - 학생 메모: ${sub.memo}`);
+    } else {
+      lines.push(`  - 미제출`);
+    }
+  });
+
+  const myQ = POSTS.filter(p => p.authorId === snum);
+  if(myQ.length){
+    lines.push('', '남긴 궁금증');
+    myQ.forEach(p => lines.push(`  - ${p.title}${p.answer ? ' (답변함)' : ''}`));
+  }
+  return lines.join('\n');
 }
 
 // ── 공지 탭 ──
