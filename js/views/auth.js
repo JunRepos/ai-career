@@ -36,7 +36,8 @@ function vStudentLogin(){
       <div class="auth-form">
         <div class="auth-field">
           <label for="sl-num">학번</label>
-          <input id="sl-num" type="text" inputmode="numeric" placeholder="예) 20101" maxlength="10" autocomplete="off"/>
+          <!-- inputmode="numeric" 은 폰에서 숫자 키패드만 띄워 영문 아이디(test)를 못 칩니다 -->
+          <input id="sl-num" type="text" placeholder="예) 20101" maxlength="10" autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"/>
         </div>
         <div class="auth-field">
           <label for="sl-pw">비밀번호</label>
