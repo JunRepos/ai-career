@@ -51,7 +51,7 @@ document.addEventListener('click', async e => {
   }
 
   // 선생님: 업로드
-  if(el.id === 'sl-upload' && TC_CLS){
+  if(act === 'sl-upload' && TC_CLS){
     const input = document.getElementById('sl-file');
     const err = document.getElementById('sl-err');
     const files = Array.from(input?.files || [])

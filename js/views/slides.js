@@ -124,7 +124,7 @@ function vTcSlides(){
       </div>
       <div id="sl-err" class="err"></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button id="sl-upload" class="btn-p" ${SLIDE_UPLOADING ? 'disabled' : ''}>
+        <button id="sl-upload" class="btn-p" data-action="sl-upload" ${SLIDE_UPLOADING ? 'disabled' : ''}>
           ${imgs.length ? '새 자료로 교체' : '올리기'}</button>
         ${imgs.length ? `<button class="btn-sm btn-danger" data-action="sl-delete">전체 삭제</button>` : ''}
       </div>
