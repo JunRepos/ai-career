@@ -110,6 +110,7 @@ function render(){
         <main class="content ${contentWidthClass()}">${pageHead()}${body}</main>
         <div class="scrim" id="drawer-scrim"></div>
         <aside class="drawer">${drawerNavHtml()}</aside>
+        ${mobileTabsHtml()}
       </div>`;
   } else {
     // 인증 전(홈/로그인/비번변경): 기존 중앙 카드 레이아웃

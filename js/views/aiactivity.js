@@ -130,12 +130,13 @@ function _aiaQuestion(q, no){
     let bodyRows = '';
     for(let r = 0; r < rows; r++){
       const label = fixed[r];
-      bodyRows += `<tr>${cols.map((_, c) => {
+      bodyRows += `<tr data-row="${r + 1}">${cols.map((_, c) => {
+        const colName = esc(cols[c] || '');
         if(c === 0 && label !== undefined){
-          return `<td class="ws-td-fixed">${esc(label)}</td>`;
+          return `<td class="ws-td-fixed" data-label="${colName}">${esc(label)}</td>`;
         }
         const v = val[r]?.[c] || '';
-        return `<td><input type="text" class="ws-cell" data-action="aia-cell" data-fid="${esc(q.id)}" data-r="${r}" data-c="${c}" value="${esc(v)}"/></td>`;
+        return `<td data-label="${colName}"><input type="text" class="ws-cell" data-action="aia-cell" data-fid="${esc(q.id)}" data-r="${r}" data-c="${c}" placeholder="${colName}" value="${esc(v)}"/></td>`;
       }).join('')}</tr>`;
     }
     return `<div class="ws-block">

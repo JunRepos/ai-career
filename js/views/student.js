@@ -38,10 +38,9 @@ function _stNavGroups(){
       groups.push({ label:'수업', items: units.map(u => ({key:'unit-'+u.key, ico:u.roman, label:u.label})) });
       // 인공지능 기초: 과제 제출을 단원과 별개로 한눈에 (정보반은 단원 안 앱연결로 도달)
       if(!isInfo) groups.push({ items:[{key:'assign', ico:'📝', label:'과제 제출'}] });
-    } else {
-      // 진로처럼 단원을 안 쓰는 과목 — 수업 하나로
-      groups.push({ items:[{key:'assign', ico:'📖', label:'수업'}] });
     }
+    // 진로는 학습지(활동지)로만 운영 — '수업' 메뉴를 쓰지 않습니다.
+    // 다시 쓰려면 위 else 자리에 assign 항목을 넣으면 됩니다.
     // 활동지 — 선생님이 '학생에게 보내기' 한 것이 있을 때만
     if(!isInfo && aiaOpenFor(SEL_CLS).length){
       groups.push({ items:[{key:'aia', ico:'📋', label:'활동지'}] });
@@ -102,8 +101,10 @@ function _stNormalizeTab(){
   // 다른 과목의 단원 탭이 남아 있으면(반을 바꿔 로그인한 경우) 이 과목 첫 단원으로.
   // 단원을 안 쓰는 과목이면 '수업' 탭으로.
   if(ST_TAB.indexOf('unit-') === 0 && !assignUnit(ST_TAB.slice(5))){
-    ST_TAB = assignUnits().length ? 'unit-' + assignUnits()[0].key : 'assign';
+    ST_TAB = assignUnits().length ? 'unit-' + assignUnits()[0].key : 'dashboard';
   }
+  // 진로는 '수업' 탭을 안 쓰므로 홈으로
+  if(ST_TAB === 'assign' && isSubjectCls(SEL_CLS) && !assignUnits().length) ST_TAB = 'dashboard';
   // 일반반은 내 점수가 없으니 홈으로
   if(ST_TAB === 'myscore' && (SEL_CLS?.type || 'normal') !== 'info') ST_TAB = 'dashboard';
 }
@@ -421,7 +422,8 @@ function vStDashboard(){
       </div>`;
     }).join('');
     unitsBlock = `<div class="dash-sec-label">📚 수업 단원</div><div class="dash-units">${cards}</div>`;
-  } else {
+  } else if(!isSubjectCls(SEL_CLS)){
+    // 일반 학급만 — 진로처럼 '수업'을 안 쓰는 교과반은 아무것도 안 붙임
     unitsBlock = `<div class="dash-cta" onclick="setST('assign')">📖 수업 보러 가기 →</div>`;
   }
 

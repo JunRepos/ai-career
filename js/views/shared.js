@@ -114,6 +114,43 @@ function drawerNavHtml(){
   return brand + switcher + `<nav class="drawer-nav">${nav}</nav>` + foot;
 }
 
+/* ── 모바일 하단 탭바 ────────────────────────────────────────
+   폰에서는 햄버거를 눌러 서랍을 여는 대신, 자주 쓰는 곳을 아래에 고정합니다.
+   (CSS 로 좁은 화면에서만 보입니다 — 데스크탑은 왼쪽 사이드바 그대로)
+   마지막 칸은 나머지 메뉴를 여는 '전체' 입니다.
+──────────────────────────────────────────────────────────── */
+function mobileTabsHtml(){
+  const isTC = IS_TC;
+  const cur = isTC ? TC_TAB : ST_TAB;
+  const setter = isTC ? 'setTC' : 'setST';
+
+  let items;
+  if(isTC){
+    items = [
+      { key:'notice',    ico:'📢', label:'공지' },
+      { key:'aia',       ico:'📋', label:'활동지' },
+      { key:'students',  ico:'👥', label:'학생' },
+      { key:'portfolio', ico:'🗂️', label:'기록' },
+    ];
+  } else {
+    items = [{ key:'dashboard', ico:'🏠', label:'홈' }];
+    if(aiaOpenFor(SEL_CLS).length) items.push({ key:'aia', ico:'📋', label:'활동지' });
+    items.push({ key:'notice',    ico:'📢', label:'공지' });
+    items.push({ key:'portfolio', ico:'🗂️', label:'기록' });
+  }
+
+  const btns = items.map(it => `
+    <button class="mtab${cur === it.key ? ' active' : ''}" onclick="${setter}('${it.key}')">
+      <span class="mtab-ico">${it.ico}</span><span class="mtab-label">${esc(it.label)}</span>
+    </button>`).join('');
+
+  return `<nav class="mobile-tabs">${btns}
+    <button class="mtab" onclick="openDrawer()">
+      <span class="mtab-ico">☰</span><span class="mtab-label">전체</span>
+    </button>
+  </nav>`;
+}
+
 // ── 콘텐츠 페이지 헤더 ──
 //   Padlet 홈의 큰 "최근" 제목 자리. 모든 탭 위에 같은 형식으로 붙습니다.
 //   (render.js 가 <main> 맨 앞에 한 번만 넣으므로 각 탭 뷰는 손댈 필요 없음)

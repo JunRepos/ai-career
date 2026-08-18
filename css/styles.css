@@ -3746,3 +3746,131 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   background:transparent;border:none;border-radius:0;box-shadow:none;
   padding:11px 14px;font-size:13.5px;color:var(--ws-ink)}
 .rep input.ws-cell:focus{background:var(--ws-cream);box-shadow:none;border:none}
+
+/* ═══════════════════════════════════════════════════════════════
+   모바일 전용 UI/UX (≤ 768px)
+     진로 학습지를 폰으로 작성하는 것을 기준으로 맞췄습니다.
+     · 하단 고정 탭바로 이동 (햄버거를 안 눌러도 됨)
+     · 표는 가로 스크롤 대신 '카드'로 펼쳐서 세로로 채움
+     · 입력 글자 16px 이상 (iOS 가 자동 확대하지 않는 최소 크기)
+     · 저장·제출 버튼을 화면 아래 고정
+     · 노치·홈바(safe-area) 여백 반영
+═══════════════════════════════════════════════════════════════ */
+
+/* 데스크탑에서는 하단 탭바를 숨김 */
+.mobile-tabs{display:none}
+
+@media(max-width:768px){
+  /* ── 하단 탭바 ── */
+  .mobile-tabs{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;
+    background:var(--side-bg);border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom)}
+  .mtab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:3px;min-height:56px;padding:8px 2px;border:none;border-radius:0;background:none;
+    color:var(--side-sub);font-family:inherit;font-size:11px;font-weight:600;
+    cursor:pointer;white-space:nowrap}
+  .mtab:hover{background:none}
+  .mtab-ico{font-size:19px;line-height:1}
+  .mtab-label{font-size:10.5px}
+  .mtab.active{color:var(--pl-solid)}
+
+  /* 본문이 탭바에 가리지 않도록 */
+  .app{padding-left:0;padding-bottom:calc(58px + env(safe-area-inset-bottom))}
+
+  /* ── 상단바 축소 ── */
+  [data-theme="dark"] .topbar,.topbar{padding:10px 14px;position:sticky;top:0}
+  .topbar-menu{display:none}          /* 이동은 하단 탭바로 */
+  [data-theme="dark"] .topbar-title{display:block;font-size:15px;font-weight:800}
+  .topbar-actions{gap:4px}
+  .topbar-actions .btn-sm{padding:6px 10px;font-size:12px}
+
+  /* ── 콘텐츠 여백 ── */
+  .content,[data-theme="dark"] .content{padding:16px 14px 24px;max-width:none}
+  .page-head{margin-bottom:16px;align-items:flex-start}
+  .page-title{font-size:22px}
+  .page-sub{font-size:12px}
+  .page-count{font-size:11.5px}
+
+  /* ── 서랍은 전체 폭에 가깝게 ── */
+  .drawer{width:min(84vw,300px)}
+
+  /* ── 홈: 이번 시간 활동 ── */
+  .now-card{padding:18px 18px}
+  .now-card-title{font-size:19px}
+  .now-grid{grid-template-columns:1fr;gap:12px;margin-bottom:22px}
+  .dash-units{grid-template-columns:repeat(2,1fr);gap:12px}
+  .pl-grid{grid-template-columns:repeat(2,1fr);gap:14px}
+
+  /* ══ 학습지 ══ */
+  .rep{padding:24px 18px 20px;border-radius:12px;box-shadow:none}
+  .rep-title{font-size:22px}
+  .rep-intro{font-size:13px}
+  .rep-back{padding:8px 0 10px;font-size:13px}
+  .ws-block{padding:18px 0 2px}
+  .ws-q-text{font-size:15.5px}
+  .ws-q-desc{margin-left:0;font-size:12px}
+  .ws-sec-title{font-size:16px}
+
+  /* 줄노트 — 손가락으로 쓰기 좋게 줄 간격을 넓히고 16px 확보 */
+  .rep textarea.ws-lines{font-size:16px;line-height:40px;
+    background-image:repeating-linear-gradient(
+      to bottom, transparent 0, transparent 39px, var(--ws-rule) 39px, var(--ws-rule) 40px)}
+  .rep textarea.ws-lines:focus{
+    background-image:repeating-linear-gradient(
+      to bottom, transparent 0, transparent 39px, #D8B79E 39px, #D8B79E 40px)}
+
+  /* 보기 고르기 — 한 줄에 하나, 터치 영역 크게 */
+  .ws-choice{padding:14px 14px}
+  .ws-choice-grid{grid-template-columns:1fr !important;gap:0}
+  .ws-check{min-height:48px;padding:2px 0;font-size:15px;
+    border-bottom:1px solid var(--ws-rule)}
+  .ws-check:last-child{border-bottom:none}
+  .ws-check-box{width:22px;height:22px}
+  .ws-check.on .ws-check-box::after{left:7px;top:3px;width:6px;height:11px}
+
+  /* 표 → 카드 : 한 행이 한 장의 카드가 되고, 열 이름이 각 칸 위에 붙음 */
+  .ws-table-wrap{border:none;border-radius:0;overflow:visible}
+  .ws-table,.ws-table tbody,.ws-table tr,.ws-table td{display:block;width:100%}
+  .ws-table thead{display:none}
+  .ws-table tr{position:relative;margin-bottom:12px;padding:12px 14px 6px;
+    border:1px solid var(--ws-rule);border-radius:10px;background:#fff}
+  .ws-table tr::before{content:attr(data-row);position:absolute;top:10px;right:12px;
+    font-size:11px;font-weight:800;color:var(--ws-muted)}
+  .ws-table td{border:none;padding:0 0 10px}
+  .ws-table td[data-label]::before{content:attr(data-label);display:block;
+    font-size:11px;font-weight:700;color:var(--ws-muted);margin-bottom:4px}
+  .ws-td-fixed{background:transparent !important;padding:0 0 10px !important;
+    font-size:15px;font-weight:700;white-space:normal !important}
+  .rep input.ws-cell{padding:10px 12px;font-size:16px;
+    border:1px solid var(--ws-rule);border-radius:8px;background:#fff}
+  .rep input.ws-cell:focus{background:var(--ws-cream);border-color:#D8B79E}
+
+  /* 저장·제출을 화면 아래 고정 — 긴 학습지에서 매번 끝까지 안 내려도 됨 */
+  .rep-foot{position:sticky;bottom:calc(58px + env(safe-area-inset-bottom));
+    z-index:20;margin:18px -18px -20px;padding:12px 18px;
+    background:var(--ws-paper);border-top:1px solid var(--ws-rule);
+    box-shadow:0 -6px 16px rgba(60,45,30,.07);
+    flex-wrap:wrap;gap:8px}
+  .rep-foot .btn-sm{flex:1;justify-content:center;min-height:44px;font-size:14px}
+  .rep-saved,.rep-saving{width:100%;text-align:center;font-size:11.5px}
+
+  /* ── 선생님 화면 ── */
+  .pf-st-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .aia-row{flex-direction:column;align-items:stretch;gap:10px}
+  .aia-row-acts{flex-wrap:wrap}
+  .aia-row-acts button{flex:1;min-height:40px;justify-content:center}
+  .cls-chip{min-height:40px}
+  .tc-empty{margin-top:6vh}
+
+  /* 표(선생님 명단 등)는 가로 스크롤 유지 */
+  .table-wrap{overflow-x:auto}
+}
+
+/* 아주 좁은 폰 */
+@media(max-width:400px){
+  .mtab-label{font-size:10px}
+  .rep{padding:20px 14px 16px}
+  .rep-foot{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}
+  .dash-units,.pl-grid{grid-template-columns:1fr}
+}

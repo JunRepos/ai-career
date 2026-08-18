@@ -61,14 +61,16 @@ function vTcPortfolio(){
 
 // 선생님 사이드바 그룹
 function _tcNavGroups(isInfo){
+  // 진로는 단원도 '수업'도 안 쓰고 학습지(활동지)로만 운영합니다.
+  const useAssign = isInfo || assignUnits().length > 0;
+  const classItems = [{key:'notice', ico:'📢', label:'공지'}];
+  if(useAssign) classItems.push({key:'assign', ico:'📖', label:'수업'});
+  classItems.push({key:'attend',   ico:'🗓️', label:'출결'});
+  classItems.push({key:'students', ico:'👥', label:'학생관리'});
+
   const groups = [{ items: [
     {key:'portfolio', ico:'🗂️', label:'포트폴리오'},
-  ]}, { label: '학급', items: [
-    {key:'notice',   ico:'📢', label:'공지'},
-    {key:'assign',   ico:'📖', label:'수업'},
-    {key:'attend',   ico:'🗓️', label:'출결'},
-    {key:'students', ico:'👥', label:'학생관리'},
-  ]}];
+  ]}, { label: '학급', items: classItems }];
   // 정보 외 교과반: 단원을 쓰는 과목(인공지능 기초)만 '단원 구성' 노출.
   // 진로는 단원이 없어서 '수업' 탭으로만 운영합니다.
   if(!isInfo && isSubjectCls(TC_CLS)){
@@ -135,7 +137,10 @@ function _tcTabBody(){
 
 // 단원을 안 쓰는 반(진로)에서 '단원 구성' 탭이 남아 있으면 '수업'으로 되돌림
 function _tcNormalizeTab(){
-  if(TC_TAB === 'unit' && TC_CLS && !assignUnits().length) TC_TAB = 'assign';
+  if(!TC_CLS) return;
+  const noAssign = TC_CLS.type !== 'info' && !assignUnits().length;   // 진로
+  if(TC_TAB === 'unit' && !assignUnits().length) TC_TAB = noAssign ? 'notice' : 'assign';
+  if(TC_TAB === 'assign' && noAssign) TC_TAB = 'notice';
 }
 
 function setTC(t){
