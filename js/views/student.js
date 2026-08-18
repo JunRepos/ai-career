@@ -45,6 +45,10 @@ function _stNavGroups(){
     if(!isInfo && aiaOpenFor(SEL_CLS).length){
       groups.push({ items:[{key:'aia', ico:'📋', label:'활동지'}] });
     }
+    // 수업자료 — 올라온 슬라이드가 있을 때만. 같이 보는 중이면 초록 점
+    if(_slideCount()){
+      groups.push({ dot: !!SLIDE_LIVE?.on, items:[{key:'slides', ico:'🖥️', label:'수업자료'}] });
+    }
     // 평가 그룹: 진행 중인 항목이 하나라도 있을 때만 노출(시즌성). 점은 항상 진행 중 의미.
     if(asmtItems.length) groups.push({ label:'평가', dot:true, items: asmtItems });
     // 내 점수 (정보반 — 공개된 수행평가 점수)
@@ -111,7 +115,8 @@ function _stNormalizeTab(){
 
 // 본문 탭 내용
 function _stTabBody(){
-  if     (ST_TAB === 'portfolio') return vStPortfolio();
+  if     (ST_TAB === 'slides')    return vStSlides();
+  else if(ST_TAB === 'portfolio') return vStPortfolio();
   else if(ST_TAB === 'dashboard') return vStDashboard();
   else if(ST_TAB === 'notice')  return vStNotice();
   else if(ST_TAB === 'assign')  return vStAssign();
@@ -469,7 +474,17 @@ function vStDashboard(){
       </button>`;
     }).join('')}</div>` : '';
 
+  // 선생님이 '같이 보기'를 켜면 홈 맨 위에 바로 들어가는 배너
+  const liveBanner = (SLIDE_LIVE?.on && _slideCount())
+    ? `<button class="sl-livebar" onclick="setST('slides')">
+         <span class="sl-live"><i></i>지금 수업 중</span>
+         <span class="sl-livebar-t">${esc(SLIDE_DECK?.title || '수업자료')} · ${(SLIDE_LIVE.page || 0) + 1}장</span>
+         <span class="sl-livebar-go">같이 보기 →</span>
+       </button>`
+    : '';
+
   return `
+    ${liveBanner}
     ${nowBlock}
     <div class="dash-greeting">
       <div class="dash-hello">안녕하세요, <strong>${esc(ST_USER?.name)}</strong>님! 👋</div>

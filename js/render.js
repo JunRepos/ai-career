@@ -135,6 +135,7 @@ function go(v, extra = {}){
 
 // ── 홈으로 ──
 async function goHome(){
+  unwatchLive();          // 슬라이드 실시간 구독 정리
   VIEW = 'home'; SEL_CLS = null; TC_CLS = null; ST_USER = null; SEL_POST = null; SEL_ASSIGN = null;
   SEL_SUBJECT = null;
   clearSession();

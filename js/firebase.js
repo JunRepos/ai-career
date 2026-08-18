@@ -816,8 +816,11 @@ async function loadAllClassData(cid){
     loadMlaActive(cid),
     loadUnitContent(cid),
     loadCustomActivities(cid),
-    loadActivityOpen(cid)
+    loadActivityOpen(cid),
+    loadDeck(cid)
   ]);
+  // 슬라이드 같이 보기 — 선생님이 넘기면 학생 화면이 따라오도록 구독
+  watchLive(cid, () => { if(VIEW === 'student' || VIEW === 'teacher') render(); });
 }
 
 // ── 레거시 게시물 (이전 버전 호환) ──
@@ -864,4 +867,66 @@ async function uploadFile(file, path, progFill, progPct){
     if(progPct) progPct.textContent = p + '%';
   }, rej, res));
   return await ref.getDownloadURL();
+}
+
+/* ═══════════════════════════════════════
+   🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기
+     slides/{cid}/deck : { title, updatedAt, images:[{name,url,path}] }
+     slides/{cid}/live : { on, page, updatedAt }
+   학생 쪽은 live 를 실시간 구독해서, 선생님이 넘기면 바로 따라 넘어갑니다.
+═══════════════════════════════════════ */
+
+async function loadDeck(cid){
+  try {
+    const s = await db.ref(`slides/${cid}/deck`).get();
+    SLIDE_DECK = s.exists() ? s.val() : null;
+    if(SLIDE_DECK && !Array.isArray(SLIDE_DECK.images)) SLIDE_DECK.images = [];
+  } catch(err){
+    console.warn('[슬라이드] 목록 로드 실패:', err.message || err);
+    SLIDE_DECK = null;
+  }
+  return SLIDE_DECK;
+}
+
+async function saveDeck(cid, deck){
+  await db.ref(`slides/${cid}/deck`).set(deck);
+  SLIDE_DECK = deck;
+}
+
+// 슬라이드 파일 삭제 + 목록 비우기 (라이브도 끔)
+async function deleteDeck(cid){
+  const deck = SLIDE_DECK;
+  if(deck?.images) for(const im of deck.images){
+    if(im.path) await storage.ref(im.path).delete().catch(() => {});
+  }
+  await db.ref(`slides/${cid}/deck`).remove();
+  await db.ref(`slides/${cid}/live`).set({ on: false, page: 0, updatedAt: new Date().toISOString() });
+  SLIDE_DECK = null;
+}
+
+// 선생님: 같이 보기 켜기/끄기, 페이지 넘기기
+async function setLive(cid, patch){
+  const cur = SLIDE_LIVE || { on: false, page: 0 };
+  const next = { on: !!cur.on, page: cur.page || 0, ...patch, updatedAt: new Date().toISOString() };
+  await db.ref(`slides/${cid}/live`).set(next);
+  SLIDE_LIVE = next;
+}
+
+/* 실시간 구독 — 선생님이 넘기면 0.1~0.3초 안에 학생 화면이 따라옵니다.
+   반을 옮기거나 로그아웃할 때 반드시 unwatchLive() 로 정리합니다. */
+function watchLive(cid, onChange){
+  unwatchLive();
+  const ref = db.ref(`slides/${cid}/live`);
+  const cb = ref.on('value', snap => {
+    SLIDE_LIVE = snap.exists() ? snap.val() : { on: false, page: 0 };
+    if(onChange) onChange(SLIDE_LIVE);
+  }, err => console.warn('[슬라이드] 구독 실패:', err.message || err));
+  SLIDE_WATCH = { ref, cb };
+}
+
+function unwatchLive(){
+  if(SLIDE_WATCH){
+    try { SLIDE_WATCH.ref.off('value', SLIDE_WATCH.cb); } catch(e){}
+    SLIDE_WATCH = null;
+  }
 }

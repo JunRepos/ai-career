@@ -323,6 +323,14 @@ let AIA_ANSWERS     = {};       // 학생: 작성 중 답안 { [fieldId]: value 
 let AIA_SUB         = null;     // 학생: 본인 제출 캐시 { answers, updatedAt }
 let AIA_SAVE_TIMER  = null;     // 학생: 자동 저장 debounce
 let AIA_SAVING      = false;    // 저장 중 표시
+/* 🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기 */
+let SLIDE_DECK   = null;   // { title, images:[{name,url,path}] } — 업로드한 슬라이드
+let SLIDE_LIVE   = null;   // { on, page } — 지금 같이 보는 중인지 / 몇 번째 장인지
+let SLIDE_WATCH  = null;   // 실시간 구독 핸들 (정리용)
+let SLIDE_FOLLOW = true;   // 학생: 선생님을 따라갈지 (혼자 앞뒤로 보면 false)
+let SLIDE_MYPAGE = 0;      // 학생: 혼자 보는 중일 때의 페이지
+let SLIDE_UPLOADING = false;
+
 let AIA_OPEN        = {};       // { [활동지id]: true } — 학생에게 열어둔 활동지 (반별)
 let AIA_EDIT        = null;     // 선생님: 만들기·수정 중인 활동지 id ('new'=신규, null=목록)
 let AIA_DRAFT       = null;     // 작성 중 활동지 { title, subtitle, intro, questions[] }

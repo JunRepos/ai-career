@@ -63,7 +63,8 @@ function vTcPortfolio(){
 function _tcNavGroups(isInfo){
   // 진로는 단원도 '수업'도 안 쓰고 학습지(활동지)로만 운영합니다.
   const useAssign = isInfo || assignUnits().length > 0;
-  const classItems = [{key:'notice', ico:'📢', label:'공지'}];
+  const classItems = [{key:'notice', ico:'📢', label:'공지'},
+                      {key:'slides', ico:'🖥️', label:'수업자료'}];
   if(useAssign) classItems.push({key:'assign', ico:'📖', label:'수업'});
   classItems.push({key:'attend',   ico:'🗓️', label:'출결'});
   classItems.push({key:'students', ico:'👥', label:'학생관리'});
@@ -113,7 +114,8 @@ function toggleTcNav(){ TC_NAV_COLLAPSED = !TC_NAV_COLLAPSED; render(); }
 
 // 선생님 본문 탭 내용
 function _tcTabBody(){
-  if     (TC_TAB === 'portfolio')  return vTcPortfolio();
+  if     (TC_TAB === 'slides')     return vTcSlides();
+  else if(TC_TAB === 'portfolio')  return vTcPortfolio();
   else if(TC_TAB === 'notice')     return vTcNotice();
   else if(TC_TAB === 'assign')     return vTcAssign();
   else if(TC_TAB === 'unit')       return vTcUnit();

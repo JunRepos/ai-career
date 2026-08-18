@@ -3890,3 +3890,65 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   background:#7F1D1D;border:1px solid #991B1B;color:#FEE2E2;cursor:pointer}
 .net-banner button:hover{background:#991B1B}
 @media(max-width:768px){ .net-banner{bottom:calc(70px + env(safe-area-inset-bottom))} }
+
+/* ═══════════════════════════════════════════════════════════════
+   🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기
+═══════════════════════════════════════════════════════════════ */
+.sl-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  flex-wrap:wrap;margin-bottom:12px}
+.sl-live{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:800;
+  color:#1B1B1D;background:var(--pl-solid);padding:5px 11px;border-radius:99px}
+.sl-live i{width:7px;height:7px;border-radius:50%;background:#1B1B1D;
+  animation:slPulse 1.4s ease-in-out infinite}
+@keyframes slPulse{0%,100%{opacity:1}50%{opacity:.25}}
+.sl-chip{font-size:12.5px;color:var(--text3)}
+.sl-page{font-size:13px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums}
+
+/* 슬라이드 화면 — 검은 무대 위에 이미지 */
+.sl-stage{display:flex;align-items:center;justify-content:center;
+  background:#0E0E10;border:1px solid var(--border);border-radius:12px;
+  padding:10px;min-height:220px}
+.sl-img{max-width:100%;max-height:72vh;object-fit:contain;border-radius:6px;cursor:zoom-in}
+.sl-stage.tc .sl-img{max-height:52vh;cursor:default}
+
+.sl-nav{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:12px}
+.sl-btn{min-height:44px;padding:10px 18px;font-size:14px;font-weight:700;
+  border-radius:10px;background:var(--surface);border:1px solid var(--border2);
+  color:var(--text)}
+.sl-btn:hover:not(:disabled){background:var(--surface2)}
+.sl-hint{margin-top:8px;text-align:center;font-size:11.5px;color:var(--text3)}
+.sl-hint b{color:var(--text2)}
+
+/* 학생이 혼자 다른 장을 볼 때 뜨는 복귀 버튼 */
+.sl-rejoin{display:block;width:100%;margin-bottom:10px;padding:12px;
+  border:none;border-radius:10px;background:var(--pl-solid);color:#1B1B1D;
+  font-family:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+
+/* 학생 홈 배너 */
+.sl-livebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;
+  text-align:left;margin-bottom:18px;padding:14px 18px;border-radius:14px;
+  background:var(--surface);border:1px solid var(--pl-solid);cursor:pointer;
+  font-family:inherit;color:var(--text)}
+.sl-livebar:hover{background:var(--surface2)}
+.sl-livebar-t{flex:1;min-width:0;font-size:14px;font-weight:700}
+.sl-livebar-go{font-size:12.5px;font-weight:800;color:var(--pl-yellow)}
+
+/* 선생님 조종부 */
+.sl-ctrl-head{display:flex;align-items:flex-start;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.sl-ctrl-sub{margin-top:4px;font-size:12.5px;color:var(--text3)}
+.sl-thumbs{display:flex;gap:8px;overflow-x:auto;padding:14px 2px 4px;margin-top:6px}
+.sl-thumb{position:relative;flex:none;width:96px;padding:0;border-radius:7px;
+  overflow:hidden;border:2px solid var(--border);background:#0E0E10;cursor:pointer}
+.sl-thumb img{display:block;width:100%;height:58px;object-fit:contain}
+.sl-thumb span{position:absolute;left:3px;bottom:3px;padding:1px 6px;border-radius:5px;
+  background:rgba(0,0,0,.65);color:#fff;font-size:10.5px;font-weight:800}
+.sl-thumb.on{border-color:var(--pl-solid)}
+
+@media(max-width:768px){
+  .sl-img{max-height:56vh}
+  .sl-stage.tc .sl-img{max-height:38vh}
+  .sl-btn{flex:1;justify-content:center;padding:12px 8px}
+  .sl-thumb{width:76px}
+  .sl-thumb img{height:46px}
+}
