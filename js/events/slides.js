@@ -13,6 +13,7 @@ document.addEventListener('click', async e => {
     if(IS_TC && TC_CLS){
       const p = _clampPage((SLIDE_LIVE?.page || 0) + d);
       await setLive(TC_CLS.id, { page: p });
+      _presentSync();
       render();
     } else {
       const base = (SLIDE_FOLLOW && SLIDE_LIVE?.on) ? (SLIDE_LIVE.page || 0) : SLIDE_MYPAGE;
@@ -23,10 +24,21 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  // 발표 모드 (교실 화면에 크게)
+  if(act === 'sl-present'){ openPresent(); return; }
+  if(act === 'pv-exit'){ closePresent(); return; }
+  if(act === 'pv-prev' || act === 'pv-next'){
+    if(!TC_CLS) return;
+    const d = act === 'pv-next' ? 1 : -1;
+    await setLive(TC_CLS.id, { page: _clampPage((SLIDE_LIVE?.page || 0) + d) });
+    _presentSync(); _pvPokeBar();
+    return;
+  }
+
   // 선생님: 썸네일로 바로 이동
   if(act === 'sl-go' && IS_TC && TC_CLS){
     await setLive(TC_CLS.id, { page: _clampPage(+el.dataset.i) });
-    render(); return;
+    _presentSync(); render(); return;
   }
 
   // 학생: 선생님 화면으로 복귀
@@ -96,21 +108,30 @@ document.addEventListener('click', async e => {
 
 /* 선생님: 키보드 ← → 로 넘기기 (입력 중일 때는 무시) */
 document.addEventListener('keydown', async e => {
-  if(e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
   const t = e.target;
   if(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+
+  // 발표 모드에서 B — 검은 화면 (칠판 쓸 때 시선을 뺏지 않게)
+  if(PRESENT_ON && (e.key === 'b' || e.key === 'B')){ e.preventDefault(); _pvToggleBlack(); return; }
+
+  // 프리젠터 리모컨은 보통 PageUp/PageDown 을 보냅니다
+  const NEXT = ['ArrowRight', 'PageDown', ' ', 'Spacebar'];
+  const PREV = ['ArrowLeft', 'PageUp'];
+  if(!NEXT.includes(e.key) && !PREV.includes(e.key)) return;
+
   const onSlideTab = IS_TC ? (TC_TAB === 'slides') : (ST_TAB === 'slides');
-  if(!onSlideTab || !_slideCount()) return;
+  if((!onSlideTab && !PRESENT_ON) || !_slideCount()) return;
   e.preventDefault();
-  const d = e.key === 'ArrowRight' ? 1 : -1;
+  const d = NEXT.includes(e.key) ? 1 : -1;
   if(IS_TC && TC_CLS){
     await setLive(TC_CLS.id, { page: _clampPage((SLIDE_LIVE?.page || 0) + d) });
+    _presentSync();
   } else {
     const base = (SLIDE_FOLLOW && SLIDE_LIVE?.on) ? (SLIDE_LIVE.page || 0) : SLIDE_MYPAGE;
     SLIDE_MYPAGE = _clampPage(base + d);
     SLIDE_FOLLOW = false;
   }
-  render();
+  if(!PRESENT_ON) render();      // 발표 중엔 뒤 화면을 다시 그릴 필요 없음
 });
 
 /* ── 메모 ─────────────────────────────────────────────────────

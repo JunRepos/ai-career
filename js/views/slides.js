@@ -147,9 +147,12 @@ function vTcSlides(){
           ? '학생 화면이 지금 이 장을 따라오고 있습니다.'
           : '아직 학생에게 안 보입니다. 시작을 누르면 모든 학생 화면이 이 장으로 맞춰집니다.'}</div>
       </div>
-      <button class="${live.on ? 'btn-sm btn-danger' : 'btn-p'}" data-action="sl-toggle" data-on="${live.on ? '0' : '1'}">
-        ${live.on ? '같이 보기 끝내기' : '같이 보기 시작'}
-      </button>
+      <div class="sl-ctrl-btns">
+        <button class="btn-sm" data-action="sl-present">🔳 발표 모드</button>
+        <button class="${live.on ? 'btn-sm btn-danger' : 'btn-p'}" data-action="sl-toggle" data-on="${live.on ? '0' : '1'}">
+          ${live.on ? '같이 보기 끝내기' : '같이 보기 시작'}
+        </button>
+      </div>
     </div>
 
     <div class="sl-stage tc">
@@ -190,4 +193,83 @@ function _vTcSlideNotes(page){
     </div>`;
   }).join('');
   return head + `<div class="sl-tcn-list">${rows}</div>`;
+}
+
+/* ═══════════════════════════════════════
+   🔳 발표 모드 — 교실 화면에 띄우는 전체화면 (PPT 슬라이드쇼처럼)
+
+   #root 를 다시 그려도 사라지지 않게 #modal-root 에 따로 올리고,
+   페이지가 바뀔 때 _presentSync() 로 그림만 갈아끼웁니다.
+     ← → PageUp/PageDown Space : 넘기기 (프리젠터 리모컨 포함)
+     화면 왼쪽/오른쪽 클릭       : 이전/다음
+     B                        : 검은 화면 (칠판 볼 때)
+     ESC                      : 끝내기
+═══════════════════════════════════════ */
+let PRESENT_ON = false;
+let _presentHideTimer = null;
+
+function openPresent(){
+  if(!_slideCount()) return;
+  PRESENT_ON = true;
+  const host = document.getElementById('modal-root');
+  host.innerHTML = `
+    <div class="pv" id="pv">
+      <img class="pv-img" id="pv-img" src="" alt=""/>
+      <div class="pv-black" id="pv-black"></div>
+      <div class="pv-bar" id="pv-bar">
+        <button class="pv-btn" data-action="pv-prev">←</button>
+        <span class="pv-page" id="pv-page"></span>
+        <button class="pv-btn" data-action="pv-next">→</button>
+        <span class="pv-sep"></span>
+        <span class="pv-hint">← → 넘기기 · B 검은화면 · ESC 끝내기</span>
+        <button class="pv-btn pv-exit" data-action="pv-exit">끝내기</button>
+      </div>
+      <div class="pv-zone left"  data-action="pv-prev"></div>
+      <div class="pv-zone right" data-action="pv-next"></div>
+    </div>`;
+
+  const pv = document.getElementById('pv');
+  pv.requestFullscreen?.().catch(() => {});   // 실패해도 화면 전체를 덮는 오버레이라 사용 가능
+  _presentSync();
+  _pvPokeBar();
+
+  pv.addEventListener('mousemove', _pvPokeBar);
+  document.addEventListener('fullscreenchange', _pvOnFsChange);
+}
+
+function closePresent(){
+  PRESENT_ON = false;
+  document.removeEventListener('fullscreenchange', _pvOnFsChange);
+  if(document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  document.getElementById('modal-root').innerHTML = '';
+  render();
+}
+
+// 전체화면을 ESC·F11 로 빠져나가면 발표 모드도 함께 끝냄
+function _pvOnFsChange(){
+  if(!document.fullscreenElement && PRESENT_ON) closePresent();
+}
+
+// 페이지가 바뀌었을 때 그림만 교체 (오버레이는 그대로)
+function _presentSync(){
+  if(!PRESENT_ON) return;
+  const imgs = _slideImgs();
+  const page = _clampPage(SLIDE_LIVE?.page);
+  const img = document.getElementById('pv-img');
+  const label = document.getElementById('pv-page');
+  if(img && imgs[page]) img.src = imgs[page].url;
+  if(label) label.textContent = `${page + 1} / ${imgs.length}`;
+}
+
+// 조작 바는 2.5초 뒤 사라졌다가 마우스를 움직이면 다시 나옴
+function _pvPokeBar(){
+  const bar = document.getElementById('pv-bar');
+  if(!bar) return;
+  bar.classList.remove('hide');
+  clearTimeout(_presentHideTimer);
+  _presentHideTimer = setTimeout(() => bar.classList.add('hide'), 2500);
+}
+
+function _pvToggleBlack(){
+  document.getElementById('pv-black')?.classList.toggle('on');
 }

@@ -4012,3 +4012,42 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .sl-nrow-thumb{width:84px}
   .sl-nrow-thumb img{height:50px}
 }
+
+/* ── 🔳 발표 모드 (교실 화면용 전체화면) ── */
+.pv{position:fixed;inset:0;z-index:300;background:#000;
+  display:flex;align-items:center;justify-content:center;cursor:default}
+.pv-img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+/* B 키로 켜는 검은 화면 — 칠판을 볼 때 시선을 뺏지 않게 */
+.pv-black{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;
+  transition:opacity .18s}
+.pv-black.on{opacity:1}
+
+/* 좌우 절반 클릭 영역 (PPT 처럼) */
+.pv-zone{position:absolute;top:0;bottom:64px;width:34%;cursor:pointer}
+.pv-zone.left{left:0}
+.pv-zone.right{right:0}
+
+/* 조작 바 — 2.5초 뒤 사라지고 마우스를 움직이면 다시 나옴 */
+.pv-bar{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);
+  display:flex;align-items:center;gap:12px;padding:9px 14px;border-radius:99px;
+  background:rgba(24,24,26,.86);border:1px solid rgba(255,255,255,.14);
+  backdrop-filter:blur(8px);z-index:2;transition:opacity .25s}
+.pv-bar.hide{opacity:0;pointer-events:none}
+.pv-btn{min-width:42px;min-height:38px;padding:6px 14px;border-radius:99px;
+  background:rgba(255,255,255,.10);border:none;color:#F2F2F4;
+  font-size:15px;font-weight:800;cursor:pointer}
+.pv-btn:hover{background:rgba(255,255,255,.2)}
+.pv-exit{background:rgba(255,61,135,.85);font-size:12.5px;font-weight:700}
+.pv-exit:hover{background:rgba(255,61,135,1)}
+.pv-page{min-width:62px;text-align:center;color:#F2F2F4;font-size:14px;font-weight:800;
+  font-variant-numeric:tabular-nums}
+.pv-sep{width:1px;height:18px;background:rgba(255,255,255,.18)}
+.pv-hint{color:rgba(255,255,255,.55);font-size:11.5px;white-space:nowrap}
+
+/* 선생님 조종부 버튼 묶음 */
+.sl-ctrl-btns{display:flex;gap:8px;flex-wrap:wrap}
+
+@media(max-width:768px){
+  .pv-hint{display:none}
+  .pv-bar{gap:8px;padding:7px 10px;bottom:14px}
+}
