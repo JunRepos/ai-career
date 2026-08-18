@@ -819,8 +819,15 @@ async function loadAllClassData(cid){
     loadActivityOpen(cid),
     loadDeck(cid)
   ]);
-  // 슬라이드 같이 보기 — 선생님이 넘기면 학생 화면이 따라오도록 구독
-  watchLive(cid, () => { if(VIEW === 'student' || VIEW === 'teacher') render(); });
+  if(ST_USER) await loadMyNotes(cid, ST_USER.number);
+  // 슬라이드 같이 보기 — 선생님이 넘기면 학생 화면이 따라오도록 구독.
+  // 넘어가기 직전에 쓰던 메모를 먼저 저장해서 내용이 날아가지 않게 합니다.
+  let _lastPage = null;
+  watchLive(cid, live => {
+    if(_lastPage !== null && live.page !== _lastPage && typeof _slFlushNote === 'function') _slFlushNote();
+    _lastPage = live.page;
+    if(VIEW === 'student' || VIEW === 'teacher') render();
+  });
 }
 
 // ── 레거시 게시물 (이전 버전 호환) ──
@@ -929,4 +936,36 @@ function unwatchLive(){
     try { SLIDE_WATCH.ref.off('value', SLIDE_WATCH.cb); } catch(e){}
     SLIDE_WATCH = null;
   }
+}
+
+/* ── 슬라이드 메모 (학생이 장마다 남기는 필기) ──
+   slides/{cid}/notes/{학번}/{페이지} = '메모'
+   선생님이 넘겨도 장별로 따로 저장돼서 섞이거나 사라지지 않습니다. */
+async function loadMyNotes(cid, snum){
+  SLIDE_NOTES = {};
+  if(!snum) return;
+  try {
+    const s = await db.ref(`slides/${cid}/notes/${snum}`).get();
+    if(s.exists()) SLIDE_NOTES = s.val() || {};
+  } catch(err){ console.warn('[슬라이드] 메모 로드 실패:', err.message || err); }
+}
+
+async function saveNote(cid, snum, page, text){
+  if(!snum) return;
+  const ref = db.ref(`slides/${cid}/notes/${snum}/${page}`);
+  if((text || '').trim()) await ref.set(text);
+  else await ref.remove();          // 다 지우면 빈 값이 남지 않게
+  SLIDE_NOTE_SAVED = new Date().toISOString();
+}
+
+// 선생님: 반 전체 메모 (누가 어느 장에 뭘 적었는지)
+async function loadAllNotes(cid){
+  try {
+    const s = await db.ref(`slides/${cid}/notes`).get();
+    SLIDE_NOTE_ALL = s.exists() ? (s.val() || {}) : {};
+  } catch(err){
+    console.warn('[슬라이드] 전체 메모 로드 실패:', err.message || err);
+    SLIDE_NOTE_ALL = {};
+  }
+  return SLIDE_NOTE_ALL;
 }

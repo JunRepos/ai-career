@@ -3952,3 +3952,63 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .sl-thumb{width:76px}
   .sl-thumb img{height:46px}
 }
+
+/* ── 슬라이드 + 메모 ──
+   데스크탑: 슬라이드 왼쪽 · 메모 오른쪽 / 모바일: 위아래 */
+.sl-split{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:1024px){
+  .sl-split{grid-template-columns:minmax(0,1.9fr) minmax(280px,1fr);gap:20px;
+    align-items:start}
+  .sl-right{position:sticky;top:82px}
+}
+.sl-left{min-width:0}
+.sl-right{display:flex;flex-direction:column;min-width:0}
+
+.sl-note-head{display:flex;align-items:flex-start;justify-content:space-between;
+  gap:10px;margin-bottom:9px}
+.sl-note-title{font-size:14px;font-weight:800;letter-spacing:-.2px;color:var(--text)}
+.sl-note-sub{margin-top:2px;font-size:11.5px;color:var(--text3)}
+.sl-note{width:100%;flex:1;min-height:240px;resize:vertical;
+  font-family:inherit;font-size:15px;line-height:1.75;padding:14px 15px;
+  border:1px solid var(--border2);border-radius:12px;
+  background:var(--surface);color:var(--text)}
+.sl-note:focus{border-color:var(--pl-solid);
+  box-shadow:0 0 0 3px rgba(255,200,61,.18);outline:none}
+.sl-note-foot{margin-top:7px;font-size:11px;color:var(--text3)}
+
+/* 장별 점 — 메모한 장을 한눈에 */
+.sl-dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+.sl-dot{width:8px;height:8px;border-radius:50%;background:var(--border2)}
+.sl-dot.has{background:var(--pl-solid)}
+.sl-dot.on{outline:2px solid var(--text3);outline-offset:2px}
+
+/* 모아보기 */
+.sl-nrow{display:flex;gap:13px;padding:13px 0;border-bottom:1px solid var(--border)}
+.sl-nrow:last-child{border-bottom:none}
+.sl-nrow-thumb{position:relative;flex:none;width:110px;padding:0;border-radius:8px;
+  overflow:hidden;border:1px solid var(--border);background:#0E0E10;cursor:pointer}
+.sl-nrow-thumb img{display:block;width:100%;height:64px;object-fit:contain}
+.sl-nrow-thumb span{position:absolute;left:3px;bottom:3px;padding:1px 6px;border-radius:5px;
+  background:rgba(0,0,0,.65);color:#fff;font-size:10.5px;font-weight:800}
+.sl-nrow-text{flex:1;min-width:0;font-size:14px;line-height:1.7;color:var(--text2);
+  white-space:pre-wrap;word-break:break-word}
+
+/* 선생님: 이 장 메모 현황 */
+.sl-tcn-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--border);
+  font-size:13px;color:var(--text2)}
+.sl-tcn-head b{color:var(--pl-yellow)}
+.sl-tcn-empty{margin-top:10px;font-size:13px;color:var(--text3)}
+.sl-tcn-list{margin-top:10px;display:flex;flex-direction:column;gap:8px;
+  max-height:320px;overflow-y:auto}
+.sl-tcn-row{display:flex;gap:12px;padding:10px 12px;border-radius:9px;
+  background:var(--bg);border:1px solid var(--border)}
+.sl-tcn-who{flex:none;width:74px;font-size:12.5px;font-weight:700;color:var(--text)}
+.sl-tcn-text{flex:1;min-width:0;font-size:13px;line-height:1.65;color:var(--text2);
+  white-space:pre-wrap;word-break:break-word}
+
+@media(max-width:768px){
+  .sl-note{min-height:160px;font-size:16px}
+  .sl-nrow-thumb{width:84px}
+  .sl-nrow-thumb img{height:50px}
+}

@@ -330,6 +330,12 @@ let SLIDE_WATCH  = null;   // 실시간 구독 핸들 (정리용)
 let SLIDE_FOLLOW = true;   // 학생: 선생님을 따라갈지 (혼자 앞뒤로 보면 false)
 let SLIDE_MYPAGE = 0;      // 학생: 혼자 보는 중일 때의 페이지
 let SLIDE_UPLOADING = false;
+let SLIDE_NOTES  = {};     // 학생: { 슬라이드번호: '메모' } — 내 메모
+let SLIDE_NOTE_TIMER = null;
+let SLIDE_NOTE_SAVED = null;  // 마지막 저장 시각 표시용
+let SLIDE_NOTE_ALL = {};   // 선생님: { 학번: { 페이지: 메모 } }
+let SLIDE_SHOW_ALL = false;// 학생: '내 메모 모아보기' 펼침
+let SLIDE_TC_NOTES = false;// 선생님: 이 장 메모 펼침
 
 let AIA_OPEN        = {};       // { [활동지id]: true } — 학생에게 열어둔 활동지 (반별)
 let AIA_EDIT        = null;     // 선생님: 만들기·수정 중인 활동지 id ('new'=신규, null=목록)

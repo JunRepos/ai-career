@@ -147,6 +147,7 @@ function _tcNormalizeTab(){
 
 function setTC(t){
   TC_TAB = t;
+  if(t === 'slides' && TC_CLS){ SLIDE_TC_NOTES = false; loadAllNotes(TC_CLS.id).then(render); }
   if(t === 'portfolio') TC_PF_SNUM = null;   // 탭 다시 누르면 명단부터
   if(t === 'mission'){
     // 미션 탭 진입 시 그리드 목록으로 — 편집/플레이 모드 잔재 정리

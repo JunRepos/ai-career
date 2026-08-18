@@ -112,3 +112,71 @@ document.addEventListener('keydown', async e => {
   }
   render();
 });
+
+/* ── 메모 ─────────────────────────────────────────────────────
+   자동 저장(1.5초). 선생님이 장을 넘기면 '넘어가기 전에' 즉시 저장해서
+   쓰던 내용이 사라지지 않게 합니다. — _slFlushNote()
+──────────────────────────────────────────────────────────── */
+let _slPendingPage = null;
+
+function _slQueueNote(page){
+  _slPendingPage = page;
+  if(SLIDE_NOTE_TIMER) clearTimeout(SLIDE_NOTE_TIMER);
+  SLIDE_NOTE_TIMER = setTimeout(() => _slFlushNote(), 1500);
+}
+
+async function _slFlushNote(){
+  if(SLIDE_NOTE_TIMER){ clearTimeout(SLIDE_NOTE_TIMER); SLIDE_NOTE_TIMER = null; }
+  if(_slPendingPage === null || !ST_USER || !SEL_CLS) return;
+  const page = _slPendingPage;
+  _slPendingPage = null;
+  try { await saveNote(SEL_CLS.id, ST_USER.number, page, SLIDE_NOTES[page] || ''); }
+  catch(e){ console.warn('[슬라이드] 메모 저장 실패:', e.message || e); }
+}
+
+// 입력 — 화면을 다시 그리지 않아 커서가 튀지 않습니다
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-action="sl-note"]');
+  if(!el) return;
+  SLIDE_NOTES[+el.dataset.page] = el.value;
+  _slQueueNote(+el.dataset.page);
+});
+
+// 화면을 벗어나거나 창을 닫아도 저장 (수업 끝나고 바로 끄는 경우)
+window.addEventListener('beforeunload', () => { _slFlushNote(); });
+document.addEventListener('visibilitychange', () => { if(document.hidden) _slFlushNote(); });
+
+document.addEventListener('click', async e => {
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const act = el.dataset.action;
+
+  if(act === 'sl-notes-all'){ await _slFlushNote(); SLIDE_SHOW_ALL = !SLIDE_SHOW_ALL; render(); return; }
+
+  // 모아보기에서 그 장으로 이동 (혼자 보기로 전환)
+  if(act === 'sl-goto'){
+    SLIDE_MYPAGE = _clampPage(+el.dataset.i);
+    SLIDE_FOLLOW = false; SLIDE_SHOW_ALL = false; render(); return;
+  }
+
+  // 메모 전체를 글로 복사 (복습·정리용)
+  if(act === 'sl-copy-notes'){
+    const imgs = _slideImgs();
+    const lines = [`${SLIDE_DECK?.title || '수업자료'} — ${ST_USER?.name || ''} 메모`, ''];
+    imgs.forEach((_, i) => {
+      const t = (SLIDE_NOTES[i] || '').trim();
+      if(t) lines.push(`${i + 1}장) ${t}`);
+    });
+    const text = lines.join('\n');
+    try { await navigator.clipboard.writeText(text); el.textContent = '✓ 복사됨';
+      setTimeout(() => { el.textContent = '📋 전체 복사'; }, 1600); }
+    catch(e2){ prompt('복사해서 쓰세요', text); }
+    return;
+  }
+
+  // 선생님: 이 장 메모 펼치기
+  if(act === 'sl-tc-notes'){
+    if(TC_CLS && !SLIDE_TC_NOTES) await loadAllNotes(TC_CLS.id);
+    SLIDE_TC_NOTES = !SLIDE_TC_NOTES; render(); return;
+  }
+});
