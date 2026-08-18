@@ -8,10 +8,22 @@
 <title>인공지능 기초 · 진로</title>
 <!-- 인라인 SVG favicon — 별도 .ico 파일 불필요, 캐시도 깔끔 -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%A0%3C/text%3E%3C/svg%3E">
-<!-- coi-serviceworker: GitHub Pages에 COOP/COEP 헤더 주입 → SharedArrayBuffer 활성화
-     (노트북 input() 실시간 입력에 필요. 첫 방문 시 1회 자동 새로고침 발생) -->
-<script>window.coi = { quiet: true };</script>
-<script src="coi-serviceworker.js"></script>
+<!-- ⚠ coi-serviceworker 를 끕니다 (2026-08-18)
+     원래는 정보 교과의 노트북·OJ(Pyodide, SharedArrayBuffer)용이었습니다.
+     이 앱에는 그 기능이 없는데, 서비스 워커가 모든 요청을 가로채고
+     COEP:require-corp 를 걸어 학교 PC 에서 페이지가 통째로 ERR_FAILED 로
+     실패하는 일이 있었습니다. 파일(coi-serviceworker.js)은 남겨두었으니
+     정보 기능을 이 앱에 들일 때 아래 두 줄을 되살리면 됩니다.
+       <script>window.coi = { quiet: true };</script>
+       <script src="coi-serviceworker.js"></script>
+     아래 스크립트는 예전에 등록돼 남아 있는 서비스 워커를 지웁니다. -->
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations()
+    .then(rs => rs.forEach(r => r.unregister()))
+    .catch(() => {});
+}
+</script>
 <!-- Pretendard 폰트 (Google Fonts에는 없음 — 공식 JSDelivr CDN 사용)
      Variable font 버전이라 가볍고 모든 굵기 지원 + JSDelivr는 적절한 CORP 헤더 보냄(coi-serviceworker 환경 호환) -->
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">

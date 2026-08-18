@@ -174,9 +174,42 @@ async function bindMigration(){
 }
 
 // ── 앱 시작 ──
+/* ⚠ 화면이 '로딩 중...' 에서 안 넘어가던 문제 (2026-08-18)
+   Firebase 호출은 네트워크가 막히면 실패하지 않고 '영원히 대기' 합니다.
+   그래서 await 에서 멈추고 render() 가 아예 호출되지 않아, 학생 화면이
+   로딩 문구에 그대로 머물렀습니다. (학교망에서 firebaseio.com 이 느리거나 차단될 때)
+   → 모든 초기 로드에 제한 시간을 두고, 실패해도 무조건 화면을 그립니다. */
+function withTimeout(promise, ms, label){
+  let timer;
+  return Promise.race([
+    Promise.resolve(promise).finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('시간 초과: ' + label)), ms);
+    }),
+  ]);
+}
+
+// 서버에 못 붙었을 때 화면 위에 띄우는 안내 (조용히 실패하지 않도록)
+function showNetBanner(detail){
+  if(document.querySelector('.net-banner')) return;
+  const el = document.createElement('div');
+  el.className = 'net-banner';
+  el.innerHTML = `
+    <div class="net-banner-body">
+      <b>서버에 연결하지 못했습니다.</b>
+      <span>학교 네트워크가 막고 있거나 인터넷이 불안정할 수 있어요.
+      잠시 뒤 다시 시도해 주세요.</span>
+      <span class="net-banner-detail">${esc(detail || '')}</span>
+    </div>
+    <button onclick="location.reload()">다시 시도</button>`;
+  document.body.appendChild(el);
+}
+
 async function init(){
+  let netError = null;
   try{
-    const auth = await getAuth();
+    // 선생님 비밀번호 존재 여부 — 8초 안에 응답 없으면 포기하고 화면부터 띄움
+    const auth = await withTimeout(getAuth(), 8000, '서버 연결');
     FIRST_SETUP = !auth;
     await loadPostCounts();
 
@@ -184,17 +217,25 @@ async function init(){
     if(restoreSession()){
       const cid = SEL_CLS?.id || TC_CLS?.id;
       if(cid){
-        await loadAllClassData(cid);
-        for(const a of ASSIGNMENTS) await loadSubmissions(cid, a.id);
+        await withTimeout(loadAllClassData(cid), 12000, '반 데이터');
+        // 제출 현황은 과제 수만큼 순서대로 받으면 느립니다 — 한꺼번에
+        await withTimeout(
+          Promise.all(ASSIGNMENTS.map(a => loadSubmissions(cid, a.id))), 12000, '제출 현황');
         if(ST_USER){
           const ym = new Date().toISOString().slice(0, 7);
-          await loadAttendanceMonth(cid, ym);
+          await withTimeout(loadAttendanceMonth(cid, ym), 8000, '출결');
         }
-        if(IS_TC && TC_TAB === 'attend') await loadAttendance(cid, AT_DATE);
+        if(IS_TC && TC_TAB === 'attend') await withTimeout(loadAttendance(cid, AT_DATE), 8000, '출결');
       }
     }
-  } catch(e){ console.error(e); }
-  render();
+  } catch(e){
+    console.error('[초기화]', e);
+    netError = e;
+    // 세션 복원이 중간에 끊겼으면 어중간한 화면 대신 처음 화면으로
+    if(!SEL_CLS && !TC_CLS){ VIEW = 'home'; }
+  }
+  render();                                   // 실패해도 화면은 반드시 그림
+  if(netError) showNetBanner(netError.message);
 }
 
 init();

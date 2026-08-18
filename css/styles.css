@@ -3874,3 +3874,19 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .rep-foot{margin-left:-14px;margin-right:-14px;padding-left:14px;padding-right:14px}
   .dash-units,.pl-grid{grid-template-columns:1fr}
 }
+
+/* 서버 연결 실패 안내 — 조용히 '로딩 중' 에 머물지 않도록 */
+.net-banner{position:fixed;left:12px;right:12px;bottom:12px;z-index:200;
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:14px 16px;border-radius:12px;
+  background:#2D1518;border:1px solid #7F1D1D;color:#FCA5A5;
+  box-shadow:0 8px 28px rgba(0,0,0,.35);
+  padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.net-banner-body{flex:1;min-width:200px;display:flex;flex-direction:column;gap:3px;
+  font-size:13px;line-height:1.6}
+.net-banner-body b{color:#FECACA;font-size:14px}
+.net-banner-detail{font-size:11px;opacity:.65}
+.net-banner button{flex:none;padding:10px 16px;border-radius:9px;font-weight:700;
+  background:#7F1D1D;border:1px solid #991B1B;color:#FEE2E2;cursor:pointer}
+.net-banner button:hover{background:#991B1B}
+@media(max-width:768px){ .net-banner{bottom:calc(70px + env(safe-area-inset-bottom))} }
