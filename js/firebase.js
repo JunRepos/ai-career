@@ -824,7 +824,10 @@ async function loadAllClassData(cid){
   // 넘어가기 직전에 쓰던 메모를 먼저 저장해서 내용이 날아가지 않게 합니다.
   let _lastPage = null;
   watchLive(cid, live => {
-    if(_lastPage !== null && live.page !== _lastPage && typeof _slFlushNote === 'function') _slFlushNote();
+    if(_lastPage !== null && live.page !== _lastPage){
+      if(typeof _slFlushNote === 'function') _slFlushNote();
+      if(typeof _slSyncGame === 'function') _slSyncGame(_lastPage, live.page);
+    }
     _lastPage = live.page;
     if(VIEW === 'student' || VIEW === 'teacher') render();
   });
@@ -968,4 +971,33 @@ async function loadAllNotes(cid){
     SLIDE_NOTE_ALL = {};
   }
   return SLIDE_NOTE_ALL;
+}
+
+/* ── 실습 점수 (식물 물 주기 등) ──
+   slides/{cid}/scores/{게임id}/{학번} = { name, best, plays, updatedAt }
+   최고점만 남깁니다 — 여러 번 도전해도 기록은 하나. */
+async function loadGameScores(cid, gameId){
+  gameId = gameId || 'plant-water';
+  try {
+    const s = await db.ref(`slides/${cid}/scores/${gameId}`).get();
+    return s.exists() ? (s.val() || {}) : {};
+  } catch(err){
+    console.warn('[실습] 점수 로드 실패:', err.message || err);
+    return {};
+  }
+}
+
+async function saveGameScore(cid, snum, name, score, gameId){
+  gameId = gameId || 'plant-water';
+  const ref = db.ref(`slides/${cid}/scores/${gameId}/${snum}`);
+  const cur = await ref.get();
+  const prev = cur.exists() ? cur.val() : null;
+  const best = Math.max(score, prev?.best ?? -9999);
+  await ref.set({
+    name: name || snum,
+    best,
+    plays: (prev?.plays || 0) + 1,
+    updatedAt: new Date().toISOString(),
+  });
+  return best;
 }

@@ -24,6 +24,29 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  // 실습(게임) 시작 / 되돌아가기
+  if(act === 'pw-start'){ pwStart(); return; }
+  if(act === 'pw-hit'){ pwHit(+el.dataset.i); return; }
+
+  // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
+  if(act === 'sl-game-add' && TC_CLS){
+    const imgs = _slideImgs().slice();
+    const at = _clampPage(SLIDE_LIVE?.page) + 1;
+    imgs.splice(at, 0, { type: 'game', gameId: 'plant-water', name: '실습 — 식물 물 주기' });
+    await saveDeck(TC_CLS.id, { ...SLIDE_DECK, images: imgs, updatedAt: new Date().toISOString() });
+    await setLive(TC_CLS.id, { page: at });
+    _presentSync(); render(); return;
+  }
+  if(act === 'sl-game-del' && TC_CLS){
+    const imgs = _slideImgs().slice();
+    const at = _clampPage(SLIDE_LIVE?.page);
+    if(!_isGame(imgs[at])) return;
+    imgs.splice(at, 1);
+    await saveDeck(TC_CLS.id, { ...SLIDE_DECK, images: imgs, updatedAt: new Date().toISOString() });
+    await setLive(TC_CLS.id, { page: Math.max(0, at - 1) });
+    _presentSync(); render(); return;
+  }
+
   // 발표 모드 (교실 화면에 크게)
   if(act === 'sl-present'){ openPresent(); return; }
   if(act === 'pv-exit'){ closePresent(); return; }
@@ -139,6 +162,14 @@ document.addEventListener('keydown', async e => {
    쓰던 내용이 사라지지 않게 합니다. — _slFlushNote()
 ──────────────────────────────────────────────────────────── */
 let _slPendingPage = null;
+
+// 실습 장을 벗어나거나 들어올 때 정리
+function _slSyncGame(prevPage, page){
+  const imgs = _slideImgs();
+  const was = _isGame(imgs[prevPage]), now = _isGame(imgs[page]);
+  if(was && !now) pwLeave();
+  if(now && !was && !IS_TC && typeof pwLoadRank === 'function') pwLoadRank();
+}
 
 function _slQueueNote(page){
   _slPendingPage = page;

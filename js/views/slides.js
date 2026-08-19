@@ -9,6 +9,8 @@
 ═══════════════════════════════════════ */
 
 function _slideImgs(){ return (SLIDE_DECK && SLIDE_DECK.images) || []; }
+// 실습 슬라이드인지 (이미지 대신 게임이 뜨는 장)
+function _isGame(im){ return !!(im && im.type === 'game'); }
 function _slideCount(){ return _slideImgs().length; }
 function _clampPage(p){ return Math.max(0, Math.min(_slideCount() - 1, p || 0)); }
 
@@ -23,6 +25,16 @@ function vStSlides(){
   const im = imgs[page];
 
   if(SLIDE_SHOW_ALL) return _vStNotesAll();
+
+  // 실습 슬라이드 — 선생님이 이 장으로 넘기면 각자 화면에서 게임이 시작 가능
+  if(_isGame(im)){
+    const back = (live.on && !SLIDE_FOLLOW)
+      ? `<button class="sl-rejoin" data-action="sl-follow">선생님 화면으로 돌아가기 (${teacherPage + 1}장)</button>` : '';
+    return `<div class="sl-bar">
+        ${live.on ? '<span class="sl-live"><i></i>같이 보는 중</span>' : '<span class="sl-chip">실습</span>'}
+        <span class="sl-page">${page + 1} / ${imgs.length}</span>
+      </div>${back}${vPlantWater()}`;
+  }
 
   const offBar = (live.on && !SLIDE_FOLLOW)
     ? `<button class="sl-rejoin" data-action="sl-follow">선생님 화면으로 돌아가기 (${teacherPage + 1}장)</button>`
@@ -135,8 +147,9 @@ function vTcSlides(){
 
   const page = _clampPage(live.page);
   const thumbs = imgs.map((im, i) => `
-    <button class="sl-thumb${i === page ? ' on' : ''}" data-action="sl-go" data-i="${i}">
-      <img src="${esc(im.url)}" alt=""/><span>${i + 1}</span>
+    <button class="sl-thumb${i === page ? ' on' : ''}${_isGame(im) ? ' game' : ''}" data-action="sl-go" data-i="${i}">
+      ${_isGame(im) ? '<span class="sl-thumb-game">실습</span>' : `<img src="${esc(im.url)}" alt=""/>`}
+      <span>${i + 1}</span>
     </button>`).join('');
 
   const control = `<div class="section">
@@ -148,6 +161,9 @@ function vTcSlides(){
           : '아직 학생에게 안 보입니다. 시작을 누르면 모든 학생 화면이 이 장으로 맞춰집니다.'}</div>
       </div>
       <div class="sl-ctrl-btns">
+        ${_isGame(imgs[page])
+          ? `<button class="btn-xs btn-danger" data-action="sl-game-del">실습 장 빼기</button>`
+          : `<button class="btn-xs" data-action="sl-game-add">＋ 이 다음에 실습 넣기</button>`}
         <button class="btn-sm" data-action="sl-present">🔳 발표 모드</button>
         <button class="${live.on ? 'btn-sm btn-danger' : 'btn-p'}" data-action="sl-toggle" data-on="${live.on ? '0' : '1'}">
           ${live.on ? '같이 보기 끝내기' : '같이 보기 시작'}
@@ -155,9 +171,9 @@ function vTcSlides(){
       </div>
     </div>
 
-    <div class="sl-stage tc">
-      <img class="sl-img" src="${esc(imgs[page].url)}" alt=""/>
-    </div>
+    ${_isGame(imgs[page])
+      ? `<div class="sl-stage tc game">${pwBoardForTeacher()}</div>`
+      : `<div class="sl-stage tc"><img class="sl-img" src="${esc(imgs[page].url)}" alt=""/></div>`}
     <div class="sl-nav">
       <button class="sl-btn" data-action="sl-prev" ${page === 0 ? 'disabled' : ''}>← 이전</button>
       <span class="sl-page">${page + 1} / ${imgs.length}</span>
@@ -215,6 +231,7 @@ function openPresent(){
   host.innerHTML = `
     <div class="pv" id="pv">
       <img class="pv-img" id="pv-img" src="" alt=""/>
+      <div class="pv-game" id="pv-game"></div>
       <div class="pv-black" id="pv-black"></div>
       <div class="pv-bar" id="pv-bar">
         <button class="pv-btn" data-action="pv-prev">←</button>
@@ -239,6 +256,7 @@ function openPresent(){
 
 function closePresent(){
   PRESENT_ON = false;
+  clearInterval(_pvRankTimer); _pvRankTimer = null;
   document.removeEventListener('fullscreenchange', _pvOnFsChange);
   if(document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
   document.getElementById('modal-root').innerHTML = '';
@@ -255,10 +273,36 @@ function _presentSync(){
   if(!PRESENT_ON) return;
   const imgs = _slideImgs();
   const page = _clampPage(SLIDE_LIVE?.page);
-  const img = document.getElementById('pv-img');
+  const img  = document.getElementById('pv-img');
+  const game = document.getElementById('pv-game');
   const label = document.getElementById('pv-page');
-  if(img && imgs[page]) img.src = imgs[page].url;
+  const isGame = _isGame(imgs[page]);
+
+  if(img)  img.style.display  = isGame ? 'none' : '';
+  if(game){
+    game.style.display = isGame ? 'flex' : 'none';
+    // 실습 장에서는 순위판을 띄우고 3초마다 갱신 — 앞에서 순위가 오르내리는 게 보이게
+    if(isGame){ game.innerHTML = pwBoardForTeacher(); _pvRankPoll(true); }
+    else _pvRankPoll(false);
+  }
+  if(!isGame && img && imgs[page]) img.src = imgs[page].url;
   if(label) label.textContent = `${page + 1} / ${imgs.length}`;
+}
+
+// 발표 중 실습 장에서만 도는 순위 갱신 타이머
+let _pvRankTimer = null;
+function _pvRankPoll(on){
+  clearInterval(_pvRankTimer); _pvRankTimer = null;
+  if(!on || !TC_CLS) return;
+  const tick = async () => {
+    const all = await loadGameScores(TC_CLS.id);
+    PW_RANK = Object.entries(all).map(([n, v]) => ({ num: n, name: v.name, best: v.best || 0 }))
+      .sort((a, b) => b.best - a.best);
+    const g = document.getElementById('pv-game');
+    if(g && PRESENT_ON) g.innerHTML = pwBoardForTeacher();
+  };
+  tick();
+  _pvRankTimer = setInterval(tick, 3000);
 }
 
 // 조작 바는 2.5초 뒤 사라졌다가 마우스를 움직이면 다시 나옴
