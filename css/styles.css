@@ -4168,3 +4168,61 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .pv-game .pwt-s i{color:rgba(255,255,255,.55)}
 .pv-game .pwt-cnt{font-size:1.4vw;color:rgba(255,255,255,.55);margin-top:2.4vh}
 .pv-game .pwt-empty{color:rgba(255,255,255,.5);font-size:1.8vw}
+
+/* ═══════════════════════════════════════════════════════════
+   🖥️ 수업자료 라이브러리 — 차시별로 쌓아두고 이번 시간 것 하나 고르기
+   색 토큰은 위 :root 에 이미 있는 것만 씁니다 (라이트 모드에서 안 사라지게).
+═══════════════════════════════════════════════════════════ */
+
+.deck-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:14px;margin-top:4px}
+
+.deck-card{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;
+  background:var(--surface);border:1px solid var(--border);transition:.16s}
+.deck-card:hover{border-color:var(--border2);transform:translateY(-2px)}
+/* 이번 시간에 연 자료는 테두리로 바로 구분 */
+.deck-card.on{border-color:var(--pl-solid);box-shadow:0 0 0 2px rgba(255,200,61,.28)}
+
+/* 전역 button{display:inline-flex} 때문에 카드형 버튼은 block 을 따로 줍니다 */
+.deck-cover{display:block;width:100%;padding:0;border:0;border-radius:0;position:relative;
+  aspect-ratio:16/9;background:var(--surface2);cursor:pointer;overflow:hidden}
+.deck-cover:hover{background:var(--surface2)}
+.deck-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.deck-cover-none{display:flex;align-items:center;justify-content:center;
+  width:100%;height:100%;font-size:30px;opacity:.4}
+.deck-badge{position:absolute;left:8px;top:8px;padding:3px 9px;border-radius:999px;
+  background:var(--pl-solid);color:#1B1B1D;font-size:11px;font-weight:800;letter-spacing:-.2px}
+
+.deck-body{padding:12px 13px 13px;display:flex;flex-direction:column;gap:4px;flex:1}
+.deck-title{font-size:14.5px;font-weight:800;line-height:1.3;color:var(--text);
+  word-break:keep-all}
+.deck-meta{font-size:11.5px;color:var(--text3);font-weight:600}
+.deck-btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;padding-top:10px}
+/* '이번 시간에 열기' 는 이 카드에서 가장 중요한 버튼 */
+.btn-pick{background:var(--pl-solid);color:#1B1B1D;border-color:transparent;font-weight:800}
+.btn-pick:hover{background:var(--pl-solid);filter:brightness(1.06)}
+
+/* 학생 슬라이드 상단 — 지금 보는 자료 제목 */
+.sl-deck-title{font-size:13.5px;font-weight:800;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46%}
+
+/* 홈 '이번 시간' — 수업자료 카드를 활동지 카드와 같은 모양으로 */
+.now-card-slide{cursor:pointer}
+.now-card-live{display:inline-flex;align-items:center;gap:6px;font-weight:800}
+.now-card-live i{width:7px;height:7px;border-radius:50%;background:#1B1B1D;
+  animation:slPulse 1.4s ease-in-out infinite}
+
+@media (max-width:640px){
+  .deck-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .deck-title{font-size:13.5px}
+  .sl-deck-title{max-width:100%}
+}
+
+/* 다크 모드 재확인 — 이 파일의 .section(3104줄)이 쓰는 방식과 같습니다.
+   토큰만 믿으면 카드가 흰 배경으로 남아 글씨(밝은 색)가 안 보였습니다. */
+[data-theme="dark"] .deck-card{background:var(--surface);border-color:var(--border)}
+[data-theme="dark"] .deck-card:hover{border-color:var(--border2)}
+[data-theme="dark"] .deck-card.on{border-color:var(--pl-solid)}
+[data-theme="dark"] .deck-cover{background:var(--surface2)}
+[data-theme="dark"] .deck-title{color:var(--text)}
+[data-theme="dark"] .deck-meta{color:var(--text3)}

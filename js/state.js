@@ -323,9 +323,13 @@ let AIA_ANSWERS     = {};       // 학생: 작성 중 답안 { [fieldId]: value 
 let AIA_SUB         = null;     // 학생: 본인 제출 캐시 { answers, updatedAt }
 let AIA_SAVE_TIMER  = null;     // 학생: 자동 저장 debounce
 let AIA_SAVING      = false;    // 저장 중 표시
-/* 🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기 */
-let SLIDE_DECK   = null;   // { title, images:[{name,url,path}] } — 업로드한 슬라이드
-let SLIDE_LIVE   = null;   // { on, page } — 지금 같이 보는 중인지 / 몇 번째 장인지
+/* 🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기
+   차시마다 자료를 하나씩 올려두고(SLIDE_DECKS), 그중 '이번 시간에 볼 것'
+   하나를 골라 엽니다(SLIDE_LIVE.deckId → SLIDE_DECK). */
+let SLIDE_DECKS  = [];     // [{ id, title, updatedAt, images:[...] }] — 올려둔 수업자료 전부
+let SLIDE_DECK   = null;   // 지금 열어둔 자료 하나 (SLIDE_DECKS 중 하나를 가리킴)
+let SLIDE_LIVE   = null;   // { on, page, deckId } — 무슨 자료를 몇 장까지 같이 보는 중인지
+let SLIDE_TC_SEL = null;   // 선생님: 목록에서 열어본 자료 id (null 이면 목록 화면)
 let SLIDE_WATCH  = null;   // 실시간 구독 핸들 (정리용)
 let SLIDE_FOLLOW = true;   // 학생: 선생님을 따라갈지 (혼자 앞뒤로 보면 false)
 let SLIDE_MYPAGE = 0;      // 학생: 혼자 보는 중일 때의 페이지

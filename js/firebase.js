@@ -817,13 +817,36 @@ async function loadAllClassData(cid){
     loadUnitContent(cid),
     loadCustomActivities(cid),
     loadActivityOpen(cid),
-    loadDeck(cid)
+    loadDecks(cid)
   ]);
+
+  // 이번 시간에 열어둔 자료가 무엇인지 먼저 확인해야 메모를 제대로 찾습니다.
+  try {
+    const s = await db.ref(`slides/${cid}/live`).get();
+    SLIDE_LIVE = s.exists() ? s.val() : { on: false, page: 0, deckId: null };
+  } catch(err){
+    console.warn('[슬라이드] 상태 로드 실패:', err.message || err);
+    SLIDE_LIVE = { on: false, page: 0, deckId: null };
+  }
+  syncCurrentDeck();
   if(ST_USER) await loadMyNotes(cid, ST_USER.number);
+
   // 슬라이드 같이 보기 — 선생님이 넘기면 학생 화면이 따라오도록 구독.
   // 넘어가기 직전에 쓰던 메모를 먼저 저장해서 내용이 날아가지 않게 합니다.
-  let _lastPage = null;
+  let _lastPage = SLIDE_LIVE.page ?? null;
+  let _lastDeck = SLIDE_LIVE.deckId || null;
   watchLive(cid, live => {
+    // 선생님이 다른 수업자료로 바꾸면 그 자료의 메모로 갈아끼웁니다
+    if(live.deckId !== _lastDeck){
+      if(typeof _slFlushNote === 'function') _slFlushNote();
+      _lastDeck = live.deckId || null;
+      _lastPage = null;
+      syncCurrentDeck();
+      SLIDE_MYPAGE = 0; SLIDE_FOLLOW = true; SLIDE_SHOW_ALL = false;
+      if(ST_USER) loadMyNotes(cid, ST_USER.number).then(() => {
+        if(VIEW === 'student' || VIEW === 'teacher') render();
+      });
+    }
     if(_lastPage !== null && live.page !== _lastPage){
       if(typeof _slFlushNote === 'function') _slFlushNote();
       if(typeof _slSyncGame === 'function') _slSyncGame(_lastPage, live.page);
@@ -881,45 +904,127 @@ async function uploadFile(file, path, progFill, progPct){
 
 /* ═══════════════════════════════════════
    🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기
-     slides/{cid}/deck : { title, updatedAt, images:[{name,url,path}] }
-     slides/{cid}/live : { on, page, updatedAt }
+
+   수업자료는 차시마다 하나씩 쌓입니다. 여러 개를 올려두고,
+   그중 '이번 시간에 볼 것' 하나만 골라서 학생에게 엽니다.
+
+     slides/{cid}/decks/{deckId} : { id, title, updatedAt, images:[{name,url,path}] }
+     slides/{cid}/live           : { on, page, deckId, updatedAt }
+     slides/{cid}/notes/{deckId}/{학번}/{페이지}  : 메모 (자료별로 따로)
+
+   ⚠ 예전에는 자료가 반당 하나뿐이라 slides/{cid}/deck 에 바로 넣었습니다.
+     그 자료를 잃지 않도록 loadDecks() 가 발견하면 decks 목록에 얹어서
+     같이 보여줍니다 (레거시는 id 가 'legacy').
+
    학생 쪽은 live 를 실시간 구독해서, 선생님이 넘기면 바로 따라 넘어갑니다.
 ═══════════════════════════════════════ */
 
-async function loadDeck(cid){
+const LEGACY_DECK_ID = 'legacy';
+
+// 저장된 자료 하나를 화면이 쓰는 모양으로 정리 (images 가 없으면 빈 배열)
+function _normalizeDeck(id, v){
+  if(!v) return null;
+  const deck = { ...v, id };
+  if(!Array.isArray(deck.images)) deck.images = [];
+  return deck;
+}
+
+/* 반의 수업자료 목록 전체 — 최근에 만든 것이 위로 */
+async function loadDecks(cid){
+  SLIDE_DECKS = [];
   try {
-    const s = await db.ref(`slides/${cid}/deck`).get();
-    SLIDE_DECK = s.exists() ? s.val() : null;
-    if(SLIDE_DECK && !Array.isArray(SLIDE_DECK.images)) SLIDE_DECK.images = [];
+    const [multi, legacy] = await Promise.all([
+      db.ref(`slides/${cid}/decks`).get(),
+      db.ref(`slides/${cid}/deck`).get(),      // 예전 방식으로 올린 자료
+    ]);
+
+    if(multi.exists()){
+      SLIDE_DECKS = Object.entries(multi.val() || {})
+        .map(([id, v]) => _normalizeDeck(id, v))
+        .filter(Boolean);
+    }
+    // 예전 자료가 남아 있으면 목록 맨 뒤에 합쳐서 계속 쓸 수 있게
+    if(legacy.exists()){
+      const old = _normalizeDeck(LEGACY_DECK_ID, legacy.val());
+      if(old && old.images.length){
+        if(!old.title) old.title = '이전에 올린 수업자료';
+        SLIDE_DECKS.push(old);
+      }
+    }
+    SLIDE_DECKS.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
   } catch(err){
     console.warn('[슬라이드] 목록 로드 실패:', err.message || err);
-    SLIDE_DECK = null;
+    SLIDE_DECKS = [];
   }
+  return SLIDE_DECKS;
+}
+
+// 지금 열려 있는(=이번 시간에 볼) 자료. live.deckId 가 가리키는 것.
+function deckById(id){
+  return SLIDE_DECKS.find(d => d.id === id) || null;
+}
+
+/* SLIDE_DECK(지금 보는 자료)을 live.deckId 기준으로 다시 맞춥니다.
+   deckId 가 없던 시절 데이터는 자료가 하나뿐이었으니 그 하나를 씁니다. */
+function syncCurrentDeck(){
+  const id = SLIDE_LIVE?.deckId;
+  SLIDE_DECK = id ? deckById(id)
+             : (SLIDE_DECKS.length === 1 ? SLIDE_DECKS[0] : null);
   return SLIDE_DECK;
 }
 
 async function saveDeck(cid, deck){
-  await db.ref(`slides/${cid}/deck`).set(deck);
-  SLIDE_DECK = deck;
+  const id = deck.id || genId();
+  const path = id === LEGACY_DECK_ID ? `slides/${cid}/deck` : `slides/${cid}/decks/${id}`;
+  const {id: _drop, ...body} = deck;
+  await db.ref(path).set(body);
+
+  const merged = { ...body, id };
+  const i = SLIDE_DECKS.findIndex(d => d.id === id);
+  if(i >= 0) SLIDE_DECKS[i] = merged; else SLIDE_DECKS.unshift(merged);
+  if(SLIDE_DECK?.id === id || !SLIDE_DECK) SLIDE_DECK = merged;
+  return merged;
 }
 
-// 슬라이드 파일 삭제 + 목록 비우기 (라이브도 끔)
-async function deleteDeck(cid){
-  const deck = SLIDE_DECK;
+// 수업자료 하나 삭제 — 그림 파일·메모까지 같이 정리
+async function deleteDeck(cid, deckId){
+  const deck = deckById(deckId);
   if(deck?.images) for(const im of deck.images){
     if(im.path) await storage.ref(im.path).delete().catch(() => {});
   }
-  await db.ref(`slides/${cid}/deck`).remove();
-  await db.ref(`slides/${cid}/live`).set({ on: false, page: 0, updatedAt: new Date().toISOString() });
-  SLIDE_DECK = null;
+  const path = deckId === LEGACY_DECK_ID ? `slides/${cid}/deck` : `slides/${cid}/decks/${deckId}`;
+  await db.ref(path).remove();
+  await db.ref(`slides/${cid}/notes/${deckId}`).remove().catch(() => {});
+
+  SLIDE_DECKS = SLIDE_DECKS.filter(d => d.id !== deckId);
+  // 지우는 자료를 지금 열어둔 상태였다면 같이 보기도 끕니다
+  if(SLIDE_LIVE?.deckId === deckId || SLIDE_DECK?.id === deckId){
+    await setLive(cid, { on: false, page: 0, deckId: null });
+    SLIDE_DECK = null;
+  }
 }
 
-// 선생님: 같이 보기 켜기/끄기, 페이지 넘기기
+/* 선생님: 같이 보기 켜기/끄기, 페이지 넘기기, 볼 자료 고르기
+   deckId 를 넘기면 그 자료로 바꾸고 첫 장부터 시작합니다. */
 async function setLive(cid, patch){
-  const cur = SLIDE_LIVE || { on: false, page: 0 };
-  const next = { on: !!cur.on, page: cur.page || 0, ...patch, updatedAt: new Date().toISOString() };
+  const cur = SLIDE_LIVE || { on: false, page: 0, deckId: null };
+  const next = {
+    on: !!cur.on,
+    page: cur.page || 0,
+    deckId: cur.deckId || null,
+    ...patch,
+    updatedAt: new Date().toISOString(),
+  };
   await db.ref(`slides/${cid}/live`).set(next);
   SLIDE_LIVE = next;
+  syncCurrentDeck();
+}
+
+/* 이번 시간에 볼 자료 고르기 — 고르면 첫 장으로 맞춥니다.
+   같이 보기가 켜져 있으면 학생 화면도 바로 이 자료로 넘어갑니다. */
+async function pickDeck(cid, deckId){
+  await setLive(cid, { deckId: deckId || null, page: 0 });
+  if(ST_USER) await loadMyNotes(cid, ST_USER.number);
 }
 
 /* 실시간 구독 — 선생님이 넘기면 0.1~0.3초 안에 학생 화면이 따라옵니다.
@@ -942,29 +1047,37 @@ function unwatchLive(){
 }
 
 /* ── 슬라이드 메모 (학생이 장마다 남기는 필기) ──
-   slides/{cid}/notes/{학번}/{페이지} = '메모'
-   선생님이 넘겨도 장별로 따로 저장돼서 섞이거나 사라지지 않습니다. */
+   slides/{cid}/notes/{자료id}/{학번}/{페이지} = '메모'
+   자료마다 따로 저장합니다. 1차시 메모가 2차시 자료에 딸려오지 않게.
+   장별로도 따로라서 선생님이 넘겨도 섞이거나 사라지지 않습니다. */
+
+// 지금 보고 있는 자료 id — 메모를 어디에 넣을지 정합니다.
+function _noteDeckId(){
+  return SLIDE_LIVE?.deckId || SLIDE_DECK?.id || LEGACY_DECK_ID;
+}
+
 async function loadMyNotes(cid, snum){
   SLIDE_NOTES = {};
   if(!snum) return;
+  const did = _noteDeckId();
   try {
-    const s = await db.ref(`slides/${cid}/notes/${snum}`).get();
+    const s = await db.ref(`slides/${cid}/notes/${did}/${snum}`).get();
     if(s.exists()) SLIDE_NOTES = s.val() || {};
   } catch(err){ console.warn('[슬라이드] 메모 로드 실패:', err.message || err); }
 }
 
 async function saveNote(cid, snum, page, text){
   if(!snum) return;
-  const ref = db.ref(`slides/${cid}/notes/${snum}/${page}`);
+  const ref = db.ref(`slides/${cid}/notes/${_noteDeckId()}/${snum}/${page}`);
   if((text || '').trim()) await ref.set(text);
   else await ref.remove();          // 다 지우면 빈 값이 남지 않게
   SLIDE_NOTE_SAVED = new Date().toISOString();
 }
 
-// 선생님: 반 전체 메모 (누가 어느 장에 뭘 적었는지)
+// 선생님: 지금 자료에 반 전체가 적은 메모 (누가 어느 장에 뭘 적었는지)
 async function loadAllNotes(cid){
   try {
-    const s = await db.ref(`slides/${cid}/notes`).get();
+    const s = await db.ref(`slides/${cid}/notes/${_noteDeckId()}`).get();
     SLIDE_NOTE_ALL = s.exists() ? (s.val() || {}) : {};
   } catch(err){
     console.warn('[슬라이드] 전체 메모 로드 실패:', err.message || err);

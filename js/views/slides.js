@@ -17,7 +17,7 @@ function _clampPage(p){ return Math.max(0, Math.min(_slideCount() - 1, p || 0));
 /* ── 학생 ── */
 function vStSlides(){
   const imgs = _slideImgs();
-  if(!imgs.length) return emptyBox('🖥️', '아직 올라온 수업자료가 없어요.');
+  if(!imgs.length) return emptyBox('🖥️', '이번 시간에 볼 수업자료가 아직 없어요.');
 
   const live = SLIDE_LIVE || {};
   const teacherPage = _clampPage(live.page);
@@ -55,6 +55,7 @@ function vStSlides(){
 
   return `
     <div class="sl-bar">
+      ${SLIDE_DECK?.title ? `<span class="sl-deck-title">${esc(SLIDE_DECK.title)}</span>` : ''}
       ${statusChip}
       <span class="sl-page">${page + 1} / ${imgs.length}</span>
     </div>
@@ -110,14 +111,20 @@ function _vStNotesAll(){
     ${rows || emptyBox('📝', '아직 적은 메모가 없어요. 슬라이드를 보면서 적어보세요.')}`;
 }
 
-/* ── 선생님 ── */
+/* ── 선생님 ──
+   두 화면입니다.
+     목록(SLIDE_TC_SEL = null) : 올려둔 수업자료가 카드로. 여기서 '이번 시간에 열기'
+     자료 하나(SLIDE_TC_SEL)   : 넘기기·발표 모드·실습 넣기 등 기존 조작판
+*/
 function vTcSlides(){
   if(!TC_CLS) return emptyBox('👆', '관리할 반을 먼저 선택하세요.');
-  const imgs = _slideImgs();
-  const live = SLIDE_LIVE || {};
+  return SLIDE_TC_SEL ? _vTcDeckDetail() : _vTcDeckList();
+}
 
-  const upload = `<div class="section">
-    <div class="sec-title">수업자료 올리기</div>
+/* 새 수업자료 올리기 상자 — 목록 아래에 늘 붙어 있습니다 */
+function _vTcDeckUpload(){
+  return `<div class="section">
+    <div class="sec-title">새 수업자료 올리기</div>
     <div class="box-info" style="margin-bottom:12px">
       파워포인트에서 <b>파일 → 내보내기 → 그림으로</b> (또는 다른 이름으로 저장 → PNG) 하면
       슬라이드가 장당 이미지로 나옵니다. 그 이미지들을 <b>한꺼번에</b> 선택해서 올려주세요.
@@ -128,22 +135,98 @@ function vTcSlides(){
         <label>슬라이드 이미지 (여러 장 선택)</label>
         <input id="sl-file" type="file" accept="image/*" multiple/>
       </div>
-      <div class="field"><label>제목 (선택)</label>
-        <input id="sl-title" type="text" placeholder="예) 1차시 오리엔테이션" value="${esc(SLIDE_DECK?.title || '')}"/></div>
+      <div class="field"><label>제목</label>
+        <input id="sl-title" type="text" placeholder="예) 1차시 지능과 인공지능"/></div>
       <div class="prog-wrap" id="sl-prog">
         <div class="prog-label">올리는 중... <span id="sl-pct">0%</span></div>
         <div class="prog-bar"><div class="prog-fill" id="sl-pfill" style="width:0%"></div></div>
       </div>
       <div id="sl-err" class="err"></div>
-      <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button id="sl-upload" class="btn-p" data-action="sl-upload" ${SLIDE_UPLOADING ? 'disabled' : ''}>
-          ${imgs.length ? '새 자료로 교체' : '올리기'}</button>
-        ${imgs.length ? `<button class="btn-sm btn-danger" data-action="sl-delete">전체 삭제</button>` : ''}
-      </div>
+      <button id="sl-upload" class="btn-p" data-action="sl-upload" ${SLIDE_UPLOADING ? 'disabled' : ''}>
+        올리기</button>
     </div>
   </div>`;
+}
 
-  if(!imgs.length) return upload;
+/* 수업자료 목록 — 차시별로 쌓아두고, 이번 시간에 볼 것 하나를 고릅니다 */
+function _vTcDeckList(){
+  const live = SLIDE_LIVE || {};
+  // deckId 가 없던 시절 자료는 syncCurrentDeck() 이 '그 하나'를 열어둔 것으로 칩니다.
+  // 목록 표시도 학생이 실제로 보는 것과 같아야 하므로 SLIDE_DECK 기준으로 맞춥니다.
+  const openId = live.deckId || SLIDE_DECK?.id || null;
+
+  const cards = SLIDE_DECKS.map(d => {
+    const n = (d.images || []).length;
+    const cover = (d.images || []).find(im => !_isGame(im));
+    const isOpen = d.id === openId;
+    const games = (d.images || []).filter(_isGame).length;
+    return `<div class="deck-card${isOpen ? ' on' : ''}">
+      <button class="deck-cover" data-action="sl-open" data-id="${esc(d.id)}">
+        ${cover ? `<img src="${esc(cover.url)}" alt=""/>` : '<span class="deck-cover-none">🖥️</span>'}
+        ${isOpen ? `<span class="deck-badge">${live.on ? '같이 보는 중' : '이번 시간'}</span>` : ''}
+      </button>
+      <div class="deck-body">
+        <div class="deck-title">${esc(d.title || '제목 없는 수업자료')}</div>
+        <div class="deck-meta">${n}장${games ? ` · 실습 ${games}개` : ''}${d.updatedAt ? ` · ${fmtDt(d.updatedAt)}` : ''}</div>
+        <div class="deck-btns">
+          <button class="btn-xs" data-action="sl-open" data-id="${esc(d.id)}">열어보기</button>
+          ${isOpen
+            ? `<button class="btn-xs btn-danger" data-action="sl-unpick">이번 시간에서 내리기</button>`
+            : `<button class="btn-xs btn-pick" data-action="sl-pick" data-id="${esc(d.id)}">이번 시간에 열기</button>`}
+          <button class="btn-xs btn-danger" data-action="sl-delete" data-id="${esc(d.id)}">삭제</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const head = `<div class="section">
+    <div class="sec-title">수업자료</div>
+    <div class="box-info" style="margin-bottom:12px">
+      차시마다 자료를 올려두고, <b>이번 시간에 볼 것 하나</b>를 고르세요.
+      고른 자료는 학생 홈 화면에 바로 뜹니다.
+      ${openId ? '' : '<br>지금은 아무것도 열지 않아서 학생 화면에는 수업자료가 보이지 않습니다.'}
+    </div>
+    ${SLIDE_DECKS.length ? `<div class="deck-grid">${cards}</div>`
+      : emptyBox('🖥️', '아직 올린 수업자료가 없어요. 아래에서 올려보세요.')}
+  </div>`;
+
+  return head + _vTcDeckUpload();
+}
+
+/* 자료 하나 — 넘기기·발표 모드 조작판 (기존 화면) */
+function _vTcDeckDetail(){
+  const deck = deckById(SLIDE_TC_SEL);
+  if(!deck) { SLIDE_TC_SEL = null; return _vTcDeckList(); }
+
+  const live = SLIDE_LIVE || {};
+  // 목록과 같은 기준 — deckId 가 없던 시절 자료도 '열린 것'으로 봅니다
+  const isOpen = (live.deckId || SLIDE_DECK?.id || null) === deck.id;
+  const imgs = deck.images || [];
+  const back = `<button class="rep-back" data-action="sl-back">← 수업자료 목록</button>`;
+
+  if(!imgs.length) return back + emptyBox('🖥️', '이 자료에는 슬라이드가 없습니다.');
+
+  // 넘기기는 '이번 시간에 연 자료' 에만 의미가 있습니다 (학생 화면이 따라오는 대상)
+  if(!isOpen){
+    const thumbs = imgs.map((im, i) => `
+      <div class="sl-thumb${_isGame(im) ? ' game' : ''}">
+        ${_isGame(im) ? '<span class="sl-thumb-game">실습</span>' : `<img src="${esc(im.url)}" alt=""/>`}
+        <span>${i + 1}</span>
+      </div>`).join('');
+    return back + `<div class="section">
+      <div class="sl-ctrl-head">
+        <div>
+          <div class="sec-title" style="margin:0">${esc(deck.title || '수업자료')} · ${imgs.length}장</div>
+          <div class="sl-ctrl-sub">이번 시간 자료가 아닙니다. 열어야 넘기기·발표 모드를 쓸 수 있어요.</div>
+        </div>
+        <div class="sl-ctrl-btns">
+          <button class="btn-p" data-action="sl-pick" data-id="${esc(deck.id)}">이번 시간에 열기</button>
+        </div>
+      </div>
+      <div class="sl-stage tc"><img class="sl-img" src="${esc((imgs.find(im=>!_isGame(im))||imgs[0]).url)}" alt=""/></div>
+      <div class="sl-thumbs">${thumbs}</div>
+    </div>`;
+  }
 
   const page = _clampPage(live.page);
   const thumbs = imgs.map((im, i) => `
@@ -155,10 +238,10 @@ function vTcSlides(){
   const control = `<div class="section">
     <div class="sl-ctrl-head">
       <div>
-        <div class="sec-title" style="margin:0">${esc(SLIDE_DECK.title || '수업자료')} · ${imgs.length}장</div>
+        <div class="sec-title" style="margin:0">${esc(deck.title || '수업자료')} · ${imgs.length}장</div>
         <div class="sl-ctrl-sub">${live.on
           ? '학생 화면이 지금 이 장을 따라오고 있습니다.'
-          : '아직 학생에게 안 보입니다. 시작을 누르면 모든 학생 화면이 이 장으로 맞춰집니다.'}</div>
+          : '학생 홈에 이 자료가 떠 있습니다. 같이 보기를 켜면 모든 학생 화면이 이 장으로 맞춰집니다.'}</div>
       </div>
       <div class="sl-ctrl-btns">
         ${_isGame(imgs[page])
@@ -184,7 +267,7 @@ function vTcSlides(){
     ${_vTcSlideNotes(page)}
   </div>`;
 
-  return control + upload;
+  return back + control;
 }
 
 /* 선생님: 지금 장에 학생들이 적은 메모 — "따라오고 있나" 확인용 */

@@ -29,7 +29,7 @@ document.addEventListener('click', async e => {
   if(act === 'pw-hit'){ pwHit(+el.dataset.i); return; }
 
   // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
-  if(act === 'sl-game-add' && TC_CLS){
+  if(act === 'sl-game-add' && TC_CLS && SLIDE_DECK){
     const imgs = _slideImgs().slice();
     const at = _clampPage(SLIDE_LIVE?.page) + 1;
     imgs.splice(at, 0, { type: 'game', gameId: 'plant-water', name: '실습 — 식물 물 주기' });
@@ -37,7 +37,7 @@ document.addEventListener('click', async e => {
     await setLive(TC_CLS.id, { page: at });
     _presentSync(); render(); return;
   }
-  if(act === 'sl-game-del' && TC_CLS){
+  if(act === 'sl-game-del' && TC_CLS && SLIDE_DECK){
     const imgs = _slideImgs().slice();
     const at = _clampPage(SLIDE_LIVE?.page);
     if(!_isGame(imgs[at])) return;
@@ -78,10 +78,40 @@ document.addEventListener('click', async e => {
     render(); return;
   }
 
-  // 선생님: 전체 삭제
+  // 학생: 홈 '이번 시간' 카드 → 수업자료로
+  if(act === 'st-go-slides'){ setST('slides'); return; }
+
+  // ── 선생님: 수업자료 목록 ↔ 자료 하나 ──
+  if(act === 'sl-open' && IS_TC){
+    SLIDE_TC_SEL = el.dataset.id;
+    SLIDE_TC_NOTES = false;
+    render(); return;
+  }
+  if(act === 'sl-back' && IS_TC){ SLIDE_TC_SEL = null; render(); return; }
+
+  // 선생님: 이번 시간에 볼 자료 고르기 / 내리기
+  if(act === 'sl-pick' && TC_CLS){
+    await pickDeck(TC_CLS.id, el.dataset.id);
+    SLIDE_TC_SEL = el.dataset.id;
+    SLIDE_TC_NOTES = false;
+    await loadAllNotes(TC_CLS.id);
+    toast(`'${SLIDE_DECK?.title || '수업자료'}' 를 이번 시간 자료로 열었습니다.`, 'ok');
+    render(); return;
+  }
+  if(act === 'sl-unpick' && TC_CLS){
+    await setLive(TC_CLS.id, { on: false, page: 0, deckId: null });
+    toast('학생 화면에서 수업자료를 내렸습니다.', 'ok');
+    render(); return;
+  }
+
+  // 선생님: 자료 하나 삭제
   if(act === 'sl-delete' && TC_CLS){
-    if(!confirm('올린 슬라이드를 모두 지울까요?')) return;
-    await deleteDeck(TC_CLS.id);
+    const id = el.dataset.id;
+    const d = deckById(id);
+    if(!confirm(`'${d?.title || '수업자료'}' 를 지울까요?\n슬라이드 그림과 학생 메모도 함께 지워집니다.`)) return;
+    await deleteDeck(TC_CLS.id, id);
+    if(SLIDE_TC_SEL === id) SLIDE_TC_SEL = null;
+    toast('수업자료를 지웠습니다.', 'ok');
     render(); return;
   }
 
@@ -101,10 +131,15 @@ document.addEventListener('click', async e => {
     const pct = document.getElementById('sl-pct');
 
     try {
-      // 이전 자료가 있으면 파일부터 정리 (스토리지에 쓰레기가 쌓이지 않게)
-      if(SLIDE_DECK?.images) for(const im of SLIDE_DECK.images){
-        if(im.path) await storage.ref(im.path).delete().catch(() => {});
+      /* 예전 자료(deckId 없이 하나만 있던 것)를 열어둔 상태라면, 새 자료를 올리기 전에
+         '지금 열린 자료'를 명시해 둡니다. 안 그러면 자료가 둘이 되는 순간
+         무엇이 열린 것인지 알 수 없어져 학생 화면에서 조용히 사라집니다. */
+      if(!SLIDE_LIVE?.deckId && SLIDE_DECK?.id){
+        await setLive(TC_CLS.id, { deckId: SLIDE_DECK.id });
       }
+
+      // 자료를 새로 하나 더 만듭니다 — 이전 차시 자료는 그대로 남습니다.
+      const deckId = genId();
       const stamp = Date.now();
       const images = [];
       for(let i = 0; i < files.length; i++){
@@ -113,13 +148,14 @@ document.addEventListener('click', async e => {
         const url = await uploadFile(files[i], path, fill, null);
         images.push({ name: files[i].name, url, path });
       }
+      const title = (document.getElementById('sl-title')?.value || '').trim();
       await saveDeck(TC_CLS.id, {
-        title: (document.getElementById('sl-title')?.value || '').trim(),
+        id: deckId,
+        title: title || `수업자료 (${images.length}장)`,
         updatedAt: new Date().toISOString(),
         images,
       });
-      await setLive(TC_CLS.id, { on: false, page: 0 });
-      toast(`슬라이드 ${images.length}장을 올렸습니다.`, 'ok');
+      toast(`'${title || '수업자료'}' ${images.length}장을 올렸습니다. 목록에서 '이번 시간에 열기'를 누르세요.`, 'ok');
     } catch(e2){
       err.textContent = '업로드 실패: ' + (e2.message || e2);
     }

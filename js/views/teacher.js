@@ -147,7 +147,11 @@ function _tcNormalizeTab(){
 
 function setTC(t){
   TC_TAB = t;
-  if(t === 'slides' && TC_CLS){ SLIDE_TC_NOTES = false; loadAllNotes(TC_CLS.id).then(render); }
+  // 수업자료 탭은 늘 목록부터 (지난번에 열어본 자료가 그대로 뜨지 않게)
+  if(t === 'slides' && TC_CLS){
+    SLIDE_TC_SEL = null; SLIDE_TC_NOTES = false;
+    loadAllNotes(TC_CLS.id).then(render);
+  }
   if(t === 'portfolio') TC_PF_SNUM = null;   // 탭 다시 누르면 명단부터
   if(t === 'mission'){
     // 미션 탭 진입 시 그리드 목록으로 — 편집/플레이 모드 잔재 정리
