@@ -4275,3 +4275,39 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .now-group{margin-bottom:14px}
   .now-group:last-of-type{margin-bottom:20px}
 }
+
+/* ═══ 🌿 물주기 결과 — 지능 요소 되짚기 ═══
+   "방금 내가 뭘 했지?" 를 되짚는 칸. 게임보다 이 화면이 수업의 목적입니다. */
+:root{
+  --pw-fac-bg:#FFFFFF; --pw-fac-line:#E5D5BC; --pw-fac-key:#A67C52;
+  --pw-fac-txt:#2E2A26; --pw-fac-sub:#7A7069;
+}
+[data-theme="dark"]{
+  --pw-fac-bg:var(--surface2); --pw-fac-line:var(--border);
+  --pw-fac-key:#D9B98C; --pw-fac-txt:var(--text); --pw-fac-sub:var(--text3);
+}
+.pw-reflect{margin:20px 0 4px;text-align:left}
+.pw-reflect-t{font-size:15px;font-weight:800;color:var(--pw-fac-key);letter-spacing:-.3px}
+.pw-reflect-s{font-size:12.5px;color:var(--pw-fac-sub);margin:3px 0 12px}
+.pw-facs{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}
+.pw-fac{background:var(--pw-fac-bg);border:1px solid var(--pw-fac-line);
+  border-radius:12px;padding:12px 13px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.pw-fac-k{font-size:13.5px;font-weight:800;color:var(--pw-fac-key);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pw-fac-d{margin-top:5px;font-size:12.5px;line-height:1.55;color:var(--pw-fac-txt)}
+/* '생성' — 이 게임에서 안 쓰인 요소는 흐리게 */
+.pw-fac.off{opacity:.5;border-style:dashed}
+.pw-fac.off .pw-fac-d{color:var(--pw-fac-sub)}
+.pw-fac-tag{font-size:10.5px;font-weight:700;color:var(--pw-fac-sub);
+  border:1px solid var(--pw-fac-line);border-radius:99px;padding:1px 7px}
+
+/* 발표 모드(전체화면)에서도 읽히게 */
+.pv-game .pw-reflect-t{font-size:1.6vw}
+.pv-game .pw-reflect-s{font-size:1.1vw}
+.pv-game .pw-fac-k{font-size:1.2vw}
+.pv-game .pw-fac-d{font-size:1.05vw}
+
+@media (max-width:640px){
+  .pw-facs{grid-template-columns:1fr;gap:7px}
+  .pw-fac{padding:10px 11px}
+}

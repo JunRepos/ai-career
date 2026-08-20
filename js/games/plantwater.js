@@ -81,9 +81,35 @@ function _pwResult(){
       </div>
       ${PW_BEST !== null && PW.score >= PW_BEST
         ? `<div class="pw-newbest">최고 기록을 세웠어요!</div>` : ''}
+      ${_pwReflect()}
       <button class="pw-start" data-action="pw-start">다시 도전</button>
       ${_pwRankHtml()}
     </div>
+  </div>`;
+}
+
+/* ── 지능 요소 되짚기 (이 활동의 핵심) ──
+   방금 한 행동이 지능의 어느 요소였는지 이어서 보여줍니다.
+   '생성' 은 이 게임에서 안 쓰인 요소라 흐리게 — 6요소를 구분해서 알게 하는 장치. */
+const PW_FACULTIES = [
+  { key:'인식',      used:true,  desc:'16칸을 훑어보며 시든 화분이 어디인지 찾아냈어요.' },
+  { key:'추론',      used:true,  desc:'잎이 갈색에 가까울수록 남은 시간이 적다는 걸 알아냈어요.' },
+  { key:'예측',      used:true,  desc:'곧 썩을 화분을 미리 헤아려 먼저 물을 줬어요.' },
+  { key:'문제 해결', used:true,  desc:'30초 안에 어떤 순서로 물을 줄지 전략을 세웠어요.' },
+  { key:'학습',      used:true,  desc:'다시 할수록 시드는 패턴에 익숙해지며 점수가 올라가요.' },
+  { key:'생성',      used:false, desc:'물을 주는 대신 새로운 식물을 그려내야 했다면 필요했을 능력이에요.' },
+];
+
+function _pwReflect(){
+  const rows = PW_FACULTIES.map(f => `
+    <div class="pw-fac${f.used ? '' : ' off'}">
+      <div class="pw-fac-k">${esc(f.key)}${f.used ? '' : '<span class="pw-fac-tag">이 게임에선 안 씀</span>'}</div>
+      <div class="pw-fac-d">${esc(f.desc)}</div>
+    </div>`).join('');
+  return `<div class="pw-reflect">
+    <div class="pw-reflect-t">방금 내가 쓴 지능</div>
+    <div class="pw-reflect-s">게임을 하는 동안 이런 능력들을 쓰고 있었어요.</div>
+    <div class="pw-facs">${rows}</div>
   </div>`;
 }
 
@@ -118,11 +144,27 @@ function pwStart(){
   PW.timer = setInterval(pwTick, 100);
 }
 
-// 남은 시간에 따라 시드는 간격을 좁힘 — 마지막 10초는 에임 테스트처럼
+/* 시드는 간격 — 뒤로 갈수록 촘촘하게. 구간 경계에서 뚝 끊기지 않게 부드럽게 잇습니다.
+     0–10초 1.4 · 10–20초 0.9 · 20–27초 0.55 · 27–30초 0.35
+   마지막 3초는 손이 확 바빠지는 구간. */
+const PW_CURVE = [[0,1.4],[10,0.9],[20,0.55],[27,0.35],[30,0.35]];
 function _pwInterval(t){
-  if(t < 10) return 1.8;
-  if(t < 20) return 1.0;
-  return 0.45;
+  for(let i = 0; i < PW_CURVE.length - 1; i++){
+    const [t0, v0] = PW_CURVE[i], [t1, v1] = PW_CURVE[i + 1];
+    if(t < t1){
+      const r = t1 === t0 ? 0 : (t - t0) / (t1 - t0);
+      return v0 + (v1 - v0) * Math.max(0, Math.min(1, r));
+    }
+  }
+  return PW_CURVE[PW_CURVE.length - 1][1];
+}
+
+// 같은 시각에 시들어 있을 수 있는 최대 개수 (구간별)
+function _pwMaxWilt(t){
+  if(t < 10) return 2;
+  if(t < 20) return 3;
+  if(t < 27) return 4;
+  return 5;
 }
 
 function pwTick(){
@@ -132,10 +174,14 @@ function pwTick(){
   // 시들게 하기
   PW.nextWilt -= 0.1;
   if(PW.nextWilt <= 0){
-    const ok = PW.cells.map((c, i) => c.state === 'ok' ? i : -1).filter(i => i >= 0);
-    if(ok.length){
-      const i = ok[Math.floor(Math.random() * ok.length)];
-      PW.cells[i] = { state: 'wilt', since: PW.t, fx: null };
+    // 한꺼번에 너무 많이 시들어 손쓸 수 없게 되지 않도록 구간별 상한을 둡니다
+    const wilting = PW.cells.filter(c => c.state === 'wilt').length;
+    if(wilting < _pwMaxWilt(PW.t)){
+      const ok = PW.cells.map((c, i) => c.state === 'ok' ? i : -1).filter(i => i >= 0);
+      if(ok.length){
+        const i = ok[Math.floor(Math.random() * ok.length)];
+        PW.cells[i] = { state: 'wilt', since: PW.t, fx: null };
+      }
     }
     PW.nextWilt = _pwInterval(PW.t);
   }
