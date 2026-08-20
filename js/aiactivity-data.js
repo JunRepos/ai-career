@@ -179,6 +179,12 @@ function aiaListFor(cls){
   return [...builtin, ...AIA_CUSTOM];
 }
 
+/* 실제로 쓰는 학습지 — 숨긴 것은 뺍니다.
+   선생님 관리 화면만 aiaListFor() 로 전부 보고(되돌리려고), 나머지는 이걸 씁니다. */
+function aiaVisibleFor(cls){
+  return aiaListFor(cls).filter(a => !AIA_HIDDEN[a.id]);
+}
+
 function aiaById(id){
   return AIA_LIST.find(a => a.id === id) || AIA_CUSTOM.find(a => a.id === id) || null;
 }
@@ -190,5 +196,5 @@ function aiaFieldIds(act){
 
 // 학생에게 열어둔 학습지만 (선생님이 '학생에게 보내기' 를 누른 것)
 function aiaOpenFor(cls){
-  return aiaListFor(cls).filter(a => AIA_OPEN[a.id]);
+  return aiaVisibleFor(cls).filter(a => AIA_OPEN[a.id]);
 }

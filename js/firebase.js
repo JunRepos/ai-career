@@ -673,6 +673,30 @@ async function deleteCustomActivity(cid, actId){
   await db.ref(`aiactivity/submissions/${cid}/customActivities/${actId}`).remove();
   // 학생 답안도 함께 정리 (활동이 사라지면 답안만 남아 있을 이유가 없음)
   await db.ref(`aiactivity/submissions/${cid}/${actId}`).remove().catch(() => {});
+  await db.ref(`aiactivity/submissions/${cid}/activityOpen/${actId}`).remove().catch(() => {});
+}
+
+/* ── 기본 학습지 숨기기 ──
+   코드에 박아둔 학습지(1·2차시)는 앱 안에서 지울 수 없습니다. 지워도 앱을
+   업데이트하면 되살아나니까요. 대신 '이 반에서 안 쓴다' 고 표시해 둡니다.
+   되돌릴 수 있고, 학생 답안은 건드리지 않습니다.
+     aiactivity/submissions/{cid}/activityHidden/{actId} : true */
+async function loadActivityHidden(cid){
+  AIA_HIDDEN = {};
+  try {
+    const s = await db.ref(`aiactivity/submissions/${cid}/activityHidden`).get();
+    if(s.exists()) AIA_HIDDEN = s.val() || {};
+  } catch(err){
+    console.warn('[학습지] 숨김 상태 로드 실패:', err.message || err);
+  }
+}
+
+async function setActivityHidden(cid, actId, on){
+  const ref = db.ref(`aiactivity/submissions/${cid}/activityHidden/${actId}`);
+  if(on) await ref.set(true); else await ref.remove();
+  if(on) AIA_HIDDEN[actId] = true; else delete AIA_HIDDEN[actId];
+  // 숨기면 학생 화면에서도 내려갑니다
+  if(on) await setActivityOpen(cid, actId, false);
 }
 
 // 문항 이미지 업로드 — 규칙이 열려 있는 teacherFiles 경로 사용
@@ -817,6 +841,7 @@ async function loadAllClassData(cid){
     loadUnitContent(cid),
     loadCustomActivities(cid),
     loadActivityOpen(cid),
+    loadActivityHidden(cid),
     loadDecks(cid)
   ]);
 

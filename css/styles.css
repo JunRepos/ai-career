@@ -4448,3 +4448,12 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .qb-note-mark{display:inline-block;font-size:10.5px;font-weight:800;
   color:var(--text3);border:1px solid var(--border);border-radius:99px;padding:2px 7px;
   white-space:nowrap}
+
+/* ═══ 학습지 — 목록에서 뺀 것 (되돌리기) ═══ */
+.aia-hidden-box{margin-top:18px;padding:12px 14px;border-radius:12px;
+  border:1px dashed var(--border2);background:var(--surface2)}
+.aia-hidden-t{font-size:12px;font-weight:800;color:var(--text3);margin-bottom:8px}
+.aia-hidden-row{display:flex;align-items:center;justify-content:space-between;
+  gap:10px;padding:6px 0;font-size:13px;color:var(--text2)}
+.aia-hidden-row + .aia-hidden-row{border-top:1px solid var(--border)}
+.aia-hidden-row i{font-style:normal;font-size:11.5px;color:var(--text3)}

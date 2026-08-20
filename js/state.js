@@ -346,6 +346,7 @@ let SLIDE_NOTE_ALL = {};   // 선생님: { 학번: { 페이지: 메모 } }
 let SLIDE_SHOW_ALL = false;// 학생: '내 메모 모아보기' 펼침
 let SLIDE_TC_NOTES = false;// 선생님: 이 장 메모 펼침
 
+let AIA_HIDDEN      = {};       // { [학습지id]: true } — 이 반에서 안 쓰는 기본 학습지
 let AIA_OPEN        = {};       // { [학습지id]: true } — 학생에게 열어둔 학습지 (반별)
 let AIA_EDIT        = null;     // 선생님: 만들기·수정 중인 학습지 id ('new'=신규, null=목록)
 let AIA_DRAFT       = null;     // 작성 중 학습지 { title, subtitle, intro, questions[] }

@@ -198,7 +198,10 @@ function vTcAiActivity(){
 
   if(AIA_SEL) return _vTcAiaStudentList();
 
-  const list = aiaListFor(TC_CLS);
+  const all = aiaListFor(TC_CLS);
+  const list = all.filter(a => !AIA_HIDDEN[a.id]);
+  const hidden = all.filter(a => AIA_HIDDEN[a.id]);
+
   const cards = list.map(a => {
     const open = !!AIA_OPEN[a.id];
     return `<div class="aia-row ${open ? 'is-open' : ''}">
@@ -215,13 +218,23 @@ function vTcAiActivity(){
         ${a.custom
           ? `<button class="btn-xs" data-action="aia-edit" data-aid="${esc(a.id)}">수정</button>
              <button class="btn-xs btn-danger" data-action="aia-del" data-aid="${esc(a.id)}" data-title="${esc(a.title)}">삭제</button>`
-          /* 코드에 박아둔 기본 학습지는 직접 고칠 수 없습니다(앱 업데이트 때 덮어써지니까).
-             대신 복사본을 만들어 마음껏 고치시라고 '복제해서 수정' 을 둡니다.
-             학생 답안은 학습지 id 별로 저장되므로 원본 답안은 그대로 남습니다. */
-          : `<button class="btn-xs" data-action="aia-clone" data-aid="${esc(a.id)}">복제해서 수정</button>`}
+          /* 코드에 박아둔 기본 학습지는 지우거나 고칠 수 없습니다(앱 업데이트 때 되살아나니까).
+             대신 복사본을 만들어 고치고, 안 쓸 거면 이 반 목록에서 치워둡니다. */
+          : `<button class="btn-xs" data-action="aia-clone" data-aid="${esc(a.id)}">복제해서 수정</button>
+             <button class="btn-xs btn-danger" data-action="aia-hide" data-aid="${esc(a.id)}" data-title="${esc(a.title)}">목록에서 빼기</button>`}
       </div>
     </div>`;
   }).join('');
+
+  // 빼둔 학습지 — 되돌릴 수 있게 접어서 보여줍니다
+  const hiddenBox = hidden.length ? `
+    <div class="aia-hidden-box">
+      <div class="aia-hidden-t">목록에서 뺀 학습지 ${hidden.length}개</div>
+      ${hidden.map(a => `<div class="aia-hidden-row">
+        <span>${esc(a.title)}${a.subtitle ? ` <i>${esc(a.subtitle)}</i>` : ''}</span>
+        <button class="btn-xs" data-action="aia-unhide" data-aid="${esc(a.id)}">되돌리기</button>
+      </div>`).join('')}
+    </div>` : '';
 
   return `<div class="box-info" style="margin-bottom:16px"><b>학생에게 보내기</b>를 누르면 그 학습지가 학생 홈 맨 위에 바로 뜹니다. 수업이 끝나면 <b>숨기기</b>를 누르세요. (작성한 답안은 그대로 남습니다)</div>
     <div class="aia-tc-bar">
@@ -229,7 +242,8 @@ function vTcAiActivity(){
       <button class="btn-p btn-sm" data-action="aia-new">+ 학습지 만들기</button>
     </div>
     ${list.length ? `<div class="aia-rows">${cards}</div>`
-                  : emptyBox('📭', '학습지가 없습니다. 위 버튼으로 만들어보세요.')}`;
+                  : emptyBox('📭', '학습지가 없습니다. 위 버튼으로 만들어보세요.')}
+    ${hiddenBox}`;
 }
 
 // 안내(note)는 번호를 안 매기므로, 앞의 안내를 빼고 센 번호

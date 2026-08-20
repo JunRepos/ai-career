@@ -14,6 +14,25 @@ document.addEventListener('click', async e => {
     render(); return;
   }
 
+  /* 기본 학습지 빼기/되돌리기 — 코드에 있는 것이라 지울 수는 없고
+     '이 반에서 안 쓴다' 고만 표시합니다. 학생 답안은 그대로 둡니다. */
+  if(act === 'aia-hide'){
+    if(!TC_CLS) return;
+    if(!confirm(`"${el.dataset.title}" 을(를) 이 반 목록에서 뺄까요?\n\n`
+      + `· 학생 화면에서도 내려갑니다\n`
+      + `· 학생들이 쓴 답안은 지워지지 않습니다\n`
+      + `· 아래 '목록에서 뺀 학습지' 에서 언제든 되돌릴 수 있습니다`)) return;
+    await setActivityHidden(TC_CLS.id, el.dataset.aid, true);
+    toast('목록에서 뺐습니다.', 'ok');
+    render(); return;
+  }
+  if(act === 'aia-unhide'){
+    if(!TC_CLS) return;
+    await setActivityHidden(TC_CLS.id, el.dataset.aid, false);
+    toast('목록으로 되돌렸습니다.', 'ok');
+    render(); return;
+  }
+
   /* ── 선생님: 만들기·수정 ── */
   if(act === 'aia-new'){
     AIA_EDIT = 'new';
@@ -147,7 +166,9 @@ document.addEventListener('click', async e => {
   }
   if(act === 'aia-del'){
     if(!TC_CLS) return;
-    if(!confirm(`"${el.dataset.title}" 학습지를 삭제할까요?\n학생들이 작성한 답안도 함께 지워집니다.`)) return;
+    if(!confirm(`"${el.dataset.title}" 학습지를 삭제할까요?\n\n`
+      + `⚠ 학생들이 쓴 답안까지 함께 지워집니다. 되돌릴 수 없습니다.\n`
+      + `단원 구성에 걸어두셨다면 그 자리는 '지운 학습지' 로 바뀝니다.`)) return;
     await deleteCustomActivity(TC_CLS.id, el.dataset.aid);
     await loadCustomActivities(TC_CLS.id);
     render(); return;
