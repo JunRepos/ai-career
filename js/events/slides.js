@@ -50,6 +50,7 @@ document.addEventListener('click', async e => {
   // 발표 모드 (교실 화면에 크게)
   if(act === 'sl-present'){ openPresent(); return; }
   if(act === 'pv-exit'){ closePresent(); return; }
+  if(act === 'pv-nexttoggle'){ _pvToggleNext(); return; }
   if(act === 'pv-prev' || act === 'pv-next'){
     if(!TC_CLS) return;
     const d = act === 'pv-next' ? 1 : -1;
@@ -227,6 +228,8 @@ document.addEventListener('keydown', async e => {
 
   // 발표 모드에서 B — 검은 화면 (칠판 쓸 때 시선을 뺏지 않게)
   if(PRESENT_ON && (e.key === 'b' || e.key === 'B')){ e.preventDefault(); _pvToggleBlack(); return; }
+  // N — 다음 장 미리보기 (발표자 보기)
+  if(PRESENT_ON && (e.key === 'n' || e.key === 'N')){ e.preventDefault(); _pvToggleNext(); return; }
 
   // 프리젠터 리모컨은 보통 PageUp/PageDown 을 보냅니다
   const NEXT = ['ArrowRight', 'PageDown', ' ', 'Spacebar'];

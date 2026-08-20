@@ -325,6 +325,7 @@ function _vTcSlideNotes(page){
      ESC                      : 끝내기
 ═══════════════════════════════════════ */
 let PRESENT_ON = false;
+let PRESENT_NEXT = false;      // 발표자 보기(다음 장 미리보기) 켜짐 여부 — N 키
 let _presentHideTimer = null;
 
 function openPresent(){
@@ -341,11 +342,19 @@ function openPresent(){
         <span class="pv-page" id="pv-page"></span>
         <button class="pv-btn" data-action="pv-next">→</button>
         <span class="pv-sep"></span>
-        <span class="pv-hint">← → 넘기기 · B 검은화면 · ESC 끝내기</span>
+        <button class="pv-btn pv-nextbtn" data-action="pv-nexttoggle">다음 장</button>
+        <span class="pv-hint">← → 넘기기 · N 다음장 · B 검은화면 · ESC 끝내기</span>
         <button class="pv-btn pv-exit" data-action="pv-exit">끝내기</button>
       </div>
       <div class="pv-zone left"  data-action="pv-prev"></div>
       <div class="pv-zone right" data-action="pv-next"></div>
+
+      <!-- 발표자 보기 — 다음 장 미리보기. N 키로 켜고 끕니다.
+           교실 화면 한 대만 쓰면 학생도 보이므로 기본은 꺼둡니다. -->
+      <div class="pv-next${PRESENT_NEXT ? ' on' : ''}" id="pv-next">
+        <div class="pv-next-h">다음 장 <b id="pv-next-n"></b></div>
+        <div class="pv-next-body" id="pv-next-body"></div>
+      </div>
     </div>`;
 
   const pv = document.getElementById('pv');
@@ -390,6 +399,34 @@ function _presentSync(){
   }
   if(!isGame && img && imgs[page]) img.src = imgs[page].url;
   if(label) label.textContent = `${page + 1} / ${imgs.length}`;
+  _pvNextSync(page, imgs);
+}
+
+/* 다음 장 미리보기 갱신 — 실습 장이면 그림 대신 '실습' 이라고 알려줍니다. */
+function _pvNextSync(page, imgs){
+  const box  = document.getElementById('pv-next');
+  const body = document.getElementById('pv-next-body');
+  const numEl= document.getElementById('pv-next-n');
+  if(!box || !body) return;
+  box.classList.toggle('on', PRESENT_NEXT);
+  if(!PRESENT_NEXT) return;
+
+  const nx = imgs[page + 1];
+  if(!nx){
+    if(numEl) numEl.textContent = '';
+    body.innerHTML = `<div class="pv-next-end">마지막 장입니다</div>`;
+    return;
+  }
+  if(numEl) numEl.textContent = `${page + 2} / ${imgs.length}`;
+  body.innerHTML = _isGame(nx)
+    ? `<div class="pv-next-game">🌿 실습<span>식물 물 주기</span></div>`
+    : `<img src="${esc(nx.url)}" alt=""/>`;
+}
+
+function _pvToggleNext(){
+  PRESENT_NEXT = !PRESENT_NEXT;
+  _pvNextSync(_clampPage(SLIDE_LIVE?.page), _slideImgs());
+  _pvPokeBar();
 }
 
 // 발표 중 실습 장에서만 도는 순위 갱신 타이머
