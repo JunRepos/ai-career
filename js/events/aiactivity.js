@@ -33,8 +33,53 @@ document.addEventListener('click', async e => {
   if(act === 'aia-edit-cancel'){
     AIA_EDIT = null; AIA_DRAFT = null; render(); return;
   }
+  /* 기본 학습지 복제 — 코드에 박아둔 것은 못 고치니 복사본을 만들어 고칩니다.
+     저장은 아직 안 하고 편집 화면만 엽니다(저장을 눌러야 실제로 생깁니다). */
+  if(act === 'aia-clone'){
+    const a = aiaById(el.dataset.aid);
+    if(!a) return;
+    AIA_EDIT = 'new';
+    /* 문항 id 를 새로 뽑습니다 — 원본 학습지의 학생 답안과 섞이지 않게.
+       이때 표의 '자동 채우기'(fillFrom)가 옛 id 를 가리킨 채 남으면
+       복사본에서 자동 채우기가 조용히 안 먹습니다. 같이 갈아끼웁니다. */
+    const idMap = {};
+    const cloned = (a.questions || []).map(q => {
+      const nid = 'q' + genId();
+      idMap[q.id] = nid;
+      return { ...q, id: nid };
+    });
+    cloned.forEach(q => {
+      if(q.fillFrom) q.fillFrom = q.fillFrom.map(f => idMap[f]).filter(Boolean);
+    });
+
+    AIA_DRAFT = {
+      title: (a.title || '') + ' (복사본)',
+      subtitle: a.subtitle || '',
+      intro: a.intro || '',
+      questions: cloned,
+    };
+    render();
+    toast('복사본을 만들었습니다. 고친 뒤 저장을 누르세요.', 'ok');
+    return;
+  }
   if(act === 'qb-add'){
-    AIA_DRAFT.questions.push({ id: 'q' + genId(), text: '', rows: 3 });
+    AIA_DRAFT.questions.push({ id: 'q' + genId(), type: 'text', text: '', rows: 3 });
+    render(); return;
+  }
+  // 문항 유형 바꾸기 — 유형이 바뀌면 안 쓰는 설정은 정리합니다
+  if(act === 'qb-type'){
+    const q = AIA_DRAFT?.questions[+el.dataset.i];
+    if(!q) return;
+    const t = el.dataset.t;
+    q.type = t;
+    if(t === 'check' && !q.options) q.options = [];
+    if(t === 'table'){
+      if(!q.cols || !Array.isArray(q.cols)) q.cols = [];
+      if(q.extra === undefined) q.extra = 3;
+    } else if(t === 'check'){
+      if(typeof q.cols !== 'number') q.cols = 2;   // check 의 cols 는 '몇 칸으로 배치'
+    }
+    if(t === 'text' && !q.rows) q.rows = 3;
     render(); return;
   }
   if(act === 'qb-del'){
@@ -60,6 +105,11 @@ document.addEventListener('click', async e => {
     if(!d.title.trim()){ if(err) err.textContent = '제목을 입력하세요.'; return; }
     const qs = d.questions.filter(q => (q.text || '').trim());
     if(!qs.length){ if(err) err.textContent = '문항을 한 개 이상 추가하세요.'; return; }
+    // 유형별로 꼭 있어야 하는 것 — 없으면 학생 화면이 빈 칸으로 보입니다
+    const badCheck = qs.find(q => q.type === 'check' && !(q.options || []).length);
+    if(badCheck){ if(err) err.textContent = `"${badCheck.text.slice(0,14)}" — 체크박스 문항에 보기를 한 줄에 하나씩 적어주세요.`; return; }
+    const badTable = qs.find(q => q.type === 'table' && !(q.cols || []).length);
+    if(badTable){ if(err) err.textContent = `"${badTable.text.slice(0,14)}" — 표 문항에 열 이름을 쉼표로 적어주세요.`; return; }
 
     AIA_SAVING = 'edit'; render();
     try {
@@ -70,7 +120,19 @@ document.addEventListener('click', async e => {
         intro: (d.intro || '').trim(),
         createdAt: new Date().toISOString(),
         questions: Object.fromEntries(qs.map((q, i) => {
-          const o = { text: q.text.trim(), rows: q.rows || 3, order: i };
+          const t = q.type || 'text';
+          const o = { text: q.text.trim(), order: i };
+          if(t !== 'text') o.type = t;
+          if((q.desc || '').trim()) o.desc = q.desc.trim();
+          if(t === 'text')  o.rows = q.rows || 3;
+          if(t === 'note' && (q.url || '').trim()) o.url = q.url.trim();
+          if(t === 'check'){ o.options = q.options || []; o.cols = q.cols || 2; }
+          if(t === 'table'){
+            o.cols = q.cols || [];
+            if((q.fixed || []).length) o.fixed = q.fixed;
+            o.extra = (q.extra === undefined) ? 3 : q.extra;
+            if((q.fillFrom || []).length) o.fillFrom = q.fillFrom;
+          }
           if(q.imageUrl){ o.imageUrl = q.imageUrl; o.imagePath = q.imagePath || ''; }
           return [q.id, o];
         })),
@@ -219,13 +281,26 @@ document.addEventListener('click', async e => {
 // 학생: 입력 (debounce 자동 저장)
 /* ── 학습지 만들기 — 입력은 다시 그리지 않고 초안에만 반영(커서 유지) ── */
 document.addEventListener('input', e => {
-  const el = e.target.closest('[data-action="qb-meta"], [data-action="qb-text"]');
+  const el = e.target.closest('[data-action="qb-meta"], [data-action="qb-text"], [data-action="qb-field"]');
   if(!el || !AIA_DRAFT) return;
   if(el.dataset.action === 'qb-meta'){
     AIA_DRAFT[el.dataset.k] = el.value;
+    return;
+  }
+  const q = AIA_DRAFT.questions[+el.dataset.i];
+  if(!q) return;
+  if(el.dataset.action === 'qb-text'){ q.text = el.value; return; }
+
+  // 유형별 입력칸 — 화면을 다시 그리지 않아 커서가 튀지 않습니다
+  const k = el.dataset.k;
+  if(k === '_options'){
+    q.options = el.value.split('\n').map(s => s.trim()).filter(Boolean);
+  } else if(k === '_cols'){
+    q.cols = el.value.split(',').map(s => s.trim()).filter(Boolean);
+  } else if(k === '_fixed'){
+    q.fixed = el.value.split(',').map(s => s.trim()).filter(Boolean);
   } else {
-    const q = AIA_DRAFT.questions[+el.dataset.i];
-    if(q) q.text = el.value;
+    q[k] = el.value;     // desc, url
   }
 });
 
@@ -247,6 +322,27 @@ document.addEventListener('change', async e => {
   if(sel && AIA_DRAFT){
     const q = AIA_DRAFT.questions[+sel.dataset.i];
     if(q) q.rows = +sel.value;
+    return;
+  }
+  // 체크박스 배치 칸 수
+  const colSel = e.target.closest('[data-action="qb-cols"]');
+  if(colSel && AIA_DRAFT){
+    const q = AIA_DRAFT.questions[+colSel.dataset.i];
+    if(q) q.cols = +colSel.value;
+    return;
+  }
+  // 표 빈 줄 수
+  const exSel = e.target.closest('[data-action="qb-extra"]');
+  if(exSel && AIA_DRAFT){
+    const q = AIA_DRAFT.questions[+exSel.dataset.i];
+    if(q) q.extra = +exSel.value;
+    return;
+  }
+  // 표 자동 채우기 — 앞선 체크박스 문항에서 고른 보기를 첫 칸에
+  const ffSel = e.target.closest('[data-action="qb-fillfrom"]');
+  if(ffSel && AIA_DRAFT){
+    const q = AIA_DRAFT.questions[+ffSel.dataset.i];
+    if(q) q.fillFrom = ffSel.value ? [ffSel.value] : [];
     return;
   }
   // 문항 이미지 업로드

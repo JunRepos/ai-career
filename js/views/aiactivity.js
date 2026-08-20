@@ -209,8 +209,13 @@ function vTcAiActivity(){
           ${open ? '학생에게 숨기기' : '학생에게 보내기'}
         </button>
         <button class="btn-xs" data-action="aia-tc-pick" data-aid="${esc(a.id)}">답안</button>
-        ${a.custom ? `<button class="btn-xs" data-action="aia-edit" data-aid="${esc(a.id)}">수정</button>
-          <button class="btn-xs btn-danger" data-action="aia-del" data-aid="${esc(a.id)}" data-title="${esc(a.title)}">삭제</button>` : ''}
+        ${a.custom
+          ? `<button class="btn-xs" data-action="aia-edit" data-aid="${esc(a.id)}">수정</button>
+             <button class="btn-xs btn-danger" data-action="aia-del" data-aid="${esc(a.id)}" data-title="${esc(a.title)}">삭제</button>`
+          /* 코드에 박아둔 기본 학습지는 직접 고칠 수 없습니다(앱 업데이트 때 덮어써지니까).
+             대신 복사본을 만들어 마음껏 고치시라고 '복제해서 수정' 을 둡니다.
+             학생 답안은 학습지 id 별로 저장되므로 원본 답안은 그대로 남습니다. */
+          : `<button class="btn-xs" data-action="aia-clone" data-aid="${esc(a.id)}">복제해서 수정</button>`}
       </div>
     </div>`;
   }).join('');
@@ -224,26 +229,90 @@ function vTcAiActivity(){
                   : emptyBox('📭', '학습지가 없습니다. 위 버튼으로 만들어보세요.')}`;
 }
 
+// 안내(note)는 번호를 안 매기므로, 앞의 안내를 빼고 센 번호
+function _qbNo(questions, i){
+  let n = 0;
+  for(let k = 0; k <= i; k++) if((questions[k].type || 'text') !== 'note') n++;
+  return n;
+}
+
 /* ── 학습지 만들기·수정 ── */
 function _vTcAiaEditor(){
   const d = AIA_DRAFT || { title: '', subtitle: '', intro: '', questions: [] };
   const isNew = AIA_EDIT === 'new';
 
-  const qs = (d.questions || []).map((q, i) => `
+  const qs = (d.questions || []).map((q, i) => {
+    const t = q.type || 'text';
+    // 유형 고르기 — 글/안내/체크박스/표
+    const typeBtns = [['text','글'],['note','안내'],['check','체크박스'],['table','표']].map(([k, l]) =>
+      `<button class="btn-xs${t === k ? ' btn-p' : ''}" data-action="qb-type" data-i="${i}" data-t="${k}">${l}</button>`
+    ).join('');
+
+    // 유형마다 다른 설정칸
+    let extra = '';
+    if(t === 'text'){
+      extra = `<label class="qb-rows">답변 칸
+          <select data-action="qb-rows" data-i="${i}">
+            ${[1,2,3,4,6,10].map(r => `<option value="${r}"${(q.rows || 3) === r ? ' selected' : ''}>${r}줄</option>`).join('')}
+          </select></label>`;
+    } else if(t === 'note'){
+      extra = `<span class="qb-hint">읽기만 하는 안내 상자입니다 (답변칸 없음)</span>`;
+    } else if(t === 'check'){
+      extra = `<label class="qb-rows">칸 수
+          <select data-action="qb-cols" data-i="${i}">
+            ${[1,2,3,4].map(c => `<option value="${c}"${(q.cols || 2) === c ? ' selected' : ''}>${c}칸</option>`).join('')}
+          </select></label>`;
+    } else if(t === 'table'){
+      extra = `<label class="qb-rows">빈 줄
+          <select data-action="qb-extra" data-i="${i}">
+            ${[0,1,2,3,4,5,6,8,10].map(n => `<option value="${n}"${(q.extra || 3) === n ? ' selected' : ''}>${n}줄</option>`).join('')}
+          </select></label>`;
+    }
+
+    // 유형별 본문 입력칸 (보기 목록 / 표 열·행 / 안내 링크)
+    let fields = `<input class="qb-desc" type="text" data-action="qb-field" data-i="${i}" data-k="desc"
+        placeholder="설명 (선택) — 질문 아래 작은 글씨" value="${esc(q.desc || '')}"/>`;
+    if(t === 'note'){
+      fields += `<input class="qb-desc" type="text" data-action="qb-field" data-i="${i}" data-k="url"
+        placeholder="링크 주소 (선택) — 영상·자료" value="${esc(q.url || '')}"/>`;
+    }
+    if(t === 'check'){
+      fields += `<textarea class="qb-desc" data-action="qb-field" data-i="${i}" data-k="_options" rows="3"
+        placeholder="보기를 한 줄에 하나씩 적으세요&#10;유튜브 추천&#10;챗GPT&#10;번역기">${esc((q.options || []).join('\n'))}</textarea>`;
+    }
+    if(t === 'table'){
+      fields += `<input class="qb-desc" type="text" data-action="qb-field" data-i="${i}" data-k="_cols"
+        placeholder="열 이름을 쉼표로 — 예: 인공지능, 인식, 추론" value="${esc((q.cols || []).join(', '))}"/>`;
+      fields += `<input class="qb-desc" type="text" data-action="qb-field" data-i="${i}" data-k="_fixed"
+        placeholder="첫 칸에 미리 넣을 항목 (선택, 쉼표로)" value="${esc((q.fixed || []).join(', '))}"/>`;
+      // 앞선 체크박스 문항에서 고른 보기를 표에 자동으로 넣기
+      const checkQs = (d.questions || []).map((x, xi) => ({ x, xi }))
+        .filter(o => (o.x.type === 'check') && o.xi < i);
+      if(checkQs.length){
+        const opts = checkQs.map(o =>
+          `<option value="${esc(o.x.id)}"${(q.fillFrom || []).includes(o.x.id) ? ' selected' : ''}>${o.xi + 1}번에서 고른 것</option>`
+        ).join('');
+        fields += `<label class="qb-rows">자동 채우기
+          <select data-action="qb-fillfrom" data-i="${i}">
+            <option value="">안 씀</option>${opts}
+          </select></label>`;
+      }
+    }
+
+    return `
     <div class="qb">
-      <div class="qb-no">${_dotNum(i + 1)}</div>
+      <div class="qb-no">${t === 'note' ? '<span class="qb-note-mark">안내</span>' : _dotNum(_qbNo(d.questions, i))}</div>
       <div class="qb-main">
-        <textarea class="qb-text" data-action="qb-text" data-i="${i}" rows="2">${esc(q.text || '')}</textarea>
+        <div class="qb-types">${typeBtns}</div>
+        <textarea class="qb-text" data-action="qb-text" data-i="${i}" rows="2"
+          placeholder="${t === 'note' ? '안내 제목' : '질문을 적으세요'}">${esc(q.text || '')}</textarea>
+        ${fields}
         <div class="qb-tools">
-          <label class="qb-rows">답변 칸
-            <select data-action="qb-rows" data-i="${i}">
-              ${[2,3,4,6,10].map(r => `<option value="${r}"${(q.rows || 3) === r ? ' selected' : ''}>${r}줄</option>`).join('')}
-            </select>
-          </label>
-          <label class="btn-xs qb-img-btn">
+          ${extra}
+          ${t !== 'note' ? `<label class="btn-xs qb-img-btn">
             ${q.imageUrl ? '이미지 교체' : '이미지 추가'}
             <input type="file" accept="image/*" data-action="qb-img" data-i="${i}" hidden/>
-          </label>
+          </label>` : ''}
           ${q.imageUrl ? `<button class="btn-xs btn-danger" data-action="qb-img-del" data-i="${i}">이미지 삭제</button>` : ''}
           <span class="qb-spacer"></span>
           <button class="btn-xs" data-action="qb-move" data-i="${i}" data-dir="up" ${i === 0 ? 'disabled' : ''}>▲</button>
@@ -253,7 +322,8 @@ function _vTcAiaEditor(){
         ${q._uploading ? '<div class="qb-uploading">이미지 올리는 중…</div>' : ''}
         ${q.imageUrl ? `<img class="qb-img" src="${esc(q.imageUrl)}" alt=""/>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   return `<button class="rep-back" data-action="aia-edit-cancel">← 학습지 목록</button>
     <div class="section">
