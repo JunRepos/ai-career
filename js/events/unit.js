@@ -14,6 +14,7 @@ function _ucReadForm(){
   if(g('uc-url'))   UC_DRAFT.url   = g('uc-url').value;
   if(g('uc-body'))  UC_DRAFT.body  = g('uc-body').value;
   if(g('uc-refid')) UC_DRAFT.refId = g('uc-refid').value;
+  if(g('uc-deckid')) UC_DRAFT.deckId = g('uc-deckid').value;
 }
 
 // 앱연결 항목 열기 — 단원에서 기능(노트북/미션/OJ/퀴즈/AI코딩/과제) 진입
@@ -136,6 +137,22 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  /* ── 학생: 단원에 걸린 수업자료 열기 ──
+     수업자료 화면을 그대로 쓰되 '혼자 보기'로 열고, 그 자료의 내 메모를 불러옵니다.
+     (수업 때 쓴 필기와 같은 곳에 저장돼 있어 그대로 이어서 보입니다) */
+  if(act === 'uc-open-slides'){
+    const deckId = el.dataset.deckid;
+    if(!deckId || !deckById(deckId)) { toast('수업자료를 찾을 수 없습니다.', 'err'); return; }
+    await _slFlushNote();               // 보던 자료의 메모부터 저장
+    SLIDE_VIEW_DECK = deckId;
+    SLIDE_MYPAGE = 0; SLIDE_FOLLOW = false; SLIDE_SHOW_ALL = false;
+    ST_TAB = 'slides';
+    UNIT_RETURN = { unitKey: el.dataset.unit, section: el.dataset.sec };
+    render();
+    if(SEL_CLS && ST_USER){ await loadMyNotes(SEL_CLS.id, ST_USER.number); render(); }
+    return;
+  }
+
   /* ── 선생님: 단원/섹션 선택 ── */
   if(act === 'uc-pick-unit'){
     UC_TC_UNIT = el.dataset.unit; UC_EDIT = null; UC_DRAFT = null; render(); return;
@@ -166,7 +183,7 @@ document.addEventListener('click', async e => {
     const it = (((UNIT_CONTENT[UC_TC_UNIT] || {})[UC_TC_SEC]) || []).find(x => x.id === el.dataset.id);
     if(!it) return;
     UC_EDIT = it.id;
-    UC_DRAFT = { type: it.type || 'file', title: it.title || '', desc: it.desc || '', url: it.url || '', body: it.body || '', refType: it.refType || 'notebook', refId: it.refId || '', _files: _ucFiles(it) };
+    UC_DRAFT = { type: it.type || 'file', title: it.title || '', desc: it.desc || '', url: it.url || '', body: it.body || '', refType: it.refType || 'notebook', refId: it.refId || '', deckId: it.deckId || '', _files: _ucFiles(it) };
     render(); return;
   }
   if(act === 'uc-cancel'){
@@ -181,7 +198,9 @@ document.addEventListener('click', async e => {
     const setErr = m => { if(errEl) errEl.textContent = m; };
     const d = UC_DRAFT || {};
     const type = d.type || 'file';
-    if(type !== 'app' && !(d.title || '').trim()){ setErr('제목을 입력하세요.'); return; }
+    // 수업자료는 제목을 비우면 그 자료 제목을 씁니다 — 제목 필수에서 제외
+    if(type !== 'app' && type !== 'slides' && !(d.title || '').trim()){ setErr('제목을 입력하세요.'); return; }
+    if(type === 'slides' && !(d.deckId || '').trim()){ setErr('연결할 수업자료를 선택하세요.'); return; }
     if(type === 'link' && !(d.url || '').trim()){ setErr('링크 주소를 입력하세요.'); return; }
     if(type === 'text' && !(d.body || '').trim()){ setErr('본문을 입력하세요.'); return; }
     if(type === 'app' && !UC_APP_FEATURE.includes(d.refType || 'notebook') && !(d.refId || '').trim()){ setErr('연결할 항목을 선택하세요.'); return; }
@@ -205,6 +224,10 @@ document.addEventListener('click', async e => {
       if(type !== 'text' && (d.desc || '').trim()) data.desc = d.desc.trim();
       if(type === 'link') data.url = d.url.trim();
       if(type === 'text') data.body = d.body;
+      if(type === 'slides'){
+        data.deckId = (d.deckId || '').trim();
+        if(!data.title) data.title = deckById(data.deckId)?.title || '수업자료';
+      }
       if(type === 'app'){
         const refType = d.refType || 'notebook';
         data.refType = refType;

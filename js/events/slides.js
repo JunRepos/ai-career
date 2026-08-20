@@ -250,7 +250,7 @@ document.addEventListener('click', async e => {
   // 메모 전체를 글로 복사 (복습·정리용)
   if(act === 'sl-copy-notes'){
     const imgs = _slideImgs();
-    const lines = [`${SLIDE_DECK?.title || '수업자료'} — ${ST_USER?.name || ''} 메모`, ''];
+    const lines = [`${curDeck()?.title || '수업자료'} — ${ST_USER?.name || ''} 메모`, ''];
     imgs.forEach((_, i) => {
       const t = (SLIDE_NOTES[i] || '').trim();
       if(t) lines.push(`${i + 1}장) ${t}`);

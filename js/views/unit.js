@@ -65,6 +65,24 @@ function setUnitSec(s){ ST_UNIT_SEC = s; render(); }
 
 // 학생용 항목 카드 (유형별)
 function _ucStudentCard(it, unitKey){
+  // 수업자료(슬라이드) — 누르면 수업자료 화면 그대로, 내 메모까지 같이
+  if(it.type === 'slides'){
+    const deck = deckById(it.deckId);
+    const n = deck ? (deck.images || []).length : 0;
+    const gone = !deck;
+    const meta = gone
+      ? '선생님이 지운 수업자료입니다'
+      : `${it.desc ? esc(it.desc) + ' · ' : ''}${n}장 · 다시 보기 →`;
+    return `<div class="list-row${gone ? '' : ' click'}"
+        ${gone ? '' : `data-action="uc-open-slides" data-deckid="${esc(it.deckId || '')}" data-unit="${esc(unitKey || '')}" data-sec="${esc(ST_UNIT_SEC)}"`}>
+      <div class="row-icon">🖥️</div>
+      <div class="row-info">
+        <div class="row-title">${esc(it.title || deck?.title || '수업자료')}</div>
+        <div class="row-meta">${meta}</div>
+      </div>
+      <div class="row-right"><span style="color:var(--text3);font-size:15px">${gone ? '—' : '→'}</span></div>
+    </div>`;
+  }
   if(it.type === 'app'){
     const m = UC_APP_META[it.refType] || { ico: '🔌', label: '앱' };
     const isAll = it.refId === '*';
@@ -148,9 +166,12 @@ function setUcSec(s){ UC_TC_SEC = s; UC_EDIT = null; UC_DRAFT = null; render(); 
 // 선생님 항목 행 (편집/삭제/순서)
 function _ucTcRow(it, i, n){
   const am = it.type === 'app' ? (UC_APP_META[it.refType] || { ico: '🔌', label: '앱' }) : null;
-  const ico = it.type === 'file' ? '📎' : it.type === 'link' ? '🔗' : it.type === 'text' ? '📝' : (am ? am.ico : '🔌');
+  const ico = it.type === 'file' ? '📎' : it.type === 'slides' ? '🖥️' : it.type === 'link' ? '🔗' : it.type === 'text' ? '📝' : (am ? am.ico : '🔌');
+  const deck = it.type === 'slides' ? deckById(it.deckId) : null;
   const meta = it.type === 'file'
     ? `📎 파일 ${_ucFiles(it).length}개`
+    : it.type === 'slides'
+    ? (deck ? `🖥️ 수업자료 ${(deck.images || []).length}장` : '⚠️ 연결된 수업자료가 삭제됨')
     : it.type === 'link'
     ? `🔗 ${esc(it.url || '')}`
     : it.type === 'text'
@@ -180,12 +201,27 @@ function _ucForm(){
   const editing = UC_EDIT !== 'new';
   // '앱연결'(노트북·OJ·미션 등)은 정보 교과 전용 기능이라 이 앱에서는 빼둡니다.
   // 코드는 그대로 남아 있어 필요하면 아래 목록에 ['app','앱연결'] 을 다시 넣으면 됩니다.
-  const typeBtns = [['file', '파일'], ['link', '링크'], ['text', '글']].map(([k, l]) =>
+  const typeBtns = [['file', '파일'], ['slides', '수업자료'], ['link', '링크'], ['text', '글']].map(([k, l]) =>
     `<button class="btn-sm ${d.type === k ? 'btn-p' : ''}" data-action="uc-type" data-type="${k}">${l}</button>`
   ).join(' ');
 
   let typeFields = '';
-  if(d.type === 'file'){
+  if(d.type === 'slides'){
+    // 올려둔 수업자료(슬라이드) 중 하나를 이 단원에 걸어둡니다.
+    if(!SLIDE_DECKS.length){
+      typeFields = `<div class="box-warn" style="font-size:12px">
+        올려둔 수업자료가 없습니다. <b>수업자료</b> 탭에서 먼저 슬라이드를 올려주세요.</div>`;
+    } else {
+      const opts = SLIDE_DECKS.map(x =>
+        `<option value="${esc(x.id)}" ${d.deckId === x.id ? 'selected' : ''}>${esc(x.title || '제목 없는 수업자료')} (${(x.images||[]).length}장)</option>`
+      ).join('');
+      typeFields = `<div class="field"><label>연결할 수업자료</label>
+        <select id="uc-deckid">${d.deckId ? '' : '<option value="">— 수업자료 선택 —</option>'}${opts}</select>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">
+          💡 학생은 수업자료 화면 그대로 보고, <b>수업 때 쓴 메모가 그대로 남아 있습니다.</b>
+          (제목을 비우면 수업자료 제목을 씁니다)</div></div>`;
+    }
+  } else if(d.type === 'file'){
     const cur = (d._files || []);
     typeFields = `${cur.length ? `<div class="box-ok" style="font-size:12px">현재 파일: ${cur.map(f => esc(f.name)).join(', ')} <span style="color:var(--text3)">(새로 선택하면 교체)</span></div>` : ''}
       <div class="field"><label>파일 ${editing ? '(교체 시에만 선택)' : '(여러 개 가능)'}</label><input id="uc-file" type="file" multiple/></div>

@@ -45,8 +45,9 @@ function _stNavGroups(){
     if(!isInfo && aiaOpenFor(SEL_CLS).length){
       groups.push({ items:[{key:'aia', ico:'📋', label:'활동지'}] });
     }
-    // 수업자료 — 올라온 슬라이드가 있을 때만. 같이 보는 중이면 초록 점
-    if(_slideCount()){
+    // 수업자료 — 선생님이 '이번 시간'으로 연 자료가 있을 때만. 같이 보는 중이면 초록 점
+    // (단원에서 열어보는 자료는 여기 말고 단원 안에서 들어갑니다)
+    if((SLIDE_DECK?.images || []).length){
       groups.push({ dot: !!SLIDE_LIVE?.on, items:[{key:'slides', ico:'🖥️', label:'수업자료'}] });
     }
     // 평가 그룹: 진행 중인 항목이 하나라도 있을 때만 노출(시즌성). 점은 항상 진행 중 의미.
@@ -161,6 +162,13 @@ function returnToUnit(){
   if(!UNIT_RETURN) return;
   const { unitKey, section } = UNIT_RETURN;
   UNIT_RETURN = null;
+  // 단원에서 연 수업자료를 보고 있었다면 메모부터 저장하고 '이번 시간 자료'로 되돌립니다
+  if(SLIDE_VIEW_DECK){
+    if(typeof _slFlushNote === 'function') _slFlushNote();
+    SLIDE_VIEW_DECK = null;
+    SLIDE_MYPAGE = 0; SLIDE_FOLLOW = true;
+    if(SEL_CLS && ST_USER) loadMyNotes(SEL_CLS.id, ST_USER.number).then(render);
+  }
   ST_TAB = 'unit-' + unitKey;
   ST_UNIT_SEC = section || 'material';
   VIEW = 'student';
@@ -255,6 +263,14 @@ function setAsmtMode(m){
 
 function setST(t){
   UNIT_RETURN = null;  // 사이드바로 이동하면 단원 복귀 마커 해제
+  /* 단원에서 열어보던 수업자료도 해제 — 사이드바 '수업자료'는 늘 '이번 시간 자료'입니다.
+     쓰던 메모는 잃지 않게 먼저 저장합니다. */
+  if(SLIDE_VIEW_DECK){
+    if(typeof _slFlushNote === 'function') _slFlushNote();
+    SLIDE_VIEW_DECK = null;
+    SLIDE_MYPAGE = 0; SLIDE_FOLLOW = true;
+    if(SEL_CLS && ST_USER) loadMyNotes(SEL_CLS.id, ST_USER.number).then(render);
+  }
   ST_TAB = t;
   if(t.indexOf('unit-') === 0){
     ST_UNIT_SEC = 'material';  // 단원 진입 시 항상 수업 자료부터

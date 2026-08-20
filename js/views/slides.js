@@ -8,7 +8,16 @@
              혼자 앞뒤로 보다가 '선생님 화면으로' 누르면 다시 합류
 ═══════════════════════════════════════ */
 
-function _slideImgs(){ return (SLIDE_DECK && SLIDE_DECK.images) || []; }
+/* 지금 화면에 그릴 자료.
+   학생이 단원에서 연 자료(SLIDE_VIEW_DECK)가 있으면 그것을, 없으면 이번 시간 자료를. */
+function curDeck(){
+  if(SLIDE_VIEW_DECK) return deckById(SLIDE_VIEW_DECK);
+  return SLIDE_DECK;
+}
+// 단원에서 연 자료를 보는 중인지 (혼자 보기 — 선생님을 따라가지 않음)
+function _isUnitView(){ return !!SLIDE_VIEW_DECK; }
+
+function _slideImgs(){ const d = curDeck(); return (d && d.images) || []; }
 // 실습 슬라이드인지 (이미지 대신 게임이 뜨는 장)
 function _isGame(im){ return !!(im && im.type === 'game'); }
 function _slideCount(){ return _slideImgs().length; }
@@ -17,11 +26,18 @@ function _clampPage(p){ return Math.max(0, Math.min(_slideCount() - 1, p || 0));
 /* ── 학생 ── */
 function vStSlides(){
   const imgs = _slideImgs();
-  if(!imgs.length) return emptyBox('🖥️', '이번 시간에 볼 수업자료가 아직 없어요.');
+  if(!imgs.length){
+    // 단원에서 연 자료인데 선생님이 그 자료를 지운 경우
+    if(_isUnitView()) return emptyBox('🖥️', '이 수업자료는 선생님이 지웠어요.');
+    return emptyBox('🖥️', '이번 시간에 볼 수업자료가 아직 없어요.');
+  }
 
-  const live = SLIDE_LIVE || {};
+  /* 단원에서 연 자료는 '혼자 보기' 입니다 — 선생님이 지금 다른 자료를 넘기고 있어도
+     따라가지 않습니다. (복습용으로 여는 것이므로) */
+  const unitView = _isUnitView();
+  const live = unitView ? {} : (SLIDE_LIVE || {});
   const teacherPage = _clampPage(live.page);
-  const page = (SLIDE_FOLLOW && live.on) ? teacherPage : _clampPage(SLIDE_MYPAGE);
+  const page = (!unitView && SLIDE_FOLLOW && live.on) ? teacherPage : _clampPage(SLIDE_MYPAGE);
   const im = imgs[page];
 
   if(SLIDE_SHOW_ALL) return _vStNotesAll();
@@ -40,7 +56,9 @@ function vStSlides(){
     ? `<button class="sl-rejoin" data-action="sl-follow">선생님 화면으로 돌아가기 (${teacherPage + 1}장)</button>`
     : '';
 
-  const statusChip = live.on
+  const statusChip = unitView
+    ? `<span class="sl-chip">다시 보기 — 수업 때 쓴 메모가 그대로 있어요</span>`
+    : live.on
     ? `<span class="sl-live"><i></i>같이 보는 중</span>`
     : `<span class="sl-chip">혼자 보는 중 — 선생님이 시작하면 자동으로 따라갑니다</span>`;
 
@@ -55,7 +73,7 @@ function vStSlides(){
 
   return `
     <div class="sl-bar">
-      ${SLIDE_DECK?.title ? `<span class="sl-deck-title">${esc(SLIDE_DECK.title)}</span>` : ''}
+      ${curDeck()?.title ? `<span class="sl-deck-title">${esc(curDeck().title)}</span>` : ''}
       ${statusChip}
       <span class="sl-page">${page + 1} / ${imgs.length}</span>
     </div>

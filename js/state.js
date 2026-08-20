@@ -330,6 +330,10 @@ let SLIDE_DECKS  = [];     // [{ id, title, updatedAt, images:[...] }] — 올�
 let SLIDE_DECK   = null;   // 지금 열어둔 자료 하나 (SLIDE_DECKS 중 하나를 가리킴)
 let SLIDE_LIVE   = null;   // { on, page, deckId } — 무슨 자료를 몇 장까지 같이 보는 중인지
 let SLIDE_TC_SEL = null;   // 선생님: 목록에서 열어본 자료 id (null 이면 목록 화면)
+/* 학생: 단원 구성에서 연 수업자료 id.
+   null 이면 '이번 시간 자료'(선생님을 따라가는 것)를 봅니다.
+   값이 있으면 그 자료를 혼자 봅니다 — 메모는 자료별로 저장되므로 수업 때 쓴 필기가 그대로 보입니다. */
+let SLIDE_VIEW_DECK = null;
 let SLIDE_WATCH  = null;   // 실시간 구독 핸들 (정리용)
 let SLIDE_FOLLOW = true;   // 학생: 선생님을 따라갈지 (혼자 앞뒤로 보면 false)
 let SLIDE_MYPAGE = 0;      // 학생: 혼자 보는 중일 때의 페이지

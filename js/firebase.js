@@ -836,18 +836,23 @@ async function loadAllClassData(cid){
   let _lastPage = SLIDE_LIVE.page ?? null;
   let _lastDeck = SLIDE_LIVE.deckId || null;
   watchLive(cid, live => {
+    // 단원에서 자료를 열어보는 중인 학생은 건드리지 않습니다 (읽던 쪽·메모가 튀지 않게)
+    const readingUnitDeck = !!SLIDE_VIEW_DECK;
+
     // 선생님이 다른 수업자료로 바꾸면 그 자료의 메모로 갈아끼웁니다
     if(live.deckId !== _lastDeck){
-      if(typeof _slFlushNote === 'function') _slFlushNote();
       _lastDeck = live.deckId || null;
       _lastPage = null;
       syncCurrentDeck();
-      SLIDE_MYPAGE = 0; SLIDE_FOLLOW = true; SLIDE_SHOW_ALL = false;
-      if(ST_USER) loadMyNotes(cid, ST_USER.number).then(() => {
-        if(VIEW === 'student' || VIEW === 'teacher') render();
-      });
+      if(!readingUnitDeck){
+        if(typeof _slFlushNote === 'function') _slFlushNote();
+        SLIDE_MYPAGE = 0; SLIDE_FOLLOW = true; SLIDE_SHOW_ALL = false;
+        if(ST_USER) loadMyNotes(cid, ST_USER.number).then(() => {
+          if(VIEW === 'student' || VIEW === 'teacher') render();
+        });
+      }
     }
-    if(_lastPage !== null && live.page !== _lastPage){
+    if(!readingUnitDeck && _lastPage !== null && live.page !== _lastPage){
       if(typeof _slFlushNote === 'function') _slFlushNote();
       if(typeof _slSyncGame === 'function') _slSyncGame(_lastPage, live.page);
     }
@@ -1051,9 +1056,11 @@ function unwatchLive(){
    자료마다 따로 저장합니다. 1차시 메모가 2차시 자료에 딸려오지 않게.
    장별로도 따로라서 선생님이 넘겨도 섞이거나 사라지지 않습니다. */
 
-// 지금 보고 있는 자료 id — 메모를 어디에 넣을지 정합니다.
+/* 지금 보고 있는 자료 id — 메모를 어디에 넣을지 정합니다.
+   단원에서 연 자료(SLIDE_VIEW_DECK)가 우선입니다. 그래야 수업 시간에 쓴 필기와
+   나중에 단원에서 열어 쓴 필기가 같은 곳에 쌓입니다. */
 function _noteDeckId(){
-  return SLIDE_LIVE?.deckId || SLIDE_DECK?.id || LEGACY_DECK_ID;
+  return SLIDE_VIEW_DECK || SLIDE_LIVE?.deckId || SLIDE_DECK?.id || LEGACY_DECK_ID;
 }
 
 async function loadMyNotes(cid, snum){
