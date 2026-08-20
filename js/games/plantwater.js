@@ -53,7 +53,8 @@ function _pwBoard(){
     const bar = c.state === 'wilt'
       ? `<i class="pw-fuse" style="width:${Math.max(0, 1 - (PW.t - c.since) / PW_ROT) * 100}%"></i>` : '';
     return `<button class="pw-cell${cls}${hit}" data-action="pw-hit" data-i="${i}">
-      <span class="pw-plant">🌿</span>${bar}
+      <span class="pw-plant">${_pwSprite(i)}</span>
+      <span class="pw-splash"></span>${bar}
     </button>`;
   }).join('');
 
@@ -66,6 +67,30 @@ function _pwBoard(){
     <div class="pw-grid">${cells}</div>
     <div class="pw-tip">시든 화분(누렇게 변한 것)만 누르세요</div>
   </div>`;
+}
+
+/* 화분 스프라이트 — 이모지 대신 직접 그립니다.
+   색은 CSS(currentColor 계열 변수)가 시듦/썩음에 따라 바꿔줍니다.
+   칸마다 잎 모양이 조금씩 달라야 '밭' 처럼 보여서 i 로 3종을 돌립니다. */
+function _pwSprite(i){
+  const v = i % 3;
+  const leaves = v === 0
+    ? `<path class="lf" d="M32 34c0-9-6-15-14-16 1 9 6 14 14 16z"/>
+       <path class="lf" d="M32 34c0-9 6-15 14-16-1 9-6 14-14 16z"/>
+       <path class="lf" d="M32 34c-5-6-5-13-1-19 4 6 5 13 1 19z"/>`
+    : v === 1
+    ? `<path class="lf" d="M32 35c-2-10-9-14-17-14 3 9 9 13 17 14z"/>
+       <path class="lf" d="M32 35c2-10 9-14 17-14-3 9-9 13-17 14z"/>
+       <circle class="lf" cx="32" cy="17" r="5"/>`
+    : `<path class="lf" d="M32 35c-7-4-10-11-9-19 7 4 10 11 9 19z"/>
+       <path class="lf" d="M32 35c7-4 10-11 9-19-7 4-10 11-9 19z"/>
+       <path class="lf" d="M32 35c0-7 0-12 0-18 3 6 3 12 0 18z"/>`;
+  return `<svg class="pw-svg" viewBox="0 0 64 64" aria-hidden="true">
+    <g class="pw-leaves"><path class="stem" d="M31 44V30h2v14z"/>${leaves}</g>
+    <path class="soil" d="M18 44h28l-1 4H19z"/>
+    <path class="pot" d="M17 46h30l-3.5 13a3 3 0 0 1-3 2.5H23.5a3 3 0 0 1-3-2.5z"/>
+    <path class="potlip" d="M15.5 43.5h33v5h-33z" rx="2"/>
+  </svg>`;
 }
 
 function _pwResult(){

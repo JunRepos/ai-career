@@ -4311,3 +4311,105 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .pw-facs{grid-template-columns:1fr;gap:7px}
   .pw-fac{padding:10px 11px}
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🌿 식물 물 주기 — 인디 게임 톤으로 (이모지 → SVG 화분)
+   교실 프로젝터에서 밝게 잘 보이는 게 우선. 네온·글래스 금지.
+   ⚠ 색 토큰은 :root 에도 정의 (라이트에서 값이 비면 화분이 사라집니다)
+═══════════════════════════════════════════════════════════ */
+:root{
+  --pwg-sky1:#FDF6EC; --pwg-sky2:#E9DCC2;   /* 밭 배경 */
+  --pwg-bed:#C9A97E;                         /* 흙바닥 */
+  --pwg-cell:#F6EEDF; --pwg-cell-line:#D8C3A0;
+  --pwg-leaf:#5BA85F; --pwg-leaf2:#4E9553;
+  --pwg-wilt1:#E0A93B; --pwg-wilt2:#C97B3C;
+  --pwg-rot:#8A6A4A;
+  --pwg-pot:#C0703F; --pwg-pot-lip:#A85C31; --pwg-soil:#6B4F35;
+  --pwg-good:#4CAF7D; --pwg-bad:#E05B45;
+}
+[data-theme="dark"]{
+  --pwg-sky1:#2A2620; --pwg-sky2:#231F1A;
+  --pwg-bed:#4A3B28; --pwg-cell:#3A3227; --pwg-cell-line:#55483A;
+}
+
+/* 밭 — 격자를 판때기 위에 올린 느낌 */
+.pw-grid{background:linear-gradient(180deg,var(--pwg-sky1),var(--pwg-sky2));
+  border:2px solid var(--pwg-bed);border-radius:18px;padding:12px;
+  box-shadow:inset 0 -6px 0 rgba(0,0,0,.06), 0 3px 10px rgba(0,0,0,.08)}
+
+.pw-cell{background:var(--pwg-cell);border:1.5px solid var(--pwg-cell-line);
+  border-radius:14px;overflow:hidden;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.07);
+  transition:transform .12s cubic-bezier(.34,1.6,.5,1), background .18s, box-shadow .12s}
+.pw-cell:active{transform:translateY(2px) scale(.97)}
+.pw-cell .pw-plant{font-size:0;display:block;width:78%;max-width:96px}
+.pw-svg{width:100%;height:auto;display:block;overflow:visible}
+
+/* 기본(건강) */
+.pw-svg .lf,.pw-svg .stem{fill:var(--pwg-leaf);transition:fill .3s}
+.pw-svg .stem{fill:var(--pwg-leaf2)}
+.pw-svg .pot{fill:var(--pwg-pot)}
+.pw-svg .potlip{fill:var(--pwg-pot-lip)}
+.pw-svg .soil{fill:var(--pwg-soil)}
+/* 잎이 살짝 숨쉬듯 — 정지 화면처럼 안 보이게 */
+.pw-leaves{transform-origin:32px 44px;animation:pwBreathe 2.8s ease-in-out infinite}
+.pw-cell:nth-child(3n) .pw-leaves{animation-delay:-.9s}
+.pw-cell:nth-child(3n+1) .pw-leaves{animation-delay:-1.7s}
+@keyframes pwBreathe{0%,100%{transform:rotate(-1.5deg) scaleY(1)}50%{transform:rotate(1.5deg) scaleY(1.03)}}
+
+/* 시듦 — 노랑→주황으로 이어지며 잎이 처짐 */
+.pw-cell.wilt{background:#F6E6C4;border-color:#D9B466}
+[data-theme="dark"] .pw-cell.wilt{background:#4A3B22;border-color:#6B5430}
+.pw-cell.wilt .pw-svg .lf{fill:var(--pwg-wilt1)}
+.pw-cell.wilt .pw-svg .stem{fill:var(--pwg-wilt2)}
+.pw-cell.wilt .pw-leaves{animation:pwDroop 3s linear forwards}
+@keyframes pwDroop{
+  0%{transform:rotate(0) scaleY(1)}
+  60%{transform:rotate(6deg) scaleY(.9)}
+  100%{transform:rotate(12deg) scaleY(.78)}
+}
+/* 급한 정도를 색으로 — 게이지와 함께 '어느 게 더 급한지' 판단 근거 */
+.pw-cell.wilt .pw-svg .lf{animation:pwBrown 3s linear forwards}
+@keyframes pwBrown{0%{fill:var(--pwg-wilt1)}70%{fill:var(--pwg-wilt2)}100%{fill:var(--pwg-rot)}}
+
+/* 물 줬을 때 — 초록으로 확 돌아오며 통통 */
+.pw-cell.fx-water{background:#DFF3E4;border-color:#8CCFA2}
+[data-theme="dark"] .pw-cell.fx-water{background:#2C5C3A;border-color:#3E7A50}
+.pw-cell.fx-water .pw-svg .lf,.pw-cell.fx-water .pw-svg .stem{fill:var(--pwg-good)}
+.pw-cell.fx-water .pw-leaves{animation:pwPop .34s cubic-bezier(.34,1.7,.5,1)}
+@keyframes pwPop{0%{transform:scale(.85) rotate(0)}55%{transform:scale(1.22) rotate(-3deg)}100%{transform:scale(1)}}
+/* 물방울 튀기 */
+.pw-cell.fx-water .pw-splash{opacity:1;animation:pwSplash .32s ease-out}
+.pw-splash{position:absolute;left:50%;top:34%;width:8px;height:8px;margin-left:-4px;
+  border-radius:50%;background:#7FC4E8;opacity:0;pointer-events:none;
+  box-shadow:14px -6px 0 -1px #9AD3F0, -14px -6px 0 -1px #9AD3F0,
+             8px 10px 0 -2px #7FC4E8, -8px 10px 0 -2px #7FC4E8}
+@keyframes pwSplash{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(1.9)}}
+
+/* 헛물 / 썩음 */
+.pw-cell.fx-miss{background:#FBE7E2;border-color:#E9A697;animation:pwShake .2s}
+[data-theme="dark"] .pw-cell.fx-miss{background:#4A2A24}
+.pw-cell.fx-rot{background:#EFE0D4;border-color:#C6A88E}
+[data-theme="dark"] .pw-cell.fx-rot{background:#3E2E24}
+.pw-cell.fx-rot .pw-svg .lf,.pw-cell.fx-rot .pw-svg .stem{fill:var(--pwg-rot)}
+.pw-cell.fx-rot .pw-leaves{animation:pwDie .4s ease-in forwards}
+@keyframes pwDie{to{transform:rotate(26deg) scaleY(.5);opacity:.35}}
+
+/* 남은 시간 게이지 — 굵고 잘 보이게, 급하면 빨강 */
+.pw-fuse{height:6px;background:linear-gradient(90deg,var(--pwg-bad),#F0A03A);
+  border-radius:0 3px 3px 0}
+
+/* HUD 도 게임답게 */
+.pw-hud{background:var(--pwg-cell);border:1.5px solid var(--pwg-cell-line);
+  border-radius:14px;padding:9px 14px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.06)}
+.pw-timebar{border-radius:99px;overflow:hidden}
+.pw-timebar i{background:linear-gradient(90deg,var(--pwg-good),#8FD6A8)}
+
+@media (prefers-reduced-motion: reduce){
+  .pw-leaves,.pw-cell.wilt .pw-leaves,.pw-cell.fx-water .pw-leaves{animation:none}
+  .pw-cell.wilt .pw-svg .lf{animation:none;fill:var(--pwg-wilt2)}
+}
+@media (max-width:640px){
+  .pw-grid{padding:8px;border-radius:14px}
+  .pw-cell{border-radius:11px}
+}
