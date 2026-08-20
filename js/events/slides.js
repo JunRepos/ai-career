@@ -137,10 +137,27 @@ document.addEventListener('click', async e => {
     try {
       /* 예전 자료(deckId 없이 하나만 있던 것)를 열어둔 상태라면, 새 자료를 올리기 전에
          '지금 열린 자료'를 명시해 둡니다. 안 그러면 자료가 둘이 되는 순간
-         무엇이 열린 것인지 알 수 없어져 학생 화면에서 조용히 사라집니다. */
-      if(!SLIDE_LIVE?.deckId && SLIDE_DECK?.id){
-        await setLive(TC_CLS.id, { deckId: SLIDE_DECK.id });
+         무엇이 열린 것인지 알 수 없어져 학생 화면에서 조용히 사라집니다.
+
+         ⚠ 올리는 반 전부에 해야 합니다. 지금 보고 있는 반만 고정하면, 다른 반은
+           자료가 둘이 되는 순간 학생 화면에서 수업자료가 사라집니다.
+           (2026-08-20 실제로 2D 가 이 상태였습니다) */
+      for(const cid of cids){
+        const liveSnap = await db.ref(`slides/${cid}/live`).get();
+        const lv = liveSnap.exists() ? liveSnap.val() : null;
+        if(!lv || lv.deckId) continue;                    // 이미 명시돼 있으면 둘 것
+
+        const dSnap = await db.ref(`slides/${cid}/decks`).get();
+        const ids = dSnap.exists() ? Object.keys(dSnap.val() || {}) : [];
+        const hasLegacy = (await db.ref(`slides/${cid}/deck`).get()).exists();
+        // 자료가 딱 하나였을 때만 '그 하나를 열어둔 것'으로 확정할 수 있습니다
+        let only = null;
+        if(ids.length === 1 && !hasLegacy) only = ids[0];
+        else if(!ids.length && hasLegacy) only = LEGACY_DECK_ID;
+        if(only) await db.ref(`slides/${cid}/live`).update({
+          deckId: only, updatedAt: new Date().toISOString() });
       }
+      if(!SLIDE_LIVE?.deckId && SLIDE_DECK?.id) SLIDE_LIVE = { ...SLIDE_LIVE, deckId: SLIDE_DECK.id };
 
       /* 자료를 새로 하나 더 만듭니다 — 이전 차시 자료는 그대로 남습니다.
          여러 반에 올려도 자료 id 는 하나로 통일합니다. 그래야 단원 구성에서
