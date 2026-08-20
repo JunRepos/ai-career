@@ -149,31 +149,51 @@ document.addEventListener('click', async e => {
       const title = (document.getElementById('sl-title')?.value || '').trim();
       const stamp = Date.now();
       const done = [];
+      const failed = [];
 
       for(let c = 0; c < cids.length; c++){
         const cid = cids[c];
         const label = classById(cid)?.short || cid;
         const images = [];
-        for(let i = 0; i < files.length; i++){
-          // 반이 여러 개면 어느 반을 올리는 중인지 같이 보여줍니다
-          pct.textContent = cids.length > 1
-            ? `${label} ${i + 1}/${files.length} (${c + 1}/${cids.length}반)`
-            : `${i + 1}/${files.length}`;
-          const path = `slides/${cid}/${stamp}_${String(i).padStart(3, '0')}_${files[i].name}`;
-          const url = await uploadFile(files[i], path, fill, null);
-          images.push({ name: files[i].name, url, path });
+        try {
+          for(let i = 0; i < files.length; i++){
+            // 반이 여러 개면 어느 반을 올리는 중인지 같이 보여줍니다
+            pct.textContent = cids.length > 1
+              ? `${label} ${i + 1}/${files.length} (${c + 1}/${cids.length}반)`
+              : `${i + 1}/${files.length}`;
+            const path = `slides/${cid}/${stamp}_${String(i).padStart(3, '0')}_${files[i].name}`;
+            const url = await uploadFile(files[i], path, fill, null);
+            images.push({ name: files[i].name, url, path });
+          }
+          await saveDeck(cid, {
+            id: deckId,
+            title: title || `수업자료 (${images.length}장)`,
+            updatedAt: new Date().toISOString(),
+            images,
+          });
+          done.push(label);
+        } catch(e3){
+          /* 한 반이 실패해도 나머지 반은 계속 올립니다.
+             실패한 반의 조각 파일은 지웁니다 — 반쪽짜리 자료가 남으면
+             나중에 뭐가 뭔지 모르고 저장 용량만 먹습니다. */
+          console.warn(`[수업자료] ${label}반 업로드 실패:`, e3.message || e3);
+          failed.push(`${label}(${e3.message || e3})`);
+          pct.textContent = `${label}반 정리 중...`;
+          for(const im of images){
+            try { await storage.ref(im.path).delete(); } catch(e4){}
+          }
         }
-        await saveDeck(cid, {
-          id: deckId,
-          title: title || `수업자료 (${images.length}장)`,
-          updatedAt: new Date().toISOString(),
-          images,
-        });
-        done.push(label);
       }
 
-      toast(`'${title || '수업자료'}' ${files.length}장을 ${done.join('·')}반에 올렸습니다.`
-        + ` 목록에서 '이번 시간에 열기'를 누르세요.`, 'ok');
+      if(done.length){
+        toast(`'${title || '수업자료'}' ${files.length}장을 ${done.join('·')}반에 올렸습니다.`
+          + (failed.length ? ` (실패: ${failed.join(', ')})` : '')
+          + ` 목록에서 '이번 시간에 열기'를 누르세요.`, done.length && !failed.length ? 'ok' : 'err');
+      }
+      if(failed.length){
+        err.textContent = `올리지 못한 반이 있습니다 — ${failed.join(', ')}. `
+          + `네트워크가 불안정할 수 있으니 그 반만 다시 올려주세요.`;
+      }
     } catch(e2){
       err.textContent = '업로드 실패: ' + (e2.message || e2);
     }

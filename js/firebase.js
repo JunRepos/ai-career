@@ -895,16 +895,68 @@ async function _moveItemBy(dbPath, items, id, direction){
   return true;
 }
 
-// ── 파일 업로드 (진행률 표시 지원) ──
+/* ── 파일 업로드 (진행률 표시 지원) ──
+   ⚠ 2026-08-20: 17장짜리 자료를 올리다 마지막 한 장에서 영원히 멈춘 일이 있었습니다.
+     Firebase 는 네트워크가 막히면 실패하지 않고 그냥 '대기'합니다(HANDOFF 1번).
+     그래서 진행이 멈춘 걸 직접 감시해서 끊고, 몇 번 다시 시도합니다.
+       · 30초 동안 보낸 바이트가 한 톨도 안 늘면 → 멈춘 것으로 보고 취소
+       · getDownloadURL 도 20초 제한 (여기서도 멈출 수 있음)
+       · 최대 3번까지 다시 시도 (학교망이 잠깐 흔들리는 경우가 많아서)
+     그래도 안 되면 오류를 던집니다 — 조용히 매달려 있는 것보다 낫습니다. */
+const UPLOAD_STALL_MS = 30000;   // 이만큼 진행이 없으면 멈춘 것으로 판단
+const UPLOAD_URL_MS   = 20000;   // 주소 받아오기 제한
+const UPLOAD_TRIES    = 3;
+
+function _uploadOnce(file, path, progFill, progPct){
+  return new Promise((resolve, reject) => {
+    const task = storage.ref(path).put(file);
+    let moved = 0;              // 마지막으로 진행이 있었던 시각
+    let timer = null;
+    const stop = () => { if(timer){ clearInterval(timer); timer = null; } };
+
+    const watchdog = () => {
+      if(Date.now() - moved < UPLOAD_STALL_MS) return;
+      stop();
+      try { task.cancel(); } catch(e){}
+      reject(new Error('업로드가 ' + (UPLOAD_STALL_MS / 1000) + '초 동안 멈췄습니다'));
+    };
+
+    moved = Date.now();
+    timer = setInterval(watchdog, 2000);
+
+    task.on('state_changed',
+      snap => {
+        moved = Date.now();     // 진행이 있으면 시계를 다시 감음
+        const p = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+        if(progFill) progFill.style.width = p + '%';
+        if(progPct) progPct.textContent = p + '%';
+      },
+      err => { stop(); reject(err); },
+      () => {
+        stop();
+        // 업로드는 끝났어도 주소 받아오다 멈출 수 있어 여기도 제한을 둡니다
+        withTimeout(storage.ref(path).getDownloadURL(), UPLOAD_URL_MS, '파일 주소')
+          .then(resolve, reject);
+      });
+  });
+}
+
 async function uploadFile(file, path, progFill, progPct){
-  const ref = storage.ref(path);
-  const task = ref.put(file);
-  await new Promise((res, rej) => task.on('state_changed', snap => {
-    const p = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
-    if(progFill) progFill.style.width = p + '%';
-    if(progPct) progPct.textContent = p + '%';
-  }, rej, res));
-  return await ref.getDownloadURL();
+  let lastErr = null;
+  for(let attempt = 1; attempt <= UPLOAD_TRIES; attempt++){
+    try {
+      return await _uploadOnce(file, path, progFill, progPct);
+    } catch(err){
+      lastErr = err;
+      // 취소는 우리가 건 것이므로 재시도 대상. 마지막 판이면 그대로 실패.
+      if(attempt < UPLOAD_TRIES){
+        console.warn(`[업로드] ${path} ${attempt}번째 실패 — 다시 시도합니다:`, err.message || err);
+        if(progPct) progPct.textContent = `다시 시도 ${attempt + 1}/${UPLOAD_TRIES}...`;
+        await new Promise(r => setTimeout(r, 1500 * attempt));
+      }
+    }
+  }
+  throw new Error(`"${file.name}" 올리기 실패 (${UPLOAD_TRIES}번 시도) — ` + (lastErr?.message || lastErr));
 }
 
 /* ═══════════════════════════════════════
