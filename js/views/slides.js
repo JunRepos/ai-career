@@ -155,6 +155,8 @@ function _vTcDeckUpload(){
       </div>
       <div class="field"><label>제목</label>
         <input id="sl-title" type="text" placeholder="예) 1차시 지능과 인공지능"/></div>
+      ${multiClassPicker('sl', TC_CLS?.id, {
+        sameSubject: true, allChecked: true, label: '올릴 반 (체크한 반에 모두 올라갑니다)' })}
       <div class="prog-wrap" id="sl-prog">
         <div class="prog-label">올리는 중... <span id="sl-pct">0%</span></div>
         <div class="prog-bar"><div class="prog-fill" id="sl-pfill" style="width:0%"></div></div>

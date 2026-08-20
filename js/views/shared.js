@@ -5,12 +5,22 @@
    탭 버튼, 빈 화면, 공지카드 등
 ═══════════════════════════════════════ */
 
-// 다중 반 선택 체크박스 (신규 등록 시에만 표시)
-//   과목별로 묶어서 보여줍니다 — 반이 8개라 한 줄로 늘어놓으면 찾기 어려움.
-function multiClassPicker(idPrefix, currentClassId){
-  const groups = SUBJECTS.map(s => {
+/* 다중 반 선택 체크박스 (신규 등록 시에만 표시)
+     과목별로 묶어서 보여줍니다 — 반이 8개라 한 줄로 늘어놓으면 찾기 어려움.
+
+   opts (선택)
+     sameSubject : 지금 반과 같은 과목만 보여줌 (수업자료·단원 구성처럼 과목 안에서만 쓰는 것)
+     allChecked  : 보이는 반을 모두 체크한 채로 시작 ("어차피 두 반 다 올릴 거니까")
+     label       : 라벨 문구 교체
+*/
+function multiClassPicker(idPrefix, currentClassId, opts){
+  const o = opts || {};
+  const cur = classById(currentClassId);
+  const subjects = o.sameSubject && cur ? SUBJECTS.filter(s => s.key === cur.type) : SUBJECTS;
+
+  const groups = subjects.map(s => {
     const chips = classesOf(s.key).map(c => {
-      const checked = c.id === currentClassId ? 'checked' : '';
+      const checked = (o.allChecked || c.id === currentClassId) ? 'checked' : '';
       return `<label class="cls-chip">
         <input type="checkbox" class="${idPrefix}-cls-chk" value="${c.id}" ${checked}/>
         <span>${esc(c.short || c.label)}</span>
@@ -24,7 +34,7 @@ function multiClassPicker(idPrefix, currentClassId){
   }).join('');
 
   return `<div class="field">
-    <label>등록할 반 선택</label>
+    <label>${esc(o.label || '등록할 반 선택')}</label>
     <div class="cls-chip-box">
       ${groups}
       <div class="cls-chip-actions">

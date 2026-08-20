@@ -130,6 +130,10 @@ document.addEventListener('click', async e => {
     const fill = document.getElementById('sl-pfill');
     const pct = document.getElementById('sl-pct');
 
+    // 체크한 반 전부에 올립니다 (기본은 같은 과목 전체)
+    const targets = getSelectedClasses('sl');
+    const cids = targets.length ? targets : [TC_CLS.id];
+
     try {
       /* 예전 자료(deckId 없이 하나만 있던 것)를 열어둔 상태라면, 새 자료를 올리기 전에
          '지금 열린 자료'를 명시해 둡니다. 안 그러면 자료가 둘이 되는 순간
@@ -138,24 +142,38 @@ document.addEventListener('click', async e => {
         await setLive(TC_CLS.id, { deckId: SLIDE_DECK.id });
       }
 
-      // 자료를 새로 하나 더 만듭니다 — 이전 차시 자료는 그대로 남습니다.
+      /* 자료를 새로 하나 더 만듭니다 — 이전 차시 자료는 그대로 남습니다.
+         여러 반에 올려도 자료 id 는 하나로 통일합니다. 그래야 단원 구성에서
+         이 자료를 걸어둘 때 두 반 모두 같은 항목으로 연결됩니다. */
       const deckId = genId();
-      const stamp = Date.now();
-      const images = [];
-      for(let i = 0; i < files.length; i++){
-        pct.textContent = `${i + 1}/${files.length}`;
-        const path = `slides/${TC_CLS.id}/${stamp}_${String(i).padStart(3, '0')}_${files[i].name}`;
-        const url = await uploadFile(files[i], path, fill, null);
-        images.push({ name: files[i].name, url, path });
-      }
       const title = (document.getElementById('sl-title')?.value || '').trim();
-      await saveDeck(TC_CLS.id, {
-        id: deckId,
-        title: title || `수업자료 (${images.length}장)`,
-        updatedAt: new Date().toISOString(),
-        images,
-      });
-      toast(`'${title || '수업자료'}' ${images.length}장을 올렸습니다. 목록에서 '이번 시간에 열기'를 누르세요.`, 'ok');
+      const stamp = Date.now();
+      const done = [];
+
+      for(let c = 0; c < cids.length; c++){
+        const cid = cids[c];
+        const label = classById(cid)?.short || cid;
+        const images = [];
+        for(let i = 0; i < files.length; i++){
+          // 반이 여러 개면 어느 반을 올리는 중인지 같이 보여줍니다
+          pct.textContent = cids.length > 1
+            ? `${label} ${i + 1}/${files.length} (${c + 1}/${cids.length}반)`
+            : `${i + 1}/${files.length}`;
+          const path = `slides/${cid}/${stamp}_${String(i).padStart(3, '0')}_${files[i].name}`;
+          const url = await uploadFile(files[i], path, fill, null);
+          images.push({ name: files[i].name, url, path });
+        }
+        await saveDeck(cid, {
+          id: deckId,
+          title: title || `수업자료 (${images.length}장)`,
+          updatedAt: new Date().toISOString(),
+          images,
+        });
+        done.push(label);
+      }
+
+      toast(`'${title || '수업자료'}' ${files.length}장을 ${done.join('·')}반에 올렸습니다.`
+        + ` 목록에서 '이번 시간에 열기'를 누르세요.`, 'ok');
     } catch(e2){
       err.textContent = '업로드 실패: ' + (e2.message || e2);
     }

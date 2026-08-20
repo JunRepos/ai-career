@@ -985,9 +985,12 @@ async function saveDeck(cid, deck){
   await db.ref(path).set(body);
 
   const merged = { ...body, id };
-  const i = SLIDE_DECKS.findIndex(d => d.id === id);
-  if(i >= 0) SLIDE_DECKS[i] = merged; else SLIDE_DECKS.unshift(merged);
-  if(SLIDE_DECK?.id === id || !SLIDE_DECK) SLIDE_DECK = merged;
+  // 지금 보고 있는 반이 아닐 때(여러 반에 한꺼번에 올릴 때)는 화면 상태를 건드리지 않습니다.
+  if(cid === CID()){
+    const i = SLIDE_DECKS.findIndex(d => d.id === id);
+    if(i >= 0) SLIDE_DECKS[i] = merged; else SLIDE_DECKS.unshift(merged);
+    if(SLIDE_DECK?.id === id || !SLIDE_DECK) SLIDE_DECK = merged;
+  }
   return merged;
 }
 

@@ -265,6 +265,8 @@ function _ucForm(){
       <div class="field"><label>제목${titleHint}</label><input id="uc-title" type="text" placeholder="예: KOSIS로 빅데이터 분석하기" value="${esc(d.title || '')}"/></div>
       ${d.type !== 'text' ? `<div class="field"><label>설명 (선택)</label><input id="uc-desc" type="text" value="${esc(d.desc || '')}"/></div>` : ''}
       ${typeFields}
+      ${editing ? '' : multiClassPicker('uc', TC_CLS?.id, {
+        sameSubject: true, allChecked: true, label: '넣을 반 (체크한 반의 같은 단원·칸에 모두 들어갑니다)' })}
       <div id="uc-err" class="err"></div>
       <div style="display:flex;gap:6px">
         <button class="btn-p" data-action="uc-save" ${UC_SAVING ? 'disabled' : ''}>${UC_SAVING ? '저장 중...' : '저장'}</button>

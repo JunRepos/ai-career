@@ -247,29 +247,72 @@ document.addEventListener('click', async e => {
           }
         }
       }
-      if(type === 'file'){
-        if(files.length){
-          const uploaded = [];
-          const upId = genId();
-          const prog = document.getElementById('uc-prog'); if(prog) prog.style.display = 'block';
-          for(let i = 0; i < files.length; i++){
-            const file = files[i];
-            const pct = document.getElementById('uc-pct'); if(pct) pct.textContent = `${i + 1}/${files.length}`;
-            const path = `teacherFiles/${cid}/${upId}/${file.name}`;
-            const url = await uploadFile(file, path, document.getElementById('uc-pfill'), document.getElementById('uc-pct'));
-            uploaded.push({ name: file.name, url, path });
-          }
-          data.files = uploaded;
-        } else if(existing){
-          const keep = _ucFiles(existing);
-          if(keep.length) data.files = keep;
+      /* 넣을 반 — 새 항목일 때만 여러 반. 수정은 지금 반만 건드립니다
+         (다른 반의 같은 항목을 조용히 덮어쓰면 놀라니까). */
+      const picked = getSelectedClasses('uc');
+      let targets = editing ? [cid] : (picked.length ? picked : [cid]);
+
+      /* 수업자료 연결은 그 반에도 같은 자료가 있어야 열립니다.
+         두 반에 한꺼번에 올린 자료는 id 가 같아서 그대로 통하지만,
+         한 반에만 올린 자료라면 없는 반은 건너뛰고 알려줍니다. */
+      const skipped = [];
+      if(type === 'slides'){
+        const ok = [];
+        for(const t of targets){
+          if(t === cid){ ok.push(t); continue; }
+          const path = data.deckId === LEGACY_DECK_ID
+            ? `slides/${t}/deck` : `slides/${t}/decks/${data.deckId}`;
+          let exists = false;
+          try { exists = (await db.ref(path).get()).exists(); } catch(e){}
+          if(exists) ok.push(t); else skipped.push(classById(t)?.short || t);
         }
+        targets = ok;
       }
 
-      await saveUnitItem(cid, UC_TC_UNIT, UC_TC_SEC, itemId, data);
+      const prog = document.getElementById('uc-prog');
+      const pctEl = document.getElementById('uc-pct');
+      const fillEl = document.getElementById('uc-pfill');
+      const saved = [];
+
+      for(let c = 0; c < targets.length; c++){
+        const t = targets[c];
+        const label = classById(t)?.short || t;
+        const one = { ...data };
+
+        if(type === 'file'){
+          if(files.length){
+            // 반마다 그 반 경로로 따로 올립니다 (반별로 파일이 독립되게)
+            const uploaded = [];
+            const upId = genId();
+            if(prog) prog.style.display = 'block';
+            for(let i = 0; i < files.length; i++){
+              const file = files[i];
+              if(pctEl) pctEl.textContent = targets.length > 1
+                ? `${label} ${i + 1}/${files.length} (${c + 1}/${targets.length}반)`
+                : `${i + 1}/${files.length}`;
+              const path = `teacherFiles/${t}/${upId}/${file.name}`;
+              const url = await uploadFile(file, path, fillEl, pctEl);
+              uploaded.push({ name: file.name, url, path });
+            }
+            one.files = uploaded;
+          } else if(existing){
+            const keep = _ucFiles(existing);
+            if(keep.length) one.files = keep;
+          }
+        }
+
+        await saveUnitItem(t, UC_TC_UNIT, UC_TC_SEC, itemId, one);
+        saved.push(label);
+      }
+
       await loadUnitContent(cid);
       UC_EDIT = null; UC_DRAFT = null;
-      toast('저장됐어요', 'ok');
+      if(!saved.length){
+        setErr('넣을 반이 없습니다. 그 반에도 같은 수업자료를 먼저 올려주세요.');
+        UC_SAVING = false; render(); return;
+      }
+      toast(`${saved.join('·')}반에 저장됐어요`
+        + (skipped.length ? ` (${skipped.join('·')}반은 이 수업자료가 없어 건너뜀)` : ''), 'ok');
     } catch(err){
       console.error(err);
       setErr('오류: ' + (err.message || err));
