@@ -191,12 +191,44 @@ function pwTick(){
     if(c.state === 'wilt' && PW.t - c.since >= PW_ROT){
       PW.score -= 2; PW.res.rot++;
       PW.cells[i] = { state: 'ok', since: PW.t, fx: 'rot' };
-      setTimeout(() => { if(PW && PW.cells[i]) PW.cells[i].fx = null; }, 300);
+      setTimeout(() => { if(PW && PW.cells[i]) PW.cells[i].fx = null; _pwPaint(); }, 300);
     }
   });
 
   if(PW.left <= 0) return pwEnd();
-  if(ST_TAB === 'slides' || VIEW === 'student') render();
+  _pwPaint();
+}
+
+/* ⚠ 게임 중에는 render() 를 부르면 안 됩니다.
+   0.1초마다 화면을 통째로 다시 그리면, 누르는 순간(mousedown~mouseup 사이)에
+   버튼이 사라져서 click 이벤트가 아예 생기지 않습니다 — "클릭해도 물이 안 줘짐".
+   그래서 진행 중에는 있는 DOM 의 값만 바꿔칩니다. */
+function _pwPaint(){
+  const grid = document.querySelector('.pw-grid');
+  if(!grid || !PW || PW.done){ render(); return; }
+
+  const scoreEl = document.querySelector('.pw-score');
+  if(scoreEl) scoreEl.innerHTML = `${PW.score}<span>점</span>`;
+  const leftEl = document.querySelector('.pw-left');
+  if(leftEl) leftEl.innerHTML = `${Math.max(0, PW.left).toFixed(1)}<span>초</span>`;
+  const barEl = document.querySelector('.pw-timebar i');
+  if(barEl) barEl.style.width = (Math.max(0, PW.left) / PW_TIME * 100) + '%';
+
+  const nodes = grid.children;
+  PW.cells.forEach((c, i) => {
+    const el = nodes[i];
+    if(!el) return;
+    el.classList.toggle('wilt', c.state === 'wilt');
+    el.classList.toggle('fx-water', c.fx === 'water');
+    el.classList.toggle('fx-miss',  c.fx === 'miss');
+    el.classList.toggle('fx-rot',   c.fx === 'rot');
+
+    let fuse = el.querySelector('.pw-fuse');
+    if(c.state === 'wilt'){
+      if(!fuse){ fuse = document.createElement('i'); fuse.className = 'pw-fuse'; el.appendChild(fuse); }
+      fuse.style.width = Math.max(0, 1 - (PW.t - c.since) / PW_ROT) * 100 + '%';
+    } else if(fuse){ fuse.remove(); }
+  });
 }
 
 async function pwEnd(){
@@ -224,8 +256,8 @@ function pwHit(i){
     PW.score -= 1; PW.res.waste++;
     PW.cells[i] = { ...c, fx: 'miss' };
   }
-  setTimeout(() => { if(PW && PW.cells[i]) { PW.cells[i].fx = null; } }, 200);
-  render();
+  setTimeout(() => { if(PW && PW.cells[i]) { PW.cells[i].fx = null; _pwPaint(); } }, 200);
+  _pwPaint();
 }
 
 async function pwLoadRank(){
