@@ -475,38 +475,47 @@ function vStDashboard(){
   }
 
   /* ⓪ 이번 시간 — 선생님이 지금 열어둔 것으로 홈에서 바로 진입.
-        수업자료(슬라이드)와 활동지를 같은 모양의 카드로 나란히 놓습니다. */
-  const nowCards = [];
+        수업자료와 학습지를 각각 제 이름표를 단 칸으로 나눕니다.
+        (전에는 한 줄에 섞여 있고 색까지 같아서 뭐가 뭔지 구분이 안 됐습니다) */
 
-  // 수업자료 — 선생님이 '이번 시간에 열기' 한 자료
+  // ① 수업자료 — 선생님이 '이번 시간에 열기' 한 자료
+  const slideCards = [];
   if(_slideCount()){
     const live = SLIDE_LIVE || {};
     const state = live.on
       ? `<span class="now-card-live"><i></i>같이 보는 중 · ${(live.page || 0) + 1}장</span>`
       : `<span>${_slideCount()}장 · 혼자 볼 수 있어요</span>`;
-    nowCards.push(`<button class="now-card now-card-slide" data-action="st-go-slides">
-      <div class="now-card-sub">🖥️ 수업자료</div>
-      <div class="now-card-title">${esc(SLIDE_DECK?.title || '수업자료')}</div>
+    slideCards.push(`<button class="now-card now-card-slide" data-action="st-go-slides">
+      <div class="now-card-sub">${esc(SLIDE_DECK?.title || '수업자료')}</div>
+      <div class="now-card-title">수업자료 보기</div>
       <div class="now-card-foot">${state}<span class="now-card-go">${live.on ? '같이 보기 →' : '보러 가기 →'}</span></div>
     </button>`);
   }
 
-  // 활동지 — 선생님이 '학생에게 보내기' 한 것
-  const openActs = aiaOpenFor(SEL_CLS);
-  openActs.forEach(a => {
+  // ② 학습지 — 선생님이 '학생에게 보내기' 한 것
+  const sheetCards = aiaOpenFor(SEL_CLS).map(a => {
     const st = PF_ACTS[ST_USER?.number]?.[a.id];
     const wrote = st && Object.values(st.answers || {}).some(v =>
       typeof v === 'string' ? v.trim() : (v && (Array.isArray(v) ? v.length : Object.keys(v).length)));
     const state = st?.submittedAt ? '제출 완료' : wrote ? '작성 중' : '아직 작성 전';
-    nowCards.push(`<button class="now-card" data-action="aia-pick" data-aid="${esc(a.id)}">
-      <div class="now-card-sub">📋 ${esc(a.subtitle || '활동지')}</div>
+    return `<button class="now-card now-card-sheet" data-action="aia-pick" data-aid="${esc(a.id)}">
+      <div class="now-card-sub">${esc(a.subtitle || '학습지')}</div>
       <div class="now-card-title">${esc(a.title)}</div>
       <div class="now-card-foot"><span>문항 ${(a.questions || []).length}개 · ${state}</span><span class="now-card-go">바로 쓰기 →</span></div>
-    </button>`);
+    </button>`;
   });
 
-  const nowBlock = nowCards.length
-    ? `<div class="now-label">이번 시간</div><div class="now-grid">${nowCards.join('')}</div>`
+  const nowGroup = (kind, ico, label, cards) => cards.length
+    ? `<div class="now-group ${kind}">
+         <div class="now-group-label"><span class="now-group-ico">${ico}</span>${esc(label)}</div>
+         <div class="now-grid">${cards.join('')}</div>
+       </div>`
+    : '';
+
+  const nowBlock = (slideCards.length || sheetCards.length)
+    ? `<div class="now-label">이번 시간</div>
+       ${nowGroup('is-slide', '🖥️', '수업자료', slideCards)}
+       ${nowGroup('is-sheet', '📋', '학습지', sheetCards)}`
     : '';
 
   return `
