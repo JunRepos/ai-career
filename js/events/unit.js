@@ -15,6 +15,8 @@ function _ucReadForm(){
   if(g('uc-body'))  UC_DRAFT.body  = g('uc-body').value;
   if(g('uc-refid')) UC_DRAFT.refId = g('uc-refid').value;
   if(g('uc-deckid')) UC_DRAFT.deckId = g('uc-deckid').value;
+  if(g('uc-gameid')) UC_DRAFT.gameId = g('uc-gameid').value;
+  if(g('uc-sheetid')) UC_DRAFT.sheetId = g('uc-sheetid').value;
 }
 
 // 앱연결 항목 열기 — 단원에서 기능(노트북/미션/OJ/퀴즈/AI코딩/과제) 진입
@@ -153,6 +155,36 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  /* ── 학생: 단원에 걸린 실습 게임 열기 ──
+     게임 → 끝나면 '방금 내가 쓴 지능' 되짚기까지 한 흐름입니다. */
+  if(act === 'uc-open-game'){
+    if(!SEL_CLS || !ST_USER){ toast('로그인 후 이용할 수 있어요.', 'err'); return; }
+    pwLeave();                       // 돌던 게임이 있으면 정리하고 대기 화면부터
+    UNIT_GAME = el.dataset.gameid || 'plant-water';
+    ST_TAB = 'game';
+    UNIT_RETURN = { unitKey: el.dataset.unit, section: el.dataset.sec };
+    render();
+    pwLoadRank();                    // 순위·내 최고점 불러오기 (내부에서 render)
+    return;
+  }
+
+  /* ── 학생: 단원에 걸린 학습지 열기 ──
+     '학생에게 보내기' 를 안 눌렀어도 단원에서는 열립니다. */
+  if(act === 'uc-open-sheet'){
+    const sheetId = el.dataset.sheetid;
+    const def = aiaById(sheetId);
+    if(!def || !SEL_CLS || !ST_USER){ toast('학습지를 찾을 수 없습니다.', 'err'); return; }
+    AIA_SEL = def; AIA_ANSWERS = {}; AIA_VIEW = 'do'; AIA_SAVING = false;
+    ST_TAB = 'aia';
+    UNIT_RETURN = { unitKey: el.dataset.unit, section: el.dataset.sec };
+    render();
+    const sub = await loadAiaSubmission(SEL_CLS.id, def.id, ST_USER.number);
+    AIA_SUB = sub;
+    if(sub && sub.answers) AIA_ANSWERS = { ...sub.answers };
+    render();
+    return;
+  }
+
   /* ── 선생님: 단원/섹션 선택 ── */
   if(act === 'uc-pick-unit'){
     UC_TC_UNIT = el.dataset.unit; UC_EDIT = null; UC_DRAFT = null; render(); return;
@@ -183,7 +215,7 @@ document.addEventListener('click', async e => {
     const it = (((UNIT_CONTENT[UC_TC_UNIT] || {})[UC_TC_SEC]) || []).find(x => x.id === el.dataset.id);
     if(!it) return;
     UC_EDIT = it.id;
-    UC_DRAFT = { type: it.type || 'file', title: it.title || '', desc: it.desc || '', url: it.url || '', body: it.body || '', refType: it.refType || 'notebook', refId: it.refId || '', deckId: it.deckId || '', _files: _ucFiles(it) };
+    UC_DRAFT = { type: it.type || 'file', title: it.title || '', desc: it.desc || '', url: it.url || '', body: it.body || '', refType: it.refType || 'notebook', refId: it.refId || '', deckId: it.deckId || '', gameId: it.gameId || 'plant-water', sheetId: it.sheetId || '', _files: _ucFiles(it) };
     render(); return;
   }
   if(act === 'uc-cancel'){
@@ -199,8 +231,9 @@ document.addEventListener('click', async e => {
     const d = UC_DRAFT || {};
     const type = d.type || 'file';
     // 수업자료는 제목을 비우면 그 자료 제목을 씁니다 — 제목 필수에서 제외
-    if(type !== 'app' && type !== 'slides' && !(d.title || '').trim()){ setErr('제목을 입력하세요.'); return; }
+    if(!['app','slides','game','sheet'].includes(type) && !(d.title || '').trim()){ setErr('제목을 입력하세요.'); return; }
     if(type === 'slides' && !(d.deckId || '').trim()){ setErr('연결할 수업자료를 선택하세요.'); return; }
+    if(type === 'sheet' && !(d.sheetId || '').trim()){ setErr('연결할 학습지를 선택하세요.'); return; }
     if(type === 'link' && !(d.url || '').trim()){ setErr('링크 주소를 입력하세요.'); return; }
     if(type === 'text' && !(d.body || '').trim()){ setErr('본문을 입력하세요.'); return; }
     if(type === 'app' && !UC_APP_FEATURE.includes(d.refType || 'notebook') && !(d.refId || '').trim()){ setErr('연결할 항목을 선택하세요.'); return; }
@@ -227,6 +260,14 @@ document.addEventListener('click', async e => {
       if(type === 'slides'){
         data.deckId = (d.deckId || '').trim();
         if(!data.title) data.title = deckById(data.deckId)?.title || '수업자료';
+      }
+      if(type === 'game'){
+        data.gameId = (d.gameId || 'plant-water').trim();
+        if(!data.title) data.title = UC_GAMES[data.gameId]?.label || '실습 게임';
+      }
+      if(type === 'sheet'){
+        data.sheetId = (d.sheetId || '').trim();
+        if(!data.title) data.title = aiaById(data.sheetId)?.title || '학습지';
       }
       if(type === 'app'){
         const refType = d.refType || 'notebook';

@@ -35,10 +35,13 @@ function _dotNum(n){
 ═══════════════════════════════════════ */
 
 function vStAiActivity(){
+  /* 풀고 있는 학습지가 정해져 있으면 그것부터 그립니다.
+     단원에 걸어둔 학습지는 '학생에게 보내기' 를 안 눌러도 열려야 하는데,
+     열림 목록부터 검사하면 잠김 화면으로 떨어졌습니다. */
+  if(AIA_VIEW === 'do' && AIA_SEL) return _vStAiaDo();
+
   const list = aiaOpenFor(SEL_CLS);
   if(!list.length) return emptyBox('🔒', '지금 열려 있는 학습지가 없어요. 선생님 안내를 기다려주세요.');
-
-  if(AIA_VIEW === 'do' && AIA_SEL) return _vStAiaDo();
 
   const cards = list.map(a => `
     <button class="aia-row" data-action="aia-pick" data-aid="${esc(a.id)}">

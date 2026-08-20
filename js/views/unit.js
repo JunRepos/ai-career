@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════
-   views/unit.js — 단원별 콘텐츠 (수업 자료 / 실습)
+   views/unit.js — 단원별 콘텐츠 (수업 자료 / 학습 활동)
 
-   학생: 단원(Ⅰ~Ⅳ) 안에서 수업자료/실습 하위탭으로 선생님이 구성한 항목을 봄.
+   학생: 단원(Ⅰ~Ⅳ) 안에서 수업자료/학습 활동 하위탭으로 선생님이 구성한 항목을 봄.
    선생님: '단원 구성' 탭에서 단원·섹션별로 항목(파일/링크/글)을 추가·관리.
    (Phase A — 파일·링크·글. 앱 연결은 Phase B 예정)
 ═══════════════════════════════════════ */
@@ -49,13 +49,13 @@ function vStUnit(unitKey){
   const head = `<div class="sec-title" style="margin-bottom:8px">${u.roman}. ${esc(u.label)}</div>`;
   const bar = _subTabs([
     { key: 'material', label: '📂 수업 자료' },
-    { key: 'practice', label: '🧪 실습' },
+    { key: 'practice', label: '🧪 학습 활동' },
   ], sec, 'setUnitSec');
 
   if(!items.length){
     return head + bar + emptyBox(
       sec === 'material' ? '📂' : '🧪',
-      sec === 'material' ? '아직 등록된 수업 자료가 없습니다.' : '아직 등록된 실습이 없습니다.'
+      sec === 'material' ? '아직 등록된 수업 자료가 없습니다.' : '아직 등록된 학습 활동이 없습니다.'
     );
   }
   return head + bar + items.map(it => _ucStudentCard(it, unitKey)).join('');
@@ -63,8 +63,48 @@ function vStUnit(unitKey){
 
 function setUnitSec(s){ ST_UNIT_SEC = s; render(); }
 
+/* 단원에 넣을 수 있는 실습 게임 목록.
+   지금은 물주기 하나뿐이지만, 게임이 늘면 여기에만 추가하면 됩니다. */
+const UC_GAMES = {
+  'plant-water': {
+    ico: '🌿', label: '식물 물 주기',
+    desc: '4×4 화분에 30초 동안 물 주기 → 끝나면 방금 쓴 지능 요소를 되짚어 줍니다',
+  },
+};
+
 // 학생용 항목 카드 (유형별)
 function _ucStudentCard(it, unitKey){
+  // 실습 게임 — 누르면 게임, 끝나면 '방금 내가 쓴 지능' 되짚기까지
+  if(it.type === 'game'){
+    const g = UC_GAMES[it.gameId] || UC_GAMES['plant-water'];
+    return `<div class="list-row click" data-action="uc-open-game"
+        data-gameid="${esc(it.gameId || 'plant-water')}" data-unit="${esc(unitKey || '')}" data-sec="${esc(ST_UNIT_SEC)}">
+      <div class="row-icon">${g.ico}</div>
+      <div class="row-info">
+        <div class="row-title">${esc(it.title || g.label)}</div>
+        <div class="row-meta">${it.desc ? esc(it.desc) : esc(g.desc)}</div>
+      </div>
+      <div class="row-right"><span style="color:var(--text3);font-size:15px">→</span></div>
+    </div>`;
+  }
+  // 학습지 연결 — 그 학습지로 바로
+  if(it.type === 'sheet'){
+    const sheet = aiaById(it.sheetId);
+    const gone = !sheet;
+    const n = sheet ? (sheet.questions || []).filter(q => q.type !== 'note').length : 0;
+    const st = PF_ACTS?.[ST_USER?.number]?.[it.sheetId];
+    const state = st?.submittedAt ? '제출 완료' : st ? '작성 중' : '아직 작성 전';
+    return `<div class="list-row${gone ? '' : ' click'}"
+        ${gone ? '' : `data-action="uc-open-sheet" data-sheetid="${esc(it.sheetId || '')}" data-unit="${esc(unitKey || '')}" data-sec="${esc(ST_UNIT_SEC)}"`}>
+      <div class="row-icon">📋</div>
+      <div class="row-info">
+        <div class="row-title">${esc(it.title || sheet?.title || '학습지')}</div>
+        <div class="row-meta">${gone ? '선생님이 지운 학습지입니다'
+          : `${it.desc ? esc(it.desc) + ' · ' : ''}문항 ${n}개 · ${state}`}</div>
+      </div>
+      <div class="row-right"><span style="color:var(--text3);font-size:15px">${gone ? '—' : '→'}</span></div>
+    </div>`;
+  }
   // 수업자료(슬라이드) — 누르면 수업자료 화면 그대로, 내 메모까지 같이
   if(it.type === 'slides'){
     const deck = deckById(it.deckId);
@@ -142,7 +182,7 @@ function vTcUnit(){
   ).join(' ');
   const secTabs = _subTabs([
     { key: 'material', label: '📂 수업 자료' },
-    { key: 'practice', label: '🧪 실습' },
+    { key: 'practice', label: '🧪 학습 활동' },
   ], UC_TC_SEC, 'setUcSec');
 
   const items = ((UNIT_CONTENT[UC_TC_UNIT] || {})[UC_TC_SEC]) || [];
@@ -152,12 +192,12 @@ function vTcUnit(){
 
   return `<div class="section">
     <div class="sec-title">📚 단원 구성</div>
-    <div class="box-info">학생 사이드바의 단원(Ⅰ~Ⅳ) 안 <b>수업 자료 / 실습</b>에 보일 항목을 구성합니다. 반별로 따로 저장됩니다.</div>
+    <div class="box-info">학생 사이드바의 단원(Ⅰ~Ⅳ) 안 <b>수업 자료 / 학습 활동</b>에 보일 항목을 구성합니다. 반별로 따로 저장됩니다.</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${unitChips}</div>
     ${secTabs}
   </div>
   ${_ucForm()}
-  <div class="sec-title" style="margin-top:4px">${unit.roman}. ${esc(unit.label)} · ${UC_TC_SEC === 'material' ? '수업 자료' : '실습'} 항목 (${items.length})</div>
+  <div class="sec-title" style="margin-top:4px">${unit.roman}. ${esc(unit.label)} · ${UC_TC_SEC === 'material' ? '수업 자료' : '학습 활동'} 항목 (${items.length})</div>
   ${list}`;
 }
 
@@ -166,10 +206,17 @@ function setUcSec(s){ UC_TC_SEC = s; UC_EDIT = null; UC_DRAFT = null; render(); 
 // 선생님 항목 행 (편집/삭제/순서)
 function _ucTcRow(it, i, n){
   const am = it.type === 'app' ? (UC_APP_META[it.refType] || { ico: '🔌', label: '앱' }) : null;
-  const ico = it.type === 'file' ? '📎' : it.type === 'slides' ? '🖥️' : it.type === 'link' ? '🔗' : it.type === 'text' ? '📝' : (am ? am.ico : '🔌');
+  const ico = it.type === 'file' ? '📎' : it.type === 'slides' ? '🖥️'
+    : it.type === 'game' ? (UC_GAMES[it.gameId]?.ico || '🎮') : it.type === 'sheet' ? '📋'
+    : it.type === 'link' ? '🔗' : it.type === 'text' ? '📝' : (am ? am.ico : '🔌');
   const deck = it.type === 'slides' ? deckById(it.deckId) : null;
+  const sheet = it.type === 'sheet' ? aiaById(it.sheetId) : null;
   const meta = it.type === 'file'
     ? `📎 파일 ${_ucFiles(it).length}개`
+    : it.type === 'game'
+    ? `🎮 실습 게임 — ${esc(UC_GAMES[it.gameId]?.label || it.gameId || '')}`
+    : it.type === 'sheet'
+    ? (sheet ? `📋 학습지 — ${esc(sheet.title)}` : '⚠️ 연결된 학습지가 삭제됨')
     : it.type === 'slides'
     ? (deck ? `🖥️ 수업자료 ${(deck.images || []).length}장` : '⚠️ 연결된 수업자료가 삭제됨')
     : it.type === 'link'
@@ -201,12 +248,40 @@ function _ucForm(){
   const editing = UC_EDIT !== 'new';
   // '앱연결'(노트북·OJ·미션 등)은 정보 교과 전용 기능이라 이 앱에서는 빼둡니다.
   // 코드는 그대로 남아 있어 필요하면 아래 목록에 ['app','앱연결'] 을 다시 넣으면 됩니다.
-  const typeBtns = [['file', '파일'], ['slides', '수업자료'], ['link', '링크'], ['text', '글']].map(([k, l]) =>
+  /* 학습 활동 칸에서는 게임·학습지를 앞에 둡니다 — 거기서 주로 쓰는 것이라. */
+  const types = UC_TC_SEC === 'practice'
+    ? [['game', '실습 게임'], ['sheet', '학습지'], ['slides', '수업자료'], ['file', '파일'], ['link', '링크'], ['text', '글']]
+    : [['file', '파일'], ['slides', '수업자료'], ['sheet', '학습지'], ['game', '실습 게임'], ['link', '링크'], ['text', '글']];
+  const typeBtns = types.map(([k, l]) =>
     `<button class="btn-sm ${d.type === k ? 'btn-p' : ''}" data-action="uc-type" data-type="${k}">${l}</button>`
   ).join(' ');
 
   let typeFields = '';
-  if(d.type === 'slides'){
+  if(d.type === 'game'){
+    const gid = d.gameId || 'plant-water';
+    const opts = Object.entries(UC_GAMES).map(([k, g]) =>
+      `<option value="${k}"${gid === k ? ' selected' : ''}>${esc(g.ico + ' ' + g.label)}</option>`).join('');
+    typeFields = `<div class="field"><label>실습 게임</label>
+      <select id="uc-gameid">${opts}</select>
+      <div style="font-size:11px;color:var(--text3);margin-top:5px">
+        💡 학생이 누르면 게임을 하고, 끝나면 <b>방금 쓴 지능 요소</b>를 되짚는 화면이 이어서 나옵니다.
+        점수는 반 순위에 그대로 쌓입니다. (제목을 비우면 게임 이름을 씁니다)</div></div>`;
+  } else if(d.type === 'sheet'){
+    const sheets = aiaListFor(TC_CLS);
+    if(!sheets.length){
+      typeFields = `<div class="box-warn" style="font-size:12px">
+        연결할 학습지가 없습니다. <b>학습지</b> 탭에서 먼저 만들어 주세요.</div>`;
+    } else {
+      const opts = sheets.map(s =>
+        `<option value="${esc(s.id)}"${d.sheetId === s.id ? ' selected' : ''}>${esc(s.title)}${s.subtitle ? ` (${esc(s.subtitle)})` : ''}</option>`
+      ).join('');
+      typeFields = `<div class="field"><label>연결할 학습지</label>
+        <select id="uc-sheetid">${d.sheetId ? '' : '<option value="">— 학습지 선택 —</option>'}${opts}</select>
+        <div style="font-size:11px;color:var(--text3);margin-top:5px">
+          💡 학생이 단원 안에서 바로 학습지를 씁니다. <b>'학생에게 보내기'를 안 눌러도</b> 이 단원에서는 열립니다.
+          (제목을 비우면 학습지 제목을 씁니다)</div></div>`;
+    }
+  } else if(d.type === 'slides'){
     // 올려둔 수업자료(슬라이드) 중 하나를 이 단원에 걸어둡니다.
     if(!SLIDE_DECKS.length){
       typeFields = `<div class="box-warn" style="font-size:12px">

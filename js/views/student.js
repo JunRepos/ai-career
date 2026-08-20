@@ -132,8 +132,16 @@ function _stTabBody(){
   else if(ST_TAB === 'ml')      return vStMl();
   else if(ST_TAB === 'asmt')    return vStAsmt();
   else if(ST_TAB === 'mlassess')return vStMlAssess();
+  else if(ST_TAB === 'game')    return vStUnitGame();
   else if(ST_TAB === 'myscore') return vStMyScore();
   return '';
+}
+
+/* 단원에서 연 실습 게임 — 게임 화면을 그대로 씁니다.
+   끝나면 '방금 내가 쓴 지능' 되짚기까지 이어서 나옵니다. */
+function vStUnitGame(){
+  if(!UNIT_GAME) return emptyBox('🎮', '실습을 찾을 수 없어요.');
+  return vPlantWater();
 }
 
 // 본문을 넓게(IDE형) 쓰는 탭 — 좁은 탭은 가운데 정렬로 가독성 유지
@@ -162,6 +170,7 @@ function returnToUnit(){
   if(!UNIT_RETURN) return;
   const { unitKey, section } = UNIT_RETURN;
   UNIT_RETURN = null;
+  if(UNIT_GAME){ pwLeave(); UNIT_GAME = null; }
   // 단원에서 연 수업자료를 보고 있었다면 메모부터 저장하고 '이번 시간 자료'로 되돌립니다
   if(SLIDE_VIEW_DECK){
     if(typeof _slFlushNote === 'function') _slFlushNote();
@@ -263,6 +272,8 @@ function setAsmtMode(m){
 
 function setST(t){
   UNIT_RETURN = null;  // 사이드바로 이동하면 단원 복귀 마커 해제
+  // 단원에서 열어둔 실습 게임 정리 (타이머가 계속 돌지 않게)
+  if(UNIT_GAME && t !== 'game'){ pwLeave(); UNIT_GAME = null; }
   /* 단원에서 열어보던 수업자료도 해제 — 사이드바 '수업자료'는 늘 '이번 시간 자료'입니다.
      쓰던 메모는 잃지 않게 먼저 저장합니다. */
   if(SLIDE_VIEW_DECK){
