@@ -61,7 +61,7 @@ function vTcPortfolio(){
 
 // 선생님 사이드바 그룹
 function _tcNavGroups(isInfo){
-  // 진로는 단원도 '수업'도 안 쓰고 학습지(활동지)로만 운영합니다.
+  // 진로는 단원도 '수업'도 안 쓰고 학습지로만 운영합니다.
   const useAssign = isInfo || assignUnits().length > 0;
   const classItems = [{key:'notice', ico:'📢', label:'공지'},
                       {key:'slides', ico:'🖥️', label:'수업자료'}];
@@ -77,7 +77,7 @@ function _tcNavGroups(isInfo){
   if(!isInfo && isSubjectCls(TC_CLS)){
     const items = [];
     if(assignUnits().length) items.push({key:'unit', ico:'📚', label:'단원 구성'});
-    if(aiaListFor(TC_CLS).length) items.push({key:'aia', ico:'📋', label:'활동지'});
+    if(aiaListFor(TC_CLS).length) items.push({key:'aia', ico:'📋', label:'학습지'});
     if(items.length) groups.push({ label: '콘텐츠', items });
   }
   if(isInfo){
@@ -91,7 +91,7 @@ function _tcNavGroups(isInfo){
     ]});
     groups.push({ label: 'AI·평가', items: [
       {key:'ml',       ico:'🤖', label:'기계학습'},
-      {key:"aia",      ico:"📋", label:"활동지"},
+      {key:"aia",      ico:"📋", label:"학습지"},
       {key:'asmt',     ico:'📝', label:'수행평가'},
       {key:'mlassess', ico:'🧪', label:'ML 수행평가'},
       {key:'scores',   ico:'🏆', label:'점수 관리'},
@@ -188,7 +188,7 @@ function setTC(t){
       render();
     });
   } else if(t === 'aia' && TC_CLS){
-    // AI 활동지 관리 — active 확인, 활동 목록으로 초기화
+    // AI 학습지 관리 — active 확인, 활동 목록으로 초기화
     AIA_VIEW = 'list';
     AIA_SEL = null;
     AIA_TC_SEL_SNUM = null;

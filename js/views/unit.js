@@ -27,7 +27,7 @@ const UC_APP_META = {
   quiz:     { ico: '🧩', label: '퀴즈',       list: () => CR_READINGS },
   aicode:   { ico: '💬', label: 'AI 코딩',    list: () => null },
   ml:       { ico: '🤖', label: '기계학습',   list: () => null },
-  aia:      { ico: '📋', label: '활동지',  list: () => null },
+  aia:      { ico: '📋', label: '학습지',  list: () => null },
   assign:   { ico: '📝', label: '과제',       list: () => ASSIGNMENTS },
 };
 // '전체 목록 통째로 연결'(refId='*') 지원 종류 — 목록 화면이 있는 기능
@@ -240,7 +240,7 @@ function _ucForm(){
     if(UC_APP_FEATURE.includes(refType)){
       const note = refType === 'aicode' ? "선생님 'AI 코딩' 탭에서 켜져 있어야 사용 가능"
                  : refType === 'ml'     ? "선생님 '기계학습' 탭에서 노출을 켜둬야 함"
-                 :                         "선생님 'AI 활동지' 탭에서 노출을 켜둬야 함";
+                 :                         "선생님 'AI 학습지' 탭에서 노출을 켜둬야 함";
       picker = `<div class="box-info" style="font-size:12px">학생이 클릭하면 ${UC_APP_META[refType].label} 메뉴가 열립니다. (${note})</div>`;
     } else {
       // 노트북·미션·OJ·퀴즈는 '전체 목록 통째로' 옵션 제공 → 항목을 일일이 추가 안 해도 됨

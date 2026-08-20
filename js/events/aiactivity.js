@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════
-   events/aiactivity.js — AI 활동지 이벤트
+   events/aiactivity.js — AI 학습지 이벤트
 ═══════════════════════════════════════ */
 
 document.addEventListener('click', async e => {
@@ -7,7 +7,7 @@ document.addEventListener('click', async e => {
   if(!el) return;
   const act = el.dataset.action;
 
-  // 선생님: 활동지를 학생에게 보내기 / 숨기기
+  // 선생님: 학습지를 학생에게 보내기 / 숨기기
   if(act === 'aia-toggle-open'){
     if(!TC_CLS) return;
     await setActivityOpen(TC_CLS.id, el.dataset.aid, el.dataset.on === '1');
@@ -66,7 +66,7 @@ document.addEventListener('click', async e => {
       const actId = AIA_EDIT === 'new' ? 'act' + genId() : AIA_EDIT;
       const payload = {
         title: d.title.trim(),
-        subtitle: (d.subtitle || '').trim() || '활동지',
+        subtitle: (d.subtitle || '').trim() || '학습지',
         intro: (d.intro || '').trim(),
         createdAt: new Date().toISOString(),
         questions: Object.fromEntries(qs.map((q, i) => {
@@ -85,7 +85,7 @@ document.addEventListener('click', async e => {
   }
   if(act === 'aia-del'){
     if(!TC_CLS) return;
-    if(!confirm(`"${el.dataset.title}" 활동지를 삭제할까요?\n학생들이 작성한 답안도 함께 지워집니다.`)) return;
+    if(!confirm(`"${el.dataset.title}" 학습지를 삭제할까요?\n학생들이 작성한 답안도 함께 지워집니다.`)) return;
     await deleteCustomActivity(TC_CLS.id, el.dataset.aid);
     await loadCustomActivities(TC_CLS.id);
     render(); return;
@@ -99,7 +99,7 @@ document.addEventListener('click', async e => {
     AIA_SEL = def;
     AIA_ANSWERS = {};
     AIA_VIEW = 'do';
-    ST_TAB = 'aia';        // 홈 바로가기로 들어와도 활동지 탭으로 맞춰줌
+    ST_TAB = 'aia';        // 홈 바로가기로 들어와도 학습지 탭으로 맞춰줌
     AIA_SAVING = false;
     // 본인 답안 로드
     const sub = await loadAiaSubmission(SEL_CLS.id, def.id, ST_USER.number);
@@ -162,7 +162,7 @@ document.addEventListener('click', async e => {
     if(!TC_CLS) return;
     try {
       await setAiaActive(TC_CLS.id, on);
-      toast(`AI 활동지를 ${on ? '📖 열었어요' : '🔒 닫았어요'}.`, 'ok');
+      toast(`AI 학습지를 ${on ? '📖 열었어요' : '🔒 닫았어요'}.`, 'ok');
       render();
     } catch(err){
       console.error(err);
@@ -217,7 +217,7 @@ document.addEventListener('click', async e => {
 });
 
 // 학생: 입력 (debounce 자동 저장)
-/* ── 활동지 만들기 — 입력은 다시 그리지 않고 초안에만 반영(커서 유지) ── */
+/* ── 학습지 만들기 — 입력은 다시 그리지 않고 초안에만 반영(커서 유지) ── */
 document.addEventListener('input', e => {
   const el = e.target.closest('[data-action="qb-meta"], [data-action="qb-text"]');
   if(!el || !AIA_DRAFT) return;
@@ -343,7 +343,7 @@ function _aiaExportCSV(){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `AI활동지_${act.id}_${TC_CLS.id}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.download = `AI학습지_${act.id}_${TC_CLS.id}_${new Date().toISOString().slice(0,10)}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

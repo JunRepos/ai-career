@@ -2044,7 +2044,7 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .sc-tc-pub-btn:disabled:hover{background:var(--surface)}
 
 /* ═══════════════════════════════════════
-   AI 활동지 (aiactivity.js)
+   AI 학습지 (aiactivity.js)
 ═══════════════════════════════════════ */
 .aia-list{display:flex;flex-direction:column;gap:10px}
 .aia-card{display:flex;align-items:center;gap:13px;padding:14px 18px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--sh);transition:all .15s}
@@ -2109,7 +2109,7 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .aia-card-title{font-size:14px}
 }
 
-/* AI 활동지 — 제출 관련 추가 스타일 */
+/* AI 학습지 — 제출 관련 추가 스타일 */
 .aia-do-statusbar{margin-top:10px;padding:10px 12px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .aia-submit-chip{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:3px 11px;border-radius:11px;letter-spacing:.3px}
 .aia-submit-chip.done{background:var(--ok,#16a34a);color:#fff}
@@ -3440,7 +3440,7 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .pf-item[data-static]:hover .pf-card{transform:none;border-color:var(--border)}
 
 
-/* 포트폴리오 — 활동지 줄 (번호 대신 아이콘) */
+/* 포트폴리오 — 학습지 줄 (번호 대신 아이콘) */
 .pf-act-load{font-size:13px;color:var(--text3);padding:4px 0 20px}
 .pf-line .pf-item .pf-no{font-size:12px}
 
@@ -4206,7 +4206,7 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
 .sl-deck-title{font-size:13.5px;font-weight:800;color:var(--text);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:46%}
 
-/* 홈 '이번 시간' — 수업자료 카드를 활동지 카드와 같은 모양으로 */
+/* 홈 '이번 시간' — 수업자료 카드를 학습지 카드와 같은 모양으로 */
 .now-card-slide{cursor:pointer}
 .now-card-live{display:inline-flex;align-items:center;gap:6px;font-weight:800}
 .now-card-live i{width:7px;height:7px;border-radius:50%;background:#1B1B1D;

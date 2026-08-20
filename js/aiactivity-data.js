@@ -1,9 +1,9 @@
 /* ═══════════════════════════════════════
-   aiactivity-data.js — 활동지 정의
+   aiactivity-data.js — 학습지 정의
 
-   활동지에는 두 종류가 있습니다.
-     ① 코드에 박아둔 기본 활동지 — 아래 AIA_LIST
-     ② 선생님이 앱에서 직접 만든 활동지 — Firebase 에 저장 (AIA_CUSTOM)
+   학습지에는 두 종류가 있습니다.
+     ① 코드에 박아둔 기본 학습지 — 아래 AIA_LIST
+     ② 선생님이 앱에서 직접 만든 학습지 — Firebase 에 저장 (AIA_CUSTOM)
    둘 다 아래 형태로 맞춰서 같은 화면이 그립니다.
 
      { id, title, subtitle, intro, subjects:[과목키], questions:[ ... ] }
@@ -84,10 +84,10 @@ const AIA_LIST = [
   },
 ];
 
-// 선생님이 만든 활동지 — loadCustomActivities() 가 채웁니다 (반별)
+// 선생님이 만든 학습지 — loadCustomActivities() 가 채웁니다 (반별)
 let AIA_CUSTOM = [];
 
-// 기본 + 직접 만든 활동지를 합쳐서, 지금 반의 과목에 해당하는 것만
+// 기본 + 직접 만든 학습지를 합쳐서, 지금 반의 과목에 해당하는 것만
 function aiaListFor(cls){
   const t = cls?.type;
   const builtin = AIA_LIST.filter(a => !a.subjects || a.subjects.includes(t));
@@ -98,12 +98,12 @@ function aiaById(id){
   return AIA_LIST.find(a => a.id === id) || AIA_CUSTOM.find(a => a.id === id) || null;
 }
 
-// 활동지의 모든 문항 id (CSV 내보내기·작성률 계산용)
+// 학습지의 모든 문항 id (CSV 내보내기·작성률 계산용)
 function aiaFieldIds(act){
   return (act.questions || []).filter(q => q.type !== 'note').map(q => q.id);
 }
 
-// 학생에게 열어둔 활동지만 (선생님이 '학생에게 보내기' 를 누른 것)
+// 학생에게 열어둔 학습지만 (선생님이 '학생에게 보내기' 를 누른 것)
 function aiaOpenFor(cls){
   return aiaListFor(cls).filter(a => AIA_OPEN[a.id]);
 }

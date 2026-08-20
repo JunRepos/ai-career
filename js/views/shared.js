@@ -138,13 +138,13 @@ function mobileTabsHtml(){
   if(isTC){
     items = [
       { key:'notice',    ico:'📢', label:'공지' },
-      { key:'aia',       ico:'📋', label:'활동지' },
+      { key:'aia',       ico:'📋', label:'학습지' },
       { key:'students',  ico:'👥', label:'학생' },
       { key:'portfolio', ico:'🗂️', label:'기록' },
     ];
   } else {
     items = [{ key:'dashboard', ico:'🏠', label:'홈' }];
-    if(aiaOpenFor(SEL_CLS).length) items.push({ key:'aia', ico:'📋', label:'활동지' });
+    if(aiaOpenFor(SEL_CLS).length) items.push({ key:'aia', ico:'📋', label:'학습지' });
     items.push({ key:'notice',    ico:'📢', label:'공지' });
     items.push({ key:'portfolio', ico:'🗂️', label:'기록' });
   }

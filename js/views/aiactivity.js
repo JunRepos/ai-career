@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════
-   views/aiactivity.js — 활동지
+   views/aiactivity.js — 학습지
 
    정의: aiactivity-data.js (기본) + Firebase (선생님이 만든 것)
    학생: 활동 목록 → 작성(자동 저장) → 제출
@@ -31,19 +31,19 @@ function _dotNum(n){
 }
 
 /* ═══════════════════════════════════════
-   학생 — 활동지
+   학생 — 학습지
 ═══════════════════════════════════════ */
 
 function vStAiActivity(){
   const list = aiaOpenFor(SEL_CLS);
-  if(!list.length) return emptyBox('🔒', '지금 열려 있는 활동지가 없어요. 선생님 안내를 기다려주세요.');
+  if(!list.length) return emptyBox('🔒', '지금 열려 있는 학습지가 없어요. 선생님 안내를 기다려주세요.');
 
   if(AIA_VIEW === 'do' && AIA_SEL) return _vStAiaDo();
 
   const cards = list.map(a => `
     <button class="aia-row" data-action="aia-pick" data-aid="${esc(a.id)}">
       <div class="aia-row-body">
-        <div class="aia-row-sub">${esc(a.subtitle || '활동지')}</div>
+        <div class="aia-row-sub">${esc(a.subtitle || '학습지')}</div>
         <div class="aia-row-title">${esc(a.title)}</div>
         <div class="aia-row-meta">문항 ${(a.questions || []).length}개</div>
       </div>
@@ -68,10 +68,10 @@ function _vStAiaDo(){
   const saved = AIA_SAVING ? '<span class="rep-saving">저장 중…</span>'
     : AIA_SUB?.updatedAt ? `<span class="rep-saved">마지막 저장 ${fmtDt(AIA_SUB.updatedAt)}</span>` : '';
 
-  return `<button class="rep-back" data-action="aia-back">← 활동지 목록</button>
+  return `<button class="rep-back" data-action="aia-back">← 학습지 목록</button>
     <div class="rep">
       <div class="rep-head">
-        <div class="rep-kicker">${esc(act.subtitle || '활동지')}</div>
+        <div class="rep-kicker">${esc(act.subtitle || '학습지')}</div>
         <div class="rep-title">${esc(act.title)}</div>
         ${act.intro ? `<div class="rep-intro">${esc(act.intro)}</div>` : ''}
         <div class="rep-status">${status}${submitted ? '<span class="rep-hint">고쳐서 다시 제출할 수 있어요</span>' : ''}</div>
@@ -185,7 +185,7 @@ function aiaAnswerText(q, v, answers){
 }
 
 /* ═══════════════════════════════════════
-   선생님 — 활동지 관리
+   선생님 — 학습지 관리
 ═══════════════════════════════════════ */
 
 function vTcAiActivity(){
@@ -200,7 +200,7 @@ function vTcAiActivity(){
     const open = !!AIA_OPEN[a.id];
     return `<div class="aia-row ${open ? 'is-open' : ''}">
       <div class="aia-row-body" data-action="aia-tc-pick" data-aid="${esc(a.id)}" style="cursor:pointer">
-        <div class="aia-row-sub">${esc(a.subtitle || '활동지')}</div>
+        <div class="aia-row-sub">${esc(a.subtitle || '학습지')}</div>
         <div class="aia-row-title">${esc(a.title)}</div>
         <div class="aia-row-meta">문항 ${(a.questions || []).length}개 · ${open ? '학생 화면에 보이는 중' : '학생에게 안 보임'}</div>
       </div>
@@ -215,16 +215,16 @@ function vTcAiActivity(){
     </div>`;
   }).join('');
 
-  return `<div class="box-info" style="margin-bottom:16px"><b>학생에게 보내기</b>를 누르면 그 활동지가 학생 홈 맨 위에 바로 뜹니다. 수업이 끝나면 <b>숨기기</b>를 누르세요. (작성한 답안은 그대로 남습니다)</div>
+  return `<div class="box-info" style="margin-bottom:16px"><b>학생에게 보내기</b>를 누르면 그 학습지가 학생 홈 맨 위에 바로 뜹니다. 수업이 끝나면 <b>숨기기</b>를 누르세요. (작성한 답안은 그대로 남습니다)</div>
     <div class="aia-tc-bar">
-      <div class="sec-title" style="margin:0">활동지 ${list.length}개</div>
-      <button class="btn-p btn-sm" data-action="aia-new">+ 활동지 만들기</button>
+      <div class="sec-title" style="margin:0">학습지 ${list.length}개</div>
+      <button class="btn-p btn-sm" data-action="aia-new">+ 학습지 만들기</button>
     </div>
     ${list.length ? `<div class="aia-rows">${cards}</div>`
-                  : emptyBox('📭', '활동지가 없습니다. 위 버튼으로 만들어보세요.')}`;
+                  : emptyBox('📭', '학습지가 없습니다. 위 버튼으로 만들어보세요.')}`;
 }
 
-/* ── 활동지 만들기·수정 ── */
+/* ── 학습지 만들기·수정 ── */
 function _vTcAiaEditor(){
   const d = AIA_DRAFT || { title: '', subtitle: '', intro: '', questions: [] };
   const isNew = AIA_EDIT === 'new';
@@ -255,9 +255,9 @@ function _vTcAiaEditor(){
       </div>
     </div>`).join('');
 
-  return `<button class="rep-back" data-action="aia-edit-cancel">← 활동지 목록</button>
+  return `<button class="rep-back" data-action="aia-edit-cancel">← 학습지 목록</button>
     <div class="section">
-      <div class="sec-title">${isNew ? '활동지 만들기' : '활동지 수정'}</div>
+      <div class="sec-title">${isNew ? '학습지 만들기' : '학습지 수정'}</div>
       <div class="form">
         <div class="field"><label>제목</label>
           <input type="text" id="qb-title" data-action="qb-meta" data-k="title" value="${esc(d.title)}"/></div>
@@ -315,7 +315,7 @@ function _vTcAiaStudentList(){
   const submittedCount = STUDENTS.filter(st => subs[st.number]?.submittedAt).length;
 
   return `<div class="aia-tc-head">
-    <button class="btn-sm" data-action="aia-tc-back">← 활동지 목록</button>
+    <button class="btn-sm" data-action="aia-tc-back">← 학습지 목록</button>
     <div class="aia-tc-head-title">${esc(act.title)}</div>
     <button class="btn-sm" data-action="aia-export-csv">답안 CSV</button>
   </div>

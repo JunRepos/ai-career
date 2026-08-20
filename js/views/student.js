@@ -28,7 +28,7 @@ function _stNavGroups(){
 
   if(isSubjectCls(SEL_CLS)){
     // 교과반(인공지능 기초·진로·정보): 수업을 단원별(Ⅰ~Ⅳ)로 분리한 '수업' 그룹.
-    //   정보반은 노트북·미션·OJ·퀴즈·AI코딩·기계학습·AI활동지가 각 단원 '실습'의
+    //   정보반은 노트북·미션·OJ·퀴즈·AI코딩·기계학습·AI학습지가 각 단원 '실습'의
     //   앱연결로만 노출됨(글로벌 실습·AI 탐구 그룹 없앰).
     const units = assignUnits();
     groups.push({ label:'학급', items:[
@@ -39,11 +39,11 @@ function _stNavGroups(){
       // 인공지능 기초: 과제 제출을 단원과 별개로 한눈에 (정보반은 단원 안 앱연결로 도달)
       if(!isInfo) groups.push({ items:[{key:'assign', ico:'📝', label:'과제 제출'}] });
     }
-    // 진로는 학습지(활동지)로만 운영 — '수업' 메뉴를 쓰지 않습니다.
+    // 진로는 학습지로만 운영 — '수업' 메뉴를 쓰지 않습니다.
     // 다시 쓰려면 위 else 자리에 assign 항목을 넣으면 됩니다.
-    // 활동지 — 선생님이 '학생에게 보내기' 한 것이 있을 때만
+    // 학습지 — 선생님이 '학생에게 보내기' 한 것이 있을 때만
     if(!isInfo && aiaOpenFor(SEL_CLS).length){
-      groups.push({ items:[{key:'aia', ico:'📋', label:'활동지'}] });
+      groups.push({ items:[{key:'aia', ico:'📋', label:'학습지'}] });
     }
     // 수업자료 — 선생님이 '이번 시간'으로 연 자료가 있을 때만. 같이 보는 중이면 초록 점
     // (단원에서 열어보는 자료는 여기 말고 단원 안에서 들어갑니다)
@@ -316,7 +316,7 @@ function setST(t){
       render();
     });
   } else if(t === 'aia' && SEL_CLS && ST_USER){
-    // AI 활동지 — active 확인 + 목록으로 초기화
+    // AI 학습지 — active 확인 + 목록으로 초기화
     AIA_VIEW = 'list';
     AIA_SEL = null;
     AIA_ANSWERS = {};
@@ -561,7 +561,7 @@ function _pfBody(me, opts = {}){
     ${_pfStat(withDue ? pct + '%' : '–', '제출률')}
   </div>`;
 
-  // 활동지(오리엔테이션 등)는 수업 목록과 별개로 저장되므로 따로 읽어옵니다
+  // 학습지(오리엔테이션 등)는 수업 목록과 별개로 저장되므로 따로 읽어옵니다
   const acts = _pfActivities(me);
 
   if(!sessions.length){
@@ -610,7 +610,7 @@ function _pfBody(me, opts = {}){
   return stats + acts + `<div class="pf-sec">차시별 기록</div><div class="pf-line">${items}</div>` + qna;
 }
 
-/* 활동지 기록 — aiactivity/submissions 에 따로 저장돼 있어서 포트폴리오에서 lazy 로드.
+/* 학습지 기록 — aiactivity/submissions 에 따로 저장돼 있어서 포트폴리오에서 lazy 로드.
    PF_ACTS[학번][활동id] 에 캐시하고, 다 읽으면 한 번 다시 그립니다. */
 let PF_ACTS = {};
 let _pfActsLoading = null;
@@ -632,7 +632,7 @@ function _pfActivities(snum){
         })
         .catch(() => { _pfActsLoading = null; });
     }
-    return `<div class="pf-sec">활동지</div><div class="pf-act-load">불러오는 중…</div>`;
+    return `<div class="pf-sec">학습지</div><div class="pf-act-load">불러오는 중…</div>`;
   }
 
   const rows = list.map(a => {
@@ -656,7 +656,7 @@ function _pfActivities(snum){
     </div>`;
   }).join('');
 
-  return `<div class="pf-sec">활동지</div><div class="pf-line">${rows}</div>`;
+  return `<div class="pf-sec">학습지</div><div class="pf-line">${rows}</div>`;
 }
 
 function _pfStat(num, label){

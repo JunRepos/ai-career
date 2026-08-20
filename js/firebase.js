@@ -561,7 +561,7 @@ async function loadAllAicSessions(cid){
   }
 }
 
-// ── AI 활동지 ──
+// ── AI 학습지 ──
 //   aiactivity/active/{cid}                    : bool — 메뉴 노출 토글
 //   aiactivity/submissions/{cid}/{actId}/{학번} : { answers, updatedAt }
 async function loadAiaActive(cid){
@@ -571,7 +571,7 @@ async function loadAiaActive(cid){
     AIA_ACTIVE[cid] = on;
     return on;
   } catch(err){
-    console.warn('[AI활동지] active 로드 실패:', err.message || err);
+    console.warn('[AI학습지] active 로드 실패:', err.message || err);
     AIA_ACTIVE[cid] = false;
     return false;
   }
@@ -621,7 +621,7 @@ async function setMlaConfig(cid, cfg){
   return payload;
 }
 
-/* ── 선생님이 직접 만든 활동지 ──
+/* ── 선생님이 직접 만든 학습지 ──
    저장: aiactivity/submissions/{cid}/customActivities/{actId}
      (이미 쓰기가 열려 있는 가지라 보안 규칙을 다시 배포할 필요가 없습니다)
    문항 이미지는 Storage 의 teacherFiles/{cid}/... 아래에 올립니다. */
@@ -634,7 +634,7 @@ async function loadCustomActivities(cid){
       .map(([id, v]) => ({
         id,
         title: v.title || '제목 없음',
-        subtitle: v.subtitle || '활동지',
+        subtitle: v.subtitle || '학습지',
         intro: v.intro || '',
         custom: true,
         createdAt: v.createdAt || '',
@@ -644,11 +644,11 @@ async function loadCustomActivities(cid){
       }))
       .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
   } catch(err){
-    console.warn('[활동지] 목록 로드 실패:', err.message || err);
+    console.warn('[학습지] 목록 로드 실패:', err.message || err);
   }
 }
 
-/* 활동지별 열기/닫기 — 반 전체 토글 대신 활동지 하나하나를 열고 닫습니다.
+/* 학습지별 열기/닫기 — 반 전체 토글 대신 학습지 하나하나를 열고 닫습니다.
    "이번 시간엔 이거" 를 한 번 눌러 학생 홈에 띄우는 게 목적. */
 async function loadActivityOpen(cid){
   AIA_OPEN = {};
@@ -656,7 +656,7 @@ async function loadActivityOpen(cid){
     const s = await db.ref(`aiactivity/submissions/${cid}/activityOpen`).get();
     if(s.exists()) AIA_OPEN = s.val() || {};
   } catch(err){
-    console.warn('[활동지] 열림 상태 로드 실패:', err.message || err);
+    console.warn('[학습지] 열림 상태 로드 실패:', err.message || err);
   }
 }
 
@@ -687,7 +687,7 @@ async function loadAiaSubmission(cid, actId, studentNum){
     const s = await db.ref(`aiactivity/submissions/${cid}/${actId}/${studentNum}`).get();
     return s.exists() ? s.val() : null;
   } catch(err){
-    console.warn('[AI활동지] 제출 로드 실패:', err.message || err);
+    console.warn('[AI학습지] 제출 로드 실패:', err.message || err);
     return null;
   }
 }
@@ -713,7 +713,7 @@ async function loadAllAiaSubmissions(cid, actId){
     const s = await db.ref(`aiactivity/submissions/${cid}/${actId}`).get();
     return s.exists() ? s.val() : {};
   } catch(err){
-    console.warn('[AI활동지] 전체 제출 로드 실패:', err.message || err);
+    console.warn('[AI학습지] 전체 제출 로드 실패:', err.message || err);
     return {};
   }
 }
