@@ -4457,3 +4457,14 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
   gap:10px;padding:6px 0;font-size:13px;color:var(--text2)}
 .aia-hidden-row + .aia-hidden-row{border-top:1px solid var(--border)}
 .aia-hidden-row i{font-style:normal;font-size:11.5px;color:var(--text3)}
+
+/* ═══ 🎤 선생님 대본 메모 (발표자 보기와 같은 내용) ═══ */
+.sl-memo{margin-top:14px;padding:13px 15px;border-radius:12px;
+  border:1px solid var(--border);background:var(--surface2)}
+.sl-memo-head{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:8px}
+.sl-memo-t{font-size:13px;font-weight:800;color:var(--text)}
+.sl-memo-sub{font-size:11.5px;color:var(--text3)}
+.sl-memo-input{width:100%;min-height:74px;resize:vertical;padding:10px 12px;
+  border:1px solid var(--border);border-radius:9px;background:var(--surface);
+  color:var(--text);font:inherit;font-size:13.5px;line-height:1.7;outline:none}
+.sl-memo-input:focus{border-color:var(--pl-solid)}

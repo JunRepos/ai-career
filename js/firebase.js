@@ -1161,6 +1161,26 @@ async function saveNote(cid, snum, page, text){
   SLIDE_NOTE_SAVED = new Date().toISOString();
 }
 
+/* ── 선생님 대본 메모 (발표자 보기용) ──
+   slides/{cid}/tcNotes/{자료id}/{페이지} = '이 장에서 할 말'
+   학생 메모(notes)와 완전히 별개입니다. 학생에게는 보이지 않습니다. */
+async function loadTcSlideMemo(cid, deckId){
+  SLIDE_TC_MEMO = {};
+  const did = deckId || _noteDeckId();
+  try {
+    const s = await db.ref(`slides/${cid}/tcNotes/${did}`).get();
+    if(s.exists()) SLIDE_TC_MEMO = s.val() || {};
+  } catch(err){ console.warn('[슬라이드] 대본 메모 로드 실패:', err.message || err); }
+  return SLIDE_TC_MEMO;
+}
+
+async function saveTcSlideMemo(cid, deckId, page, text){
+  const did = deckId || _noteDeckId();
+  const ref = db.ref(`slides/${cid}/tcNotes/${did}/${page}`);
+  if((text || '').trim()){ await ref.set(text); SLIDE_TC_MEMO[page] = text; }
+  else { await ref.remove(); delete SLIDE_TC_MEMO[page]; }
+}
+
 // 선생님: 지금 자료에 반 전체가 적은 메모 (누가 어느 장에 뭘 적었는지)
 async function loadAllNotes(cid){
   try {

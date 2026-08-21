@@ -14,6 +14,7 @@ document.addEventListener('click', async e => {
       const p = _clampPage((SLIDE_LIVE?.page || 0) + d);
       await setLive(TC_CLS.id, { page: p });
       _presentSync();
+      presenterSync();
       render();
     } else {
       const base = (SLIDE_FOLLOW && SLIDE_LIVE?.on) ? (SLIDE_LIVE.page || 0) : SLIDE_MYPAGE;
@@ -51,18 +52,19 @@ document.addEventListener('click', async e => {
   if(act === 'sl-present'){ openPresent(); return; }
   if(act === 'pv-exit'){ closePresent(); return; }
   if(act === 'pv-nexttoggle'){ _pvToggleNext(); return; }
+  if(act === 'sl-presenter'){ openPresenter(); return; }
   if(act === 'pv-prev' || act === 'pv-next'){
     if(!TC_CLS) return;
     const d = act === 'pv-next' ? 1 : -1;
     await setLive(TC_CLS.id, { page: _clampPage((SLIDE_LIVE?.page || 0) + d) });
-    _presentSync(); _pvPokeBar();
+    _presentSync(); presenterSync(); _pvPokeBar();
     return;
   }
 
   // 선생님: 썸네일로 바로 이동
   if(act === 'sl-go' && IS_TC && TC_CLS){
     await setLive(TC_CLS.id, { page: _clampPage(+el.dataset.i) });
-    _presentSync(); render(); return;
+    _presentSync(); presenterSync(); render(); return;
   }
 
   // 학생: 선생님 화면으로 복귀
@@ -86,7 +88,9 @@ document.addEventListener('click', async e => {
   if(act === 'sl-open' && IS_TC){
     SLIDE_TC_SEL = el.dataset.id;
     SLIDE_TC_NOTES = false;
-    render(); return;
+    render();
+    if(TC_CLS) loadTcSlideMemo(TC_CLS.id, el.dataset.id).then(render);
+    return;
   }
   if(act === 'sl-back' && IS_TC){ SLIDE_TC_SEL = null; render(); return; }
 
@@ -242,7 +246,7 @@ document.addEventListener('keydown', async e => {
   const d = NEXT.includes(e.key) ? 1 : -1;
   if(IS_TC && TC_CLS){
     await setLive(TC_CLS.id, { page: _clampPage((SLIDE_LIVE?.page || 0) + d) });
-    _presentSync();
+    _presentSync(); presenterSync();
   } else {
     const base = (SLIDE_FOLLOW && SLIDE_LIVE?.on) ? (SLIDE_LIVE.page || 0) : SLIDE_MYPAGE;
     SLIDE_MYPAGE = _clampPage(base + d);
@@ -286,6 +290,27 @@ document.addEventListener('input', e => {
   if(!el) return;
   SLIDE_NOTES[+el.dataset.page] = el.value;
   _slQueueNote(+el.dataset.page);
+});
+
+/* 선생님 대본 메모 — 본문에서 쓰든 발표자 창에서 쓰든 같은 곳에 저장됩니다.
+   발표자 창이 열려 있으면 거기 글자도 같이 맞춰 줍니다. */
+let _slMemoTimer = null, _slMemoPage = null;
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-action="sl-memo"]');
+  if(!el || !TC_CLS) return;
+  _slMemoPage = +el.dataset.page;
+  SLIDE_TC_MEMO[_slMemoPage] = el.value;
+  const w = PRESENTER_WIN;
+  if(w && !w.closed){
+    const m = w.document.getElementById('memo');
+    if(m && w.document.activeElement !== m) m.value = el.value;
+  }
+  clearTimeout(_slMemoTimer);
+  _slMemoTimer = setTimeout(async () => {
+    const page = _slMemoPage; _slMemoPage = null;
+    try { await saveTcSlideMemo(TC_CLS.id, curDeck()?.id, page, SLIDE_TC_MEMO[page] || ''); }
+    catch(err){ console.warn('[슬라이드] 대본 저장 실패:', err.message || err); }
+  }, 1200);
 });
 
 // 화면을 벗어나거나 창을 닫아도 저장 (수업 끝나고 바로 끄는 경우)

@@ -150,6 +150,7 @@ function setTC(t){
   // 수업자료 탭은 늘 목록부터 (지난번에 열어본 자료가 그대로 뜨지 않게)
   if(t === 'slides' && TC_CLS){
     SLIDE_TC_SEL = null; SLIDE_TC_NOTES = false;
+    SLIDE_TC_MEMO = {};
     loadAllNotes(TC_CLS.id).then(render);
   }
   if(t === 'portfolio') TC_PF_SNUM = null;   // 탭 다시 누르면 명단부터

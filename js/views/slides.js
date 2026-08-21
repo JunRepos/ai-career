@@ -268,6 +268,7 @@ function _vTcDeckDetail(){
           ? `<button class="btn-xs btn-danger" data-action="sl-game-del">실습 장 빼기</button>`
           : `<button class="btn-xs" data-action="sl-game-add">＋ 이 다음에 실습 넣기</button>`}
         <button class="btn-sm" data-action="sl-present">🔳 발표 모드</button>
+        <button class="btn-sm" data-action="sl-presenter">🎤 발표자 보기</button>
         <button class="${live.on ? 'btn-sm btn-danger' : 'btn-p'}" data-action="sl-toggle" data-on="${live.on ? '0' : '1'}">
           ${live.on ? '같이 보기 끝내기' : '같이 보기 시작'}
         </button>
@@ -282,12 +283,29 @@ function _vTcDeckDetail(){
       <span class="sl-page">${page + 1} / ${imgs.length}</span>
       <button class="sl-btn" data-action="sl-next" ${page === imgs.length - 1 ? 'disabled' : ''}>다음 →</button>
     </div>
-    <div class="sl-hint">키보드 <b>←</b> <b>→</b> 로도 넘길 수 있어요</div>
+    <div class="sl-hint">키보드 <b>←</b> <b>→</b> 로도 넘길 수 있어요 ·
+      <b>🎤 발표자 보기</b>를 누르면 노트북에 다음 장·내 메모가 뜹니다</div>
     <div class="sl-thumbs">${thumbs}</div>
+    ${_vTcMemoBox(page)}
     ${_vTcSlideNotes(page)}
   </div>`;
 
   return back + control;
+}
+
+/* 선생님: 이 장에서 할 말 (대본) — 발표자 보기 창에서도 같은 것을 씁니다.
+   학생 메모와 다른 곳(slides/{반}/tcNotes)에 저장돼 학생에게는 안 보입니다. */
+function _vTcMemoBox(page){
+  const memoCount = Object.values(SLIDE_TC_MEMO || {}).filter(v => (v || '').trim()).length;
+  return `<div class="sl-memo">
+    <div class="sl-memo-head">
+      <span class="sl-memo-t">🎤 ${page + 1}장에서 할 말</span>
+      <span class="sl-memo-sub">나만 봅니다${memoCount ? ` · 적어둔 장 ${memoCount}개` : ''}</span>
+    </div>
+    <textarea class="sl-memo-input" data-action="sl-memo" data-page="${page}"
+      placeholder="이 장에서 할 말을 적어두세요. 발표자 보기 창에도 그대로 보입니다."
+      >${esc(SLIDE_TC_MEMO[page] || '')}</textarea>
+  </div>`;
 }
 
 /* 선생님: 지금 장에 학생들이 적은 메모 — "따라오고 있나" 확인용 */
@@ -456,4 +474,206 @@ function _pvPokeBar(){
 
 function _pvToggleBlack(){
   document.getElementById('pv-black')?.classList.toggle('on');
+}
+
+/* ═══════════════════════════════════════
+   🎤 발표자 보기 — 창을 두 개로 (노트북 + 프로젝터)
+
+   교실 화면(프로젝터) : 지금 슬라이드만        ← 발표 모드 창
+   내 화면(노트북)     : 다음 장 + 내 대본 메모 ← 이 창
+
+   같은 앱이 연 창이라 부모 창의 상태를 그대로 씁니다. 넘기기는 Firebase 의
+   live 를 거치므로 학생 화면도 같이 따라옵니다.
+   대본 메모는 slides/{반}/tcNotes 에 저장 — 학생에게는 안 보입니다.
+═══════════════════════════════════════ */
+let PRESENTER_WIN = null;
+let _pwMemoTimer = null;
+let _pwMemoPage = null;
+let _pwClock = null;
+let _pwStart = 0;
+
+function openPresenter(){
+  if(!TC_CLS || !_slideCount()){ toast('먼저 수업자료를 열어주세요.', 'err'); return; }
+
+  const w = window.open('', 'sd-presenter', 'width=1180,height=780');
+  if(!w){ toast('팝업이 막혀 있습니다. 주소창 오른쪽에서 허용해 주세요.', 'err'); return; }
+  PRESENTER_WIN = w;
+  _pwStart = Date.now();
+
+  w.document.open();
+  w.document.write(_pwShellHtml());
+  w.document.close();
+
+  const $ = id => w.document.getElementById(id);
+  $('prev').onclick  = () => _pwGo(-1);
+  $('next').onclick  = () => _pwGo(1);
+  $('black').onclick = () => _pvToggleBlack();
+  $('reset').onclick = () => { _pwStart = Date.now(); };
+  $('memo').addEventListener('input', () => _pwQueueMemo($('memo').value));
+
+  w.addEventListener('keydown', e => {
+    if(e.target && e.target.tagName === 'TEXTAREA') return;
+    if(['ArrowRight', 'PageDown', ' '].includes(e.key)){ e.preventDefault(); _pwGo(1); }
+    else if(['ArrowLeft', 'PageUp'].includes(e.key)){ e.preventDefault(); _pwGo(-1); }
+    else if(e.key === 'b' || e.key === 'B'){ e.preventDefault(); _pvToggleBlack(); }
+  });
+  w.addEventListener('beforeunload', () => { PRESENTER_WIN = null; });
+
+  presenterSync();
+  loadTcSlideMemo(TC_CLS.id, curDeck()?.id).then(() => presenterSync());
+  clearInterval(_pwClock);
+  _pwClock = setInterval(_pwTick, 1000);
+}
+
+function _pwShellHtml(){
+  const title = esc(curDeck()?.title || '수업자료');
+  return '<!doctype html><html lang="ko"><head><meta charset="utf-8">'
+    + '<title>발표자 보기 — ' + title + '</title><style>'
+    + '*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}'
+    + 'body{height:100vh;overflow:hidden;background:#17181B;color:#ECEDEF;'
+    + 'font-family:Pretendard,-apple-system,"Segoe UI",system-ui,sans-serif;'
+    + 'display:flex;flex-direction:column}'
+    + '.top{display:flex;align-items:center;gap:12px;padding:10px 16px;'
+    + 'background:#101114;border-bottom:1px solid #2A2B2F;flex:none;flex-wrap:wrap}'
+    + '.pg{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums}'
+    + '.clock{font-size:15px;font-weight:800;color:#FFC83D;font-variant-numeric:tabular-nums}'
+    + '.live{font-size:12px;font-weight:800;padding:4px 10px;border-radius:99px;'
+    + 'background:#2A2B2F;color:#B7B9BF}'
+    + '.live.on{background:#FFC83D;color:#1B1B1D}'
+    + '.sp{flex:1}'
+    + 'button{font:inherit;font-size:13px;font-weight:700;padding:7px 14px;border-radius:8px;'
+    + 'border:1px solid #2A2B2F;background:#1E1F23;color:#ECEDEF;cursor:pointer}'
+    + 'button:hover{background:#2A2B2F}'
+    + 'button.main{background:#FFC83D;border-color:#FFC83D;color:#1B1B1D}'
+    + '.body{flex:1;display:grid;grid-template-columns:1.35fr 1fr;gap:14px;padding:14px;min-height:0}'
+    + '.col{display:flex;flex-direction:column;gap:10px;min-height:0;min-width:0}'
+    + '.lab{font-size:11.5px;font-weight:800;color:#7A7C83;letter-spacing:.04em}'
+    + '.stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;'
+    + 'background:#000;border:1px solid #2A2B2F;border-radius:10px;overflow:hidden}'
+    + '.stage img{max-width:100%;max-height:100%;object-fit:contain;display:block}'
+    + '.stage .game{color:#FFC83D;font-weight:800;font-size:20px;text-align:center;padding:20px}'
+    + '.stage .end{color:#7A7C83;font-size:14px}'
+    + '.next{flex:none;height:34%}'
+    + '.memo{flex:1;min-height:0;display:flex;flex-direction:column}'
+    + 'textarea{flex:1;min-height:0;width:100%;resize:none;padding:13px 15px;'
+    + 'background:#1E1F23;color:#ECEDEF;border:1px solid #2A2B2F;border-radius:10px;'
+    + 'font:inherit;font-size:15px;line-height:1.75;outline:none}'
+    + 'textarea:focus{border-color:#FFC83D}'
+    + '.saved{font-size:11.5px;color:#7A7C83;margin-top:5px;min-height:15px}'
+    + '.hint{padding:8px 16px;font-size:11.5px;color:#5F6167;border-top:1px solid #2A2B2F;flex:none}'
+    + '@media (max-width:900px){.body{grid-template-columns:1fr}}'
+    + '</style></head><body>'
+    + '<div class="top">'
+    +   '<span class="pg" id="pg"></span>'
+    +   '<span class="live" id="live"></span>'
+    +   '<span class="clock" id="clock">00:00</span>'
+    +   '<span class="sp"></span>'
+    +   '<button id="prev">← 이전</button>'
+    +   '<button class="main" id="next">다음 →</button>'
+    +   '<button id="black">검은 화면</button>'
+    +   '<button id="reset">시간 초기화</button>'
+    + '</div>'
+    + '<div class="body">'
+    +   '<div class="col"><div class="lab">지금 — 교실 화면에 나가는 것</div>'
+    +     '<div class="stage" id="cur"></div></div>'
+    +   '<div class="col"><div class="lab">다음 장</div>'
+    +     '<div class="stage next" id="nxt"></div>'
+    +     '<div class="memo">'
+    +       '<div class="lab" style="margin-bottom:6px">내 메모 — 이 장에서 할 말'
+    +         ' <span style="color:#5F6167;font-weight:600">(학생에게 안 보임)</span></div>'
+    +       '<textarea id="memo" placeholder="이 장에서 할 말을 적어두세요. 자동으로 저장됩니다."></textarea>'
+    +       '<div class="saved" id="saved"></div>'
+    +     '</div></div>'
+    + '</div>'
+    + '<div class="hint">← → 넘기기 · B 검은 화면 &nbsp;|&nbsp; 이 창은 노트북에, 발표 모드 창은 프로젝터에 두세요</div>'
+    + '</body></html>';
+}
+
+async function _pwGo(d){
+  if(!TC_CLS) return;
+  await _pwFlushMemo();                         // 넘어가기 전에 쓰던 메모부터 저장
+  await setLive(TC_CLS.id, { page: _clampPage((SLIDE_LIVE?.page || 0) + d) });
+  _presentSync();                               // 프로젝터(발표 모드) 화면
+  presenterSync();                              // 내 화면
+  render();
+}
+
+function _pwTick(){
+  const w = PRESENTER_WIN;
+  if(!w || w.closed){ clearInterval(_pwClock); _pwClock = null; PRESENTER_WIN = null; return; }
+  const el = w.document.getElementById('clock');
+  if(!el) return;
+  const s = Math.floor((Date.now() - _pwStart) / 1000);
+  el.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+
+// 슬라이드 한 장을 발표자 창에 그리는 조각
+function _pwSlideHtml(im, endText){
+  if(!im) return '<span class="end">' + esc(endText) + '</span>';
+  if(_isGame(im)) return '<div class="game">🌿 실습<br>'
+    + '<span style="font-size:14px;color:#B7B9BF">식물 물 주기</span></div>';
+  return '<img src="' + esc(im.url) + '" alt=""/>';
+}
+
+function presenterSync(){
+  const w = PRESENTER_WIN;
+  if(!w || w.closed){ PRESENTER_WIN = null; return; }
+  const d = w.document;
+  const imgs = _slideImgs();
+  const page = _clampPage(SLIDE_LIVE?.page);
+
+  const pg = d.getElementById('pg');
+  if(pg) pg.textContent = (page + 1) + ' / ' + imgs.length;
+
+  const live = d.getElementById('live');
+  if(live){
+    live.textContent = SLIDE_LIVE?.on ? '학생과 같이 보는 중' : '학생에게 아직 안 보임';
+    live.className = 'live' + (SLIDE_LIVE?.on ? ' on' : '');
+  }
+
+  const cur = d.getElementById('cur');
+  if(cur) cur.innerHTML = _pwSlideHtml(imgs[page], '슬라이드 없음');
+  const nxt = d.getElementById('nxt');
+  if(nxt) nxt.innerHTML = _pwSlideHtml(imgs[page + 1], '마지막 장입니다');
+
+  // 메모 — 쓰는 중에는 건드리지 않습니다 (커서가 튀지 않게)
+  const memo = d.getElementById('memo');
+  if(memo && d.activeElement !== memo){
+    memo.value = SLIDE_TC_MEMO[page] || '';
+    const sv = d.getElementById('saved');
+    if(sv) sv.textContent = '';
+  }
+}
+
+/* 대본 메모 자동 저장 (1.2초) — 장을 넘길 때는 넘어가기 전에 먼저 저장 */
+function _pwQueueMemo(text){
+  const w = PRESENTER_WIN;
+  if(!w || w.closed) return;
+  _pwMemoPage = _clampPage(SLIDE_LIVE?.page);
+  SLIDE_TC_MEMO[_pwMemoPage] = text;
+  const sv = w.document.getElementById('saved');
+  if(sv) sv.textContent = '쓰는 중…';
+  clearTimeout(_pwMemoTimer);
+  _pwMemoTimer = setTimeout(() => _pwFlushMemo(), 1200);
+}
+
+async function _pwFlushMemo(){
+  clearTimeout(_pwMemoTimer); _pwMemoTimer = null;
+  if(_pwMemoPage === null || !TC_CLS) return;
+  const page = _pwMemoPage;
+  _pwMemoPage = null;
+  try {
+    await saveTcSlideMemo(TC_CLS.id, curDeck()?.id, page, SLIDE_TC_MEMO[page] || '');
+    const w = PRESENTER_WIN;
+    if(w && !w.closed){
+      const sv = w.document.getElementById('saved');
+      if(sv) sv.textContent = '저장됨';
+    }
+  } catch(e){ console.warn('[발표자] 메모 저장 실패:', e.message || e); }
+}
+
+function closePresenter(){
+  clearInterval(_pwClock); _pwClock = null;
+  if(PRESENTER_WIN && !PRESENTER_WIN.closed) PRESENTER_WIN.close();
+  PRESENTER_WIN = null;
 }

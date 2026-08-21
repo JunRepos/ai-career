@@ -344,6 +344,7 @@ let SLIDE_NOTE_TIMER = null;
 let SLIDE_NOTE_SAVED = null;  // 마지막 저장 시각 표시용
 let SLIDE_NOTE_ALL = {};   // 선생님: { 학번: { 페이지: 메모 } }
 let SLIDE_SHOW_ALL = false;// 학생: '내 메모 모아보기' 펼침
+let SLIDE_TC_MEMO  = {};   // 선생님: { 페이지: '이 장에서 할 말' } — 발표자 보기 대본
 let SLIDE_TC_NOTES = false;// 선생님: 이 장 메모 펼침
 
 let AIA_HIDDEN      = {};       // { [학습지id]: true } — 이 반에서 안 쓰는 기본 학습지
