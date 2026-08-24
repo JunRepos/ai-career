@@ -56,6 +56,11 @@ function worksheetCss(){
 const esc = s => String(s ?? '')
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+/* 모범답안 모드 — 문항에 answer(글) / answerRows(표)가 있으면 빈칸 대신 답을 채웁니다.
+   학생에게 나눠 줄 답안지를 학습지와 같은 모양으로 뽑을 때 씁니다. */
+let ANSWER_MODE = false;
+const ansBox = (t) => `<div class="ws-ans">${esc(t)}</div>`;
+
 /* 고칠 수 있는 글자 — 선생님이 미리보기에서 바로 고치는 자리.
    data-p 는 학습지 JSON 안의 위치(예: q.3.text, q.1.options.2)라서,
    고친 내용이 그대로 앱에 들어갈 데이터가 됩니다. */
@@ -94,11 +99,16 @@ function renderQuestion(q, no, qi){
     const cols = q.cols || [];
     const fixed = q.fixed || [];
     const rows = Math.max(1, fixed.length + (q.extra ?? 3));
+    const ar = (ANSWER_MODE && q.answerRows) ? q.answerRows : null;
+    const rowN = ar ? ar.length : rows;
     let body = '';
-    for(let r = 0; r < rows; r++){
-      body += '<tr>' + cols.map((c, ci) => (ci === 0 && fixed[r] !== undefined)
-        ? `<td class="ws-td-fixed">${ed(P + '.fixed.' + r, fixed[r])}</td>`
-        : `<td><input type="text" class="ws-cell" placeholder="${esc(c)}"/></td>`).join('') + '</tr>';
+    for(let r = 0; r < rowN; r++){
+      body += '<tr>' + cols.map((c, ci) => {
+        if(ci === 0 && fixed[r] !== undefined)
+          return `<td class="ws-td-fixed">${ed(P + '.fixed.' + r, fixed[r])}</td>`;
+        if(ar) return `<td class="ws-td-ans">${esc((ar[r] || [])[ci] ?? '')}</td>`;
+        return `<td><input type="text" class="ws-cell" placeholder="${esc(c)}"/></td>`;
+      }).join('') + '</tr>';
     }
     // fillFrom 자리는 학생이 고른 보기가 들어옵니다 — 미리보기에선 그 사실만 표시
     const note = (q.fillFrom || []).length
@@ -109,6 +119,7 @@ function renderQuestion(q, no, qi){
         <tbody>${body}</tbody></table></div>${note}</div>`;
   }
 
+  if(ANSWER_MODE && q.answer) return `<div class="ws-block">${head}${ansBox(q.answer)}</div>`;
   return `<div class="ws-block">${head}
     <textarea class="ws-lines" rows="${q.rows || 3}"></textarea></div>`;
 }
@@ -134,6 +145,17 @@ function build(sheet){
   ${worksheetCss()}
   /* 미리보기에서만 — 종이를 가운데로 띄웁니다 */
   .rep{margin:0 auto;box-shadow:0 6px 24px rgba(80,60,40,.10)}
+  /* 모범답안 */
+  .ws-ans{margin-top:13px;padding:13px 16px;border-radius:8px;
+    background:var(--ws-cream);border-left:3px solid var(--ws-accent);
+    font-size:14px;line-height:1.85;color:var(--ws-ink);white-space:pre-line}
+  .ws-td-ans{padding:11px 14px;font-size:13.5px;line-height:1.7;color:var(--ws-ink)}
+  @media print{
+    body{background:#fff}
+    .pv-wrap{padding:0;max-width:100%}
+    .pv-bar,.pv-note,.pv-dock,.pv-out{display:none}
+    .rep{border:none;box-shadow:none;max-width:100%;padding:0}
+  }
 
   /* ── 고칠 수 있는 글자 ── */
   .ed{outline:none;border-radius:3px;padding:0 2px;margin:0 -2px;
@@ -162,8 +184,9 @@ function build(sheet){
 </style>
 <div class="pv-wrap">
   <div class="pv-bar">
-    <span class="pv-tag">고칠 수 있는 미리보기</span>
-    <span>글자를 눌러 바로 고치세요 · 문항 ${answerable}개</span>
+    <span class="pv-tag">${ANSWER_MODE ? '모범답안' : '고칠 수 있는 미리보기'}</span>
+    <span>${ANSWER_MODE ? '정답이 하나로 정해진 문항은 아닙니다 — 이렇게 쓰면 충분합니다'
+                        : '글자를 눌러 바로 고치세요'} · 문항 ${answerable}개</span>
   </div>
   <div class="rep">
     <div class="rep-head">
@@ -248,6 +271,7 @@ document.getElementById('reset').onclick = () => {
 const args = process.argv.slice(2);
 const src = args.find(a => !a.startsWith('-'));
 if(!src) die('학습지 JSON 파일을 지정하세요.  예) node tools/worksheet-preview.mjs sheet.json');
+ANSWER_MODE = args.includes('--answers');
 const oi = args.indexOf('-o');
 const out = oi >= 0 ? args[oi + 1] : src.replace(/\.json$/, '') + '-preview.html';
 
