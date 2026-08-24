@@ -99,6 +99,28 @@ firebase deploy --only storage --project sindong-informatics
 
 ---
 
+## 수업자료(슬라이드)를 새로 만들 때
+
+수업 내용은 **옵시디언에 먼저 글로 정리**합니다.
+`D:\Google drive\Obsidian Vault\01_Projects\수업\인공지능 기초\` 에 차시별 노트가 있고,
+붙여넣은 그림은 `04_Archive\99_media\Pasted image ….png` 에 모입니다.
+새 차시는 `98_Templates\T_인공지능 차시.md` 템플릿으로 시작합니다.
+
+1. 제가 그 차시 노트를 다 씁니다
+2. **노트를 읽고 덱 JSON 으로 옮겨** 주세요 (`tools/deck-spec.md` · 표본 `tools/samples/lesson3-system.deck.json`)
+   ```bash
+   node tools/deck-build.mjs <덱.json>          # pptx 만들기
+   node tools/deck-png.mjs <파일.pptx>          # 슬라이드1.PNG … 로 내보내기
+   ```
+   - 디자인(크림 배경·Jua 제목·흰 카드)은 기존 덱에서 그대로 뽑아낸 것이라 앞 차시와 이어집니다
+   - 한 장에 안 들어가면 만들 때 ⚠ 경고가 뜹니다
+3. 제가 PowerPoint 로 열어 손봅니다 → PNG 로 내보냄
+4. 앱에서 올립니다. **두 반(ai-2B, ai-2D) 모두** 체크 (자료 id 는 하나로 통일됩니다)
+5. 슬라이드마다 `notes` 를 적어 두면 발표자 노트로 들어갑니다 → 앱의 **🎤 발표자 보기 → 내 대본 메모** 에 옮겨 쓸 수 있습니다
+
+> 지난 0·1·2차시 덱은 claude.ai 에서 만들어 받은 pptx 였습니다. 이제 레포 안에서 만듭니다.
+> `node_modules` 는 커밋하지 않습니다 — 처음 한 번 `npm install` 이 필요합니다.
+
 ## 학습지를 새로 만들 때 (이 흐름으로 해주세요)
 
 1. 제가 HTML 이나 초안을 드립니다
@@ -127,18 +149,21 @@ Firebase 규칙에 **인증 개념이 아예 없습니다.** 모든 경로가 `.
 
 고치려면 로그인 방식 자체를 바꿔야 해서(지금은 클라이언트에서 해시 비교) 설계 결정이 필요합니다.
 
-### 현재 수업 진행 상황 (2026-08-21)
+### 현재 수업 진행 상황 (2026-08-24 · DB 에서 직접 읽은 값)
 | | ai-2B | ai-2D |
 |---|---|---|
-| 수업자료 | 오리엔테이션 17 · 원리 23 · **시스템 19** | 오리엔테이션 17 · 원리 22 |
-| 이번 시간 | 2. 인공지능 시스템 | 0. 오리엔테이션 |
-| 학습지 | 나와 인공지능 · **음악 추천 시스템 분석하기**(열림) | 같음 (음악 추천은 아직 안 열림) |
+| 수업자료 | 오리엔테이션 17 · 원리 23 · 시스템 19 ×**2벌** | 오리엔테이션 17 · 원리 23 · 시스템 19 |
+| 이번 시간 | 2. 인공지능 시스템 (`mt27kteb4gpk2`) | 2. 인공지능 시스템 (`mt6hgc8a98ime`) |
+| 학습지 | 나와 인공지능 · **음악 추천 시스템 분석하기**(열림) | 같음 |
 
-- **ai-2D 에는 `2. 인공지능 시스템` 자료가 아직 없습니다.** 2D 수업 전에 올려야 합니다.
+- ⚠ **ai-2B 에 `2. 인공지능 시스템` 덱이 두 벌 있습니다.** 8/21 에 올린 `mt27kteb4gpk2`(학생 필기·발표 대본이 붙어 있는 쪽, 지금 열려 있음)와
+  8/24 에 두 반 동시 업로드로 생긴 `mt6hgc8a98ime`. 지우려면 **필기가 붙은 쪽을 남겨야** 합니다.
 - 단원 구성 Ⅰ(인공지능의 이해)에 수업자료 2개 + 실습 게임이 걸려 있습니다.
+- 다음은 **1-1-2 탐색 파트**(문제 해결과 탐색 / 맹목적 탐색 / 지능적 탐색 / 탐색으로 문제 해결).
+  4차시 노트는 옵시디언에 쓰는 중이고, 실습 게임 구상은 `SEARCH_GAME_PROPOSAL.md` 에 있습니다.
 
 ### 환경
-- Windows. **PowerPoint(COM)·Python(python-pptx, pywin32, PIL)** 설치돼 있음. pptx 작업은 LibreOffice 말고 PowerPoint COM 으로 렌더링해 확인 (LibreOffice 는 이 환경에서 실행 안 됨)
+- Windows. **PowerPoint(COM)·Python(python-pptx, pywin32, PIL)·Node** 설치돼 있음. 슬라이드 생성기는 `pptxgenjs`(`npm install`) 를 씁니다. pptx 작업은 LibreOffice 말고 PowerPoint COM 으로 렌더링해 확인 (LibreOffice 는 이 환경에서 실행 안 됨)
 - 로컬 확인은 `.claude/launch.json` 의 `ai-career` (http://localhost:5599)
 
 ---

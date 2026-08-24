@@ -1,0 +1,9 @@
+{
+  "name": "ai-career-tools",
+  "private": true,
+  "type": "module",
+  "description": "수업 도구 스크립트 전용 (앱 자체는 빌드 없는 vanilla JS 입니다)",
+  "dependencies": {
+    "pptxgenjs": "^4.0.1"
+  }
+}
