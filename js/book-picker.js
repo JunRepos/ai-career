@@ -8,13 +8,12 @@
    신청 조건 — 학교 기준이 바뀌면 아래 세 숫자만 고치면 됩니다.
      · 도서관에 없는 책          (library-holdings.js 의 제목과 대조)
      · 절판이 아닌 책            (카카오 status + 알라딘 stockStatus 교차확인)
-     · 정가 BOOK_PRICE_MIN ~ MAX
+     · 정가 BOOK_PRICE_MAX 이하 — 하한은 두지 않습니다 (싼 책은 그냥 됩니다)
      · 진로 도서는 BOOK_YEAR_MIN 년 이후 — 문학은 예외라 자동 판정이 안 됩니다.
        분야 정보를 주는 API 가 없어서, 경고만 띄우고 판단은 학생에게 맡깁니다.
 ═══════════════════════════════════════ */
 
-const BOOK_PRICE_MIN = 7000;
-const BOOK_PRICE_MAX = 20000;
+const BOOK_PRICE_MAX = 20000;   // 이 금액을 넘는 책만 막습니다
 const BOOK_YEAR_MIN  = 2024;
 
 /* 카카오 도서 검색 REST 키.
@@ -135,10 +134,10 @@ function bookVerdict(b){
   if(!b.price){
     blocked = true;
     notes.push({ kind: 'bad', text: '정가를 확인하지 못했어요. 다른 책을 고르거나 선생님께 말씀해 주세요.' });
-  } else if(b.price < BOOK_PRICE_MIN || b.price > BOOK_PRICE_MAX){
+  } else if(b.price > BOOK_PRICE_MAX){
     blocked = true;
-    notes.push({ kind: 'bad', text: '정가가 ' + bookPrice(b.price) + '이에요. 신청할 수 있는 가격은 '
-      + bookPrice(BOOK_PRICE_MIN) + ' ~ ' + bookPrice(BOOK_PRICE_MAX) + '이에요.' });
+    notes.push({ kind: 'bad', text: '정가가 ' + bookPrice(b.price) + '이에요. '
+      + bookPrice(BOOK_PRICE_MAX) + '이 넘는 책은 신청할 수 없어요.' });
   }
 
   const yr = Number(b.year) || 0;
