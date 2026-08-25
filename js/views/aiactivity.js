@@ -161,6 +161,11 @@ function _aiaQuestion(q, no){
   </div>`;
 }
 
+/* 이 학습지에 책 고르기 문항이 있는지 */
+function _aiaHasBookQ(act){
+  return (act?.questions || []).some(q => q.type === 'book');
+}
+
 /* 고른 책을 보여주는 카드 — 왼쪽 표지, 오른쪽 정보.
    후보를 눌렀을 때와 확정한 뒤 모두 같은 모양이라 함수 하나로 씁니다. */
 function _aiaBookCard(b, done){
@@ -197,8 +202,13 @@ function _aiaBookQuestion(q, head){
 
   // 이미 고른 책이 있으면 그것만 보여줍니다
   if(picked && picked.title){
+    // 도서관 대출·예산 안내는 정한 뒤에도 계속 보여야 합니다
+    const after = bookVerdict(picked).notes
+      .filter(n => n.kind === 'warn')
+      .map(n => `<div class="ws-bk-note warn">${esc(n.text)}</div>`).join('');
     return `<div class="ws-block">${head}
       ${_aiaBookCard(picked, true)}
+      ${after}
       <button class="btn-sm ws-bk-reset" data-action="aia-book-reset" data-fid="${esc(q.id)}">다시 고르기</button>
     </div>`;
   }
@@ -498,6 +508,7 @@ function _vTcAiaStudentList(){
     <button class="btn-sm" data-action="aia-tc-back">← 학습지 목록</button>
     <div class="aia-tc-head-title">${esc(act.title)}</div>
     <button class="btn-sm" data-action="aia-export-csv">답안 CSV</button>
+    ${_aiaHasBookQ(act) ? '<button class="btn-sm" data-action="aia-export-books">도서 신청 목록</button>' : ''}
   </div>
   <div class="asmt-stat-grid">
     <div class="stat-card"><div class="stat-num">${STUDENTS.length}</div><div class="stat-label">전체 학생</div></div>

@@ -5,12 +5,13 @@
    고른 책은 { title, author, publisher, year, price, isbn } 로 답안에 저장되고,
    선생님 CSV 에서 열이 하나씩 나뉘어 나옵니다 (사서 선생님께 그대로 보낼 수 있게).
 
-   신청 조건 — 학교 기준이 바뀌면 아래 세 숫자만 고치면 됩니다.
-     · 도서관에 없는 책          (library-holdings.js 의 제목과 대조)
-     · 절판이 아닌 책            (카카오 status + 알라딘 stockStatus 교차확인)
-     · 정가 BOOK_PRICE_MAX 이하 — 하한은 두지 않습니다 (싼 책은 그냥 됩니다)
-     · 진로 도서는 BOOK_YEAR_MIN 년 이후 — 문학은 예외라 자동 판정이 안 됩니다.
-       분야 정보를 주는 API 가 없어서, 경고만 띄우고 판단은 학생에게 맡깁니다.
+   고르는 것 자체는 웬만하면 막지 않습니다 — 학생이 무엇을 읽고 싶은지 아는 게 먼저라,
+   조건에 걸리는 책도 고르게 두고 무엇이 걸렸는지만 알려 줍니다.
+     · 도서관에 있는 책     → 알림. 사지 않고 빌려 읽습니다
+     · 정가 BOOK_PRICE_MAX 초과 → 알림. 구매가 어려울 수 있습니다
+     · 진로 도서가 BOOK_YEAR_MIN 년 이전 → 알림. 문학이면 상관없습니다
+   못 고르게 막는 건 두 가지뿐입니다 — 절판된 책, 정가를 확인할 수 없는 책.
+   둘 다 살 방법이 없어서 신청 목록에 올릴 수가 없습니다.
 ═══════════════════════════════════════ */
 
 const BOOK_PRICE_MAX = 20000;   // 이 금액을 넘는 책만 막습니다
@@ -131,41 +132,57 @@ function bookSoldOut(b){
    연도는 blocked 로 잡지 않습니다 — 문학이면 통과라서 학생이 판단해야 합니다. */
 function bookVerdict(b){
   const notes = [];
-  let blocked = false;
+  let blocked = false;      // 아예 고를 수 없는 경우 (절판·정가 미확인)
+  let warned  = false;      // 고를 수는 있지만 알아둘 것이 있는 경우
 
   if(bookSoldOut(b)){
     blocked = true;
-    notes.push({ kind: 'bad', text: '이 책은 현재 ' + (b.status || '절판') + ' 상태예요. 신청할 수 없어요.' });
-  }
-
-  const owned = bookInLibrary(b.title);
-  if(owned){
-    blocked = true;
-    notes.push({ kind: 'bad', text: '이미 우리 도서관에 있는 책이에요 — 「' + owned + '」. '
-      + '도서관에 있는 책은 새로 사지 않고 빌려서 읽습니다. 도서관에서 바로 대출하세요! '
-      + '제목만 비슷한 다른 책이라면 선생님께 말씀해 주세요.' });
+    notes.push({ kind: 'bad', text: '이 책은 현재 ' + (b.status || '절판') + ' 상태예요. '
+      + '살 방법이 없어서 신청할 수 없어요. 다른 책을 골라 주세요.' });
   }
 
   if(!b.price){
     blocked = true;
     notes.push({ kind: 'bad', text: '정가를 확인하지 못했어요. 다른 책을 고르거나 선생님께 말씀해 주세요.' });
-  } else if(b.price > BOOK_PRICE_MAX){
-    blocked = true;
-    notes.push({ kind: 'bad', text: '정가가 ' + bookPrice(b.price) + '이에요. '
-      + bookPrice(BOOK_PRICE_MAX) + '이 넘는 책은 신청할 수 없어요.' });
+  }
+
+  const owned = bookInLibrary(b.title);
+  if(owned){
+    warned = true;
+    notes.push({ kind: 'warn', text: '이 책은 우리 도서관에 있어요 — 「' + owned + '」. '
+      + '도서관에 있는 책은 새로 사지 않아요. 이 책을 고르되, 읽을 때는 도서관에서 빌려 보세요! '
+      + '제목만 비슷한 다른 책이라면 선생님께 말씀해 주세요.' });
+  }
+
+  if(b.price && b.price > BOOK_PRICE_MAX){
+    warned = true;
+    notes.push({ kind: 'warn', text: '정가가 ' + bookPrice(b.price) + '이에요. '
+      + bookPrice(BOOK_PRICE_MAX) + '이 넘는 책은 예산 때문에 못 사 줄 수도 있어요. '
+      + '고르는 건 괜찮지만, 못 사게 되면 다른 책으로 바꿔야 할 수 있어요.' });
   }
 
   const yr = Number(b.year) || 0;
-  const yearWarn = !blocked && yr && yr < BOOK_YEAR_MIN;
-  if(yearWarn){
-    notes.push({ kind: 'warn', text: yr + '년에 나온 책이에요. 진로 관련 책이라면 신청할 수 없어요 — '
-      + BOOK_YEAR_MIN + '년 이후에 나온 책만 됩니다. 소설·시·에세이 같은 문학이라면 출판년도와 상관없이 신청할 수 있어요.' });
+  if(!blocked && yr && yr < BOOK_YEAR_MIN){
+    warned = true;
+    notes.push({ kind: 'warn', text: yr + '년에 나온 책이에요. 진로 관련 책은 '
+      + BOOK_YEAR_MIN + '년 이후에 나온 것만 살 수 있어요. '
+      + '소설·시·에세이 같은 문학이라면 출판년도와 상관없어요.' });
   }
 
-  if(!blocked && !yearWarn){
-    notes.push({ kind: 'ok', text: '신청할 수 있는 책이에요. 도서관에 없고, 지금 살 수 있고, 정가도 조건에 맞아요.' });
+  if(!blocked && !warned){
+    notes.push({ kind: 'ok', text: '바로 신청할 수 있는 책이에요. 도서관에 없고, 지금 살 수 있고, 정가도 괜찮아요.' });
   }
-  return { blocked, yearWarn, notes };
+  return { blocked, warned, notes };
+}
+
+/* 취합용 표시 — 선생님 CSV 에서 열로 나갑니다.
+   저장해 둔 값이 아니라 그때그때 다시 계산합니다 (소장 목록이 바뀌어도 최신으로 나오게). */
+function bookFlags(b){
+  const owned = b && b.title ? bookInLibrary(b.title) : null;
+  return {
+    inLibrary: owned || '',
+    overCap: !!(b && Number(b.price) > BOOK_PRICE_MAX),
+  };
 }
 
 function bookPrice(n){

@@ -355,6 +355,12 @@ document.addEventListener('click', async e => {
     _aiaExportCSV();
     return;
   }
+
+  // 선생님: 사서 선생님께 넘길 도서 신청 목록
+  if(act === 'aia-export-books'){
+    _aiaExportBookList();
+    return;
+  }
 });
 
 // 학생: 입력 (debounce 자동 저장)
@@ -529,6 +535,62 @@ async function _aiaSaveNow(silent){
   }
 }
 
+/* ── 파일로 내려받기 ── */
+function _aiaDownloadCSV(rows, filename){
+  const csv = '\ufeff' + rows.map(r => r.map(cell => {
+    const s = String(cell ?? '');
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/* ── 사서 선생님께 넘길 도서 신청 목록 ──
+   · 도서관에 이미 있는 책은 뺍니다 (사지 않고 빌려 읽으므로)
+   · 같은 책을 여러 명이 골랐으면 한 줄로 합치고 신청 인원을 적습니다
+   · 2만원이 넘는 책은 빼지 않고 표시만 합니다 — 살지 말지는 선생님이 정합니다 */
+function _aiaExportBookList(){
+  if(!TC_CLS || !AIA_SEL) return;
+  const act = AIA_SEL;
+  const bookQs = (act.questions || []).filter(q => q.type === 'book');
+  if(!bookQs.length){ toast('이 학습지에는 책 고르기 문항이 없어요.', 'err'); return; }
+
+  const byBook = new Map();
+  let ownedCount = 0;
+  for(const st of STUDENTS){
+    const ans = AIA_ALL_SUBS[st.number]?.answers || {};
+    for(const q of bookQs){
+      const b = ans[q.id];
+      if(!b || !b.title) continue;
+      const f = bookFlags(b);
+      if(f.inLibrary){ ownedCount++; continue; }        // 도서관에 있는 책은 신청하지 않습니다
+      const key = (b.isbn || '').trim() || b.title.trim();
+      const hit = byBook.get(key);
+      if(hit) hit.who.push(st.number + ' ' + st.name);
+      else byBook.set(key, { b, who: [st.number + ' ' + st.name] });
+    }
+  }
+  if(!byBook.size){ toast('신청할 책이 아직 없어요.', 'err'); return; }
+
+  const rows = [['도서명', '저자', '출판사', '출판년도', '정가', '신청 인원', '2만원 초과', '신청 학생', 'ISBN']];
+  const list = [...byBook.values()].sort((x, y) => x.b.title.localeCompare(y.b.title, 'ko'));
+  for(const { b, who } of list){
+    rows.push([b.title || '', b.author || '', b.publisher || '', b.year || '',
+               b.price ? Number(b.price) : '', who.length,
+               bookFlags(b).overCap ? '초과' : '', who.join(', '), b.isbn || '']);
+  }
+
+  _aiaDownloadCSV(rows, `도서신청목록_${TC_CLS.id}_${new Date().toISOString().slice(0,10)}.csv`);
+  toast(`도서 ${list.length}종 내려받았어요${ownedCount ? ` (도서관 소장 ${ownedCount}건 제외)` : ''}`, 'ok');
+}
+
 // CSV 내보내기
 function _aiaExportCSV(){
   if(!TC_CLS || !AIA_SEL) return;
@@ -541,7 +603,7 @@ function _aiaExportCSV(){
   const answerQs = (act.questions || []).filter(x => x.type !== 'note');
   const header = ['학번', '이름'];
   for(const q of answerQs){
-    if(q.type === 'book') header.push('책 제목', '저자', '출판사', '출판년도', '정가', 'ISBN');
+    if(q.type === 'book') header.push('도서명', '저자', '출판사', '출판년도', '정가', '도서관 소장', '2만원 초과', 'ISBN');
     else header.push(labels[q.id] || q.id);
   }
   header.push('제출시각', '마지막수정');
@@ -553,8 +615,12 @@ function _aiaExportCSV(){
     for(const q of answerQs){
       if(q.type === 'book'){
         const b = ans[q.id] || {};
+        const f = bookFlags(b);
         row.push(b.title || '', b.author || '', b.publisher || '', b.year || '',
-                 b.price ? Number(b.price) : '', b.isbn || '');
+                 b.price ? Number(b.price) : '',
+                 f.inLibrary ? '있음 (' + f.inLibrary + ')' : '',
+                 f.overCap ? '초과' : '',
+                 b.isbn || '');
         continue;
       }
       row.push(aiaAnswerText(q, ans[q.id], ans));
@@ -563,18 +629,6 @@ function _aiaExportCSV(){
     row.push(sub?.updatedAt ? fmtDt(sub.updatedAt) : '');
     rows.push(row);
   }
-  const csv = '﻿' + rows.map(r => r.map(cell => {
-    const s = String(cell ?? '');
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  }).join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `AI학습지_${act.id}_${TC_CLS.id}_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  _aiaDownloadCSV(rows, `AI학습지_${act.id}_${TC_CLS.id}_${new Date().toISOString().slice(0,10)}.csv`);
   toast('CSV 내보내기 완료', 'ok');
 }
