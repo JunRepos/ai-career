@@ -150,11 +150,80 @@ function _aiaQuestion(q, no){
     </div>`;
   }
 
+  // 책 고르기 — 학습지 안에서 바로 검색하고, 신청 조건을 만족하는 책만 고를 수 있습니다
+  if(q.type === 'book') return _aiaBookQuestion(q, head);
+
   // 기본 — 줄노트 답변칸
   return `<div class="ws-block">
     ${head}
     ${q.imageUrl ? `<img class="ws-img" src="${esc(q.imageUrl)}" alt="" data-action="preview-img" data-url="${esc(q.imageUrl)}" data-name="${esc(q.text)}"/>` : ''}
     <textarea class="ws-lines" data-action="aia-input" data-fid="${esc(q.id)}" rows="${q.rows || 3}">${esc(AIA_ANSWERS[q.id] || '')}</textarea>
+  </div>`;
+}
+
+/* ── 책 고르기 문항 ──
+   검색 상태는 AIA_BOOK[문항id] 에 둡니다 (답안이 아니라 화면 상태라서).
+   고른 책만 AIA_ANSWERS 에 { title, author, publisher, year, price, isbn } 로 들어갑니다. */
+function _aiaBookQuestion(q, head){
+  const picked = AIA_ANSWERS[q.id];
+  const S = AIA_BOOK[q.id] || {};
+
+  // 이미 고른 책이 있으면 그것만 보여줍니다
+  if(picked && picked.title){
+    const rows = [
+      ['제목', picked.title], ['저자', picked.author], ['출판사', picked.publisher],
+      ['출판년도', picked.year], ['정가', bookPrice(picked.price)],
+    ].map(([k, v]) => `<div class="ws-bk-row"><span class="ws-bk-k">${esc(k)}</span><span class="ws-bk-v">${esc(v || '미확인')}</span></div>`).join('');
+    return `<div class="ws-block">${head}
+      <div class="ws-bk-picked">
+        <div class="ws-bk-done">✔ 이 책으로 정했어요</div>
+        ${rows}
+        <button class="btn-sm ws-bk-reset" data-action="aia-book-reset" data-fid="${esc(q.id)}">다시 고르기</button>
+      </div>
+    </div>`;
+  }
+
+  const cards = (S.results || []).map((b, i) => {
+    const on = S.pick === i;
+    const cover = b.cover
+      ? `<img src="${esc(b.cover)}" alt=""/>`
+      : `<span class="ws-bk-noimg">📖</span>`;
+    return `<button class="ws-bk-card${on ? ' on' : ''}" data-action="aia-book-pick" data-fid="${esc(q.id)}" data-i="${i}">
+      <span class="ws-bk-cov">${cover}</span>
+      <span class="ws-bk-t">${esc(b.title)}</span>
+      <span class="ws-bk-a">${esc(b.author || '')}</span>
+      <span class="ws-bk-a">${esc(b.publisher || '')} · ${esc(b.year || '')}</span>
+      <span class="ws-bk-p">${esc(bookPrice(b.price))}</span>
+    </button>`;
+  }).join('');
+
+  // 고른 후보의 판정 — 통과해야 [이 책으로 정하기] 가 나옵니다
+  let verdict = '';
+  if(S.pick != null && S.results && S.results[S.pick]){
+    const b = S.results[S.pick];
+    const v = bookVerdict(b);
+    const notes = v.notes.map(n => `<div class="ws-bk-note ${esc(n.kind)}">${esc(n.text)}</div>`).join('');
+    verdict = `<div class="ws-bk-verdict">
+      ${S.checking ? '<div class="ws-bk-note warn">절판 여부를 확인하는 중이에요…</div>' : notes}
+      ${(!v.blocked && !S.checking)
+        ? `<button class="btn-p btn-sm" data-action="aia-book-confirm" data-fid="${esc(q.id)}">이 책으로 정하기</button>`
+        : ''}
+    </div>`;
+  }
+
+  return `<div class="ws-block">${head}
+    <div class="ws-bk">
+      <div class="ws-bk-search">
+        <input class="ws-bk-q" type="search" data-action="aia-book-q" data-fid="${esc(q.id)}"
+          value="${esc(S.q || '')}" placeholder="책 제목이나 저자를 검색하세요" enterkeyhint="search"/>
+        <button class="btn-p btn-sm" data-action="aia-book-search" data-fid="${esc(q.id)}"
+          ${S.loading ? 'disabled' : ''}>${S.loading ? '검색 중…' : '검색'}</button>
+      </div>
+      ${S.err ? `<div class="ws-bk-note bad">${esc(S.err)}</div>` : ''}
+      ${cards ? `<div class="ws-bk-grid">${cards}</div>` : ''}
+      ${(!cards && !S.loading && S.searched) ? '<div class="ws-bk-empty">검색 결과가 없어요. 제목을 조금 바꿔서 다시 검색해 보세요.</div>' : ''}
+      ${verdict}
+    </div>
   </div>`;
 }
 
@@ -173,6 +242,7 @@ function _tableLabels(q, answers){
 
 /* 답안을 사람이 읽는 글로 — 선생님 화면·CSV·세특 복사에서 공용 */
 function aiaAnswerText(q, v, answers){
+  if(q.type === 'book') return (v && v.title) ? bookLine(v) : '';
   if(q.type === 'check') return Array.isArray(v) ? v.join(', ') : (v || '');
   if(q.type === 'table'){
     if(!v || typeof v !== 'object') return '';
@@ -261,7 +331,7 @@ function _vTcAiaEditor(){
   const qs = (d.questions || []).map((q, i) => {
     const t = q.type || 'text';
     // 유형 고르기 — 글/안내/체크박스/표
-    const typeBtns = [['text','글'],['note','안내'],['check','체크박스'],['table','표']].map(([k, l]) =>
+    const typeBtns = [['text','글'],['note','안내'],['check','체크박스'],['table','표'],['book','책 고르기']].map(([k, l]) =>
       `<button class="btn-xs${t === k ? ' btn-p' : ''}" data-action="qb-type" data-i="${i}" data-t="${k}">${l}</button>`
     ).join('');
 
@@ -279,6 +349,8 @@ function _vTcAiaEditor(){
           <select data-action="qb-cols" data-i="${i}">
             ${[1,2,3,4].map(c => `<option value="${c}"${(q.cols || 2) === c ? ' selected' : ''}>${c}칸</option>`).join('')}
           </select></label>`;
+    } else if(t === 'book'){
+      extra = `<span class="qb-hint">학생이 학습지 안에서 책을 검색해 고릅니다 (신청 조건 자동 확인)</span>`;
     } else if(t === 'table'){
       extra = `<label class="qb-rows">빈 줄
           <select data-action="qb-extra" data-i="${i}">

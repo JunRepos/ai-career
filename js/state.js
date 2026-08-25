@@ -323,6 +323,7 @@ let AIA_SEL         = null;     // 선택된 활동 객체 (학생: 풀이 중 /
 let AIA_ANSWERS     = {};       // 학생: 작성 중 답안 { [fieldId]: value }
 let AIA_SUB         = null;     // 학생: 본인 제출 캐시 { answers, updatedAt }
 let AIA_SAVE_TIMER  = null;     // 학생: 자동 저장 debounce
+let AIA_BOOK        = {};       // 학생: 책 고르기 문항의 검색 상태 { [문항id]: {q, loading, err, results, pick, checking, searched} }
 let AIA_SAVING      = false;    // 저장 중 표시
 /* 🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기
    차시마다 자료를 하나씩 올려두고(SLIDE_DECKS), 그중 '이번 시간에 볼 것'

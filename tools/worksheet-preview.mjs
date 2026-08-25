@@ -119,6 +119,18 @@ function renderQuestion(q, no, qi){
         <tbody>${body}</tbody></table></div>${note}</div>`;
   }
 
+  // 책 고르기 — 미리보기에서는 검색창 모양만 보여줍니다 (실제 검색은 앱에서)
+  if(q.type === 'book'){
+    return `<div class="ws-block">${head}
+      <div class="ws-bk">
+        <div class="ws-bk-search">
+          <input class="ws-bk-q" placeholder="책 제목이나 저자를 검색하세요"/>
+        </div>
+        <div class="ws-q-desc" style="margin-left:0">↑ 학생 화면에서는 여기서 바로 검색해 고릅니다.
+          도서관 소장·절판·가격을 자동으로 확인해서, 조건에 맞는 책만 고를 수 있습니다.</div>
+      </div></div>`;
+  }
+
   if(ANSWER_MODE && q.answer) return `<div class="ws-block">${head}${ansBox(q.answer)}</div>`;
   return `<div class="ws-block">${head}
     <textarea class="ws-lines" rows="${q.rows || 3}"></textarea></div>`;

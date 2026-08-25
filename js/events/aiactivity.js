@@ -292,6 +292,63 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  // 학생: 책 검색
+  if(act === 'aia-book-search'){
+    await _aiaBookSearch(el.dataset.fid);
+    return;
+  }
+
+  // 학생: 검색 결과에서 후보 고르기 — 고르는 순간 절판 여부를 한 번 더 확인합니다
+  if(act === 'aia-book-pick'){
+    const fid = el.dataset.fid, i = +el.dataset.i;
+    const S = AIA_BOOK[fid];
+    if(!S || !S.results || !S.results[i]) return;
+    S.pick = i;
+    const b = S.results[i];
+
+    // 카카오 status 는 비어 있는 경우가 잦아 알라딘으로 교차확인합니다 (실패해도 그냥 넘어갑니다)
+    if(!b._checked){
+      S.checking = true; render();
+      const al = await bookAladinStatus(b.isbn);
+      if(al){
+        if(al.status && /절판|품절/.test(al.status)) b.status = al.status;
+        if(!b.price && al.price) b.price = al.price;
+      }
+      b._checked = true;
+      S.checking = false;
+    }
+    render();
+    return;
+  }
+
+  // 학생: 이 책으로 정하기 — 여기서 처음으로 답안에 들어갑니다
+  if(act === 'aia-book-confirm'){
+    const fid = el.dataset.fid;
+    const S = AIA_BOOK[fid];
+    const b = S && S.results && S.results[S.pick];
+    if(!b) return;
+    if(bookVerdict(b).blocked){ toast('이 책은 신청 조건에 맞지 않아요.', 'err'); return; }
+    AIA_ANSWERS[fid] = {
+      title: b.title || '', author: b.author || '', publisher: b.publisher || '',
+      year: b.year || '', price: Number(b.price) || 0, isbn: b.isbn || '',
+    };
+    delete AIA_BOOK[fid];
+    _aiaQueueSave();
+    render();
+    toast('책을 정했어요 📚', 'ok');
+    return;
+  }
+
+  // 학생: 다시 고르기
+  if(act === 'aia-book-reset'){
+    const fid = el.dataset.fid;
+    delete AIA_ANSWERS[fid];
+    AIA_BOOK[fid] = {};
+    _aiaQueueSave();
+    render();
+    return;
+  }
+
   // 선생님: CSV 내보내기
   if(act === 'aia-export-csv'){
     _aiaExportCSV();
@@ -407,6 +464,44 @@ document.addEventListener('input', e => {
   _aiaQueueSave();
 });
 
+/* ── 책 검색 ──
+   검색 상태는 AIA_BOOK 에만 둡니다. 답안에는 [이 책으로 정하기] 를 눌러야 들어갑니다. */
+async function _aiaBookSearch(fid){
+  if(!fid) return;
+  const S = AIA_BOOK[fid] || (AIA_BOOK[fid] = {});
+  const q = (S.q || '').trim();
+  if(!q){ toast('검색할 책 제목을 적어주세요.', 'err'); return; }
+
+  S.loading = true; S.err = ''; S.pick = null; S.results = []; S.searched = false;
+  render();
+  try {
+    S.results = await bookSearch(q);
+  } catch(err){
+    console.error(err);
+    S.err = err.message || '검색에 실패했어요. 잠시 뒤 다시 해보세요.';
+  }
+  S.loading = false;
+  S.searched = true;
+  render();
+}
+
+// 학생: 책 검색어 입력 (화면을 다시 그리지 않아 커서가 튀지 않습니다)
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-action="aia-book-q"]');
+  if(!el) return;
+  const fid = el.dataset.fid;
+  if(!fid) return;
+  (AIA_BOOK[fid] || (AIA_BOOK[fid] = {})).q = el.value;
+});
+
+// 학생: 검색창에서 엔터
+document.addEventListener('keydown', e => {
+  const el = e.target.closest('[data-action="aia-book-q"]');
+  if(!el || e.key !== 'Enter') return;
+  e.preventDefault();
+  _aiaBookSearch(el.dataset.fid);
+});
+
 // 자동 저장 예약 (1.5초 후) — 입력 중에는 저장하지 않음
 function _aiaQueueSave(){
   if(AIA_SAVE_TIMER) clearTimeout(AIA_SAVE_TIMER);
@@ -437,17 +532,32 @@ async function _aiaSaveNow(silent){
 function _aiaExportCSV(){
   if(!TC_CLS || !AIA_SEL) return;
   const act = AIA_SEL;
-  const fieldIds = aiaFieldIds(act);
   // 헤더 라벨 = 문항 글
   const labels = {};
   (act.questions || []).forEach(q => { labels[q.id] = q.text; });
-  const header = ['학번', '이름', ...fieldIds.map(fid => labels[fid] || fid), '제출시각', '마지막수정'];
+  /* 책 고르기 문항은 한 칸에 몰아넣지 않고 열을 나눕니다 —
+     사서 선생님께 보낼 신청 목록이 그대로 나오도록. */
+  const answerQs = (act.questions || []).filter(x => x.type !== 'note');
+  const header = ['학번', '이름'];
+  for(const q of answerQs){
+    if(q.type === 'book') header.push('책 제목', '저자', '출판사', '출판년도', '정가', 'ISBN');
+    else header.push(labels[q.id] || q.id);
+  }
+  header.push('제출시각', '마지막수정');
   const rows = [header];
   for(const st of STUDENTS){
     const sub = AIA_ALL_SUBS[st.number];
     const ans = sub?.answers || {};
     const row = [st.number, st.name];
-    for(const q of (act.questions || []).filter(x => x.type !== 'note')) row.push(aiaAnswerText(q, ans[q.id], ans));
+    for(const q of answerQs){
+      if(q.type === 'book'){
+        const b = ans[q.id] || {};
+        row.push(b.title || '', b.author || '', b.publisher || '', b.year || '',
+                 b.price ? Number(b.price) : '', b.isbn || '');
+        continue;
+      }
+      row.push(aiaAnswerText(q, ans[q.id], ans));
+    }
     row.push(sub?.submittedAt ? fmtDt(sub.submittedAt) : '');
     row.push(sub?.updatedAt ? fmtDt(sub.updatedAt) : '');
     rows.push(row);
