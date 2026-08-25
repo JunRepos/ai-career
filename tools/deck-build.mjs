@@ -447,8 +447,10 @@ const LAYOUT = {
       let cx = M.x;
       row.forEach((cell, i) => {
         card(pptx, s, cx, y, cw[i] - 0.12, rh - 0.15, { border: T.line2, fill: i === 0 ? T.soft : T.white });
+        /* 기호나 숫자처럼 짧은 칸은 가운데로 */
+        const mid = i === 0 || String(cell).trim().length <= 3;
         s.addText(runs(cell, { fontFace: i === 0 ? T.fT : T.fB, fontSize: i === 0 ? 28 : 24, color: i === 0 ? T.brown : T.muted }),
-          { x: cx + 0.3, y, w: cw[i] - 0.72, h: rh - 0.15, align: i === 0 ? 'center' : 'left',
+          { x: cx + 0.3, y, w: cw[i] - 0.72, h: rh - 0.15, align: mid ? 'center' : 'left',
             valign: 'middle', lineSpacingMultiple: 1.3 });
         cx += cw[i];
       });
