@@ -331,6 +331,7 @@ document.addEventListener('click', async e => {
     AIA_ANSWERS[fid] = {
       title: b.title || '', author: b.author || '', publisher: b.publisher || '',
       year: b.year || '', price: Number(b.price) || 0, isbn: b.isbn || '',
+      cover: b.cover || '',
     };
     delete AIA_BOOK[fid];
     _aiaQueueSave();

@@ -161,6 +161,33 @@ function _aiaQuestion(q, no){
   </div>`;
 }
 
+/* 고른 책을 보여주는 카드 — 왼쪽 표지, 오른쪽 정보.
+   후보를 눌렀을 때와 확정한 뒤 모두 같은 모양이라 함수 하나로 씁니다. */
+function _aiaBookCard(b, done){
+  const rows = [
+    ['저자', b.author], ['출판사', b.publisher],
+    ['출판년도', b.year], ['정가', bookPrice(b.price)], ['ISBN', b.isbn],
+  ].filter(([, v]) => (v || '').toString().trim())
+   .map(([k, v]) => `<div class="ws-bk-row">
+      <span class="ws-bk-k">${esc(k)}</span><span class="ws-bk-v">${esc(v)}</span>
+    </div>`).join('');
+
+  const cover = b.cover
+    ? `<img src="${esc(b.cover)}" alt="${esc(b.title)} 표지"/>`
+    : `<span class="ws-bk-noimg">📖</span>`;
+
+  return `<div class="ws-bk-detail${done ? ' done' : ''}">
+    ${done ? '<div class="ws-bk-done">✔ 이 책으로 정했어요</div>' : ''}
+    <div class="ws-bk-dbody">
+      <div class="ws-bk-dcov">${cover}</div>
+      <div class="ws-bk-dinfo">
+        <div class="ws-bk-dtitle">${esc(b.title)}</div>
+        <div class="ws-bk-rows">${rows}</div>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* ── 책 고르기 문항 ──
    검색 상태는 AIA_BOOK[문항id] 에 둡니다 (답안이 아니라 화면 상태라서).
    고른 책만 AIA_ANSWERS 에 { title, author, publisher, year, price, isbn } 로 들어갑니다. */
@@ -170,16 +197,9 @@ function _aiaBookQuestion(q, head){
 
   // 이미 고른 책이 있으면 그것만 보여줍니다
   if(picked && picked.title){
-    const rows = [
-      ['제목', picked.title], ['저자', picked.author], ['출판사', picked.publisher],
-      ['출판년도', picked.year], ['정가', bookPrice(picked.price)],
-    ].map(([k, v]) => `<div class="ws-bk-row"><span class="ws-bk-k">${esc(k)}</span><span class="ws-bk-v">${esc(v || '미확인')}</span></div>`).join('');
     return `<div class="ws-block">${head}
-      <div class="ws-bk-picked">
-        <div class="ws-bk-done">✔ 이 책으로 정했어요</div>
-        ${rows}
-        <button class="btn-sm ws-bk-reset" data-action="aia-book-reset" data-fid="${esc(q.id)}">다시 고르기</button>
-      </div>
+      ${_aiaBookCard(picked, true)}
+      <button class="btn-sm ws-bk-reset" data-action="aia-book-reset" data-fid="${esc(q.id)}">다시 고르기</button>
     </div>`;
   }
 
@@ -204,6 +224,7 @@ function _aiaBookQuestion(q, head){
     const v = bookVerdict(b);
     const notes = v.notes.map(n => `<div class="ws-bk-note ${esc(n.kind)}">${esc(n.text)}</div>`).join('');
     verdict = `<div class="ws-bk-verdict">
+      ${_aiaBookCard(b, false)}
       ${S.checking ? '<div class="ws-bk-note warn">절판 여부를 확인하는 중이에요…</div>' : notes}
       ${(!v.blocked && !S.checking)
         ? `<button class="btn-p btn-sm" data-action="aia-book-confirm" data-fid="${esc(q.id)}">이 책으로 정하기</button>`

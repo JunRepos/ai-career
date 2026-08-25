@@ -24,12 +24,14 @@ const BOOK_KAKAO_KEY = 'dc9982ba6407b017f32c1e5d4150b785';
 const BOOK_TTB_KEY = 'ttbcdjsdj19981946001';
 
 /* ── 제목 맞대보기 ──
-   ISBN 이 없어 제목으로만 대조하므로, 판본 차이(괄호·권수·개정판)는 지우고 봅니다.
+   ISBN 이 없어 제목으로만 대조하므로, 괄호 안 판본 표시는 지우고 봅니다.
+   숫자는 남깁니다 — 지우면 「불편한 편의점 2」가 도서관의 「불편한 편의점」과
+   같은 책으로 잡혀서, 시리즈 다음 권을 신청하지 못하게 됩니다.
    부분일치는 6자 이상일 때만 — 소장 도서가 6천 권이라 기준이 낮으면 엉뚱하게 걸립니다. */
 function _bookNormTitle(t){
   return String(t || '').toLowerCase()
     .replace(/\(.*?\)|\[.*?\]/g, '')
-    .replace(/[\s\-–—:·,.'"“”‘’!?0-9]/g, '')
+    .replace(/[\s\-–—:·,.'"“”‘’!?]/g, '')
     .replace(/양장본|리커버|개정판|세트|합본|에디션|스페셜/g, '');
 }
 
@@ -41,14 +43,27 @@ function _bookHoldings(){
   return _bookHoldingsIdx;
 }
 
+/* 정규화한 제목 둘이 같은 책인지.
+   글자가 완전히 같으면 같은 책입니다. 한쪽이 다른 쪽에 통째로 들어 있으면
+   판본 차이일 때가 많아 같은 책으로 봅니다 — 다만 짧은 제목은 우연히 겹치므로
+   6자 이상일 때만, 그리고 남는 꼬리가 숫자뿐이면 다른 권으로 봅니다
+   (「불편한 편의점」과 「불편한 편의점 2」는 다른 책입니다). */
+function _bookSameTitle(a, b){
+  if(a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if(short.length < 6) return false;
+  const at = long.indexOf(short);
+  if(at < 0) return false;
+  const tail = long.slice(at + short.length);
+  if(/^\d+$/.test(tail)) return false;   // 뒤에 붙은 게 권수뿐 → 다른 권
+  return true;
+}
+
 /* 도서관에 있는 책이면 소장 목록의 제목을, 없으면 null 을 돌려줍니다. */
 function bookInLibrary(title){
   const nt = _bookNormTitle(title);
   if(!nt) return null;
-  const hit = _bookHoldings().find(h =>
-    h.norm === nt ||
-    (nt.length >= 6 && h.norm.includes(nt)) ||
-    (h.norm.length >= 6 && nt.includes(h.norm)));
+  const hit = _bookHoldings().find(h => _bookSameTitle(nt, h.norm));
   return hit ? hit.title : null;
 }
 
