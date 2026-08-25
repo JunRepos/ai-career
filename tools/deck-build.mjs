@@ -740,21 +740,120 @@ const LAYOUT = {
     }));
     const edges = d.nodes.filter(n => n.parent)
       .map(n => ({ from: n.parent, to: n.id, label: n.edge, dim: n.dim }));
-    drawGraph(pptx, s, { ...d, nodeW: d.nodeW || Math.min(2.6, (M.w - 0.6) / (slot || 1) - 0.15) }, nodes, edges);
+    drawGraph(pptx, s, {
+      ...d, compress: true,
+      nodeW: d.nodeW || Math.min(2.6, (M.w - 0.6) / (slot || 1) - 0.15),
+    }, nodes, edges);
+  },
+
+  /* 판 여러 개 나란히 — 8-퍼즐의 처음과 목표를 견주어 볼 때 */
+  boards(pptx, s, d){
+    heading(pptx, s, d.title, { num: d.num });
+    const n = d.items.length;
+    const gap = d.arrow === false ? 1.0 : 2.0;
+    const capH = d.items.some(i => i.label) ? 0.75 : 0;
+    const size = Math.min(4.8, (M.w - gap * (n - 1)) / n, bodyH() - capH - (d.foot ? 1.0 : 0));
+    const totalW = size * n + gap * (n - 1);
+    let x = M.x + (M.w - totalW) / 2;
+    const y = M.top + capH + (bodyH() - (d.foot ? 1.0 : 0) - size - capH) / 2;
+    d.items.forEach((it, i) => {
+      if(it.label)
+        s.addText(it.label, { x: x - 0.6, y: y - 0.7, w: size + 1.2, h: 0.6,
+          fontFace: T.fT, fontSize: 28, color: it.accent ? T.brown : T.label, align: 'center', valign: 'middle' });
+      drawBoard(pptx, s, x, y, size, it.board, {
+        border: it.accent ? T.gold : T.line, lw: it.accent ? 2.5 : 1.5,
+        tile: it.accent ? T.gold2 : T.pill,
+      });
+      if(i < n - 1 && d.arrow !== false)
+        s.addShape(pptx.ShapeType.rightArrow, { x: x + size + 0.5, y: y + size / 2 - 0.3, w: 1.0, h: 0.6,
+          fill: { color: T.gold2 }, line: { type: 'none' } });
+      x += size + gap;
+    });
+    if(d.foot)
+      s.addText(runs(d.foot, { fontFace: T.fT, fontSize: 26, color: T.brown }),
+        { x: M.x, y: M.bottom - 0.85, w: M.w, h: 0.8, align: 'center', valign: 'middle' });
   },
 };
 
+/* 8-퍼즐 같은 3×3 판 하나 */
+function drawBoard(pptx, s, x, y, size, board, opt = {}){
+  const N = 3, pad = 0.09;
+  const cell = (size - pad * 2) / N;
+  s.addShape(pptx.ShapeType.roundRect, { x, y, w: size, h: size,
+    fill: { color: opt.fill || T.white },
+    line: { color: opt.border || T.line, width: opt.lw || 1.5 }, rectRadius: 0.16 });
+  board.forEach((v, i) => {
+    if(v === '' || v == null) return;                 // 빈칸은 그리지 않음
+    const cx = x + pad + (i % N) * cell, cy = y + pad + Math.floor(i / N) * cell;
+    s.addShape(pptx.ShapeType.roundRect, { x: cx + 0.03, y: cy + 0.03, w: cell - 0.06, h: cell - 0.06,
+      fill: { color: opt.tile || T.pill }, line: { type: 'none' }, rectRadius: 0.09 });
+    s.addText(String(v), { x: cx, y: cy, w: cell, h: cell, fontFace: T.fT,
+      fontSize: Math.round(cell * 46), color: opt.dim ? T.label : T.ink, align: 'center', valign: 'middle' });
+  });
+}
+
 /* 노드와 간선을 실제로 그리는 부분 — diagram 과 tree 가 같이 씁니다 */
-function drawGraph(pptx, s, d, nodes, edges){
+function drawGraph(pptx, s, d, nodesIn, edges){
   const footH = d.foot ? 0.95 : 0;
   const pad = 0.75;                                   // 가장자리에 붙지 않게
-  const NH = d.nodeH || 0.92;
+  const boardMode = nodesIn.some(n => n.board);
+  const NH = d.nodeH || (boardMode ? 1.75 : 0.92);
+  const sideW = d.side ? 5.9 : 0;                     // 오른쪽 설명 칸
+  const gW = M.w - (sideW ? sideW + 0.55 : 0);
+
+  /* 원본을 건드리지 않도록 복사해서 씁니다 */
+  const nodes = nodesIn.map(n => ({ ...n }));
+
+  /* 자리가 남는다고 끝까지 벌리면 간선만 길어집니다 — 최대 간격을 정해 두고 가운데로 모읍니다 */
+  if(d.compress){
+    const squeeze = (key, span, maxGap) => {
+      const vals = [...new Set(nodes.map(n => n[key]))].sort((a, b) => a - b);
+      if(vals.length < 2) return;
+      let minGap = Infinity;
+      for(let i = 1; i < vals.length; i++) minGap = Math.min(minGap, vals[i] - vals[i - 1]);
+      const cur = minGap / 100 * span;
+      if(cur <= maxGap) return;
+      const sc = maxGap / cur;
+      nodes.forEach(n => { n[key] = 50 + (n[key] - 50) * sc; });
+    };
+    squeeze('x', gW - pad * 2, d.maxGapX || (boardMode ? NH + 1.1 : 3.5));
+    squeeze('y', bodyH() - footH - NH - 0.3, d.maxGapY || (boardMode ? NH + 1.0 : 2.3));
+  }
+
   /* 동그라미가 반쯤 잘리지 않게 위아래로 반 칸씩 비워 둡니다 */
-  const A = { x: M.x + pad, y: M.top + NH / 2 + 0.1, w: M.w - pad * 2,
+  const A = { x: M.x + pad, y: M.top + NH / 2 + 0.1, w: gW - pad * 2,
               h: bodyH() - footH - NH - 0.3 };
+  /* 이웃한 칸 사이 거리 — 이보다 넓은 동그라미는 서로 겹칩니다 */
+  const xs = [...new Set(nodes.map(n => n.x))].sort((a, b) => a - b);
+  let colGap = Infinity;
+  for(let i = 1; i < xs.length; i++) colGap = Math.min(colGap, (xs[i] - xs[i - 1]) / 100 * A.w);
+  const maxW = colGap === Infinity ? 99 : Math.max(1.1, colGap - 0.22);
+
   const pos = {};
-  const wOf = n => Math.max(d.nodeW || 1.9, textWidth(n.label, 24) + 0.85);
+  const wOf = n => n.board ? NH
+    : Math.min(maxW, Math.max(d.nodeW || 1.9, textWidth(n.label, 24) + 0.85));
   nodes.forEach(n => { pos[n.id] = { cx: A.x + A.w * n.x / 100, cy: A.y + A.h * n.y / 100, w: wOf(n) }; });
+
+  /* 오른쪽 설명 칸 — 트리를 보면서 용어를 짚을 수 있게 */
+  if(d.side){
+    const gap = 0.3;
+    const sh = (bodyH() - gap * (d.side.length - 1)) / d.side.length;
+    let sy = M.top;
+    for(const it of d.side){
+      card(pptx, s, M.right - sideW, sy, sideW, sh, it.accent ? { fill: T.pill, border: T.gold2 } : {});
+      s.addText(it.label, { x: M.right - sideW + 0.45, y: sy + 0.22, w: sideW - 0.9, h: 0.55,
+        fontFace: T.fT, fontSize: 26, color: T.brown, valign: 'middle' });
+      if(it.text){
+        /* 상자를 넘치지 않게 글자를 줄여 맞춥니다 */
+        let fs = 21;
+        while(fs > 15 && textH(it.text, sideW - 0.9, fs, 1.4) > sh - 1.0) fs -= 1;
+        s.addText(runs(it.text, { fontFace: T.fB, fontSize: fs, color: T.muted }),
+          { x: M.right - sideW + 0.45, y: sy + 0.8, w: sideW - 0.9, h: sh - 1.0,
+            valign: 'top', lineSpacingMultiple: 1.3 });
+      }
+      sy += sh + gap;
+    }
+  }
 
   /* 간선을 먼저 그려야 노드 밑에 깔립니다 */
   for(const e of edges){
@@ -785,6 +884,19 @@ function drawGraph(pptx, s, d, nodes, edges){
 
   for(const n of nodes){
     const p = pos[n.id];
+    if(n.board){
+      drawBoard(pptx, s, p.cx - NH / 2, p.cy - NH / 2, NH, n.board, {
+        fill: n.dim ? T.bg : T.white,
+        border: n.accent ? T.gold : (n.dim ? T.line2 : T.line),
+        lw: n.accent ? 2.5 : 1.5,
+        tile: n.dim ? T.soft : (n.accent ? T.gold2 : T.pill),
+        dim: n.dim,
+      });
+      if(n.label)
+        s.addText(n.label, { x: p.cx - NH / 2 - 0.5, y: p.cy + NH / 2 + 0.05, w: NH + 1.0, h: 0.45,
+          fontFace: T.fT, fontSize: 21, color: n.accent ? T.brown : T.muted, align: 'center', valign: 'middle' });
+      continue;
+    }
     s.addShape(pptx.ShapeType.roundRect, {
       x: p.cx - p.w / 2, y: p.cy - NH / 2, w: p.w, h: NH,
       fill: { color: n.dim ? T.bg : (n.accent ? T.pill : T.white) },
@@ -792,7 +904,10 @@ function drawGraph(pptx, s, d, nodes, edges){
               dashType: n.dim ? 'dash' : 'solid' },
       rectRadius: NH / 2,
     });
-    s.addText(runs(n.label, { fontFace: T.fT, fontSize: 24, color: n.dim ? T.label : T.ink }),
+    /* 좁은 자리에서는 글자를 줄여 한 줄에 넣습니다 */
+    let fs = 24;
+    while(fs > 15 && textWidth(n.label, fs) > p.w - 0.3) fs -= 1;
+    s.addText(runs(n.label, { fontFace: T.fT, fontSize: fs, color: n.dim ? T.label : T.ink }),
       { x: p.cx - p.w / 2, y: p.cy - NH / 2, w: p.w, h: NH, align: 'center', valign: 'middle' });
   }
 
