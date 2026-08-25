@@ -491,6 +491,217 @@ const LAYOUT = {
       s.addText(runs(d.caption, { fontFace: T.fB, fontSize: 26, color: T.muted }),
         { x: M.x, y: M.bottom - capH + 0.15, w: M.w, h: 0.7, align: 'center', valign: 'middle' });
   },
+
+  /* ══ 아래는 템플릿(makeitsimple)에서 뼈대만 배워 온 배치들 ══
+        색·글꼴은 전부 우리 것(크림 배경·Jua·흰 카드)입니다. */
+
+  /* 목차 — 번호 붙은 항목 목록. 오른쪽에 그림을 붙일 수 있음 */
+  agenda(pptx, s, d, ctx){
+    heading(pptx, s, d.title || '목차');
+    const hasImg = !!d.image;
+    if(hasImg) picture(pptx, s, d.image, 10.9, M.top, 7.95, bodyH(), ctx.media);
+    const w = hasImg ? 9.3 : M.w;
+    const items = d.items;
+    const pitch = Math.min(1.7, bodyH() / items.length);
+    let y = M.top + (bodyH() - pitch * items.length) / 2;
+    items.forEach((it, i) => {
+      const t = typeof it === 'string' ? it : it.text;
+      s.addText(String((typeof it === 'object' && it.n) || i + 1).padStart(2, '0'),
+        { x: M.x, y, w: 1.5, h: pitch, fontFace: T.fT, fontSize: 34, color: T.gold, valign: 'middle' });
+      s.addText(runs(t, { fontFace: T.fT, fontSize: 40, color: T.ink }),
+        { x: M.x + 1.7, y, w: w - 2.2, h: pitch, valign: 'middle' });
+      y += pitch;
+    });
+  },
+
+  /* 가로 흐름 — 카드 사이에 화살표. 단계가 옆으로 흘러갈 때 */
+  flow(pptx, s, d, ctx){
+    heading(pptx, s, d.title, { num: d.num });
+    const n = d.items.length;
+    const arrow = 0.85, gap = 0.25;
+    const w = (M.w - (n - 1) * (arrow + gap * 2)) / n;
+    /* 카드 높이는 글에 맞춰 — 짧은 글에 빈 상자가 커지지 않게 */
+    const th = Math.max(...d.items.map(it => it.text ? textH(it.text, w - 1.0, 24, 1.35) : 0));
+    const h = Math.min(bodyH(), Math.max(2.8, 1.5 + th + 0.9));
+    const y = M.top + (bodyH() - h) / 2;
+    let x = M.x;
+    d.items.forEach((it, i) => {
+      card(pptx, s, x, y, w, h);
+      s.addShape(pptx.ShapeType.roundRect, { x: x + 0.3, y: y + 0.35, w: w - 0.6, h: 0.85,
+        fill: { color: T.pill }, line: { type: 'none' }, rectRadius: 0.42 });
+      s.addText(it.label, { x: x + 0.3, y: y + 0.35, w: w - 0.6, h: 0.85,
+        fontFace: T.fT, fontSize: 26, color: T.ink, align: 'center', valign: 'middle' });
+      if(it.text)
+        s.addText(runs(it.text, { fontFace: T.fB, fontSize: 24, color: T.muted }),
+          { x: x + 0.5, y: y + 1.5, w: w - 1.0, h: h - 2.0, valign: 'top', align: 'center', lineSpacingMultiple: 1.35 });
+      if(i < n - 1)
+        s.addShape(pptx.ShapeType.rightArrow, { x: x + w + gap, y: y + h / 2 - 0.28, w: arrow, h: 0.56,
+          fill: { color: T.gold2 }, line: { type: 'none' } });
+      x += w + arrow + gap * 2;
+    });
+    void ctx;
+  },
+
+  /* 세로 흐름 — 위에서 아래로 떨어지는 단계 */
+  vflow(pptx, s, d, ctx){
+    heading(pptx, s, d.title, { num: d.num });
+    const n = d.items.length;
+    const arrow = 0.5, gap = 0.18;
+    const h = (bodyH() - (n - 1) * (arrow + gap * 2)) / n;
+    let y = M.top;
+    d.items.forEach((it, i) => {
+      card(pptx, s, M.x, y, M.w, h);
+      s.addText(it.label, { x: M.x + 0.7, y, w: 5.4, h, fontFace: T.fT, fontSize: 32, color: T.brown, valign: 'middle' });
+      if(it.text)
+        s.addText(runs(it.text, { fontFace: T.fB, fontSize: 25, color: T.muted }),
+          { x: M.x + 6.3, y, w: M.w - 7.0, h, valign: 'middle', lineSpacingMultiple: 1.3 });
+      if(i < n - 1)
+        s.addShape(pptx.ShapeType.triangle, { x: M.W / 2 - 0.35, y: y + h + gap, w: 0.7, h: arrow,
+          fill: { color: T.gold2 }, line: { type: 'none' }, rotate: 180 });
+      y += h + arrow + gap * 2;
+    });
+    void ctx;
+  },
+
+  /* 큰 한마디 — 개념 한 문장을 화면 가득 */
+  quote(pptx, s, d, ctx){
+    if(d.title) heading(pptx, s, d.title, { num: d.num });
+    const top = d.title ? M.top : 3.4;
+    const h = (d.title ? M.bottom : 9.6) - top;
+    s.addShape(pptx.ShapeType.roundRect, { x: M.x, y: top, w: M.w, h, fill: { color: T.white },
+      line: { color: T.line2, width: 1.5 }, rectRadius: 0.4 });
+    s.addText('“', { x: M.x + 0.5, y: top + 0.1, w: 2, h: 1.8, fontFace: T.fT, fontSize: 110, color: T.gold2, valign: 'middle' });
+    s.addText('”', { x: M.right - 2.5, y: top + h - 1.9, w: 2, h: 1.8, fontFace: T.fT, fontSize: 110, color: T.gold2, align: 'right', valign: 'middle' });
+    const descH = d.desc ? 1.3 : 0;
+    s.addText(runs(d.text, { fontFace: T.fT, fontSize: d.small ? 48 : 60, color: T.ink }),
+      { x: M.x + 2.0, y: top + 0.6, w: M.w - 4.0, h: h - 1.2 - descH, align: 'center', valign: 'middle', lineSpacingMultiple: 1.3 });
+    if(d.desc)
+      s.addText(runs(d.desc, { fontFace: T.fB, fontSize: 26, color: T.muted }),
+        { x: M.x + 2.0, y: top + h - 1.6, w: M.w - 4.0, h: 1.0, align: 'center', valign: 'middle' });
+    void ctx;
+  },
+
+  /* 겹치는 원 — 두세 개념이 겹치는 부분을 보여줄 때 */
+  venn(pptx, s, d, ctx){
+    heading(pptx, s, d.title, { num: d.num });
+    const n = Math.min(3, d.items.length);
+    const D = n === 2 ? 5.6 : 5.2;
+    const overlap = D * 0.32;
+    const totalW = D * n - overlap * (n - 1);
+    const y = M.top + (bodyH() - D) / 2 - (d.center ? 0.4 : 0);
+    let x = M.x + (M.w - totalW) / 2;
+    const tint = [T.pill, 'EFE3CE', 'E4D6BE'];
+    d.items.slice(0, n).forEach((it, i) => {
+      s.addShape(pptx.ShapeType.ellipse, { x, y, w: D, h: D, fill: { color: tint[i % 3], transparency: 25 },
+        line: { color: T.line, width: 1.5 } });
+      const lx = i === 0 ? x + 0.3 : (i === n - 1 ? x + D - 3.3 : x + D / 2 - 1.5);
+      s.addText(it.label, { x: lx, y: y + D / 2 - 0.5, w: 3.0, h: 1.0,
+        fontFace: T.fT, fontSize: 28, color: T.ink, align: 'center', valign: 'middle' });
+      x += D - overlap;
+    });
+    if(d.center)
+      s.addText(runs(d.center, { fontFace: T.fT, fontSize: 26, color: T.brown }),
+        { x: M.x, y: y + D + 0.35, w: M.w, h: 1.0, align: 'center', valign: 'middle' });
+    void ctx;
+  },
+
+  /* A + B — 두 가지가 합쳐져 무엇이 되는지 */
+  plus(pptx, s, d, ctx){
+    heading(pptx, s, d.title, { num: d.num });
+    const has3 = !!d.result;
+    const sym = 1.15;
+    const n = has3 ? 3 : 2;
+    const w = (M.w - (n - 1) * (sym + 0.7)) / n;
+    const h = Math.min(5.4, bodyH() - 0.8);
+    const y = M.top + (bodyH() - h) / 2;
+    const boxes = has3 ? [d.a, d.b, d.result] : [d.a, d.b];
+    let x = M.x;
+    boxes.forEach((b, i) => {
+      card(pptx, s, x, y, w, h, i === boxes.length - 1 && has3 ? { fill: T.pill, border: T.gold2 } : {});
+      /* 이름이 길면 한 줄에 들어가도록 글자를 줄입니다 */
+      const lsz = textWidth(b.label, 36) > w - 0.8 ? 28 : 36;
+      s.addText(runs(b.label, { fontFace: T.fT, fontSize: lsz, color: T.ink }),
+        { x: x + 0.4, y: y + h / 2 - (b.text ? 1.1 : 0.6), w: w - 0.8, h: 1.2, align: 'center', valign: 'middle' });
+      if(b.text)
+        s.addText(runs(b.text, { fontFace: T.fB, fontSize: 24, color: T.muted }),
+          { x: x + 0.5, y: y + h / 2 + 0.15, w: w - 1.0, h: 1.6, align: 'center', valign: 'top', lineSpacingMultiple: 1.3 });
+      if(i < boxes.length - 1){
+        const cx = x + w + 0.35, cy = y + h / 2 - sym / 2;
+        if(i === 1 && has3)
+          s.addText('=', { x: cx, y: cy, w: sym, h: sym, fontFace: T.fT, fontSize: 54, color: T.gold, align: 'center', valign: 'middle' });
+        else
+          s.addShape(pptx.ShapeType.mathPlus, { x: cx + 0.15, y: cy + 0.15, w: sym - 0.3, h: sym - 0.3,
+            fill: { color: T.gold }, line: { type: 'none' } });
+      }
+      x += w + sym + 0.7;
+    });
+    void ctx;
+  },
+
+  /* 4분면 — 2×2 로 나눠 보기 */
+  quad(pptx, s, d, ctx){
+    heading(pptx, s, d.title, { num: d.num });
+    const gap = 0.4;
+    const w = (M.w - gap) / 2, h = (bodyH() - gap) / 2;
+    d.items.slice(0, 4).forEach((it, i) => {
+      const x = M.x + (i % 2) * (w + gap);
+      const y = M.top + Math.floor(i / 2) * (h + gap);
+      card(pptx, s, x, y, w, h, it.accent ? { fill: T.soft, border: T.line } : {});
+      s.addText(it.label, { x: x + 0.55, y: y + 0.45, w: w - 1.1, h: 0.7,
+        fontFace: T.fT, fontSize: 30, color: T.brown, valign: 'middle' });
+      if(it.text)
+        s.addText(runs(it.text, { fontFace: T.fB, fontSize: 24, color: T.muted }),
+          { x: x + 0.55, y: y + 1.25, w: w - 1.1, h: h - 1.8, valign: 'top', lineSpacingMultiple: 1.35 });
+    });
+    void ctx;
+  },
+
+  /* 연표 — 가로선 위에 점을 찍고 위아래로 설명 */
+  timeline(pptx, s, d, ctx){
+    heading(pptx, s, d.title, { num: d.num });
+    const n = d.items.length;
+    const midY = M.top + bodyH() / 2 - 0.3;
+    s.addShape(pptx.ShapeType.roundRect, { x: M.x, y: midY, w: M.w, h: 0.09,
+      fill: { color: T.line2 }, line: { type: 'none' }, rectRadius: 0.045 });
+    const step = M.w / n;
+    d.items.forEach((it, i) => {
+      const cx = M.x + step * (i + 0.5);
+      s.addShape(pptx.ShapeType.ellipse, { x: cx - 0.24, y: midY - 0.19, w: 0.48, h: 0.48,
+        fill: { color: T.gold }, line: { color: T.bg, width: 3 } });
+      const up = i % 2 === 0;
+      s.addText(it.label, { x: cx - step / 2, y: up ? midY - 1.15 : midY + 0.55, w: step, h: 0.7,
+        fontFace: T.fT, fontSize: 28, color: T.brown, align: 'center', valign: 'middle' });
+      if(it.text)
+        s.addText(runs(it.text, { fontFace: T.fB, fontSize: 22, color: T.muted }),
+          { x: cx - step / 2 + 0.2, y: up ? midY - 3.0 : midY + 1.25, w: step - 0.4, h: 1.8,
+            align: 'center', valign: up ? 'bottom' : 'top', lineSpacingMultiple: 1.3 });
+    });
+    void ctx;
+  },
+
+  /* 막대 비교 — 수치를 눈으로 견주기 (가장 큰 값 기준) */
+  bars(pptx, s, d, ctx){
+    heading(pptx, s, d.title, { num: d.num });
+    const items = d.items;
+    const max = Math.max(...items.map(i => i.value));
+    const baseY = M.bottom - 1.15;
+    const top = M.top + 0.5;
+    const gap = 0.5;
+    const w = Math.min(2.6, (M.w - gap * (items.length - 1)) / items.length);
+    const totalW = w * items.length + gap * (items.length - 1);
+    let x = M.x + (M.w - totalW) / 2;
+    items.forEach(it => {
+      const h = Math.max(0.5, (baseY - top) * (it.value / max));
+      s.addShape(pptx.ShapeType.roundRect, { x, y: baseY - h, w, h,
+        fill: { color: it.accent ? T.gold : T.pill }, line: { type: 'none' }, rectRadius: 0.2 });
+      s.addText(it.show || String(it.value), { x: x - 0.4, y: baseY - h - 0.85, w: w + 0.8, h: 0.7,
+        fontFace: T.fT, fontSize: 26, color: T.brown, align: 'center', valign: 'middle' });
+      s.addText(it.label, { x: x - 0.4, y: baseY + 0.12, w: w + 0.8, h: 0.8,
+        fontFace: T.fB, fontSize: 24, bold: true, color: T.ink, align: 'center', valign: 'middle' });
+      x += w + gap;
+    });
+    void ctx;
+  },
 };
 
 /* ── 만들기 ────────────────────────────── */

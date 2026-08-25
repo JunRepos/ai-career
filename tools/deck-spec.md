@@ -73,6 +73,42 @@ node tools/deck-png.mjs "인공지능기초_3차시_인공지능시스템.pptx"
 ### `image` — 그림 한 장 크게
 `title` `image` `caption`
 
+## 템플릿에서 배워 온 배치 (2026-08-25 추가)
+
+`220822_makeitsimple_sbppt.pptx` 의 뼈대만 가져와 우리 톤으로 다시 그린 것들입니다.
+견본은 `tools/samples/layouts-catalog.deck.json` (번호 13~20).
+
+### `agenda` — 목차
+`title` `items:["…"]` 또는 `items:[{n,text}]` · `image` (오른쪽 그림)
+
+### `flow` — 가로 흐름 (카드 사이 화살표)
+`title` `items:[{label,text}]` — 3~4개가 알맞습니다
+
+### `vflow` — 세로 흐름 (아래로 떨어지는 단계)
+`title` `items:[{label,text}]`
+
+### `quote` — 큰 한마디
+`text` `desc` `title`(없으면 화면 가운데) `small:true`(글자 줄이기)
+
+### `venn` — 겹치는 원
+`title` `items:[{label}]` (2~3개) `center`(원 아래 한 줄)
+
+### `plus` — A + B = C
+`title` `a:{label,text}` `b:{label,text}` `result:{label,text}`(없으면 A + B 만)
+
+### `quad` — 4분면
+`title` `items:[{label,text,accent}]` (4개)
+
+### `timeline` — 연표
+`title` `items:[{label,text}]` — 위아래로 번갈아 놓입니다
+
+### `bars` — 막대 비교
+`title` `items:[{label,value,show,accent}]`
+`value` 는 막대 길이(가장 큰 값 기준), `show` 는 막대 위에 쓸 글(없으면 value)
+
+> 템플릿에 있었지만 **옮기지 않은 것** — 세계 지도, 자유 배치로 흩뿌린 원 그림(분야의 확장),
+> 겹친 곡선 그래픽. 도형이 수백 개라 규칙으로 못 뽑습니다. 필요하면 그림으로 넣으세요.
+
 ## 모든 슬라이드 공통
 
 `notes` 를 적으면 PowerPoint 발표자 노트로 들어갑니다.
