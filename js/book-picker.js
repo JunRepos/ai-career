@@ -14,7 +14,7 @@
 ═══════════════════════════════════════ */
 
 const BOOK_PRICE_MIN = 7000;
-const BOOK_PRICE_MAX = 15000;
+const BOOK_PRICE_MAX = 20000;
 const BOOK_YEAR_MIN  = 2024;
 
 /* 카카오 도서 검색 REST 키.
@@ -128,7 +128,8 @@ function bookVerdict(b){
   if(owned){
     blocked = true;
     notes.push({ kind: 'bad', text: '이미 우리 도서관에 있는 책이에요 — 「' + owned + '」. '
-      + '신청하지 말고 도서관에서 바로 빌려 읽으세요! 제목만 비슷한 다른 책이라면 선생님께 말씀해 주세요.' });
+      + '도서관에 있는 책은 새로 사지 않고 빌려서 읽습니다. 도서관에서 바로 대출하세요! '
+      + '제목만 비슷한 다른 책이라면 선생님께 말씀해 주세요.' });
   }
 
   if(!b.price){
