@@ -702,7 +702,104 @@ const LAYOUT = {
     });
     void ctx;
   },
+
+  /* 노드-간선 그림 — 지도처럼 동그라미를 선으로 잇습니다.
+     nodes: [{id,label,x,y,accent,dim}]  x,y 는 본문 영역 안 비율(0~100)
+     edges: [{from,to,label,dim}] */
+  diagram(pptx, s, d){
+    heading(pptx, s, d.title, { num: d.num });
+    drawGraph(pptx, s, d, d.nodes, d.edges || []);
+  },
+
+  /* 탐색 트리 — parent 만 적으면 자리는 알아서 잡습니다.
+     nodes: [{id,label,parent,edge,accent,dim}]  (dim=이미 나온 상태를 흐리게) */
+  tree(pptx, s, d){
+    heading(pptx, s, d.title, { num: d.num });
+    const kids = {}, depth = {};
+    d.nodes.forEach(n => { if(n.parent) (kids[n.parent] ||= []).push(n.id); });
+    const byId = Object.fromEntries(d.nodes.map(n => [n.id, n]));
+    const dep = id => depth[id] ??= (byId[id].parent ? dep(byId[id].parent) + 1 : 0);
+    d.nodes.forEach(n => dep(n.id));
+    const maxD = Math.max(...d.nodes.map(n => depth[n.id]));
+
+    /* 잎부터 자리를 나눠 주고, 부모는 자식들 가운데에 놓습니다 */
+    let slot = 0; const col = {};
+    const place = id => {
+      const ch = kids[id] || [];
+      if(!ch.length){ col[id] = slot++; return; }
+      ch.forEach(place);
+      col[id] = (col[ch[0]] + col[ch[ch.length - 1]]) / 2;
+    };
+    d.nodes.filter(n => !n.parent).forEach(n => place(n.id));
+    const cols = Math.max(1, slot - 1);
+
+    const nodes = d.nodes.map(n => ({
+      ...n,
+      x: cols === 0 ? 50 : (col[n.id] / cols) * 100,
+      y: maxD === 0 ? 50 : (depth[n.id] / maxD) * 100,
+    }));
+    const edges = d.nodes.filter(n => n.parent)
+      .map(n => ({ from: n.parent, to: n.id, label: n.edge, dim: n.dim }));
+    drawGraph(pptx, s, { ...d, nodeW: d.nodeW || Math.min(2.6, (M.w - 0.6) / (slot || 1) - 0.15) }, nodes, edges);
+  },
 };
+
+/* 노드와 간선을 실제로 그리는 부분 — diagram 과 tree 가 같이 씁니다 */
+function drawGraph(pptx, s, d, nodes, edges){
+  const footH = d.foot ? 0.95 : 0;
+  const pad = 0.75;                                   // 가장자리에 붙지 않게
+  const NH = d.nodeH || 0.92;
+  /* 동그라미가 반쯤 잘리지 않게 위아래로 반 칸씩 비워 둡니다 */
+  const A = { x: M.x + pad, y: M.top + NH / 2 + 0.1, w: M.w - pad * 2,
+              h: bodyH() - footH - NH - 0.3 };
+  const pos = {};
+  const wOf = n => Math.max(d.nodeW || 1.9, textWidth(n.label, 24) + 0.85);
+  nodes.forEach(n => { pos[n.id] = { cx: A.x + A.w * n.x / 100, cy: A.y + A.h * n.y / 100, w: wOf(n) }; });
+
+  /* 간선을 먼저 그려야 노드 밑에 깔립니다 */
+  for(const e of edges){
+    const a = pos[e.from], b = pos[e.to];
+    if(!a || !b) continue;
+    /* 위아래로 이어진 선은 동그라미의 위·아래에, 옆으로 이어진 선은 좌·우에 붙입니다 */
+    const vertical = Math.abs(b.cy - a.cy) >= Math.abs(b.cx - a.cx);
+    const sgnY = b.cy > a.cy ? 1 : -1, sgnX = b.cx > a.cx ? 1 : -1;
+    const x1 = vertical ? a.cx : a.cx + sgnX * a.w / 2;
+    const y1 = vertical ? a.cy + sgnY * NH / 2 : a.cy;
+    const x2 = vertical ? b.cx : b.cx - sgnX * b.w / 2;
+    const y2 = vertical ? b.cy - sgnY * NH / 2 : b.cy;
+    const dx = x2 - x1, dy = y2 - y1;
+    s.addShape(pptx.ShapeType.line, {
+      x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(dx), h: Math.abs(dy),
+      line: { color: e.dim ? T.line2 : T.line, width: e.dim ? 1.25 : 1.75,
+              dashType: e.dim ? 'dash' : 'solid' },
+      flipV: dx * dy < 0,
+    });
+    if(e.label){
+      /* 글자 상자가 넓으면 선이 뭉텅 끊겨 보입니다 — 글자에 딱 맞춥니다 */
+      const lw = textWidth(e.label, 19) + 0.38;
+      s.addText(e.label, { x: (x1 + x2) / 2 - lw / 2, y: (y1 + y2) / 2 - 0.23, w: lw, h: 0.46,
+        fontFace: T.fB, fontSize: 19, color: T.muted, align: 'center', valign: 'middle',
+        fill: { color: T.bg } });
+    }
+  }
+
+  for(const n of nodes){
+    const p = pos[n.id];
+    s.addShape(pptx.ShapeType.roundRect, {
+      x: p.cx - p.w / 2, y: p.cy - NH / 2, w: p.w, h: NH,
+      fill: { color: n.dim ? T.bg : (n.accent ? T.pill : T.white) },
+      line: { color: n.dim ? T.line2 : (n.accent ? T.gold : T.line), width: n.accent ? 2.25 : 1.5,
+              dashType: n.dim ? 'dash' : 'solid' },
+      rectRadius: NH / 2,
+    });
+    s.addText(runs(n.label, { fontFace: T.fT, fontSize: 24, color: n.dim ? T.label : T.ink }),
+      { x: p.cx - p.w / 2, y: p.cy - NH / 2, w: p.w, h: NH, align: 'center', valign: 'middle' });
+  }
+
+  if(d.foot)
+    s.addText(runs(d.foot, { fontFace: T.fT, fontSize: 26, color: T.brown }),
+      { x: M.x, y: M.bottom - footH + 0.1, w: M.w, h: 0.8, valign: 'middle' });
+}
 
 /* ── 만들기 ────────────────────────────── */
 async function build(deck, outFile){
