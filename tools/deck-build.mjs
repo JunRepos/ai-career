@@ -110,6 +110,7 @@ function bg(s){ s.background = { color: T.bg }; }
 /* 제목 + 금색 밑줄.
    pptxgenjs 는 그라데이션을 못 채워서, 얇은 조각을 이어 붙여 흉내 냅니다. */
 function heading(pptx, s, text, opt = {}){
+  if(!text) return;                          // ask 상자를 쓸 때는 제목을 이미 그렸습니다
   const num = opt.num;                       // '②' 처럼 제목 앞에 붙는 번호
   let x = M.x;
   if(num){
@@ -168,6 +169,19 @@ function pills(pptx, s, list, x, y, maxW, size = 28.5){
     s.addText(b.t, { x: b.x, y: b.y, w: b.w, h: b.h, fontFace: T.fT, fontSize: size, color: T.ink, align: 'center', valign: 'middle' });
   }
   return bottom;
+}
+
+/* 질문 상자 — 물어본 질문을 위에 그대로 띄워 둔 채 아래에서 답을 확인할 때.
+   어느 배치에나 `ask: "질문"` 한 줄을 더하면 붙습니다. 본문이 시작될 y 를 돌려줍니다. */
+function askBox(pptx, s, text){
+  const h = 3.0;
+  card(pptx, s, M.x, M.top, M.w, h, { border: T.line2 });
+  s.addText('“', { x: M.x + 0.5, y: M.top + 0.1, w: 2, h: 1.8,
+    fontFace: T.fT, fontSize: 110, color: T.gold2, valign: 'middle' });
+  s.addText(runs(text, { fontFace: T.fT, fontSize: 48, color: T.ink }),
+    { x: M.x + 2.0, y: M.top + 0.6, w: M.w - 4.0, h: h - 1.2,
+      align: 'center', valign: 'middle', lineSpacingMultiple: 1.3 });
+  return M.top + h + 0.5;
 }
 
 /* 이미지 — 흰 카드 안에 넣습니다 (기존 덱과 같은 모양) */
@@ -930,7 +944,17 @@ async function build(deck, outFile){
     if(!fn) die(`${i + 1}번째 슬라이드의 type '${d.type}' 을 모르겠습니다.`);
     const s = pptx.addSlide();
     bg(s);
-    fn(pptx, s, d, ctx);
+    if(d.ask){
+      /* 질문 상자를 먼저 그리고, 본문은 그 아래에서 시작하게 합니다 */
+      heading(pptx, s, d.title, { num: d.num });
+      const top = askBox(pptx, s, d.ask);
+      const save = M.top;
+      M.top = top;
+      fn(pptx, s, { ...d, title: '' }, ctx);   // 제목은 이미 그렸으니 비웁니다
+      M.top = save;
+    }else{
+      fn(pptx, s, d, ctx);
+    }
     if(d.notes) s.addNotes(d.notes);   // 발표자 대본 — 앱의 '내 대본 메모'에 옮겨 쓸 수 있습니다
   });
 
