@@ -270,7 +270,7 @@ const LAYOUT = {
     const total = rowH.reduce((a2, b2) => a2 + b2, 0) + (rows.length - 1) * gapY;
     const extra = (bodyH() - total) / rows.length;
     if(total > bodyH())
-      console.warn(`  ⚠ '${d.title}' 카드가 한 장에 넘칩니다 (${(total - bodyH()).toFixed(1)}인치). 글을 줄이거나 장을 나누세요.`);
+      console.warn(`  ⚠ '${d.title || d.ask || '제목 없음'}' 카드가 한 장에 넘칩니다 (${(total - bodyH()).toFixed(1)}인치). 글을 줄이거나 장을 나누세요.`);
 
     let y = M.top;
     rows.forEach((row, ri) => {
