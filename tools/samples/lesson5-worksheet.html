@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<title>인공지능 기초 5차시 학습지 — 맹목적 탐색</title>
+<style>
+  @page { size: A4 portrait; margin: 11mm 14mm; }
+  * { box-sizing: border-box; }
+  html, body { background:#fff; color-scheme:light only; }
+  body { margin:0; font-family:'Pretendard','맑은 고딕','Malgun Gothic',sans-serif;
+         color:#1c1c1c; font-size:10pt; line-height:1.42;
+         -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .sheet { width:182mm; margin:0 auto; }
+
+  header { display:flex; align-items:flex-end; gap:8mm;
+           border-bottom:2.2px solid #1c1c1c; padding-bottom:2.2mm; margin-bottom:3mm; }
+  header h1 { margin:0; font-size:14.5pt; letter-spacing:-.4px; }
+  header .sub { font-size:8.8pt; color:#555; margin-top:.8mm; }
+  header .id { margin-left:auto; font-size:9.2pt; white-space:nowrap; }
+  header .id span { display:inline-block; border-bottom:1px solid #666;
+                    width:20mm; margin:0 2.5mm 0 1mm; }
+
+  h2 { font-size:10.8pt; margin:3.5mm 0 1.8mm; padding-left:2mm;
+       border-left:4px solid #1c1c1c; }
+  h2 small { font-weight:400; font-size:8.8pt; color:#666; margin-left:2mm; }
+
+  .recap { display:flex; gap:5mm; align-items:center; }
+  .recap .txt { flex:1; }
+  .recap ul { margin:0; padding-left:4.5mm; }
+  .recap li { margin-bottom:1mm; }
+  .recap b { background:#efeae1; padding:0 1mm; }
+
+  .states { display:flex; align-items:center; justify-content:center; gap:4mm;
+            border:1.8px solid #333; border-radius:2mm; padding:2.5mm 5mm; }
+  .states figure { margin:0; text-align:center; }
+  .states figcaption { font-size:9.4pt; font-weight:700; margin-top:1mm; }
+  .mini { width:21mm; height:21mm; display:block; }
+  .states .arrow { text-align:center; font-size:8.4pt; color:#555; line-height:1.25; }
+  .states .arrow b { display:block; font-size:14pt; color:#333; }
+
+  .edges { display:flex; gap:2mm; margin:1.8mm 0 0; align-items:center; }
+  .edges .lead { color:#555; font-size:8.8pt; }
+  .edges div.p { flex:1; border:1px dashed #aaa; border-radius:1.5mm;
+                 text-align:center; padding:.8mm 0; font-size:8.8pt; }
+
+  .howto { background:#f4f1ea; border-radius:2mm; padding:2.2mm 3mm; margin:0;
+           font-size:9.2pt; }
+  .howto ol { margin:0; padding-left:5mm; }
+  .howto li { margin-bottom:.6mm; }
+
+  .tree { width:100%; height:auto; display:block; margin-top:.5mm; }
+
+  .qs { margin-top:2.5mm; display:flex; gap:3.5mm; }
+  .q { flex:1; border:1px solid #999; border-radius:2mm; padding:2.2mm 3mm; }
+  .q.wide { flex:2.1; }
+  .q .t { font-weight:700; font-size:9.2pt; margin-bottom:1.2mm; }
+  .q .a { border-bottom:1px solid #888; height:7mm; }
+  .q .hint { font-size:8pt; color:#666; margin-top:.8mm; }
+  .q .seq { font-size:10.5pt; letter-spacing:.5px; margin-top:2mm; }
+  .q .seq span { display:inline-block; border-bottom:1px solid #666;
+                 width:7.5mm; margin:0 .6mm; }
+</style>
+
+<div class="sheet">
+
+<header>
+  <div>
+    <h1>8퍼즐 트리를 직접 그려 보자</h1>
+    <div class="sub">맹목적 탐색 · 인공지능 기초 · 5차시</div>
+  </div>
+  <div class="id">2학년 <span></span>반 <span></span>번 이름 <span></span></div>
+</header>
+
+<h2>1. 지난 시간 되짚기 <small>문제를 탐색할 수 있는 형태로 바꾸는 세 단계</small></h2>
+<div class="recap">
+  <div class="txt">
+    <ul>
+      <li><b>상태</b> — 문제를 푸는 중 어느 한 순간의 모습. 8퍼즐에서는 <b>타일이 놓인 배치 하나</b></li>
+      <li><b>간선</b> — 한 상태에서 다음 상태로 가는 한 번의 행동. 8퍼즐에서는 <b>빈칸을 한 칸 미는 것</b></li>
+      <li><b>탐색 트리</b> — 초기 상태를 뿌리에 두고 간선을 따라 자식 상태를 만들어 가는 그림</li>
+      <li><b>깊이(레벨)</b> — 초기 상태에서 여기까지 거쳐 온 상태의 수. 8퍼즐은 <b>깊이가 곧 비용</b></li>
+    </ul>
+    <div class="edges">
+      <div class="lead">간선 — 빈칸을</div>
+      <div class="p"><b>위쪽</b>으로</div>
+      <div class="p"><b>왼쪽</b>으로</div>
+      <div class="p"><b>아래쪽</b>으로</div>
+      <div class="p"><b>오른쪽</b>으로</div>
+    </div>
+  </div>
+  <div class="states">
+    <figure><svg viewBox="0 0 150 150" class="mini"><rect x="3.0" y="3.0" width="144.0" height="144.0" rx="7.2" fill="#fff" stroke="#333" stroke-width="2.8"/>
+<line x1="51.0" y1="3.0" x2="51.0" y2="147.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="3.0" y1="51.0" x2="147.0" y2="51.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="99.0" y1="3.0" x2="99.0" y2="147.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="3.0" y1="99.0" x2="147.0" y2="99.0" stroke="#c8c8c8" stroke-width="1"/>
+<text x="75.0" y="27.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">1</text>
+<text x="123.0" y="27.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">3</text>
+<text x="27.0" y="75.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">8</text>
+<text x="75.0" y="75.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">2</text>
+<text x="123.0" y="75.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">4</text>
+<text x="27.0" y="123.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">7</text>
+<text x="75.0" y="123.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">6</text>
+<text x="123.0" y="123.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">5</text></svg><figcaption>초기 상태</figcaption></figure>
+    <div class="arrow"><b>&#9654;</b>여기까지<br>가야 한다</div>
+    <figure><svg viewBox="0 0 150 150" class="mini"><rect x="3.0" y="3.0" width="144.0" height="144.0" rx="7.2" fill="#fff" stroke="#333" stroke-width="2.8"/>
+<line x1="51.0" y1="3.0" x2="51.0" y2="147.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="3.0" y1="51.0" x2="147.0" y2="51.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="99.0" y1="3.0" x2="99.0" y2="147.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="3.0" y1="99.0" x2="147.0" y2="99.0" stroke="#c8c8c8" stroke-width="1"/>
+<text x="27.0" y="27.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">1</text>
+<text x="75.0" y="27.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">2</text>
+<text x="123.0" y="27.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">3</text>
+<text x="27.0" y="75.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">8</text>
+<text x="123.0" y="75.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">4</text>
+<text x="27.0" y="123.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">7</text>
+<text x="75.0" y="123.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">6</text>
+<text x="123.0" y="123.0" font-size="28.8" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">5</text></svg><figcaption>목표 상태</figcaption></figure>
+  </div>
+</div>
+
+<h2>2. 트리를 직접 그려 보자 <small>깊이 2까지 — 빈 판 6개를 채웁니다</small></h2>
+<div class="howto">
+  <ol>
+    <li>초기 상태에서 <b>빈칸을 밀 수 있는 방향</b>을 생각해, 밑줄 위에 방향 이름을 쓰고 그 아래 판을 채웁니다.</li>
+    <li>깊이 2의 판도 같은 방법으로 채웁니다. 단, <b>바로 왔던 자리로 되돌아가는 수는 빼고</b> 그립니다.</li>
+    <li>다 그렸으면 <b>너비 우선 탐색</b>으로 테스트하는 순서를 점선 네모에 &#9312; ~ &#9318; 로 적고,
+        <b>목표 상태와 같은 판</b>을 찾아 동그라미 치세요.</li>
+  </ol>
+</div>
+
+<svg viewBox="0 0 1800 1180" xmlns="http://www.w3.org/2000/svg" class="tree">
+<rect x="745.0" y="6.0" width="310.0" height="310.0" rx="15.5" fill="#fff" stroke="#333" stroke-width="2.8"/>
+<line x1="848.3" y1="6.0" x2="848.3" y2="316.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="745.0" y1="109.3" x2="1055.0" y2="109.3" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="951.7" y1="6.0" x2="951.7" y2="316.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="745.0" y1="212.7" x2="1055.0" y2="212.7" stroke="#c8c8c8" stroke-width="1"/>
+<text x="900.0" y="57.7" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">1</text>
+<text x="1003.3" y="57.7" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">3</text>
+<text x="796.7" y="161.0" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">8</text>
+<text x="900.0" y="161.0" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">2</text>
+<text x="1003.3" y="161.0" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">4</text>
+<text x="796.7" y="264.3" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">7</text>
+<text x="900.0" y="264.3" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">6</text>
+<text x="1003.3" y="264.3" font-size="62.0" text-anchor="middle" dominant-baseline="central" font-weight="700" fill="#111">5</text>
+<text x="721.0" y="161.0" font-size="36.0" text-anchor="end" fill="#333" font-weight="700" dominant-baseline="central">초기 상태</text>
+<rect x="1086.0" y="132.0" width="58.0" height="58.0" rx="7" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 4"/>
+<line x1="900.0" y1="316.0" x2="476.0" y2="326.0" stroke="#999" stroke-width="1.5"/>
+<line x1="371.0" y1="366.0" x2="581.0" y2="366.0" stroke="#444" stroke-width="1.8"/><line x1="476.0" y1="366.0" x2="476.0" y2="400.0" stroke="#999" stroke-width="1.5"/>
+<rect x="321.0" y="400.0" width="310.0" height="310.0" rx="15.5" fill="#fff" stroke="#333" stroke-width="1.6"/>
+<line x1="424.3" y1="400.0" x2="424.3" y2="710.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="321.0" y1="503.3" x2="631.0" y2="503.3" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="527.7" y1="400.0" x2="527.7" y2="710.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="321.0" y1="606.7" x2="631.0" y2="606.7" stroke="#c8c8c8" stroke-width="1"/>
+<rect x="658.0" y="526.0" width="58.0" height="58.0" rx="7" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 4"/>
+<line x1="476.0" y1="710.0" x2="264.0" y2="726.0" stroke="#999" stroke-width="1.5"/>
+<line x1="164.0" y1="758.0" x2="364.0" y2="758.0" stroke="#444" stroke-width="1.8"/><line x1="264.0" y1="758.0" x2="264.0" y2="790.0" stroke="#999" stroke-width="1.5"/>
+<rect x="114.0" y="790.0" width="300.0" height="300.0" rx="15.0" fill="#fff" stroke="#333" stroke-width="1.6"/>
+<line x1="214.0" y1="790.0" x2="214.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="114.0" y1="890.0" x2="414.0" y2="890.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="314.0" y1="790.0" x2="314.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="114.0" y1="990.0" x2="414.0" y2="990.0" stroke="#c8c8c8" stroke-width="1"/>
+<rect x="235.0" y="1105.0" width="58.0" height="58.0" rx="7" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 4"/>
+<line x1="476.0" y1="710.0" x2="688.0" y2="726.0" stroke="#999" stroke-width="1.5"/>
+<line x1="588.0" y1="758.0" x2="788.0" y2="758.0" stroke="#444" stroke-width="1.8"/><line x1="688.0" y1="758.0" x2="688.0" y2="790.0" stroke="#999" stroke-width="1.5"/>
+<rect x="538.0" y="790.0" width="300.0" height="300.0" rx="15.0" fill="#fff" stroke="#333" stroke-width="1.6"/>
+<line x1="638.0" y1="790.0" x2="638.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="538.0" y1="890.0" x2="838.0" y2="890.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="738.0" y1="790.0" x2="738.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="538.0" y1="990.0" x2="838.0" y2="990.0" stroke="#c8c8c8" stroke-width="1"/>
+<rect x="659.0" y="1105.0" width="58.0" height="58.0" rx="7" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 4"/>
+<line x1="900.0" y1="316.0" x2="1324.0" y2="326.0" stroke="#999" stroke-width="1.5"/>
+<line x1="1219.0" y1="366.0" x2="1429.0" y2="366.0" stroke="#444" stroke-width="1.8"/><line x1="1324.0" y1="366.0" x2="1324.0" y2="400.0" stroke="#999" stroke-width="1.5"/>
+<rect x="1169.0" y="400.0" width="310.0" height="310.0" rx="15.5" fill="#fff" stroke="#333" stroke-width="1.6"/>
+<line x1="1272.3" y1="400.0" x2="1272.3" y2="710.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="1169.0" y1="503.3" x2="1479.0" y2="503.3" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="1375.7" y1="400.0" x2="1375.7" y2="710.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="1169.0" y1="606.7" x2="1479.0" y2="606.7" stroke="#c8c8c8" stroke-width="1"/>
+<rect x="1506.0" y="526.0" width="58.0" height="58.0" rx="7" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 4"/>
+<line x1="1324.0" y1="710.0" x2="1112.0" y2="726.0" stroke="#999" stroke-width="1.5"/>
+<line x1="1012.0" y1="758.0" x2="1212.0" y2="758.0" stroke="#444" stroke-width="1.8"/><line x1="1112.0" y1="758.0" x2="1112.0" y2="790.0" stroke="#999" stroke-width="1.5"/>
+<rect x="962.0" y="790.0" width="300.0" height="300.0" rx="15.0" fill="#fff" stroke="#333" stroke-width="1.6"/>
+<line x1="1062.0" y1="790.0" x2="1062.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="962.0" y1="890.0" x2="1262.0" y2="890.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="1162.0" y1="790.0" x2="1162.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="962.0" y1="990.0" x2="1262.0" y2="990.0" stroke="#c8c8c8" stroke-width="1"/>
+<rect x="1083.0" y="1105.0" width="58.0" height="58.0" rx="7" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 4"/>
+<line x1="1324.0" y1="710.0" x2="1536.0" y2="726.0" stroke="#999" stroke-width="1.5"/>
+<line x1="1436.0" y1="758.0" x2="1636.0" y2="758.0" stroke="#444" stroke-width="1.8"/><line x1="1536.0" y1="758.0" x2="1536.0" y2="790.0" stroke="#999" stroke-width="1.5"/>
+<rect x="1386.0" y="790.0" width="300.0" height="300.0" rx="15.0" fill="#fff" stroke="#333" stroke-width="1.6"/>
+<line x1="1486.0" y1="790.0" x2="1486.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="1386.0" y1="890.0" x2="1686.0" y2="890.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="1586.0" y1="790.0" x2="1586.0" y2="1090.0" stroke="#c8c8c8" stroke-width="1"/>
+<line x1="1386.0" y1="990.0" x2="1686.0" y2="990.0" stroke="#c8c8c8" stroke-width="1"/>
+<rect x="1507.0" y="1105.0" width="58.0" height="58.0" rx="7" fill="none" stroke="#888" stroke-width="1.4" stroke-dasharray="5 4"/>
+</svg>
+
+<div class="qs">
+  <div class="q">
+    <div class="t">Q1. 목표 상태를 <u>몇 번째</u>에 만났나요?</div>
+    <div class="a"></div>
+    <div class="hint">판 7개 중 몇 번째인지</div>
+  </div>
+  <div class="q">
+    <div class="t">Q2. 목표 상태는 깊이 몇에 있나요?</div>
+    <div class="a"></div>
+    <div class="hint">= 초기 상태에서 몇 번 밀어야 하는가</div>
+  </div>
+  <div class="q wide">
+    <div class="t">Q3. <u>깊이 우선 탐색</u>이라면 순서가 어떻게 될까요?</div>
+    <div class="seq">&#9312; &rarr; <span></span> &rarr; <span></span> &rarr; <span></span>
+        &rarr; <span></span> &rarr; <span></span> &rarr; <span></span></div>
+    <div class="hint">위에 적은 번호로 답하세요. 한 갈래를 끝까지 내려간 다음 되돌아옵니다.</div>
+  </div>
+</div>
+
+</div>
+</html>

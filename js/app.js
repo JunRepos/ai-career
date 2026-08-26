@@ -205,6 +205,20 @@ function showNetBanner(detail){
   document.body.appendChild(el);
 }
 
+/* 메모 칸에 그림을 끌어다 놓아도 주소가 글자로 들어가지 않게 막습니다.
+   슬라이드 그림을 메모로 끌면 브라우저가 그림 주소를 텍스트로 넣어 버립니다.
+   (실제로 한 학생이 13장에 걸쳐 주소만 남긴 적이 있습니다)
+   문서 전체에 한 번만 걸고, 대상이 입력칸일 때만 막습니다. */
+['dragenter', 'dragover', 'drop'].forEach(type => {
+  document.addEventListener(type, e => {
+    const t = e.target;
+    if(!(t instanceof HTMLTextAreaElement) && !(t instanceof HTMLInputElement)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if(e.dataTransfer) e.dataTransfer.dropEffect = 'none';   // 커서에 금지 표시
+  }, true);
+});
+
 async function init(){
   let netError = null;
   try{
