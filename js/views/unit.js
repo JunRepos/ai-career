@@ -261,8 +261,8 @@ function _ucForm(){
     typeFields = `<div class="field"><label>실습 게임</label>
       <select id="uc-gameid">${opts}</select>
       <div style="font-size:11px;color:var(--text3);margin-top:5px">
-        💡 학생이 누르면 게임을 하고, 끝나면 <b>방금 쓴 지능 요소</b>를 되짚는 화면이 이어서 나옵니다.
-        점수는 반 순위에 그대로 쌓입니다. (제목을 비우면 게임 이름을 씁니다)</div></div>`;
+        💡 ${esc(UC_GAMES[gid]?.desc || '')}<br>
+        기록은 반 순위에 그대로 쌓입니다. (제목을 비우면 게임 이름을 씁니다)</div></div>`;
   } else if(d.type === 'sheet'){
     const sheets = aiaListFor(TC_CLS);
     if(!sheets.length){
