@@ -28,12 +28,15 @@ document.addEventListener('click', async e => {
   // 실습(게임) 시작 / 되돌아가기
   if(act === 'pw-start'){ pwStart(); return; }
   if(act === 'pw-hit'){ pwHit(+el.dataset.i); return; }
+  if(act === 'p8-start'){ p8Start(); return; }
+  if(act === 'p8-move'){ p8Move(+el.dataset.n); return; }
 
   // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
   if(act === 'sl-game-add' && TC_CLS && SLIDE_DECK){
     const imgs = _slideImgs().slice();
     const at = _clampPage(SLIDE_LIVE?.page) + 1;
-    imgs.splice(at, 0, { type: 'game', gameId: 'plant-water', name: '실습 — 식물 물 주기' });
+    const gid = el.dataset.gameid || 'plant-water';
+    imgs.splice(at, 0, { type: 'game', gameId: gid, name: '실습 — ' + gameDef(gid).label });
     await saveDeck(TC_CLS.id, { ...SLIDE_DECK, images: imgs, updatedAt: new Date().toISOString() });
     await setLive(TC_CLS.id, { page: at });
     _presentSync(); render(); return;
@@ -265,8 +268,8 @@ let _slPendingPage = null;
 function _slSyncGame(prevPage, page){
   const imgs = _slideImgs();
   const was = _isGame(imgs[prevPage]), now = _isGame(imgs[page]);
-  if(was && !now) pwLeave();
-  if(now && !was && !IS_TC && typeof pwLoadRank === 'function') pwLoadRank();
+  if(was && !now) gameLeaveAll();
+  if(now && !was && !IS_TC) gameLoadRank(imgs[page].gameId);
 }
 
 function _slQueueNote(page){

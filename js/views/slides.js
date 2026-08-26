@@ -49,7 +49,7 @@ function vStSlides(){
     return `<div class="sl-bar">
         ${live.on ? '<span class="sl-live"><i></i>같이 보는 중</span>' : '<span class="sl-chip">실습</span>'}
         <span class="sl-page">${page + 1} / ${imgs.length}</span>
-      </div>${back}${vPlantWater()}`;
+      </div>${back}${gameView(im.gameId)}`;
   }
 
   const offBar = (live.on && !SLIDE_FOLLOW)
@@ -266,7 +266,9 @@ function _vTcDeckDetail(){
       <div class="sl-ctrl-btns">
         ${_isGame(imgs[page])
           ? `<button class="btn-xs btn-danger" data-action="sl-game-del">실습 장 빼기</button>`
-          : `<button class="btn-xs" data-action="sl-game-add">＋ 이 다음에 실습 넣기</button>`}
+          : Object.entries(GAMES).map(([gid, g]) =>
+              `<button class="btn-xs" data-action="sl-game-add" data-gameid="${gid}"
+                 title="지금 장 다음에 넣습니다">＋ ${g.ico} ${esc(g.label)}</button>`).join('')}
         <button class="btn-sm" data-action="sl-present">🔳 발표 모드</button>
         <button class="btn-sm" data-action="sl-presenter">🎤 발표자 보기</button>
         <button class="${live.on ? 'btn-sm btn-danger' : 'btn-p'}" data-action="sl-toggle" data-on="${live.on ? '0' : '1'}">
@@ -412,7 +414,7 @@ function _presentSync(){
   if(game){
     game.style.display = isGame ? 'flex' : 'none';
     // 실습 장에서는 순위판을 띄우고 3초마다 갱신 — 앞에서 순위가 오르내리는 게 보이게
-    if(isGame){ game.innerHTML = pwBoardForTeacher(); _pvRankPoll(true); }
+    if(isGame){ game.innerHTML = gameTeacherBoard(imgs[page].gameId); _pvRankPoll(true, imgs[page].gameId); }
     else _pvRankPoll(false);
   }
   if(!isGame && img && imgs[page]) img.src = imgs[page].url;
@@ -437,7 +439,7 @@ function _pvNextSync(page, imgs){
   }
   if(numEl) numEl.textContent = `${page + 2} / ${imgs.length}`;
   body.innerHTML = _isGame(nx)
-    ? `<div class="pv-next-game">🌿 실습<span>식물 물 주기</span></div>`
+    ? `<div class="pv-next-game">${gameDef(nx.gameId).ico} 실습<span>${esc(gameDef(nx.gameId).label)}</span></div>`
     : `<img src="${esc(nx.url)}" alt=""/>`;
 }
 
@@ -449,15 +451,19 @@ function _pvToggleNext(){
 
 // 발표 중 실습 장에서만 도는 순위 갱신 타이머
 let _pvRankTimer = null;
-function _pvRankPoll(on){
+function _pvRankPoll(on, gameId){
   clearInterval(_pvRankTimer); _pvRankTimer = null;
   if(!on || !TC_CLS) return;
   const tick = async () => {
-    const all = await loadGameScores(TC_CLS.id);
-    PW_RANK = Object.entries(all).map(([n, v]) => ({ num: n, name: v.name, best: v.best || 0 }))
-      .sort((a, b) => b.best - a.best);
+    const all = await loadGameScores(TC_CLS.id, gameId);
+    const rows = Object.entries(all).map(([n, v]) => ({ num: n, name: v.name, best: v.best || 0 }));
+    if(gameId === 'puzzle-8'){
+      P8_RANK = rows.map(r => ({ ...r, moves: p8ToMoves(r.best) })).sort((a, b) => a.moves - b.moves);
+    } else {
+      PW_RANK = rows.sort((a, b) => b.best - a.best);
+    }
     const g = document.getElementById('pv-game');
-    if(g && PRESENT_ON) g.innerHTML = pwBoardForTeacher();
+    if(g && PRESENT_ON) g.innerHTML = gameTeacherBoard(gameId);
   };
   tick();
   _pvRankTimer = setInterval(tick, 3000);
@@ -610,8 +616,8 @@ function _pwTick(){
 // 슬라이드 한 장을 발표자 창에 그리는 조각
 function _pwSlideHtml(im, endText){
   if(!im) return '<span class="end">' + esc(endText) + '</span>';
-  if(_isGame(im)) return '<div class="game">🌿 실습<br>'
-    + '<span style="font-size:14px;color:#B7B9BF">식물 물 주기</span></div>';
+  if(_isGame(im)) return '<div class="game">' + gameDef(im.gameId).ico + ' 실습<br>'
+    + '<span style="font-size:14px;color:#B7B9BF">' + esc(gameDef(im.gameId).label) + '</span></div>';
   return '<img src="' + esc(im.url) + '" alt=""/>';
 }
 
