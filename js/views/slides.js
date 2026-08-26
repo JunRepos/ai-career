@@ -278,7 +278,7 @@ function _vTcDeckDetail(){
     </div>
 
     ${_isGame(imgs[page])
-      ? `<div class="sl-stage tc game">${pwBoardForTeacher()}</div>`
+      ? `<div class="sl-stage tc game">${gameTeacherBoard(imgs[page].gameId)}</div>`
       : `<div class="sl-stage tc"><img class="sl-img" src="${esc(imgs[page].url)}" alt=""/></div>`}
     <div class="sl-nav">
       <button class="sl-btn" data-action="sl-prev" ${page === 0 ? 'disabled' : ''}>← 이전</button>

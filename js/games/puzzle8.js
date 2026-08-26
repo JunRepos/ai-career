@@ -74,7 +74,7 @@ function _p8Board(){
       <button class="p8-reshuffle" data-action="p8-start">다시 섞기</button>
     </div>
     <div class="p8-board">${tiles.join('')}</div>
-    <div class="p8-tip">빈칸 옆 타일을 누르면 밀려 들어갑니다</div>
+    <div class="p8-tip">빈칸과 <b>같은 줄</b>에 있는 타일을 누르면 밀려 들어갑니다</div>
     <div class="p8-goalmini">
       <span>목표</span>${_p8MiniBoard(P8_GOAL, 'goal tiny')}
     </div>
@@ -160,6 +160,7 @@ function p8Start(){
   clearInterval(P8?.timer);
   P8 = { slot, blank, moves: 0, sec: 0, done: false, timer: null };
   render();
+  setTimeout(_p8MarkMovable, 0);      // 그려진 뒤에 표시를 붙입니다
   P8.timer = setInterval(_p8Tick, 1000);
 }
 
@@ -179,18 +180,44 @@ function _p8Tick(){
   if(el) el.textContent = _p8Clock(P8.sec);
 }
 
+/* 빈칸과 같은 줄(가로·세로)에 있으면 누른 타일까지 한꺼번에 밀립니다.
+   붙어 있는 것만 되게 하면 8개 중 2~4개만 반응해서 "안 움직인다" 로 느껴집니다. */
 function p8Move(n){
   if(!P8 || P8.done) return;
   const s = P8.slot[n];
   if(s === undefined) return;
-  if(!_p8Neighbors(P8.blank).includes(s)) return;    // 빈칸과 붙어 있지 않으면 못 움직임
 
-  P8.slot[n] = P8.blank;
+  const br = Math.floor(P8.blank / 3), bc = P8.blank % 3;
+  const tr = Math.floor(s / 3), tc = s % 3;
+  if(tr !== br && tc !== bc){ _p8Bad(n); return; }   // 줄이 다르면 못 움직임
+
+  // 빈칸 쪽으로 한 칸씩 당깁니다
+  const step = tr === br ? (bc > tc ? 1 : -1) : (br > tr ? 3 : -3);
+  const bySlot = {};
+  for(const k in P8.slot) bySlot[P8.slot[k]] = +k;
+
+  let cur = P8.blank, moved = 0;
+  while(cur !== s){
+    const from = cur - step;
+    const who = bySlot[from];
+    if(who === undefined) break;                     // 있을 수 없지만 안전하게
+    P8.slot[who] = cur;
+    bySlot[cur] = who;
+    cur = from; moved++;
+  }
   P8.blank = s;
-  P8.moves++;
+  P8.moves += moved;
   _p8Paint();
 
   if(_p8Solved()) p8End();
+}
+
+/* 못 움직이는 타일을 눌렀을 때 — 왜 안 되는지 눈으로 알려 줍니다 */
+function _p8Bad(n){
+  const el = document.querySelector(`.p8-tile[data-n="${n}"]`);
+  if(!el) return;
+  el.classList.add('bad');
+  setTimeout(() => el.classList.remove('bad'), 320);
 }
 
 /* 진행 중에는 DOM 을 새로 만들지 않고 자리와 숫자만 갈아끼웁니다 */
@@ -206,6 +233,18 @@ function _p8Paint(){
   }
   const mv = document.querySelector('.p8-moves b');
   if(mv) mv.textContent = P8.moves;
+  _p8MarkMovable();
+}
+
+/* 지금 누르면 움직이는 타일에 표시 — 빈칸과 같은 줄에 있는 것들 */
+function _p8MarkMovable(){
+  if(!P8) return;
+  const br = Math.floor(P8.blank / 3), bc = P8.blank % 3;
+  document.querySelectorAll('.p8-tile').forEach(el => {
+    const s = P8.slot[+el.dataset.n];
+    const can = s !== undefined && (Math.floor(s / 3) === br || s % 3 === bc);
+    el.classList.toggle('can', can);
+  });
 }
 
 async function p8End(){

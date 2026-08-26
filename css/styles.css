@@ -4615,3 +4615,8 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .p8-rank-n{width:18px;text-align:center;font-weight:800;color:var(--text3)}
 .p8-rank-name{flex:1;color:var(--text);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .p8-rank-s{font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+
+/* 8퍼즐 — 지금 움직일 수 있는 타일 / 못 움직이는 타일을 눌렀을 때 */
+.p8-tile:not(.can){filter:brightness(.93);cursor:default}
+.p8-tile.can:hover{filter:brightness(1.06)}
+.p8-tile.bad{box-shadow:0 0 0 3px #E5675A inset}
