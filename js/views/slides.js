@@ -517,6 +517,16 @@ function openPresenter(){
   $('reset').onclick = () => { _pwStart = Date.now(); };
   $('memo').addEventListener('input', () => _pwQueueMemo($('memo').value));
 
+  // 이 창은 별개 문서라 앱 쪽 드롭 차단이 닿지 않습니다 — 여기에도 걸어 둡니다
+  ['dragenter', 'dragover', 'drop'].forEach(type => {
+    w.document.addEventListener(type, e => {
+      if(!e.target || e.target.tagName !== 'TEXTAREA') return;
+      e.preventDefault();
+      e.stopPropagation();
+      if(e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+    }, true);
+  });
+
   w.addEventListener('keydown', e => {
     if(e.target && e.target.tagName === 'TEXTAREA') return;
     if(['ArrowRight', 'PageDown', ' '].includes(e.key)){ e.preventDefault(); _pwGo(1); }
