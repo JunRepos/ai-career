@@ -65,12 +65,9 @@ function setUnitSec(s){ ST_UNIT_SEC = s; render(); }
 
 /* 단원에 넣을 수 있는 실습 게임 목록.
    지금은 물주기 하나뿐이지만, 게임이 늘면 여기에만 추가하면 됩니다. */
-const UC_GAMES = {
-  'plant-water': {
-    ico: '🌿', label: '식물 물 주기',
-    desc: '4×4 화분에 30초 동안 물 주기 → 끝나면 방금 쓴 지능 요소를 되짚어 줍니다',
-  },
-};
+/* 실습 게임 목록은 js/games/games.js 의 GAMES 하나로 관리합니다.
+   (예전에는 여기에 따로 적어 두어 게임을 추가할 때마다 두 곳을 고쳐야 했습니다) */
+const UC_GAMES = GAMES;
 
 // 학생용 항목 카드 (유형별)
 function _ucStudentCard(it, unitKey){

@@ -4528,3 +4528,90 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
   border:1px solid var(--border);border-radius:9px;background:var(--surface);
   color:var(--text);font:inherit;font-size:13.5px;line-height:1.7;outline:none}
 .sl-memo-input:focus{border-color:var(--pl-solid)}
+
+/* 8퍼즐 색 — 라이트/다크 둘 다 :root 에 정의합니다
+   (다크 블록에만 넣으면 라이트에서 값이 비어 요소가 사라집니다) */
+:root{ --p8-tile:#F0DFB6; --p8-soft:#F7E9C6; --p8-tile-text:#2E2A26; }
+[data-theme="dark"]{ --p8-tile:#C8A863; --p8-soft:#463C2C; --p8-tile-text:#241F19; }
+
+/* ═══ 🧩 8퍼즐 맞추기 (실습 게임) ═══
+   타일은 지우고 다시 그리지 않고 --col/--row 만 바꿉니다.
+   그래서 transform 이 transition 을 타고 미끄러지듯 움직입니다. */
+.p8-wrap{max-width:560px;margin:0 auto;padding:6px 0 4px}
+.p8-intro{text-align:center;padding:10px 4px 4px}
+.p8-title{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-.3px}
+.p8-lead{margin-top:8px;font-size:14px;line-height:1.75;color:var(--text2)}
+
+.p8-goalbox{margin:16px auto 4px;display:inline-flex;flex-direction:column;align-items:center;gap:7px;
+  padding:13px 16px;border:1px solid var(--border);border-radius:14px;background:var(--surface2)}
+.p8-goal-label{font-size:11.5px;font-weight:800;color:var(--text3);letter-spacing:.2px}
+
+/* 목표 모양 미리보기 (작은 판) */
+.p8-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.p8-mini .p8-mini-t{width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  border-radius:6px;background:var(--p8-soft);color:var(--text);
+  font-style:normal;font-size:14px;font-weight:800}
+.p8-mini .p8-mini-t.blank{background:transparent;border:1px dashed var(--border)}
+.p8-mini.tiny .p8-mini-t{width:19px;height:19px;font-size:10.5px;border-radius:4px}
+
+.p8-best{margin-top:14px;font-size:13.5px;color:var(--text2)}
+.p8-best b{color:var(--text);font-size:15px}
+
+/* 큰 버튼 — 전역 button{display:inline-flex} 를 덮습니다 */
+.p8-start{display:block;margin:18px auto 0;padding:13px 30px;border:0;border-radius:12px;
+  background:var(--pl-solid,#C4A26A);color:#fff;font:inherit;font-size:15px;font-weight:800;
+  cursor:pointer;transition:filter .15s}
+.p8-start:hover{filter:brightness(1.06)}
+
+/* 진행 화면 */
+.p8-hud{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.p8-moves{font-size:22px;font-weight:900;color:var(--text);line-height:1}
+.p8-moves span{margin-left:3px;font-size:12px;font-weight:700;color:var(--text3)}
+.p8-time{margin-left:auto;font-size:15px;font-weight:800;color:var(--text2);
+  font-variant-numeric:tabular-nums}
+.p8-reshuffle{padding:7px 13px;border:1px solid var(--border);border-radius:9px;
+  background:var(--surface);color:var(--text2);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+.p8-reshuffle:hover{background:var(--surface2)}
+
+.p8-board{position:relative;width:100%;max-width:330px;margin:0 auto;aspect-ratio:1;
+  border-radius:16px;background:var(--surface2);border:1px solid var(--border);padding:0}
+/* 칸 28% · 사이 간격 4% · 가장자리 4% → 28*3 + 4*2 + 4*2 = 100% 로 딱 맞습니다.
+   한 칸 옮기는 거리 32%(판 기준)는 타일 자기 폭의 114.2857% 입니다. */
+.p8-tile{position:absolute;top:4%;left:4%;
+  width:28%;height:28%;
+  display:flex;align-items:center;justify-content:center;
+  border:0;border-radius:12px;cursor:pointer;
+  background:var(--p8-tile);color:var(--p8-tile-text);
+  font:inherit;font-size:clamp(20px,7.5vw,34px);font-weight:900;
+  box-shadow:0 1px 0 rgba(0,0,0,.06);
+  transform:translate(calc(var(--col) * 114.2857%), calc(var(--row) * 114.2857%));
+  transition:transform .16s cubic-bezier(.32,.72,.36,1), filter .12s}
+.p8-tile:hover{filter:brightness(1.05)}
+.p8-tile:active{filter:brightness(.95)}
+
+.p8-tip{margin-top:12px;text-align:center;font-size:12.5px;color:var(--text3)}
+.p8-goalmini{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:9px}
+.p8-goalmini>span{font-size:11.5px;font-weight:800;color:var(--text3)}
+
+/* 결과 */
+.p8-done{font-size:15px;font-weight:800;color:var(--text3)}
+.p8-final{margin-top:6px;font-size:44px;font-weight:900;color:var(--text);line-height:1}
+.p8-final span{margin-left:4px;font-size:16px;font-weight:700;color:var(--text3)}
+.p8-stat{margin-top:10px;font-size:13px;color:var(--text2)}
+.p8-stat b{color:var(--text);font-variant-numeric:tabular-nums}
+.p8-newbest{margin-top:12px;display:inline-block;padding:7px 14px;border-radius:999px;
+  background:var(--p8-soft);color:var(--text);font-size:13px;font-weight:800}
+.p8-again-q{margin-top:14px;font-size:13.5px;color:var(--text2)}
+
+/* 순위 */
+.p8-rank{margin-top:20px;text-align:left;border:1px solid var(--border);border-radius:13px;
+  background:var(--surface2);padding:12px 13px}
+.p8-rank-t{font-size:12px;font-weight:800;color:var(--text3);margin-bottom:8px}
+.p8-rank-t i{font-style:normal;font-weight:600;margin-left:5px;font-size:11px;opacity:.75}
+.p8-rank-empty{font-size:12.5px;color:var(--text3);padding:4px 0}
+.p8-rank-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;font-size:13.5px}
+.p8-rank-row.me{background:var(--p8-soft)}
+.p8-rank-row.out{margin-top:6px;border-top:1px dashed var(--border);border-radius:0 0 8px 8px}
+.p8-rank-n{width:18px;text-align:center;font-weight:800;color:var(--text3)}
+.p8-rank-name{flex:1;color:var(--text);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p8-rank-s{font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}

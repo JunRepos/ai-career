@@ -141,7 +141,7 @@ function _stTabBody(){
    끝나면 '방금 내가 쓴 지능' 되짚기까지 이어서 나옵니다. */
 function vStUnitGame(){
   if(!UNIT_GAME) return emptyBox('🎮', '실습을 찾을 수 없어요.');
-  return vPlantWater();
+  return gameView(UNIT_GAME.gameId);
 }
 
 // 본문을 넓게(IDE형) 쓰는 탭 — 좁은 탭은 가운데 정렬로 가독성 유지
