@@ -125,6 +125,12 @@ firebase deploy --only storage --project sindong-informatics
 9. **배포 후 `?v=` 를 갱신하세요.** `sh bump-version.sh` 를 돌리면 `index.html` 의 js/css 주소 버전이 바뀌어 학생 브라우저가 새 파일을 받습니다. 안 하면 옛 코드가 계속 돕니다.
 10. **작업 후 반드시 배포까지 하고 브라우저로 확인**해주세요. push 만 하고 넘기지 마세요.
 11. **테스트로 만든 데이터는 반드시 지우세요.** 실제 수업 DB입니다. (지우기 전 학생 답안이 있는지 먼저 확인)
+12. **게임은 `pw*`(물 주기 전용) 함수를 직접 부르지 말고 `games.js` 의 갈래 함수를 쓰세요.**
+    `gameView(id)` · `gameLoadRank(id)` · `gameLeaveAll()` · `gameTeacherBoard(id)`.
+    `gameDef()` 가 모르는 id 를 물 주기로 떨어뜨리기 때문에, 잘못 불러도 화면이 안 비고
+    **엉뚱한 게임이 조용히 뜹니다.** 게임이 물 주기 하나뿐이던 동안은 `UNIT_GAME.gameId`
+    (문자열인데 `.gameId` 로 읽어 늘 undefined) 버그가 우연히 맞아떨어져 안 드러났고,
+    숨바꼭질을 단원에 걸고서야 발견했습니다. (2026-08-27 고침)
 
 ---
 
