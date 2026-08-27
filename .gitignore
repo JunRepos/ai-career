@@ -5,3 +5,6 @@ node_modules/
 tools/samples/upload_png/
 tools/samples/_deck_id.txt
 tools/samples/*.pptx
+# deck-png.mjs 가 뽑는 슬라이드 그림 — 앱에 올리는 용도라 레포에는 두지 않습니다
+tools/samples/*_png/
+__pycache__/

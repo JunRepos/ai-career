@@ -30,6 +30,8 @@ document.addEventListener('click', async e => {
   if(act === 'pw-hit'){ pwHit(+el.dataset.i); return; }
   if(act === 'p8-start'){ p8Start(); return; }
   if(act === 'p8-move'){ p8Move(+el.dataset.n); return; }
+  if(act === 'hs-start'){ hsStart(); return; }
+  if(act === 'hs-open'){ hsOpen(+el.dataset.id); return; }
 
   // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
   if(act === 'sl-game-add' && TC_CLS && SLIDE_DECK){

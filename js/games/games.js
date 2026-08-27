@@ -16,6 +16,14 @@ const GAMES = {
     loadRank: () => pwLoadRank(),
     teacherBoard: () => pwBoardForTeacher(),
   },
+  'hide-seek': {
+    ico: '🙈', label: '숨바꼭질 · 방 찾기',
+    desc: '너비 우선 → 깊이 우선 순서대로만 방을 열어 숨은 친구 찾기 → 순서를 적게 어길수록 높은 순위',
+    view: () => vHideSeek(),
+    leave: () => hsLeave(),
+    loadRank: () => hsLoadRank(),
+    teacherBoard: () => hsBoardForTeacher(),
+  },
   'puzzle-8': {
     ico: '🧩', label: '8퍼즐 맞추기',
     desc: '빈칸으로 타일을 밀어 목표 모양 만들기 → 적은 수로 맞출수록 높은 순위',
