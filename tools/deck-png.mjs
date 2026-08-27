@@ -36,10 +36,26 @@ const H = parseInt(flag('--h', '1080'), 10);
 fs.mkdirSync(outDir, { recursive: true });
 for(const f of fs.readdirSync(outDir)) if(/\.png$/i.test(f)) fs.unlinkSync(path.join(outDir, f));
 
-/* PowerShell 로 넘기는 값은 따옴표 하나까지 문제가 되므로 파일에 적어 넘깁니다 */
+/* PowerShell 로 넘기는 값은 따옴표 하나까지 문제가 되므로 파일에 적어 넘깁니다.
+
+   ⚠ 이미 PowerPoint 가 떠 있으면 **끝내지 않습니다.** 예전에는 무조건 Quit() 을 불러서
+     선생님이 편집 중이던 창까지 같이 닫혔습니다. 이제는 우리가 띄운 경우에만 닫고,
+     원래 떠 있던 경우에는 우리가 연 파일만 닫고 나옵니다.
+     저장 안 한 편집이 있으면 아예 시작하지 않습니다. */
 const ps = `
 $ErrorActionPreference = 'Stop'
-$ppt = New-Object -ComObject PowerPoint.Application
+$mine = $false
+try {
+  $ppt = [Runtime.InteropServices.Marshal]::GetActiveObject('PowerPoint.Application')
+} catch {
+  $ppt = New-Object -ComObject PowerPoint.Application
+  $mine = $true
+}
+if (-not $mine) {
+  foreach ($p in $ppt.Presentations) {
+    if (-not $p.Saved) { throw ("PowerPoint 에 저장하지 않은 편집이 있습니다: " + $p.Name + " — 저장하고 다시 해주세요.") }
+  }
+}
 try {
   $pres = $ppt.Presentations.Open('${src.replace(/'/g, "''")}', $true, $false, $false)
   $n = $pres.Slides.Count
@@ -50,7 +66,7 @@ try {
   $pres.Close()
   Write-Output ("OK " + $n)
 } finally {
-  $ppt.Quit()
+  if ($mine) { $ppt.Quit() }
   [System.Runtime.InteropServices.Marshal]::ReleaseComObject($ppt) | Out-Null
 }
 `;
