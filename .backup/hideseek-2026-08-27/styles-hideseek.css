@@ -1,0 +1,134 @@
+/* 숨바꼭질 색 — 라이트/다크 둘 다 :root 에 정의합니다
+   (다크 블록에만 넣으면 라이트에서 값이 비어 요소가 사라집니다) */
+:root{ --hs-door:#F0DFB6; --hs-soft:#F7E9C6; --hs-open:#ECE6DA;
+       --hs-line:#C9B79F; --hs-text:#2E2A26; --hs-bad:#E5675A; }
+[data-theme="dark"]{ --hs-door:#C8A863; --hs-soft:#463C2C; --hs-open:#2C2A26;
+       --hs-line:#5A5045; --hs-text:#241F19; --hs-bad:#E5675A; }
+
+/* ═══ 🙈 숨바꼭질 · 방 찾기 (실습 게임) ═══
+   방 단추는 그림칸 안에서 left/top(%) 으로 놓입니다. 자리는 js/games/hideseek.js 가
+   계산하고 verify/hideseek.mjs 로 겹치는지 확인했습니다(320px 화면까지 안 겹침). */
+.hs-wrap{max-width:560px;margin:0 auto;padding:6px 0 4px}
+.hs-intro{text-align:center;padding:10px 4px 4px}
+.hs-title{font-size:22px;font-weight:900;color:var(--text);letter-spacing:-.3px}
+.hs-lead{margin-top:8px;font-size:14px;line-height:1.75;color:var(--text2)}
+.hs-lead b{color:var(--text)}
+
+.hs-rules{margin:16px auto 0;display:flex;flex-direction:column;gap:8px;max-width:400px;text-align:left}
+.hs-rule{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;
+  border:1px solid var(--border);border-radius:12px;background:var(--surface2);
+  font-size:13px;line-height:1.6;color:var(--text2)}
+.hs-rule b{color:var(--text)}
+.hs-rule i{font-style:normal;color:var(--text3);font-size:12.5px}
+.hs-rule-n{flex:none;width:20px;height:20px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;background:var(--hs-soft);
+  color:var(--hs-text);font-size:11.5px;font-weight:900;margin-top:1px}
+
+.hs-note{margin-top:14px;font-size:12.5px;line-height:1.7;color:var(--text3)}
+.hs-note b{color:var(--text2)}
+.hs-best{margin-top:12px;font-size:13.5px;color:var(--text2)}
+.hs-best b{color:var(--text)}
+
+/* 큰 버튼 — 전역 button{display:inline-flex} 를 덮습니다 */
+.hs-start{display:block;margin:18px auto 0;padding:13px 30px;border:0;border-radius:12px;
+  background:var(--pl-solid,#C4A26A);color:#fff;font:inherit;font-size:15px;font-weight:800;
+  cursor:pointer;transition:filter .15s}
+.hs-start:hover{filter:brightness(1.06)}
+
+/* 진행 화면 */
+.hs-hud{display:flex;align-items:center;gap:12px;margin-bottom:9px}
+.hs-round b{font-size:17px;font-weight:900;color:var(--text)}
+.hs-round span{margin-left:6px;font-size:12.5px;font-weight:800;color:var(--text3)}
+.hs-miss{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--text3)}
+.hs-miss b{font-size:16px;font-weight:900;color:var(--text)}
+.hs-time{font-size:15px;font-weight:800;color:var(--text2);font-variant-numeric:tabular-nums}
+.hs-tip{margin-bottom:10px;padding:8px 11px;border-radius:9px;background:var(--surface2);
+  font-size:12px;line-height:1.65;color:var(--text3);text-align:center}
+.hs-tip b{color:var(--text2)}
+
+.hs-tree{--hs-nw:clamp(46px,14.5vw,78px);
+  position:relative;height:clamp(290px,74vw,360px);
+  padding:26px calc(var(--hs-nw) / 2 + 2px);
+  border:1px solid var(--border);border-radius:16px;background:var(--surface2)}
+.hs-plane{position:absolute;inset:26px calc(var(--hs-nw) / 2 + 2px)}
+.hs-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.hs-lines line{stroke:var(--hs-line);stroke-width:1.5;vector-effect:non-scaling-stroke}
+
+.hs-room{position:absolute;transform:translate(-50%,-50%);
+  width:var(--hs-nw);padding:7px 2px 5px;
+  display:flex;flex-direction:column;align-items:center;gap:1px;
+  border:1.5px solid var(--hs-line);border-radius:11px;
+  background:var(--hs-door);color:var(--hs-text);
+  font:inherit;cursor:pointer;transition:transform .12s,filter .12s;z-index:1}
+.hs-room:hover{filter:brightness(1.06)}
+.hs-room .hs-ico{font-style:normal;font-size:clamp(15px,4.6vw,21px);line-height:1.15}
+.hs-room .hs-name{font-size:clamp(10.5px,3.1vw,13px);font-weight:900;letter-spacing:-.2px}
+.hs-room .hs-no{position:absolute;top:-7px;right:-7px;min-width:17px;height:17px;padding:0 3px;
+  display:none;align-items:center;justify-content:center;border-radius:9px;
+  background:var(--text);color:var(--surface);
+  font-style:normal;font-size:10.5px;font-weight:900;line-height:1}
+
+/* 열어 본 방 — 몇 번째로 열었는지 번호가 붙습니다 */
+.hs-room.open{background:var(--hs-open);border-style:dashed;border-color:var(--border);
+  color:var(--text3);cursor:default}
+.hs-room.open .hs-ico{opacity:.32}          /* 열어 본 방 — 어느 방인지는 남기고 흐리게 */
+.hs-room.open .hs-no{display:flex}
+.hs-room.found{background:var(--hs-soft);border-style:solid;border-color:var(--pl-solid,#C4A26A);
+  border-width:2.5px;color:var(--hs-text)}
+.hs-room.hint{box-shadow:0 0 0 3px rgba(196,162,106,.45);animation:hsPulse 1s ease-in-out infinite}
+.hs-room.no{box-shadow:0 0 0 3px var(--hs-bad) inset;animation:hsNo .3s}
+@keyframes hsPulse{50%{box-shadow:0 0 0 7px rgba(196,162,106,.14)}}
+@keyframes hsNo{25%{transform:translate(-58%,-50%)}75%{transform:translate(-42%,-50%)}}
+
+.hs-say{margin-top:11px;min-height:20px;text-align:center;font-size:13px;line-height:1.6;color:var(--text2)}
+.hs-say b{color:var(--text)}
+.hs-say.bad{color:var(--hs-bad)}
+.hs-say.bad b{color:var(--hs-bad)}
+
+/* 결과 */
+.hs-done{font-size:15px;font-weight:800;color:var(--text3)}
+.hs-final{margin-top:6px;font-size:44px;font-weight:900;color:var(--text);line-height:1}
+.hs-final span{margin-left:5px;font-size:16px;font-weight:700;color:var(--text3)}
+.hs-stat{margin-top:10px;font-size:13px;color:var(--text2)}
+.hs-stat b{color:var(--text);font-variant-numeric:tabular-nums}
+.hs-newbest{margin-top:12px;display:inline-block;padding:7px 14px;border-radius:999px;
+  background:var(--hs-soft);color:var(--hs-text);font-size:13px;font-weight:800}
+.hs-log{margin-top:16px;border:1px solid var(--border);border-radius:13px;
+  background:var(--surface2);padding:6px 11px;text-align:left}
+.hs-log-row{display:flex;align-items:center;gap:9px;padding:8px 2px;font-size:12.5px;color:var(--text2)}
+.hs-log-row+.hs-log-row{border-top:1px dashed var(--border)}
+.hs-log-l{flex:none;font-weight:900;color:var(--text)}
+.hs-log-w{flex:none;padding:2px 8px;border-radius:999px;background:var(--hs-soft);
+  color:var(--hs-text);font-weight:800}
+.hs-log-s{margin-left:auto;text-align:right;color:var(--text3)}
+.hs-log-s b{color:var(--text)}
+
+/* 순위 */
+.hs-rank{margin-top:20px;text-align:left;border:1px solid var(--border);border-radius:13px;
+  background:var(--surface2);padding:12px 13px}
+.hs-rank-t{font-size:12px;font-weight:800;color:var(--text3);margin-bottom:8px}
+.hs-rank-t i{font-style:normal;font-weight:600;margin-left:5px;font-size:11px;opacity:.75}
+.hs-rank-empty{font-size:12.5px;color:var(--text3);padding:4px 0}
+.hs-rank-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;font-size:13.5px}
+.hs-rank-row.me{background:var(--hs-soft);color:var(--hs-text)}
+.hs-rank-row.out{margin-top:6px;border-top:1px dashed var(--border);border-radius:0 0 8px 8px}
+.hs-rank-n{width:18px;text-align:center;font-weight:800;color:var(--text3)}
+.hs-rank-row.me .hs-rank-n{color:var(--hs-text)}
+.hs-rank-name{flex:1;color:var(--text);font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hs-rank-row.me .hs-rank-name{color:var(--hs-text)}
+.hs-rank-s{font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+.hs-rank-row.me .hs-rank-s{color:var(--hs-text)}
+.hs-rank-s i{font-style:normal;font-weight:600;color:var(--text3)}
+.hs-rank-row.me .hs-rank-s i{color:var(--hs-text);opacity:.7}
+
+/* 숨바꼭질 — 내가 숨은 방 (2026-08-27, 숨는 쪽으로 바꾸면서 추가)
+   술래가 지나갈 때도 어디에 숨었는지 계속 보여야 합니다. .found 보다 뒤에 둡니다. */
+.hs-room.mine{border-color:var(--pl-solid,#C4A26A);border-width:2.5px;
+  background:var(--hs-soft);color:var(--hs-text)}
+.hs-room.mine .hs-ico{opacity:1}
+.hs-room.found.mine{box-shadow:0 0 0 4px rgba(196,162,106,.35)}
+/* 잡힌 방에도 '몇 번째에 잡혔는지' 번호를 답니다 (.open 에만 있던 것) */
+.hs-room.found .hs-no{display:flex}
+/* 고를 수 있는 방은 계속 반짝입니다 — hint 를 그대로 씁니다 */
+.hs-room[data-action]{cursor:pointer}
+.hs-room:not([data-action]){cursor:default}
