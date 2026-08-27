@@ -93,6 +93,11 @@ node tools/deck-png.mjs <파일.pptx>      # 슬라이드1.PNG … 로 내보내
 
 21. **교사가 손본 파일을 덮어쓰지 않는다.** PPT 를 이미 편집했으면 전체를 다시 뽑지 말고
     **고칠 슬라이드만 따로 만들어** 전달한다.
+21-1. **슬라이드별 수정 요청은 장마다 적힌 메모로 온다.** 자료를 고치기 전에 먼저 읽는다.
+    `node tools/deck-notes.mjs --id <자료id> --class ai-2B --only` (앱의 '🎤 N장에서 할 말')
+    `node tools/deck-notes.mjs --pptx "<파일.pptx>" --only` (PowerPoint 발표자 노트)
+    `>>` 로 시작하는 줄이 고쳐 달라는 것이다. **메모만 적혔으면 생성기를 고쳐 다시 뽑고,
+    PowerPoint 로 손댄 것이 있으면 고칠 장만 만들어 `--replace-page` 로 갈아 끼운다.**
 22. **PowerPoint 에 저장 안 한 편집이 있으면 `deck-png.mjs` 를 돌리지 않는다.**
     (2026-08-27 고침) 이제 이미 떠 있는 PowerPoint 는 닫지 않고, 저장 안 한 편집이 있으면
     스스로 멈추고 알려 준다. 그래도 **돌리기 전에 열려 있는지 확인**하고, 저장 안 한 것이
