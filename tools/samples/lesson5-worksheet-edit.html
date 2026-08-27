@@ -91,9 +91,76 @@
   .wrap p:last-child { margin-bottom:0; }
   .bl { display:inline-block; border-bottom:1px solid #666; width:20mm; }
   .bl.w2 { width:34mm; }
+
+  /* 고치기 판 — 인쇄할 때는 안 나옵니다 */
+  .editbar { position:sticky; top:0; z-index:9; display:flex; gap:8px; align-items:center;
+             background:#1c1c1c; color:#fff; padding:8px 12px; border-radius:0 0 3mm 3mm;
+             font-size:9.5pt; margin:0 auto 4mm; width:182mm; }
+  .editbar .sp { margin-left:auto; }
+  .editbar button { font:inherit; font-weight:700; border:0; border-radius:2mm;
+                    padding:5px 12px; cursor:pointer; background:#ffc83d; color:#1c1c1c; }
+  .editbar button.ghost { background:#3a3a3a; color:#eee; }
+  .editbar .msg { color:#ffc83d; font-weight:700; }
+  [contenteditable]:hover { outline:1.5px dashed #bbb; outline-offset:2px; }
+  [contenteditable]:focus { outline:2px solid #ffc83d; outline-offset:2px; background:#fffbf0; }
+  .edited { background:#fff6da; }
+  @media print { .editbar { display:none }
+                 [contenteditable] { outline:0 !important; background:none !important } }
 </style>
 
 <!-- 앞면 -->
+
+<div class="editbar">
+  <b>고치기 판</b>
+  <span>글자를 눌러 바로 고치세요. 트리 그림은 잠겨 있습니다.</span>
+  <span class="sp"></span>
+  <span class="msg" id="msg"></span>
+  <button class="ghost" onclick="window.print()">인쇄 / PDF</button>
+  <button onclick="copyEdits()">고친 내용 복사</button>
+</div>
+<script>
+const NL = String.fromCharCode(10);
+const SEL = 'h1,.sub,h2,h2 small,.step .w,.step .d,.sub3 div,.states figcaption,'
+          + '.lab .how,.order,.algo > div,.algo .tip,.pm > div > b,.pm > div > div,'
+          + '.space .t,.space .d';
+const orig = new Map();
+
+function clean(el){
+  const c = el.cloneNode(true);
+  c.querySelectorAll('[contenteditable]').forEach(x => {
+    x.removeAttribute('contenteditable');
+    x.removeAttribute('data-k');
+    x.classList.remove('edited');
+    if(!x.getAttribute('class')) x.removeAttribute('class');
+  });
+  return c.innerHTML.trim();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const els = [...document.querySelectorAll(SEL)];
+  els.forEach((el, i) => { el.contentEditable = 'true'; el.dataset.k = i; });
+  els.forEach(el => {
+    orig.set(el.dataset.k, clean(el));
+    el.addEventListener('input', () => {
+      el.classList.toggle('edited', clean(el) !== orig.get(el.dataset.k));
+    });
+  });
+});
+
+function copyEdits(){
+  const out = [];
+  document.querySelectorAll('[data-k]').forEach(el => {
+    const before = orig.get(el.dataset.k), after = clean(el);
+    if(before !== after) out.push('[' + el.dataset.k + '] ' + before + NL + '    -> ' + after);
+  });
+  const txt = out.length ? out.join(NL + NL) : '고친 곳이 없습니다.';
+  navigator.clipboard.writeText(txt).then(() => {
+    document.getElementById('msg').textContent = out.length
+      ? out.length + '곳 복사했습니다 — 붙여넣어 주세요' : '고친 곳이 없습니다';
+    setTimeout(() => document.getElementById('msg').textContent = '', 4000);
+  });
+}
+</script>
 <div class="sheet">
 
 <header>

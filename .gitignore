@@ -2,3 +2,6 @@
 .DS_Store
 node_modules/
 *.log
+tools/samples/upload_png/
+tools/samples/_deck_id.txt
+tools/samples/*.pptx
