@@ -116,8 +116,48 @@ async function replacePage(cids, deckId, page, file){
   }
 }
 
+/* 올린 자료에서 한 장을 빼냅니다.
+   ⚠ 뒤쪽 장의 쪽 번호가 하나씩 당겨집니다. 학생 메모는 쪽 번호로 저장되므로
+     (slides/{반}/notes/{자료id}/{학번}/{쪽}) **메모가 있으면 어긋납니다.**
+     그래서 메모가 하나라도 있으면 멈춥니다. */
+async function removePage(cids, deckId, page){
+  const idx = page - 1;
+  for(const cid of cids){
+    const notes = await dbGet(`slides/${cid}/notes/${deckId}`);
+    if(notes && Object.keys(notes).length)
+      throw new Error(`${cid} 에 이 자료의 학생 메모가 있습니다 (${Object.keys(notes).length}명). `
+        + '장을 빼면 쪽 번호가 밀려 메모가 어긋납니다 — 손으로 확인하세요.');
+  }
+  for(const cid of cids){
+    const deck = await dbGet(`slides/${cid}/decks/${deckId}`);
+    if(!deck) throw new Error(`${cid} 에 자료 ${deckId} 가 없습니다`);
+    const images = deck.images || [];
+    if(!images[idx]) throw new Error(`${cid} 의 자료에 ${page}번 장이 없습니다 (${images.length}장)`);
+    const [gone] = images.splice(idx, 1);
+    await dbPut(`slides/${cid}/decks/${deckId}`, {
+      ...deck, images, updatedAt: new Date().toISOString(),
+    });
+    if(gone.path) await del(gone.path);
+    console.log(`  ${cid} — ${page}번 장 뺐습니다 (${images.length + 1}장 → ${images.length}장)`);
+  }
+  console.log('\n■ 뺀 뒤 DB 를 다시 읽어 확인');
+  for(const cid of cids){
+    const d = await dbGet(`slides/${cid}/decks/${deckId}`);
+    console.log(`  ${cid} — ${(d.images || []).length}장 · ${page}번 장은 이제 "${(d.images || [])[idx]?.name}"`);
+  }
+}
+
 /* ── 시작 ── */
 const cids = (flag('classes') || CLASSES_DEFAULT.join(',')).split(',').map(s => s.trim()).filter(Boolean);
+
+if(has('remove-page')){
+  const page = parseInt(flag('remove-page'), 10);
+  const deckId = flag('id');
+  if(!deckId || !page) die('--remove-page <쪽> --id <자료id> 를 주세요.');
+  console.log(`${cids.join(', ')} 의 자료 ${deckId} 에서 ${page}번 장을 뺍니다\n`);
+  await removePage(cids, deckId, page);
+  process.exit(0);
+}
 
 if(has('list')){ await list(cids); process.exit(0); }
 
