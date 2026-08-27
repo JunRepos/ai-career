@@ -88,10 +88,49 @@ async function list(cids){
   }
 }
 
+/* 이미 올린 자료에서 한 장만 갈아 끼웁니다 — 한 장 고쳤다고 41장을 다시 올리지 않게 */
+async function replacePage(cids, deckId, page, file){
+  const idx = page - 1;
+  for(const cid of cids){
+    const deck = await dbGet(`slides/${cid}/decks/${deckId}`);
+    if(!deck) throw new Error(`${cid} 에 자료 ${deckId} 가 없습니다`);
+    const images = deck.images || [];
+    if(!images[idx]) throw new Error(`${cid} 의 자료에 ${page}번 장이 없습니다 (${images.length}장)`);
+    const old = images[idx];
+    const stamp = Date.now();
+    const objPath = `slides/${cid}/${stamp}_${String(idx).padStart(3, '0')}_${path.basename(file)}`;
+    const url = await upload(file, objPath);
+    images[idx] = { name: path.basename(file), url, path: objPath };
+    await dbPut(`slides/${cid}/decks/${deckId}`, {
+      ...deck, images, updatedAt: new Date().toISOString(),
+    });
+    if(old.path) await del(old.path);            // 옛 그림은 지웁니다 (용량만 먹습니다)
+    console.log(`  ${cid} — ${page}번 장 교체 ✔`);
+  }
+  console.log('\n■ 올린 뒤 DB 를 다시 읽어 확인');
+  for(const cid of cids){
+    const d = await dbGet(`slides/${cid}/decks/${deckId}`);
+    const im = (d.images || [])[idx];
+    const st = im ? (await fetch(im.url, { method: 'HEAD' })).status : '없음';
+    console.log(`  ${cid} — ${(d.images || []).length}장 · ${page}번 장 "${im?.name}" HTTP ${st}`);
+  }
+}
+
 /* ── 시작 ── */
 const cids = (flag('classes') || CLASSES_DEFAULT.join(',')).split(',').map(s => s.trim()).filter(Boolean);
 
 if(has('list')){ await list(cids); process.exit(0); }
+
+if(has('replace-page')){
+  const page = parseInt(flag('replace-page'), 10);
+  const deckId = flag('id');
+  const file = flag('file');
+  if(!deckId || !page || !file) die('--replace-page <쪽> --id <자료id> --file <PNG> 를 모두 주세요.');
+  if(!fs.existsSync(file)) die(`파일이 없습니다: ${file}`);
+  console.log(`${cids.join(', ')} 의 자료 ${deckId} 에서 ${page}번 장을 ${path.basename(file)} 로 갈아 끼웁니다\n`);
+  await replacePage(cids, deckId, page, file);
+  process.exit(0);
+}
 
 if(!dir || !fs.existsSync(dir)) die('PNG 폴더를 찾을 수 없습니다. 예) node tools/deck-upload.mjs "tools/samples/…_png"');
 const files = fs.readdirSync(dir).filter(f => /\.png$/i.test(f)).sort(natural);

@@ -4743,3 +4743,15 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .hs-rank-row.me .hs-rank-s{color:var(--hs-text)}
 .hs-rank-s i{font-style:normal;font-weight:600;color:var(--text3)}
 .hs-rank-row.me .hs-rank-s i{color:var(--hs-text);opacity:.7}
+
+/* 숨바꼭질 — 내가 숨은 방 (2026-08-27, 숨는 쪽으로 바꾸면서 추가)
+   술래가 지나갈 때도 어디에 숨었는지 계속 보여야 합니다. .found 보다 뒤에 둡니다. */
+.hs-room.mine{border-color:var(--pl-solid,#C4A26A);border-width:2.5px;
+  background:var(--hs-soft);color:var(--hs-text)}
+.hs-room.mine .hs-ico{opacity:1}
+.hs-room.found.mine{box-shadow:0 0 0 4px rgba(196,162,106,.35)}
+/* 잡힌 방에도 '몇 번째에 잡혔는지' 번호를 답니다 (.open 에만 있던 것) */
+.hs-room.found .hs-no{display:flex}
+/* 고를 수 있는 방은 계속 반짝입니다 — hint 를 그대로 씁니다 */
+.hs-room[data-action]{cursor:pointer}
+.hs-room:not([data-action]){cursor:default}

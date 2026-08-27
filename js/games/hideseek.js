@@ -1,64 +1,71 @@
 /* ═══════════════════════════════════════
-   games/hideseek.js — 🙈 숨바꼭질 · 방 찾기
+   games/hideseek.js — 🙈 숨바꼭질 · 이번엔 내가 숨는다
 
-   5차시(지능적 탐색) 도입에서 앞 차시(맹목적 탐색)를 손으로 굴려 보고 닫는 활동입니다.
+   5차시(지능적 탐색) 도입에서 앞 차시(맹목적 탐색)를 활동으로 닫습니다.
 
-     · 집이 트리로 이어져 있고 친구가 잎(소파·커튼·침대·옷장·욕조) 한 곳에 숨습니다
-     · 1라운드는 너비 우선, 2라운드는 깊이 우선 순서로만 열 수 있습니다
-     · 순서를 어기면 열리지 않고 왜 안 되는지 알려 줍니다 (어긴 횟수를 셉니다)
-     · 기록 = 어긴 횟수(적을수록 좋음), 같으면 걸린 시간이 짧은 쪽
+   술래는 컴퓨터입니다. 학생은 **숨습니다.** 술래가 어떤 순서로 올지는 미리 알려 줍니다.
+     1라운드 — 술래가 너비 우선으로 온다
+     2라운드 — 술래가 깊이 우선으로 온다 (같은 집)
+     3라운드 — 술래 둘이 차례로 온다. 점수는 **더 빨리 잡힌 쪽**
+   점수 = 잡히기까지 술래가 연 방의 수 (많을수록 좋음).
 
-   순서·자리는 verify/hideseek.mjs 로 검산했습니다.
-     너비 우선 — 현관 거실 복도 소파 커튼 안방 욕실 침대 옷장 욕조
-     깊이 우선 — 현관 거실 소파 커튼 복도 안방 침대 옷장 욕실 욕조
+   ⚠ 오래 버티려면 머릿속으로 탐색 순서를 실제로 굴려야 합니다. 그게 노림수입니다.
+     1라운드 정답(이불)을 2라운드에 그대로 쓰면 13 → 9 로 확 줄어듭니다.
+     여기서 "두 순서가 다르구나"가 설명 없이 박힙니다.
 
-   ⚠ 진행 중에는 render() 를 부르지 않습니다. 다시 그리면 누르는 순간
-     버튼이 사라져 클릭이 먹지 않습니다. 값만 갈아끼우는 _hsPaint() 를 씁니다.
+   판은 verify/hideseek.mjs 로 검산했습니다. HS_ROOMS 를 고치면 **거기서 먼저 돌리세요.**
+     1라운드 정답 이불(13) · 2라운드 정답 식탁(13) · 3라운드 정답 욕조(최악 11) · 만점 37
+
+   ⚠ 술래가 움직이는 동안 render() 를 부르지 않습니다. 다시 그리면 누르는 순간
+     버튼이 사라져 클릭이 먹지 않습니다. 값만 갈아끼웁니다.
 ═══════════════════════════════════════ */
 
-/* 집 — 배열 순서가 곧 id 입니다(ROOMS[id]). 형제 순서 = 배열에 적은 순서(왼쪽부터). */
+/* 집 — 배열 순서가 곧 id 입니다(HS_ROOMS[id]). 형제 순서 = 배열에 적은 순서(왼쪽부터).
+   자식이 없는 방이 '숨을 수 있는 곳' 입니다.
+   ⚠ 오른쪽 갈래(부엌)를 얕게, 깊은 방(이불)을 가운데 갈래에 둔 것이 이 판의 핵심입니다.
+     그래야 너비 우선 정답과 깊이 우선 정답이 서로 반대쪽이 됩니다. */
 const HS_ROOMS = [
-  { id: 0, name: '현관', ico: '🚪', parent: null },
-  { id: 1, name: '거실', ico: '🛋️', parent: 0 },
-  { id: 2, name: '복도', ico: '🚶', parent: 0 },
-  { id: 3, name: '소파', ico: '🛏', parent: 1 },
-  { id: 4, name: '커튼', ico: '🪟', parent: 1 },
-  { id: 5, name: '안방', ico: '🛌', parent: 2 },
-  { id: 6, name: '욕실', ico: '🚿', parent: 2 },
-  { id: 7, name: '침대', ico: '🛏', parent: 5 },
-  { id: 8, name: '옷장', ico: '🧥', parent: 5 },
-  { id: 9, name: '욕조', ico: '🛁', parent: 6 },
+  { id:  0, name: '현관', ico: '🚪', parent: null },
+  { id:  1, name: '거실', ico: '🛋️', parent: 0 },
+  { id:  2, name: '복도', ico: '🚶', parent: 0 },
+  { id:  3, name: '부엌', ico: '🍳', parent: 0 },
+  { id:  4, name: '소파', ico: '🧸', parent: 1 },
+  { id:  5, name: '커튼', ico: '🪟', parent: 1 },
+  { id:  6, name: '안방', ico: '🛌', parent: 2 },
+  { id:  7, name: '욕실', ico: '🚿', parent: 2 },
+  { id:  8, name: '식탁', ico: '🍽', parent: 3 },
+  { id:  9, name: '침대', ico: '🛏', parent: 6 },
+  { id: 10, name: '옷장', ico: '🧥', parent: 6 },
+  { id: 11, name: '욕조', ico: '🛁', parent: 7 },
+  { id: 12, name: '이불', ico: '🧺', parent: 10 },
 ];
 
 const HS_ROUNDS = [
-  { mode: 'bfs', label: '너비 우선', tip: '한 층을 <b>남김없이</b> 열고 나서 아래층으로 · 같은 층은 <b>왼쪽부터</b>' },
-  { mode: 'dfs', label: '깊이 우선', tip: '한 갈래를 <b>끝까지</b> 내려가고, 막히면 <b>갈라졌던 자리로 되돌아와</b> 다음 갈래로' },
+  { modes: ['bfs'], label: '너비 우선 술래',
+    tip: '술래는 <b>한 층을 남김없이</b> 열고 아래층으로 · 같은 층은 <b>왼쪽부터</b>' },
+  { modes: ['dfs'], label: '깊이 우선 술래',
+    tip: '술래는 <b>한 갈래를 끝까지</b> 내려가고, 막히면 <b>갈라졌던 자리로 되돌아와</b> 다음 갈래로' },
+  { modes: ['bfs', 'dfs'], label: '술래 둘이 차례로',
+    tip: '점수는 <b>더 빨리 잡힌 쪽</b>입니다 · 어느 술래가 와도 오래 버틸 곳은?' },
 ];
 
-/* 기록 — 공용 저장 함수가 '높을수록 좋음' 이라 어김·시간을 빼서 넣습니다.
-   score = 100000 − 어김×1000 − 초   (어김 99 · 초 999 에서 자릅니다) */
-const HS_BASE = 100000;
-const hsToScore = (miss, sec) =>
-  HS_BASE - Math.min(miss, 99) * 1000 - Math.min(sec, 999);
-const hsFromScore = score => {
-  const rest = HS_BASE - score;
-  return { miss: Math.floor(rest / 1000), sec: rest % 1000 };
-};
+const HS_MODE_NAME = { bfs: '너비 우선', dfs: '깊이 우선' };
+const HS_STEP_MS = 430;          // 술래가 방 하나 여는 데 걸리는 시간
 
-let HS = null;          // 진행 중 상태 (null = 대기 화면)
-let HS_BEST = null;     // { miss, sec }
-let HS_RANK = [];       // [{num,name,miss,sec}]
-let HS_LOADING = false;
+let HS = null;                   // 진행 중 상태 (null = 대기 화면)
+let HS_BEST = null;              // 내 최고 점수
+let HS_RANK = [];                // [{num,name,score}]
+let HS_TIMER = null;
 
-/* ── 집 구조 계산 ── */
+/* ── 집 구조 ── */
 
 const _hsKids = (() => {
   const k = {};
   HS_ROOMS.forEach(r => { if(r.parent !== null) (k[r.parent] ||= []).push(r.id); });
   return k;
 })();
-const hsKids  = id => _hsKids[id] || [];
-const hsLeaf  = id => !hsKids(id).length;
+const hsKids = id => _hsKids[id] || [];
+const hsLeaf = id => !hsKids(id).length;
 const HS_HIDE = HS_ROOMS.filter(r => hsLeaf(r.id)).map(r => r.id);   // 숨을 수 있는 곳
 
 const HS_DEPTH = (() => {
@@ -86,6 +93,7 @@ const HS_POS = (() => {
   return pos;
 })();
 
+/* 술래가 방을 여는 순서 */
 function hsOrder(mode){
   if(mode === 'bfs'){
     const q = [0], out = [];
@@ -96,30 +104,37 @@ function hsOrder(mode){
   (function go(v){ out.push(v); hsKids(v).forEach(go); })(0);
   return out;
 }
+const HS_ORDER = { bfs: hsOrder('bfs'), dfs: hsOrder('dfs') };
+
+// 그 자리에 숨었을 때 술래가 연 방의 수 (잡힌 방 포함)
+const hsOpened = (mode, leaf) => HS_ORDER[mode].indexOf(leaf) + 1;
+// 이 라운드에서 그 자리의 점수 — 술래가 여럿이면 가장 나쁜 쪽
+const hsScoreAt = (r, leaf) => Math.min(...r.modes.map(m => hsOpened(m, leaf)));
+// 이 라운드에서 가장 오래 버틸 수 있는 자리
+const hsBestSpot = r => HS_HIDE.reduce((a, b) => hsScoreAt(r, b) > hsScoreAt(r, a) ? b : a);
+const HS_MAX = HS_ROUNDS.reduce((s, r) => s + hsScoreAt(r, hsBestSpot(r)), 0);
 
 /* ── 화면 ── */
 
 function vHideSeek(){
   if(!HS) return _hsIntro();
-  if(HS.done) return _hsResult();
+  if(HS.over) return _hsResult();
   return _hsPlay();
 }
 
 function _hsIntro(){
   const best = HS_BEST === null ? ''
-    : `<div class="hs-best">내 최고 기록 <b>어김 ${HS_BEST.miss}번</b> · ${_hsClock(HS_BEST.sec)}</div>`;
+    : `<div class="hs-best">내 최고 기록 <b>${HS_BEST}개</b></div>`;
+  const rules = HS_ROUNDS.map((r, i) => `
+    <div class="hs-rule"><span class="hs-rule-n">${i + 1}</span>
+      <div><b>${r.label}</b><br><i>${r.tip.replace(/<\/?b>/g, '')}</i></div></div>`).join('');
   return `<div class="hs-wrap">
     <div class="hs-intro">
-      <div class="hs-title">숨바꼭질 — 방 찾기</div>
-      <div class="hs-lead">친구가 이 집 어딘가에 숨었습니다.<br>
-        <b>정해진 순서대로만</b> 열어서 친구를 찾으세요.</div>
-      <div class="hs-rules">
-        <div class="hs-rule"><span class="hs-rule-n">1</span>
-          <div><b>1라운드 — 너비 우선</b><br><i>한 층을 다 열고 아래층으로</i></div></div>
-        <div class="hs-rule"><span class="hs-rule-n">2</span>
-          <div><b>2라운드 — 깊이 우선</b><br><i>한 갈래를 끝까지, 막히면 되돌아와서</i></div></div>
-      </div>
-      <div class="hs-note">순서를 어기면 문이 <b>안 열립니다.</b> 어긴 횟수가 적을수록 좋은 기록이에요.</div>
+      <div class="hs-title">숨바꼭질 — 이번엔 내가 숨는다</div>
+      <div class="hs-lead">술래는 컴퓨터입니다. <b>어떤 순서로 방을 열지 미리 알려 줍니다.</b><br>
+        그 순서를 머릿속으로 굴려서 <b>가장 늦게 걸릴 곳</b>에 숨으세요.</div>
+      <div class="hs-rules">${rules}</div>
+      <div class="hs-note">점수는 잡히기까지 <b>술래가 연 방의 수</b>. 많을수록 좋아요. (만점 ${HS_MAX})</div>
       ${best}
       <button class="hs-start" data-action="hs-start">${HS_BEST === null ? '시작하기' : '다시 도전'}</button>
       ${_hsRankHtml()}
@@ -129,14 +144,15 @@ function _hsIntro(){
 
 function _hsRoomHtml(r){
   const p = HS_POS[r.id];
+  const leaf = hsLeaf(r.id);
+  const can = HS.phase === 'pick' && leaf;
   const cls = ['hs-room'];
-  if(HS && HS.opened.has(r.id)) cls.push('open');
-  if(HS && HS.found === r.id) cls.push('found');
-  if(HS && HS.hint && HS.order[HS.step] === r.id) cls.push('hint');
-  const face = (HS && HS.found === r.id) ? '🙋' : r.ico;
-  return `<button class="${cls.join(' ')}" data-action="hs-open" data-id="${r.id}"
-    style="left:${p.x}%;top:${p.y}%">
-      <i class="hs-ico">${face}</i><span class="hs-name">${r.name}</span>
+  if(can) cls.push('hint');                        // 고를 수 있는 곳은 반짝입니다
+  if(HS.hide === r.id) cls.push('mine');
+  return `<button class="${cls.join(' ')}" style="left:${p.x}%;top:${p.y}%"
+      ${can ? `data-action="hs-hide" data-room="${r.id}"` : ''} id="hs-r${r.id}">
+      <i class="hs-ico">${HS.hide === r.id ? '🙋' : r.ico}</i>
+      <span class="hs-name">${r.name}</span>
       <em class="hs-no"></em>
     </button>`;
 }
@@ -155,8 +171,7 @@ function _hsPlay(){
   return `<div class="hs-wrap">
     <div class="hs-hud">
       <div class="hs-round"><b>${HS.round + 1}라운드</b><span>${R.label}</span></div>
-      <div class="hs-miss">어김 <b>${HS.miss}</b></div>
-      <div class="hs-time" id="hs-time">${_hsClock(HS.sec)}</div>
+      <div class="hs-miss">지금까지 <b id="hs-total">${HS.total}</b></div>
     </div>
     <div class="hs-tip">${R.tip}</div>
     <div class="hs-tree">
@@ -165,206 +180,204 @@ function _hsPlay(){
         ${HS_ROOMS.map(_hsRoomHtml).join('')}
       </div>
     </div>
-    <div class="hs-say" id="hs-say">${HS.step === 0
-      ? '<b>현관</b>부터 열어 보세요'
-      : `지금까지 <b>${HS.step}곳</b> 열었어요`}</div>
+    <div class="hs-say" id="hs-say">어디에 숨을까요? <b>반짝이는 방</b> 중에서 고르세요</div>
+    <div id="hs-after"></div>
   </div>`;
 }
 
 function _hsResult(){
-  const isBest = HS_BEST !== null
-    && (HS.miss < HS_BEST.miss || (HS.miss === HS_BEST.miss && HS.sec <= HS_BEST.sec));
-  const rows = HS.log.map(g => `
+  const isBest = HS_BEST !== null && HS.total >= HS_BEST;
+  const rows = HS.done.map((d, i) => `
     <div class="hs-log-row">
-      <span class="hs-log-l">${HS_ROUNDS[g.round].label}</span>
-      <span class="hs-log-w">${HS_ROOMS[g.hide].name}</span>
-      <span class="hs-log-s"><b>${g.opens}</b>번째에 찾음 · 어김 <b>${g.miss}</b></span>
+      <span class="hs-log-l">${i + 1}R</span>
+      <span class="hs-log-w">${HS_ROOMS[d.hide].name}</span>
+      <span class="hs-log-s">${d.detail} → <b>${d.got}개</b></span>
     </div>`).join('');
   return `<div class="hs-wrap">
     <div class="hs-intro">
-      <div class="hs-done">두 라운드 끝!</div>
-      <div class="hs-final"><b>${HS.miss}</b><span>번 어김</span></div>
-      <div class="hs-stat">걸린 시간 <b>${_hsClock(HS.sec)}</b></div>
-      ${isBest ? '<div class="hs-newbest">최고 기록을 세웠어요!</div>' : ''}
+      <div class="hs-done">술래에게서 버틴 방의 수</div>
+      <div class="hs-final">${HS.total}<span>/ ${HS_MAX}</span></div>
+      ${isBest ? '<div class="hs-newbest">내 최고 기록!</div>' : ''}
       <div class="hs-log">${rows}</div>
+      <div class="hs-note">같은 집인데 <b>라운드마다 가장 좋은 자리가 달랐습니다.</b>
+        술래가 방을 여는 순서가 다르기 때문입니다.</div>
       <button class="hs-start" data-action="hs-start">다시 도전</button>
       ${_hsRankHtml()}
     </div>
   </div>`;
 }
 
-function _hsClock(sec){
-  return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
-}
-
 function _hsRankHtml(){
-  if(HS_LOADING)
-    return `<div class="hs-rank"><div class="hs-rank-t">순위</div><div class="hs-rank-empty">불러오는 중…</div></div>`;
+  const mine = HS_BEST != null
+    ? `<div class="hs-rank-row me"><span class="hs-rank-n">나</span>
+        <span class="hs-rank-name">내 최고</span>
+        <span class="hs-rank-s">${HS_BEST}<i>개</i></span></div>` : '';
   if(!HS_RANK.length)
-    return `<div class="hs-rank"><div class="hs-rank-t">순위</div><div class="hs-rank-empty">아직 기록이 없어요. 첫 번째가 되어보세요!</div></div>`;
-  const me = ST_USER?.number;
-  const row = (r, i) => `
-    <div class="hs-rank-row${r.num === me ? ' me' : ''}">
+    return `<div class="hs-rank"><div class="hs-rank-t">순위 <i>많이 버틸수록 위</i></div>
+      ${mine}<div class="hs-rank-empty">아직 기록이 없어요. 첫 번째가 되어보세요!</div></div>`;
+  const rows = HS_RANK.slice(0, 10).map((x, i) => `
+    <div class="hs-rank-row${x.num === ST_USER?.number ? ' me' : ''}">
       <span class="hs-rank-n">${i + 1}</span>
-      <span class="hs-rank-name">${esc(r.name || r.num)}</span>
-      <span class="hs-rank-s">어김 ${r.miss}<i> · ${_hsClock(r.sec)}</i></span>
-    </div>`;
-  const top = HS_RANK.slice(0, 5).map(row).join('');
-  const myIdx = HS_RANK.findIndex(r => r.num === me);
-  const mine = myIdx >= 5
-    ? `<div class="hs-rank-row me out"><span class="hs-rank-n">${myIdx + 1}</span>
-       <span class="hs-rank-name">나</span>
-       <span class="hs-rank-s">어김 ${HS_RANK[myIdx].miss}<i> · ${_hsClock(HS_RANK[myIdx].sec)}</i></span></div>`
-    : '';
-  return `<div class="hs-rank"><div class="hs-rank-t">순위 <i>어김이 적을수록 위로</i></div>${top}${mine}</div>`;
+      <span class="hs-rank-name">${esc(x.name || x.num)}</span>
+      <span class="hs-rank-s">${x.score}<i>개</i></span></div>`).join('');
+  return `<div class="hs-rank"><div class="hs-rank-t">순위 <i>많이 버틸수록 위</i></div>${rows}</div>`;
 }
 
 /* ── 진행 ── */
 
 function hsStart(){
-  clearInterval(HS?.timer);
-  HS = { round: -1, miss: 0, sec: 0, done: false, timer: null, log: [] };
-  _hsNextRound();
-  HS.timer = setInterval(_hsTick, 1000);
+  if(HS_TIMER){ clearTimeout(HS_TIMER); HS_TIMER = null; }
+  HS = { round: 0, total: 0, phase: 'pick', hide: null, done: [], over: false };
+  return HS;
 }
 
-function _hsNextRound(){
-  HS.round++;
+/* 숨을 곳을 골랐다 → 술래가 온다 */
+function hsHide(leaf){
+  if(!HS || HS.phase !== 'pick' || !hsLeaf(leaf)) return;
+  HS.hide = leaf;
+  HS.phase = 'seek';
+  HS.queue = HS_ROUNDS[HS.round].modes.slice();
+  HS.runs = [];
+  _hsLockRooms();
+  _hsRunNextSeeker();
+}
+
+function _hsRunNextSeeker(){
+  const mode = HS.queue.shift();
+  if(mode === undefined) return _hsEndRound();
+  const order = HS_ORDER[mode];
+  _hsClearMarks();
+  _hsSay(`<b>${HS_MODE_NAME[mode]}</b> 술래가 찾기 시작합니다…`);
+
+  let i = 0;
+  const tick = () => {
+    const id = order[i];
+    _hsMark(id, i + 1, id === HS.hide);
+    if(id === HS.hide){
+      HS.runs.push({ mode, opened: i + 1 });
+      _hsSay(`<b>${HS_MODE_NAME[mode]}</b> 술래가 <b>${HS_ROOMS[id].name}</b>에서 찾았습니다 — <b>${i + 1}번째</b>`);
+      HS_TIMER = setTimeout(_hsRunNextSeeker, 1200);
+      return;
+    }
+    i++;
+    HS_TIMER = setTimeout(tick, HS_STEP_MS);
+  };
+  HS_TIMER = setTimeout(tick, 520);
+}
+
+function _hsEndRound(){
   const R = HS_ROUNDS[HS.round];
-  HS.order  = hsOrder(R.mode);
-  HS.hide   = HS_HIDE[Math.floor(Math.random() * HS_HIDE.length)];
-  HS.opened = new Set();
-  HS.step   = 0;
-  HS.found  = null;
-  HS.hint   = false;
-  HS.rmiss  = 0;            // 이번 라운드에서 어긴 횟수
+  const got = Math.min(...HS.runs.map(x => x.opened));
+  const detail = HS.runs.map(x => `${HS_MODE_NAME[x.mode]} ${x.opened}`).join(' · ');
+  HS.total += got;
+  HS.phase = 'done';
+  HS.done.push({ hide: HS.hide, got, detail });
+
+  const best = hsBestSpot(R);
+  const bestScore = hsScoreAt(R, best);
+  const perfect = HS.hide === best;
+  const last = HS.round === HS_ROUNDS.length - 1;
+
+  _hsPaint('hs-total', HS.total);
+  const el = document.getElementById('hs-after');
+  if(el) el.innerHTML = `
+    <div class="hs-log">
+      <div class="hs-log-row">
+        <span class="hs-log-l">${HS.round + 1}R</span>
+        <span class="hs-log-w">${HS_ROOMS[HS.hide].name}</span>
+        <span class="hs-log-s">${detail} → <b>${got}개</b></span>
+      </div>
+    </div>
+    <div class="hs-note">${perfect
+      ? '이 라운드에서 <b>가장 오래 버틸 수 있는 자리</b>였습니다.'
+      : `가장 오래 버틸 수 있던 곳은 <b>${HS_ROOMS[best].name}</b> (${bestScore}개) 였습니다.`}</div>
+    <button class="hs-start" data-action="${last ? 'hs-finish' : 'hs-next'}">
+      ${last ? '결과 보기' : '다음 라운드'}</button>`;
+}
+
+function hsNextRound(){
+  if(!HS) return;
+  HS.round++;
+  HS.phase = 'pick';
+  HS.hide = null;
   render();
 }
 
-function _hsTick(){
-  if(!HS || HS.done) return;
-  HS.sec++;
-  const el = document.getElementById('hs-time');
-  if(el) el.textContent = _hsClock(HS.sec);
-}
+/* ── 화면 갱신 — render() 대신 값만 갈아끼웁니다 ── */
 
-function hsOpen(id){
-  if(!HS || HS.done || HS.found !== null) return;
-  const need = HS.order[HS.step];
-
-  if(id !== need){                       // ── 순서를 어겼다 ──
-    HS.miss++; HS.rmiss++;
-    if(HS.rmiss >= 2) HS.hint = true;    // 두 번 어기면 다음에 열 곳을 알려 줍니다
-    _hsSay(_hsWhyNot(id, need), true);
-    _hsShake(id);
-    _hsPaint();
-    return;
-  }
-
-  HS.opened.add(id);
-  HS.step++;
-  if(id === HS.hide){                    // ── 찾았다 ──
-    HS.found = id;
-    _hsPaint();
-    _hsSay(`<b>${HS_ROOMS[id].name}</b>에 있었어요! <b>${HS.step}번째</b>에 찾았습니다`, false);
-    HS.log.push({ round: HS.round, hide: HS.hide, opens: HS.step, miss: HS.rmiss });
-    setTimeout(_hsAfterRound, 1400);
-    return;
-  }
-  _hsPaint();
-  _hsSay(`<b>${HS_ROOMS[id].name}</b> — 없네요. 다음 곳을 여세요`, false);
-}
-
-/* 왜 못 여는지 — 학생이 규칙을 스스로 고칠 수 있게 이유를 말해 줍니다 */
-function _hsWhyNot(id, need){
-  if(HS.opened.has(id)) return '이미 열어 본 곳이에요';
-  if(HS.step === 0) return '두 방법 모두 <b>현관</b>부터 시작합니다';
-  const mode = HS_ROUNDS[HS.round].mode;
-  if(mode === 'bfs'){
-    if(HS_DEPTH[id] > HS_DEPTH[need]) return '아직 <b>윗층</b>이 남았어요 — 한 층을 다 열고 내려갑니다';
-    if(HS_DEPTH[id] < HS_DEPTH[need]) return '그 층은 이미 다 봤어요 — <b>아래층</b>으로 내려갑니다';
-    return '같은 층에서는 <b>왼쪽부터</b> 열어요';
-  }
-  if(HS_ROOMS[id].parent !== null && !HS.opened.has(HS_ROOMS[id].parent))
-    return '거기로 가는 <b>길목</b>을 아직 안 열었어요';
-  return '내려가던 갈래를 <b>끝까지</b> 먼저 가고, 막히면 갈라졌던 자리로 되돌아옵니다';
-}
-
-function _hsAfterRound(){
-  if(!HS || HS.done) return;
-  if(HS.round + 1 < HS_ROUNDS.length){ _hsNextRound(); return; }
-  hsEnd();
-}
-
-/* 진행 중에는 DOM 을 새로 만들지 않고 상태만 갈아끼웁니다 */
-function _hsPaint(){
-  if(!HS || HS.done) return;
-  for(const r of HS_ROOMS){
-    const el = document.querySelector(`.hs-room[data-id="${r.id}"]`);
-    if(!el) continue;
-    const isOpen = HS.opened.has(r.id), isFound = HS.found === r.id;
-    el.classList.toggle('open', isOpen);
-    el.classList.toggle('found', isFound);
-    el.classList.toggle('hint', !!HS.hint && HS.order[HS.step] === r.id && !isFound);
-    const ico = el.querySelector('.hs-ico');
-    if(ico) ico.textContent = isFound ? '🙋' : r.ico;
-    const no = el.querySelector('.hs-no');
-    if(no) no.textContent = isOpen ? [...HS.opened].indexOf(r.id) + 1 : '';
-  }
-  const m = document.querySelector('.hs-miss b');
-  if(m) m.textContent = HS.miss;
-}
-
-function _hsSay(html, bad){
+function _hsSay(html){
   const el = document.getElementById('hs-say');
+  if(el) el.innerHTML = html;
+}
+function _hsPaint(id, v){
+  const el = document.getElementById(id);
+  if(el) el.textContent = v;
+}
+function _hsMark(id, n, caught){
+  const el = document.getElementById('hs-r' + id);
   if(!el) return;
-  el.innerHTML = html;
-  el.classList.toggle('bad', !!bad);
+  el.classList.add(caught ? 'found' : 'open');
+  const no = el.querySelector('.hs-no');
+  if(no) no.textContent = n;
+}
+function _hsClearMarks(){
+  HS_ROOMS.forEach(r => {
+    const el = document.getElementById('hs-r' + r.id);
+    if(!el) return;
+    el.classList.remove('open', 'found');
+    const no = el.querySelector('.hs-no');
+    if(no) no.textContent = '';
+  });
+}
+/* 고르고 나면 더 못 고르게 — 내가 숨은 방만 표시해 둡니다 */
+function _hsLockRooms(){
+  HS_ROOMS.forEach(r => {
+    const el = document.getElementById('hs-r' + r.id);
+    if(!el) return;
+    el.classList.remove('hint');
+    el.removeAttribute('data-action');
+    if(r.id === HS.hide){
+      el.classList.add('mine');
+      const ico = el.querySelector('.hs-ico');
+      if(ico) ico.textContent = '🙋';
+    }
+  });
 }
 
-function _hsShake(id){
-  const el = document.querySelector(`.hs-room[data-id="${id}"]`);
-  if(!el) return;
-  el.classList.add('no');
-  setTimeout(() => el.classList.remove('no'), 340);
-}
+/* ── 끝내기 · 기록 ── */
 
-async function hsEnd(){
-  clearInterval(HS.timer);
-  HS.done = true;
-
-  const better = HS_BEST === null
-    || HS.miss < HS_BEST.miss
-    || (HS.miss === HS_BEST.miss && HS.sec < HS_BEST.sec);
-  if(SEL_CLS && ST_USER && better){
+async function hsFinish(){
+  if(!HS) return;
+  const score = HS.total;
+  HS.over = true;
+  if(SEL_CLS && ST_USER){
     try {
-      await saveGameScore(SEL_CLS.id, ST_USER.number, ST_USER.name,
-        hsToScore(HS.miss, HS.sec), 'hide-seek');
-      HS_BEST = { miss: HS.miss, sec: HS.sec };
+      /* 점수는 '많을수록 좋음' 이라 그대로 넣습니다 (8퍼즐처럼 뒤집지 않습니다) */
+      await saveGameScore(SEL_CLS.id, ST_USER.number, ST_USER.name, score, 'hide-seek');
     } catch(e){ console.warn('[숨바꼭질] 기록 저장 실패:', e.message || e); }
   }
-  render();
-  hsLoadRank();
-}
-
-async function hsLoadRank(){
-  if(!SEL_CLS) return;
-  HS_LOADING = true;
-  try {
-    const all = await loadGameScores(SEL_CLS.id, 'hide-seek');
-    HS_RANK = Object.entries(all)
-      .map(([num, v]) => ({ num, name: v.name, ...hsFromScore(v.best || 0) }))
-      .sort((a, b) => a.miss - b.miss || a.sec - b.sec);
-    const me = HS_RANK.find(r => r.num === ST_USER?.number);
-    if(me) HS_BEST = { miss: me.miss, sec: me.sec };
-  } catch(e){ console.warn('[숨바꼭질] 순위 로드 실패:', e.message || e); }
-  HS_LOADING = false;
-  render();
+  render();                        // 결과 화면부터 먼저 (순위는 뒤늦게 와도 됩니다)
+  await hsLoadRank();
 }
 
 function hsLeave(){
-  if(HS?.timer) clearInterval(HS.timer);
+  if(HS_TIMER){ clearTimeout(HS_TIMER); HS_TIMER = null; }
   HS = null;
+}
+
+async function hsLoadRank(){
+  if(!SEL_CLS){ render(); return; }
+  try {
+    const all = await loadGameScores(SEL_CLS.id, 'hide-seek');
+    HS_RANK = Object.entries(all)
+      .map(([num, v]) => ({ num, name: v.name, score: v.best || 0 }))
+      .sort((a, b) => b.score - a.score);          // 많을수록 위
+    const me = HS_RANK.find(r => r.num === ST_USER?.number);
+    HS_BEST = me ? me.score : null;
+  } catch(e){
+    console.warn('[숨바꼭질] 순위 로드 실패:', e.message || e);
+  }
+  render();
 }
 
 /* 선생님 발표 화면용 — 실시간 순위판 */
@@ -373,11 +386,11 @@ function hsBoardForTeacher(){
     <div class="pwt-row">
       <span class="pwt-n">${i + 1}</span>
       <span class="pwt-name">${esc(r.name || r.num)}</span>
-      <span class="pwt-s">${r.miss}<i>번 어김</i></span>
+      <span class="pwt-s">${r.score}<i>개</i></span>
     </div>`).join('');
   return `<div class="pwt">
-    <div class="pwt-title">🙈 숨바꼭질 · 방 찾기</div>
-    <div class="pwt-sub">각자 화면에서 시작하세요 · 순서를 적게 어길수록 위로</div>
+    <div class="pwt-title">🙈 숨바꼭질 — 이번엔 내가 숨는다</div>
+    <div class="pwt-sub">각자 화면에서 시작하세요 · 술래에게서 오래 버틸수록 위로 (만점 ${HS_MAX})</div>
     <div class="pwt-rank">${rows || '<div class="pwt-empty">아직 기록이 없습니다</div>'}</div>
     <div class="pwt-cnt">참여 ${HS_RANK.length}명</div>
   </div>`;
