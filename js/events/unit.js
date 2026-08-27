@@ -159,12 +159,12 @@ document.addEventListener('click', async e => {
      게임 → 끝나면 '방금 내가 쓴 지능' 되짚기까지 한 흐름입니다. */
   if(act === 'uc-open-game'){
     if(!SEL_CLS || !ST_USER){ toast('로그인 후 이용할 수 있어요.', 'err'); return; }
-    pwLeave();                       // 돌던 게임이 있으면 정리하고 대기 화면부터
+    gameLeaveAll();                  // 돌던 게임이 있으면 정리하고 대기 화면부터
     UNIT_GAME = el.dataset.gameid || 'plant-water';
     ST_TAB = 'game';
     UNIT_RETURN = { unitKey: el.dataset.unit, section: el.dataset.sec };
     render();
-    pwLoadRank();                    // 순위·내 최고점 불러오기 (내부에서 render)
+    gameLoadRank(UNIT_GAME);         // 순위·내 최고점 불러오기 (내부에서 render)
     return;
   }
 
