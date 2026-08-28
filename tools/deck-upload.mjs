@@ -150,6 +150,30 @@ async function removePage(cids, deckId, page){
 /* ── 시작 ── */
 const cids = (flag('classes') || CLASSES_DEFAULT.join(',')).split(',').map(s => s.trim()).filter(Boolean);
 
+/* '이번 시간에 열기' — 앱의 pickDeck() 과 같습니다 (deckId 를 바꾸고 첫 장으로).
+   ⚠ 기본으로는 절대 건드리지 않습니다. 이 옵션을 줄 때만 바꿉니다.
+     '같이 보기'(on) 는 지금 값을 그대로 둡니다. */
+if(has('set-live')){
+  const deckId = flag('id');
+  if(!deckId) die('--set-live --id <자료id> 를 주세요.');
+  for(const cid of cids){
+    const cur = (await dbGet(`slides/${cid}/live`)) || {};
+    const deck = await dbGet(`slides/${cid}/decks/${deckId}`);
+    if(!deck) die(`${cid} 에 자료 ${deckId} 가 없습니다`);
+    await dbPut(`slides/${cid}/live`, {
+      ...cur, deckId, page: 0, updatedAt: new Date().toISOString(),
+    });
+    console.log(`  ${cid} — 「${deck.title}」 를 이번 시간 자료로 열었습니다 (첫 장부터)`);
+  }
+  console.log('\n■ DB 를 다시 읽어 확인');
+  for(const cid of cids){
+    const lv = await dbGet(`slides/${cid}/live`);
+    const d = await dbGet(`slides/${cid}/decks/${lv.deckId}`);
+    console.log(`  ${cid} — 열린 자료 ${lv.deckId} 「${d?.title}」 · ${lv.page + 1}장 · 같이 보기 ${lv.on ? '켜짐' : '꺼짐'}`);
+  }
+  process.exit(0);
+}
+
 if(has('remove-page')){
   const page = parseInt(flag('remove-page'), 10);
   const deckId = flag('id');

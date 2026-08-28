@@ -24,6 +24,14 @@ const GAMES = {
     loadRank: () => mzLoadRank(),
     teacherBoard: () => mzBoardForTeacher(),
   },
+  'city-cost': {
+    ico: '🏙', label: '도시 배달',
+    desc: '길마다 걸리는 시간이 다른 도시에서 가장 빨리 가는 길 찾기 → 균일 비용 탐색을 스스로 찾아냄',
+    view: () => vCityCost(),
+    leave: () => ccLeave(),
+    loadRank: () => ccLoadRank(),
+    teacherBoard: () => ccBoardForTeacher(),
+  },
   'puzzle-8': {
     ico: '🧩', label: '8퍼즐 맞추기',
     desc: '빈칸으로 타일을 밀어 목표 모양 만들기 → 적은 수로 맞출수록 높은 순위',

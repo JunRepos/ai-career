@@ -33,12 +33,13 @@ const EXPECT = {
     bfs: 'a b c d e f',
     dfs: 'a b d e c f',
   },
+  /* verify/maze-gen.mjs 씨앗 59 로 뽑은 판 */
   main: {
-    edges: [['S','A'],['S','B'],['A','C'],['A','D'],['B','E'],['B','F'],
-            ['C','G'],['C','H'],['D','I'],['D','J']],
-    bfs: 'S A B C D E F G H I J',
-    dfs: 'S A C G H D I J B E F',
-    goalAt: { bfs: 7, dfs: 11 },     // 출구 F 를 몇 번째에 만나는가
+    edges: [['S','A'],['A','B'],['A','C'],['B','D'],['B','E'],['D','F'],
+            ['D','G'],['G','H'],['G','I'],['I','J'],['I','K']],
+    bfs: 'S A B C D E F G H I J K',
+    dfs: 'S A B D F G H I J K E C',
+    goalAt: { bfs: 6, dfs: 11 },     // 출구 E 를 몇 번째에 만나는가
   },
 };
 
