@@ -210,15 +210,18 @@ for i, st in enumerate(steps, 1):
     else:
         gen = ' · '.join('%s(%d)' % (n, v) for n, v in st['gen']) or '없음'
         act = '목적지가 아니다 → 자식 **%s** 를 오픈 리스트에' % gen
-    side = [
-        {'label': '③ 누적 비용이 가장 작은 것', 'accent': True,
-         'text': '**%s (%d)**' % (pick, st['g'])},
-        {'label': '④ 테스트', 'text': act},
-    ]
+    # 오픈/닫힌 리스트는 **값을 읽어야 하는 칸**이라 각각 따로, 크게 둡니다.
+    # 카드를 3개로 유지해야 칸이 높아져서 글자가 안 줄어듭니다 (2026-08-28 선생님 요청)
+    head = '**%s (%d)** — %s' % (pick, st['g'], act)
     if st['drop']:
-        side.append({'label': '빼는 것', 'text': ' · '.join(st['drop'])})
-    side.append({'label': '오픈 / 닫힌 리스트',
-                 'text': '오픈 **[%s]**\n닫힌 [%s]' % (U.fmt(st['open']), U.fmt(st['closed']))})
+        head += '\n빼는 것 — ' + ' · '.join(st['drop'])
+    side = [
+        {'label': '③ 꺼낸 것 · ④ 테스트', 'accent': True, 'text': head},
+        {'label': '오픈 리스트 — 테스트할 후보', 'accent': True, 'big': True,
+         'text': U.fmt(st['open']).replace(', ', '   ')},
+        {'label': '닫힌 리스트 — 테스트가 끝난 것', 'big': True,
+         'text': U.fmt(st['closed']).replace(', ', '   ')},
+    ]
     S.append({'type': 'diagram', 'title': '균일 비용 탐색 — %d단계' % i,
               'nodes': city(cost=st['closed'] | st['open'], accent=(pick,), dim=tuple(closed_before)),
               'edges': city_edges(),

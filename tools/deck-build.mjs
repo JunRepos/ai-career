@@ -863,10 +863,14 @@ function drawGraph(pptx, s, d, nodesIn, edges){
       s.addText(it.label, { x: M.right - sideW + 0.45, y: sy + 0.22, w: sideW - 0.9, h: 0.55,
         fontFace: T.fT, fontSize: 26, color: T.brown, valign: 'middle' });
       if(it.text){
-        /* 상자를 넘치지 않게 글자를 줄여 맞춥니다 */
-        let fs = 21;
-        while(fs > 15 && textH(it.text, sideW - 0.9, fs, 1.4) > sh - 1.0) fs -= 1;
-        s.addText(runs(it.text, { fontFace: T.fB, fontSize: fs, color: T.muted }),
+        /* 상자를 넘치지 않게 글자를 줄여 맞춥니다.
+           big:true 는 오픈/닫힌 리스트처럼 **값 자체를 읽어야 하는** 칸입니다 —
+           30pt 에서 시작해 필요한 만큼만 줄입니다 (2026-08-28 선생님 요청) */
+        const top = it.big ? 30 : 21, bottom = it.big ? 19 : 15;
+        let fs = top;
+        while(fs > bottom && textH(it.text, sideW - 0.9, fs, 1.4) > sh - 1.0) fs -= 1;
+        s.addText(runs(it.text, { fontFace: T.fB, fontSize: fs,
+                                  color: it.big ? T.ink : T.muted }),
           { x: M.right - sideW + 0.45, y: sy + 0.8, w: sideW - 0.9, h: sh - 1.0,
             valign: 'top', lineSpacingMultiple: 1.3 });
       }
