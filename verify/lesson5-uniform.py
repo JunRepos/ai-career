@@ -58,15 +58,15 @@ def uniform_cost():
         for nb, w in ADJ[cur]:
             ng = g + w
             if nb in closed:                             # 이미 테스트된 상태는 제외
-                drop.append(f'{nb}(이미 테스트됨)')
+                drop.append(f'{nb} 이미 테스트됨')
                 continue
             if nb in open_list:
                 if ng < open_list[nb]:                   # 더 작은 것만 남긴다
-                    drop.append(f'{nb}({open_list[nb]}) → {nb}({ng}) 로 교체')
+                    drop.append(f'{nb}({open_list[nb]}) → {nb}({ng}) 로 교체 (더 작음)')
                     open_list[nb] = ng; parent[nb] = cur
                     gen.append((nb, ng))
                 else:
-                    drop.append(f'{nb}({ng}) 제외 · 기존 {nb}({open_list[nb]}) 가 작음')
+                    drop.append(f'{nb}({ng}) 제외 — 기존 {nb}({open_list[nb]}) 가 더 작음')
                 continue
             open_list[nb] = ng; parent[nb] = cur
             gen.append((nb, ng))
@@ -77,7 +77,7 @@ def uniform_cost():
 
 
 def fmt(d):
-    return ', '.join(f'{k}({v})' for k, v in sorted(d.items(), key=lambda x: (x[1], x[0]))) or '—'
+    return ', '.join(f'{k}({v})' for k, v in sorted(d.items(), key=lambda x: (x[1], x[0]))) or '비어 있음'
 
 
 if __name__ == '__main__':
