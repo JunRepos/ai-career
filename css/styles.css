@@ -4676,7 +4676,7 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .mz-lab{font-size:12px;font-weight:800;color:var(--mz-muted);margin-bottom:6px;letter-spacing:1px}
 
 /* 미로 — 벽과 바닥을 칸으로 */
-.mz-maze{display:grid;gap:0;aspect-ratio:9/7;background:var(--mz-wall);
+.mz-maze{position:relative;display:grid;gap:0;background:var(--mz-wall);
   border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px #2c3a4a}
 .mz-cell{position:relative}
 .mz-cell.wall{background:var(--mz-wall);
@@ -4762,3 +4762,109 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .mz-final span{margin-left:6px;font-size:16px;font-weight:700;color:var(--mz-muted)}
 /* 3막 — 오픈 리스트에서 대기 중인 도시 (아직 테스트 안 함) */
 .mz-node.wait{background:var(--mz-spot);color:#17202a;box-shadow:inset 0 0 0 2px var(--mz-spot-in)}
+
+/* 미로를 걷는 캐릭터 — 도트 사람 */
+.mz-hero{position:absolute;transform:translate(-50%,-58%);z-index:5;pointer-events:none;
+  width:clamp(11px,2.1vw,20px);height:clamp(13px,2.5vw,24px);
+  transition:left .06s linear,top .06s linear;
+  background:
+    linear-gradient(#f2c76b,#f2c76b) 50% 0/60% 40% no-repeat,   /* 머리 */
+    linear-gradient(#65a7c8,#65a7c8) 50% 100%/100% 62% no-repeat; /* 몸 */
+  filter:drop-shadow(2px 2px 0 rgba(0,0,0,.55))}
+.mz-hero.walk{animation:mzBob .15s steps(2) infinite}
+@keyframes mzBob{50%{transform:translate(-50%,-66%)}}
+.mz-hero.fall{transition:transform .35s ease-in;transform:translate(-50%,-30%) rotate(84deg);
+  animation:none;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.55)) saturate(.5)}
+
+/* 순서를 적는 칸 */
+.mz-ask{margin:14px auto 8px;max-width:660px;text-align:center;
+  font-size:clamp(14px,2.4vw,17px);font-weight:800;color:var(--mz-text);line-height:1.6}
+.mz-ask b{color:var(--mz-gold)}
+.mz-form{display:flex;gap:8px;max-width:660px;margin:0 auto;flex-wrap:wrap}
+.mz-input{flex:1;min-width:180px;padding:12px 14px;background:var(--mz-cream);color:#1c2731;
+  border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px var(--mz-cream-in);
+  font:inherit;font-size:17px;font-weight:800;letter-spacing:3px;text-transform:uppercase}
+.mz-input:focus{outline:none;box-shadow:inset 0 0 0 3px var(--mz-gold)}
+.mz-input:disabled{opacity:.6}
+.mz-form .mz-btn{margin:0;flex:none}
+.mz-warn{color:#f0a79c;font-weight:800}
+
+/* 넘어졌을 때 뜨는 창 */
+.mz-pop{display:none;position:fixed;inset:0;z-index:60;background:rgba(8,12,17,.72);
+  align-items:center;justify-content:center;padding:16px}
+.mz-pop.on{display:flex}
+.mz-pop-box{max-width:520px;width:100%;padding:20px;background:var(--mz-panel);
+  border:4px solid var(--mz-ink);box-shadow:0 0 0 3px var(--mz-rim),8px 8px 0 #0b1016;
+  color:var(--mz-text);text-align:center;max-height:88vh;overflow:auto}
+.mz-pop-t{font-size:clamp(17px,3vw,22px);font-weight:900;color:var(--mz-gold);
+  text-shadow:3px 3px 0 #0e151d}
+.mz-pop-why{margin-top:10px;padding:11px;background:var(--mz-cream);color:#1c2731;
+  border:3px solid var(--mz-ink);box-shadow:inset 0 0 0 2px var(--mz-cream-in);
+  font-size:13.5px;line-height:1.7}
+.mz-pop-why b{color:#8a5a1e}
+.mz-pop-algo{margin-top:12px;padding:12px;background:#1a2431;border:3px solid #0f151d;
+  box-shadow:inset 0 0 0 2px #3b4b5d;text-align:left;font-size:13px;line-height:1.85}
+.mz-pop-algo>b{display:block;margin-bottom:6px;color:var(--mz-gold);font-size:14px}
+.mz-pop-algo b{color:var(--mz-gold)}
+/* 아직 테스트 안 한 상태의 번호 뱃지는 숨깁니다 (빈 동그라미가 보이던 것) */
+.mz-no:empty{display:none}
+
+/* ═══ 🏙 도시 배달 (균일 비용 탐색) ═══
+   배경은 도트 도시 — 뒷줄 건물 · 앞줄 건물 · 창문 세 겹입니다. */
+.cc-wrap{position:relative;overflow:hidden}
+.cc-sky{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;
+  background:linear-gradient(#0e1620 0%,#16212e 55%,#1b2836 100%)}
+/* 건물 세 줄 — 뒤로 갈수록 어둡고 낮게. 창문은 점으로 찍습니다. */
+.cc-sky:before,.cc-sky:after,.cc-sky>i{content:"";position:absolute;left:-10%;right:-10%;bottom:0;
+  background-repeat:repeat}
+.cc-sky:before{height:54%;
+  background-image:
+    radial-gradient(circle,rgba(242,199,107,.13) 0 1.3px,transparent 1.6px),
+    repeating-linear-gradient(90deg,#18222f 0 34px,transparent 34px 40px,#141d28 40px 74px,transparent 74px 82px);
+  background-size:14px 17px,auto 100%;
+  background-position:3px bottom,left bottom;
+  background-repeat:repeat,repeat-x}
+.cc-sky:after{height:38%;
+  background-image:
+    radial-gradient(circle,rgba(242,199,107,.22) 0 1.4px,transparent 1.7px),
+    repeating-linear-gradient(90deg,#22303f 0 46px,transparent 46px 54px,#2a3a4d 54px 92px,transparent 92px 102px);
+  background-size:13px 16px,auto 100%;
+  background-position:4px bottom,left bottom;
+  background-repeat:repeat,repeat-x}
+.cc-sky>i{height:22%;
+  background-image:
+    radial-gradient(circle,rgba(242,199,107,.34) 0 1.5px,transparent 1.8px),
+    repeating-linear-gradient(90deg,#2b3d52 0 26px,transparent 26px 34px,#33475f 34px 54px,transparent 54px 66px);
+  background-size:12px 15px,auto 100%;
+  background-position:3px bottom,left bottom;
+  background-repeat:repeat,repeat-x}
+.cc-wrap>.cc-front{position:relative;z-index:1}
+
+.cc-map{position:relative;aspect-ratio:15/11;overflow:hidden;
+  border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px #2c3a4a}
+.cc-map .cc-sky{opacity:1}
+.cc-map .mz-plane{z-index:1;left:6%;right:6%;top:10%;bottom:10%}
+.cc-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.cc-lines line{stroke:#c9b887;stroke-width:3;vector-effect:non-scaling-stroke;opacity:.75}
+.cc-lines line.hot{stroke:#9bd594;stroke-width:6;opacity:1}
+
+.cc-node{position:absolute;transform:translate(-50%,-50%);z-index:2;
+  min-width:clamp(28px,5.6vw,42px);height:clamp(28px,5.6vw,42px);padding:0 4px;
+  display:flex;align-items:center;justify-content:center;gap:2px;
+  background:#2b3a4b;color:#8ea2b7;font-weight:900;font-size:clamp(12px,2.3vw,17px);
+  border:3px solid var(--mz-ink);box-shadow:inset 0 0 0 2px #435668,3px 3px 0 rgba(0,0,0,.5)}
+.cc-node i{font-style:normal;font-size:.74em;opacity:.9}
+.cc-node.wait{background:var(--mz-spot);color:#17202a;box-shadow:inset 0 0 0 2px var(--mz-spot-in),3px 3px 0 rgba(0,0,0,.5)}
+.cc-node.done{background:var(--mz-named);color:#17202a;box-shadow:inset 0 0 0 2px var(--mz-named-in),3px 3px 0 rgba(0,0,0,.5)}
+.cc-node.start{border-color:#65a7c8;border-width:4px}
+.cc-node.goal{border-color:#d9685f;border-width:4px}
+.cc-node.now{animation:mzPulse .7s steps(2) infinite}
+.cc-cost{position:absolute;transform:translate(-50%,-50%);z-index:1;padding:1px 5px;
+  background:#101823;color:#e6dcc0;font-size:clamp(10px,1.9vw,13px);font-weight:800;
+  border:2px solid #0a0f16}
+.cc-hint{margin-top:12px;font-size:12.5px;line-height:1.7;color:var(--mz-muted);min-height:18px}
+.cc-hint b{color:var(--mz-gold)}
+.cc-tip{background:#1a2431;color:var(--mz-text);box-shadow:inset 0 0 0 3px #3b4b5d,5px 5px 0 rgba(0,0,0,.4)}
+.cc-tip b{color:var(--mz-gold)}
+.cc-name{background:#1a2431;color:var(--mz-text);box-shadow:inset 0 0 0 3px #3b4b5d,5px 5px 0 rgba(0,0,0,.4)}
+.cc-name b{color:var(--mz-gold)}

@@ -47,6 +47,7 @@ function render(){ document.getElementById('stage').innerHTML = gameView(CURRENT
 <script src="../js/games/plantwater.js"></script>
 <script src="../js/games/puzzle8.js"></script>
 <script src="../js/games/maze.js"></script>
+<script src="../js/games/citycost.js"></script>
 <script src="../js/games/games.js"></script>
 
 <script>
@@ -54,10 +55,12 @@ function render(){ document.getElementById('stage').innerHTML = gameView(CURRENT
 const PV_ACTIONS = {
   'mz-start': () => { mzStart(); render(); },
   'mz-spot':  el => mzSpot(el.dataset.id),
-  'mz-cell':  el => mzPick(el.dataset.id),
-  'mz-open':  el => mzOpenPick(el.dataset.id),
+  'mz-run':   () => mzRun(),
+  'mz-retry': () => mzRetry(),
   'mz-finish':() => mzFinish(),
   'mz-next':  () => mzNext(),
+  'cc-start': () => { ccStart(); render(); },
+  'cc-pick':  el => ccPick(el.dataset.id),
   'pw-start': () => { pwStart(); },
   'p8-start': () => { p8Start(); },
   'p8-move':  el => p8Move(+el.dataset.n),
@@ -86,22 +89,35 @@ const Q = new URLSearchParams(location.search);
 const want = Q.get('game') || 'maze';
 const idx = Object.keys(GAMES).indexOf(want);
 btns.children[idx >= 0 ? idx : 0].click();
+/* ?game=city-cost&start=1&pick=n — n번 정답을 눌러 둡니다 (확인·스크린샷용) */
+if(want === 'city-cost' && Q.get('start') === '1'){
+  ccStart();
+  const n = +Q.get('pick') || 0;
+  for(let i = 0; i < n && !CC.over; i++){
+    const best = Object.entries(CC.open).sort((x,y)=>x[1]-y[1]||x[0].localeCompare(y[0]))[0];
+    if(best) ccPick(best[0]);
+  }
+  render();
+}
 if(Q.get('start') === '1'){
   if(want === 'maze'){
     mzStart();
     const act = +Q.get('act') || 0;
     for(let i = 0; i < (+Q.get('step') || 0); i++){ MZ.shown.add(MZ_INTRO_STEPS[MZ.step].id); MZ.step++; }
     for(let a = 0; a < act; a++) mzNext();
-    /* ?pick=n — 그 막에서 n번 정답을 자동으로 눌러 둡니다 (스크린샷용) */
-    const n = +Q.get('pick') || 0;
-    for(let i = 0; i < n; i++){
-      if(MZ.act === 3){
-        const best = Object.entries(MZ.open).sort((x,y)=>x[1]-y[1]||x[0].localeCompare(y[0]))[0];
-        if(best) mzOpenPick(best[0]);
-      } else {
-        const seq = mzOrder(MZ_BOARDS.main, MZ_ACTS[MZ.act].mode);
-        mzPick(seq[MZ.tested.length]);
-      }
+    /* ?fill=1 — 정답을 입력칸에 미리 넣어 둡니다 (확인·스크린샷용) */
+    if(Q.get('fill') === '1' && MZ.act > 0){
+      const b = MZ_BOARDS.main;
+      const seq = mzOrder(b, MZ_ACTS[MZ.act].mode);
+      MZ.typed = seq.slice(0, seq.indexOf(b.goal) + 1).join(' ');
+      render();
+    }
+    /* ?tested=n — n곳을 이미 테스트한 것처럼 (스크린샷용) */
+    const t = +Q.get('tested') || 0;
+    if(t && MZ.act > 0){
+      const b = MZ_BOARDS.main;
+      MZ.tested = mzOrder(b, MZ_ACTS[MZ.act].mode).slice(0, t);
+      render();
     }
   }
   render();
