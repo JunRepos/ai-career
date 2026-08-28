@@ -250,6 +250,35 @@ node tools/deck-upload.mjs <PNG폴더> --title "5. 지능적 탐색" --classes a
 
 ---
 
+## 컴퓨터를 갈아엎기 전에 — 백업
+
+```bash
+powershell -ExecutionPolicy Bypass -File tools/backup-claude.ps1
+```
+
+`D:/Google drive/ai-career-backup/` 에 **깃허브에 없는 것만** 모읍니다. 여러 번 돌려도 됩니다(안 지웁니다).
+
+| 담는 것 | 왜 |
+|---|---|
+| `~/.claude/projects` 등 | **클로드 코드 대화 기록·메모리.** 레포가 아니라 홈 폴더에 있습니다 |
+| `.claude/launch.json` | 미리보기 서버 설정 — `.gitignore` 에 걸려 레포에 없음 |
+| 손본 `*.pptx` | `tools/samples/*.pptx` 가 `.gitignore` 라 레포에 없음 |
+| `RESTORE.md` | 되살리는 법 |
+
+**되살릴 때 알아야 할 것**
+
+- **레포만 clone 하면 하네스는 다 살아납니다.** `CLAUDE.md`·`docs/`·`tools/`·`verify/` 가
+  전부 git 에 있습니다. 새 대화에 `HANDOFF.md` 를 붙여넣으면 맥락도 이어집니다.
+  **여기까지가 확실한 부분입니다.**
+- **대화 기록 되살리기는 보장이 안 됩니다.** 세션 폴더 이름이 **절대 경로를 인코딩**합니다
+  (`C--Users-PC-Desktop-github-ai-career`). 그래서 ① 레포를 **같은 경로**에 두고
+  ② `claude-home/` 을 `~/.claude/` 로 되돌린 뒤 ③ `claude --resume` 을 해야 하고,
+  사용자 이름이 다르면 폴더 이름을 손으로 바꿔야 합니다.
+- 옵시디언 볼트·교과서 PDF 는 원래 구글 드라이브에 있으니 백업 대상이 아닙니다.
+
+⚠ `tools/backup-claude.ps1` 은 **UTF-8 BOM 으로 저장**해야 합니다. PowerShell 5.1 은 BOM 이
+없으면 `.ps1` 을 cp949 로 읽어 한글이 전부 깨집니다. (2026-08-28 실제로 겪음)
+
 ## 남은 일 / 알아둘 것
 
 ### 🔴 보안 — 보류 중 (제가 하자고 하면 그때)
