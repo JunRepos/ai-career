@@ -4720,3 +4720,45 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
   .mz-board{grid-template-columns:1fr}
   .mz-plane{left:11%;right:11%;top:13%;bottom:13%}
 }
+
+/* 미로 탐사 — 1~3막에서 더 쓰는 것들 */
+.mz-rule{max-width:660px;margin:0 auto 12px;padding:8px 12px;background:#1a2431;
+  border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #3b4b5d;
+  font-size:12.5px;line-height:1.6;color:var(--mz-muted);text-align:center}
+.mz-rule b{color:var(--mz-gold)}
+.mz-cell.goal .mz-mark{background:#e8867b;box-shadow:inset 0 0 0 2px #a94f48,3px 3px 0 rgba(0,0,0,.45)}
+.mz-node.goal{background:#e8867b;color:#17202a;box-shadow:inset 0 0 0 2px #a94f48}
+.mz-node.done{background:#7f93a8;color:#111820;box-shadow:inset 0 0 0 2px #55697d}
+.mz-no{position:absolute;right:-8px;top:-9px;min-width:17px;height:17px;padding:0 3px;
+  display:flex;align-items:center;justify-content:center;background:#15202a;color:#fff;
+  border:2px solid #0a0e13;border-radius:50%;font-style:normal;font-size:10px;font-weight:900}
+.mz-cell.spot .mz-mark{overflow:visible}
+.mz-node i{font-style:normal;font-size:.72em;opacity:.85;margin-left:3px}
+
+/* 3막 — 길 위의 시간, 오픈/닫힌 리스트 */
+.mz-cost{position:absolute;transform:translate(-50%,-50%);padding:1px 5px;
+  background:var(--mz-bg);color:var(--mz-muted);font-size:clamp(10px,1.9vw,13px);font-weight:800;z-index:1}
+.mz-chips{display:flex;flex-wrap:wrap;gap:7px;min-height:40px}
+.mz-chip{padding:9px 13px;cursor:pointer;background:var(--mz-spot);color:#17202a;
+  font:inherit;font-size:14px;font-weight:800;border:3px solid var(--mz-ink);
+  box-shadow:inset 0 0 0 2px var(--mz-spot-in),3px 3px 0 #0d1218}
+.mz-chip:hover{filter:brightness(1.08)}
+.mz-chip:active{transform:translate(2px,2px);box-shadow:inset 0 0 0 2px var(--mz-spot-in),1px 1px 0 #0d1218}
+.mz-chip b{color:#7a4f14}
+.mz-closed{padding:9px 12px;background:#17222d;border:3px solid #0f151d;
+  box-shadow:inset 0 0 0 2px #3b4b5d;font-size:13.5px;color:var(--mz-muted);min-height:40px}
+.mz-empty{color:var(--mz-muted);font-size:13px}
+
+/* 2막 끝 — 두 순서 나란히 */
+.mz-two{max-width:660px;margin:12px auto 0;display:flex;flex-direction:column;gap:7px}
+.mz-two-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:#1a2431;
+  border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #3b4b5d;font-size:13px;flex-wrap:wrap}
+.mz-two-t{flex:none;min-width:66px;font-weight:800;color:var(--mz-gold)}
+.mz-two-s{flex:1;min-width:0;color:var(--mz-text);letter-spacing:.4px}
+.mz-two-row b{flex:none;color:var(--mz-gold)}
+
+.mz-final{text-align:center;font-size:52px;font-weight:900;color:var(--mz-gold);
+  text-shadow:4px 4px 0 #0e151d;margin:6px 0 14px}
+.mz-final span{margin-left:6px;font-size:16px;font-weight:700;color:var(--mz-muted)}
+/* 3막 — 오픈 리스트에서 대기 중인 도시 (아직 테스트 안 함) */
+.mz-node.wait{background:var(--mz-spot);color:#17202a;box-shadow:inset 0 0 0 2px var(--mz-spot-in)}

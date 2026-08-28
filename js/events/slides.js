@@ -33,6 +33,9 @@ document.addEventListener('click', async e => {
   if(act === 'mz-start'){ mzStart(); render(); return; }
   if(act === 'mz-spot'){ mzSpot(el.dataset.id); return; }
   if(act === 'mz-next'){ mzNext(); return; }
+  if(act === 'mz-cell'){ mzPick(el.dataset.id); return; }
+  if(act === 'mz-open'){ mzOpenPick(el.dataset.id); return; }
+  if(act === 'mz-finish'){ mzFinish(); return; }
 
   // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
   if(act === 'sl-game-add' && TC_CLS && SLIDE_DECK){

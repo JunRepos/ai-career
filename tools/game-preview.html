@@ -54,6 +54,9 @@ function render(){ document.getElementById('stage').innerHTML = gameView(CURRENT
 const PV_ACTIONS = {
   'mz-start': () => { mzStart(); render(); },
   'mz-spot':  el => mzSpot(el.dataset.id),
+  'mz-cell':  el => mzPick(el.dataset.id),
+  'mz-open':  el => mzOpenPick(el.dataset.id),
+  'mz-finish':() => mzFinish(),
   'mz-next':  () => mzNext(),
   'pw-start': () => { pwStart(); },
   'p8-start': () => { p8Start(); },
@@ -84,7 +87,23 @@ const want = Q.get('game') || 'maze';
 const idx = Object.keys(GAMES).indexOf(want);
 btns.children[idx >= 0 ? idx : 0].click();
 if(Q.get('start') === '1'){
-  if(want === 'maze'){ mzStart(); for(let i = 0; i < (+Q.get('step') || 0); i++){ MZ.shown.add(MZ_INTRO_STEPS[MZ.step].id); MZ.step++; } }
+  if(want === 'maze'){
+    mzStart();
+    const act = +Q.get('act') || 0;
+    for(let i = 0; i < (+Q.get('step') || 0); i++){ MZ.shown.add(MZ_INTRO_STEPS[MZ.step].id); MZ.step++; }
+    for(let a = 0; a < act; a++) mzNext();
+    /* ?pick=n — 그 막에서 n번 정답을 자동으로 눌러 둡니다 (스크린샷용) */
+    const n = +Q.get('pick') || 0;
+    for(let i = 0; i < n; i++){
+      if(MZ.act === 3){
+        const best = Object.entries(MZ.open).sort((x,y)=>x[1]-y[1]||x[0].localeCompare(y[0]))[0];
+        if(best) mzOpenPick(best[0]);
+      } else {
+        const seq = mzOrder(MZ_BOARDS.main, MZ_ACTS[MZ.act].mode);
+        mzPick(seq[MZ.tested.length]);
+      }
+    }
+  }
   render();
 }
 </script>

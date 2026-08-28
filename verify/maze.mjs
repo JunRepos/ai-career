@@ -33,6 +33,13 @@ const EXPECT = {
     bfs: 'a b c d e f',
     dfs: 'a b d e c f',
   },
+  main: {
+    edges: [['S','A'],['S','B'],['A','C'],['A','D'],['B','E'],['B','F'],
+            ['C','G'],['C','H'],['D','I'],['D','J']],
+    bfs: 'S A B C D E F G H I J',
+    dfs: 'S A C G H D I J B E F',
+    goalAt: { bfs: 7, dfs: 11 },     // 출구 F 를 몇 번째에 만나는가
+  },
 };
 
 let allOk = true;
@@ -121,6 +128,12 @@ for(const [name, b] of Object.entries(BOARDS)){
 
     T(bfs.join(' ') === exp.bfs, `너비 우선 — ${bfs.join(' ')}`);
     T(dfs.join(' ') === exp.dfs, `깊이 우선 — ${dfs.join(' ')}`);
+    if(exp.goalAt){
+      const gb = bfs.indexOf(b.goal) + 1, gd = dfs.indexOf(b.goal) + 1;
+      T(gb === exp.goalAt.bfs && gd === exp.goalAt.dfs,
+        `출구 ${b.goal} — 너비 우선 ${gb}번째 · 깊이 우선 ${gd}번째`);
+      T(Math.abs(gb - gd) >= 3, '두 방법의 차이가 뚜렷하다 (3개 이상)');
+    }
   }
 
   // 눈으로도 한 번
