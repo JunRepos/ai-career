@@ -16,6 +16,14 @@ const GAMES = {
     loadRank: () => pwLoadRank(),
     teacherBoard: () => pwBoardForTeacher(),
   },
+  'maze': {
+    ico: '🧭', label: '미로 탐사',
+    desc: '미로의 갈림길이 곧 탐색 트리의 상태 → 너비 우선·깊이 우선으로 직접 탐사',
+    view: () => vMaze(),
+    leave: () => mzLeave(),
+    loadRank: () => mzLoadRank(),
+    teacherBoard: () => mzBoardForTeacher(),
+  },
   'puzzle-8': {
     ico: '🧩', label: '8퍼즐 맞추기',
     desc: '빈칸으로 타일을 밀어 목표 모양 만들기 → 적은 수로 맞출수록 높은 순위',

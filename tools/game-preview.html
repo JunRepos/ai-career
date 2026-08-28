@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>실습 게임 미리보기</title>
+<!-- 앱의 진짜 CSS 를 그대로 씁니다 -->
+<link rel="stylesheet" href="../css/styles.css">
+<style>
+  body{margin:0;padding:18px;background:#12181f;color:#e8e8e8;
+       font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+  .pv-top{max-width:960px;margin:0 auto 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pv-top b{margin-right:6px}
+  .pv-top button{padding:6px 12px;background:#2b3a4b;color:#e8e8e8;border:1px solid #4a5c70;
+                 border-radius:6px;cursor:pointer;font:inherit;font-size:13px}
+  .pv-top button.on{background:#f2c76b;color:#1c2731;border-color:#f2c76b;font-weight:800}
+  .pv-note{max-width:960px;margin:0 auto 14px;font-size:12px;color:#8b98a6}
+  #stage{max-width:1000px;margin:0 auto}
+</style>
+</head>
+<body>
+<div class="pv-top">
+  <b>실습 게임 미리보기</b>
+  <span id="btns"></span>
+  <button onclick="location.reload()">새로고침</button>
+</div>
+<div class="pv-note">
+  앱 밖에서 게임 화면만 띄웁니다. 로그인·순위 저장은 흉내만 냅니다.
+  화면 크기를 줄여 가며 좁은 화면도 확인하세요.
+</div>
+<div id="stage"></div>
+
+<script>
+/* ── 앱에서 쓰는 것들 흉내내기 ── */
+const SEL_CLS = { id: 'preview', label: '미리보기' };
+const ST_USER = { number: '00000', name: '미리보기' };
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function toast(msg){ console.log('[toast]', msg); }
+async function loadGameScores(){ return {}; }
+async function saveGameScore(){ return 0; }
+let CURRENT = null;
+function render(){ document.getElementById('stage').innerHTML = gameView(CURRENT); }
+</script>
+
+<!-- 게임 파일들 (index.html 과 같은 순서) -->
+<script src="../js/games/plantwater.js"></script>
+<script src="../js/games/puzzle8.js"></script>
+<script src="../js/games/maze.js"></script>
+<script src="../js/games/games.js"></script>
+
+<script>
+/* 게임이 쓰는 data-action 클릭을 앱과 같은 방식으로 받아 넘깁니다 */
+const PV_ACTIONS = {
+  'mz-start': () => { mzStart(); render(); },
+  'mz-spot':  el => mzSpot(el.dataset.id),
+  'mz-next':  () => mzNext(),
+  'pw-start': () => { pwStart(); },
+  'p8-start': () => { p8Start(); },
+  'p8-move':  el => p8Move(+el.dataset.n),
+};
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]');
+  if(!el) return;
+  const fn = PV_ACTIONS[el.dataset.action];
+  if(fn) fn(el);
+});
+
+const btns = document.getElementById('btns');
+for(const [id, g] of Object.entries(GAMES)){
+  const b = document.createElement('button');
+  b.textContent = g.ico + ' ' + g.label;
+  b.onclick = () => {
+    gameLeaveAll();
+    CURRENT = id;
+    [...btns.children].forEach(x => x.classList.toggle('on', x === b));
+    render();
+  };
+  btns.append(b);
+}
+/* ?game=maze&start=1 로 열면 바로 그 게임을 시작한 화면이 뜹니다 (스크린샷용) */
+const Q = new URLSearchParams(location.search);
+const want = Q.get('game') || 'maze';
+const idx = Object.keys(GAMES).indexOf(want);
+btns.children[idx >= 0 ? idx : 0].click();
+if(Q.get('start') === '1'){
+  if(want === 'maze'){ mzStart(); for(let i = 0; i < (+Q.get('step') || 0); i++){ MZ.shown.add(MZ_INTRO_STEPS[MZ.step].id); MZ.step++; } }
+  render();
+}
+</script>
+</body>
+</html>

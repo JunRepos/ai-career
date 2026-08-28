@@ -4620,3 +4620,103 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .p8-tile:not(.can){filter:brightness(.93);cursor:default}
 .p8-tile.can:hover{filter:brightness(1.06)}
 .p8-tile.bad{box-shadow:0 0 0 3px #E5675A inset}
+
+/* 미로 탐사 색 — 선생님이 주신 search_lab 도트 팔레트를 그대로 옮겼습니다.
+   ⚠ 게임 화면 안에서만 쓰는 자체 팔레트라 라이트/다크 모두 같은 값입니다.
+      (:root 에 정의해 두어야 라이트에서 값이 비지 않습니다) */
+:root{
+  --mz-bg:#18202a; --mz-panel:#253242; --mz-ink:#111820; --mz-rim:#62758a;
+  --mz-text:#f5f1df; --mz-muted:#c4c0ac; --mz-gold:#f2c76b;
+  --mz-wall:#0e141b; --mz-floor:#61809d; --mz-floor2:#5a778f;
+  --mz-spot:#d8cb95; --mz-spot-in:#8f7a49; --mz-named:#9bcf9c; --mz-named-in:#4d8b56;
+  --mz-ask:#f4d66f; --mz-cream:#efe8cf; --mz-cream-in:#b7a77c;
+  --mz-btn:#ead688; --mz-btn-in:#a98e48; --mz-edge:#c9b887;
+}
+
+/* ═══ 🧭 미로 탐사 (실습 게임) ═══
+   판·순서는 js/games/maze.js 가 계산하고 verify/maze.mjs 로 검산했습니다. */
+.mz-wrap{max-width:960px;margin:0 auto;padding:14px 10px 10px;
+  background:var(--mz-bg);border:4px solid var(--mz-ink);
+  box-shadow:0 0 0 3px var(--mz-rim),8px 8px 0 #0b1016;color:var(--mz-text);
+  font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+.mz-title{text-align:center;font-size:clamp(26px,5vw,40px);font-weight:900;
+  letter-spacing:2px;text-shadow:4px 4px 0 #0e151d;margin-top:10px}
+.mz-sub{text-align:center;font-size:14px;color:var(--mz-gold);margin:8px 0 16px}
+.mz-speech{max-width:660px;margin:0 auto 14px;padding:14px;background:var(--mz-cream);
+  color:#1c2731;border:4px solid var(--mz-ink);
+  box-shadow:inset 0 0 0 3px var(--mz-cream-in),5px 5px 0 rgba(0,0,0,.4);
+  font-size:14px;line-height:1.7}
+.mz-speech b{color:#8a5a1e}
+.mz-acts{max-width:600px;margin:0 auto;display:flex;flex-direction:column;gap:7px}
+.mz-act{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;
+  background:#1f2b38;border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #46596e;
+  font-size:13.5px;line-height:1.55}
+.mz-act b{color:var(--mz-text)}
+.mz-act i{display:block;font-style:normal;color:var(--mz-muted);font-size:12.5px;margin-top:2px}
+.mz-n{flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  background:var(--mz-gold);color:#1c2731;font-weight:900;font-size:12px;
+  border:3px solid var(--mz-ink)}
+.mz-best{text-align:center;margin-top:14px;font-size:13.5px;color:var(--mz-muted)}
+.mz-best b{color:var(--mz-gold)}
+
+/* 전역 button{display:inline-flex} 를 덮습니다 */
+.mz-btn{display:block;margin:16px auto 6px;padding:12px 26px;cursor:pointer;
+  background:var(--mz-btn);color:#1c2731;font:inherit;font-size:15px;font-weight:800;
+  border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px var(--mz-btn-in),5px 5px 0 #0d1218}
+.mz-btn:hover{transform:translate(-1px,-1px);box-shadow:inset 0 0 0 3px var(--mz-btn-in),7px 7px 0 #0d1218}
+.mz-btn:active{transform:translate(3px,3px);box-shadow:inset 0 0 0 3px var(--mz-btn-in),2px 2px 0 #0d1218}
+
+.mz-bar{display:flex;align-items:center;gap:12px;padding:9px 12px;margin-bottom:12px;
+  background:#202c3a;border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #516378;font-size:13.5px}
+.mz-bar>div:last-child{margin-left:auto}
+.mz-bar b{color:var(--mz-gold)}
+
+.mz-board{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+.mz-col{min-width:0}
+.mz-lab{font-size:12px;font-weight:800;color:var(--mz-muted);margin-bottom:6px;letter-spacing:1px}
+
+/* 미로 — 벽과 바닥을 칸으로 */
+.mz-maze{display:grid;gap:0;aspect-ratio:9/7;background:var(--mz-wall);
+  border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px #2c3a4a}
+.mz-cell{position:relative}
+.mz-cell.wall{background:var(--mz-wall);
+  box-shadow:inset -2px -2px 0 #070b0f,inset 2px 2px 0 #1d2833}
+.mz-cell.floor{background:var(--mz-floor);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.mz-cell.entry{background:#f2c76b}
+.mz-cell.entry:after{content:"▼";position:absolute;inset:0;display:flex;
+  align-items:center;justify-content:center;color:#1c2731;font-size:clamp(9px,1.8vw,14px);font-weight:900}
+.mz-cell.spot{cursor:pointer}
+.mz-mark{position:absolute;inset:8%;display:flex;align-items:center;justify-content:center;
+  background:var(--mz-spot);color:#17202a;font-weight:900;
+  font-size:clamp(11px,2.2vw,17px);border:3px solid var(--mz-ink);
+  box-shadow:inset 0 0 0 2px var(--mz-spot-in),3px 3px 0 rgba(0,0,0,.45)}
+.mz-cell.spot:hover .mz-mark{filter:brightness(1.1)}
+.mz-cell.named .mz-mark{background:var(--mz-named);box-shadow:inset 0 0 0 2px var(--mz-named-in),3px 3px 0 rgba(0,0,0,.45)}
+
+/* 트리 — 슬라이드와 같은 자리 */
+.mz-tree{position:relative;aspect-ratio:9/7;background:#1d2836;
+  border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px #2c3a4a}
+/* 노드가 가장자리에서 잘리지 않게 안쪽에 판을 하나 더 둡니다 */
+.mz-plane{position:absolute;left:9%;right:9%;top:12%;bottom:12%}
+.mz-lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.mz-lines line{stroke:var(--mz-edge);stroke-width:3;vector-effect:non-scaling-stroke}
+.mz-node{position:absolute;transform:translate(-50%,-50%);
+  width:clamp(26px,5.4vw,40px);height:clamp(26px,5.4vw,40px);
+  display:flex;align-items:center;justify-content:center;
+  background:#2b3a4b;color:#7b8ea3;font-weight:900;font-size:clamp(11px,2.2vw,16px);
+  border:3px solid var(--mz-ink);box-shadow:inset 0 0 0 2px #435668;z-index:2}
+.mz-node.named{background:var(--mz-named);color:#17202a;box-shadow:inset 0 0 0 2px var(--mz-named-in)}
+.mz-node.ask{background:var(--mz-ask);color:#17202a;box-shadow:inset 0 0 0 2px #a98e48;
+  animation:mzPulse .7s steps(2) infinite}
+@keyframes mzPulse{50%{transform:translate(-50%,-58%)}}
+
+.mz-say{margin:14px auto 0;max-width:660px;text-align:center;font-size:14.5px;line-height:1.7}
+.mz-say b{color:var(--mz-gold)}
+.mz-hint{margin-top:7px;font-size:13px;color:var(--mz-muted)}
+.mz-hint b{color:#f0d46b}
+
+@media(max-width:640px){
+  .mz-board{grid-template-columns:1fr}
+  .mz-plane{left:11%;right:11%;top:13%;bottom:13%}
+}
