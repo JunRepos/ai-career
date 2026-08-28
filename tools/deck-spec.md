@@ -45,7 +45,9 @@ node tools/deck-png.mjs "인공지능기초_3차시_인공지능시스템.pptx"
 `title` `num` `cards:[…]`
 
 카드 하나: `label`(작은 머리말) `text`(큰 글) `desc`(설명) `pills`(알약들)
-`wide:true` 한 줄 전체 · `small:true` 큰 글을 조금 작게 · `accent:true` 머리말을 갈색으로
+`wide:true` 한 줄 전체 · `small:true` 큰 글을 조금 작게
+**`def:true` 정의를 적는 카드** — 머리말 36pt · 본문 40.5pt 로 키웁니다.
+용어의 정의를 보여주는 장에는 이걸 쓰세요 (2026-08-28 선생님 요청) · `accent:true` 머리말을 갈색으로
 `grow` 두 칸일 때 너비 비율 (기본 0.5)
 
 > 카드가 한 장에 안 들어가면 만들 때 ⚠ 경고가 뜹니다. 글을 줄이거나 장을 나누세요.
