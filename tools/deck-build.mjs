@@ -258,10 +258,15 @@ const LAYOUT = {
     const pad = rows.length >= 3 ? 0.36 : 0.48;
 
     /* 카드 하나에 필요한 높이 */
+    /* 정의를 적는 카드(def)는 라벨·본문을 키웁니다 — 교실 뒤에서도 읽혀야 합니다.
+       (2026-08-28 선생님 요청: "정의 같은 글자는 키워줘") */
+    const labelH = c => c.def ? 0.82 : 0.58;
+    const labelSz = c => c.def ? 36 : 24;
+    const textSz = c => c.small ? 30 : 40.5;
     const natural = c => {
       let h = pad;
-      if(c.label) h += 0.58;
-      if(c.text)  h += textH(c.text, c._w - 1.0, c.small ? 30 : 40.5, 1.4) + 0.24;
+      if(c.label) h += labelH(c);
+      if(c.text)  h += textH(c.text, c._w - 1.0, textSz(c), 1.4) + 0.24;
       if(c.desc)  h += textH(c.desc, c._w - 1.0, 22.5, 1.45) + 0.2;
       if(c.pills) h += pillsLayout(c.pills, 0, 0, c._w - 0.96).height + 0.05;
       return h + pad;
@@ -280,12 +285,12 @@ const LAYOUT = {
         card(pptx, s, x, y, c._w, h);
         let ty = y + pad;
         if(c.label){
-          s.addText(c.label, { x: x + 0.48, y: ty, w: c._w - 0.9, h: 0.46,
-            fontFace: T.fB, fontSize: 24, bold: true, color: c.accent ? T.brown : T.label, valign: 'middle' });
-          ty += 0.58;
+          s.addText(c.label, { x: x + 0.48, y: ty, w: c._w - 0.9, h: labelH(c) - 0.12,
+            fontFace: T.fB, fontSize: labelSz(c), bold: true, color: c.accent ? T.brown : T.label, valign: 'middle' });
+          ty += labelH(c);
         }
         if(c.text){
-          const size = c.small ? 30 : 40.5;
+          const size = textSz(c);
           const th = textH(c.text, c._w - 1.0, size, 1.4);
           s.addText(runs(c.text, { fontFace: T.fT, fontSize: size, color: T.ink }),
             { x: x + 0.48, y: ty, w: c._w - 0.96, h: th, valign: 'top', lineSpacingMultiple: 1.25 });
