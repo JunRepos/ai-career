@@ -63,7 +63,7 @@ const PV_ACTIONS = {
   'cc-pick':  el => ccPick(el.dataset.id),
   'pw-start': () => { pwStart(); },
   'p8-start': () => { p8Start(); },
-  'p8-move':  el => p8Move(+el.dataset.n),
+  'p8-move':  el => p8Move(+el.dataset.i),
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');

@@ -29,7 +29,7 @@ document.addEventListener('click', async e => {
   if(act === 'pw-start'){ pwStart(); return; }
   if(act === 'pw-hit'){ pwHit(+el.dataset.i); return; }
   if(act === 'p8-start'){ p8Start(); return; }
-  if(act === 'p8-move'){ p8Move(+el.dataset.n); return; }
+  if(act === 'p8-move'){ p8Move(+el.dataset.i); return; }   // data-i = 누른 칸(0~8)
   if(act === 'mz-start'){ mzStart(); render(); return; }
   if(act === 'mz-spot'){ mzSpot(el.dataset.id); return; }
   if(act === 'mz-next'){ mzNext(); return; }

@@ -4868,3 +4868,86 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .cc-tip b{color:var(--mz-gold)}
 .cc-name{background:#1a2431;color:var(--mz-text);box-shadow:inset 0 0 0 3px #3b4b5d,5px 5px 0 rgba(0,0,0,.4)}
 .cc-name b{color:var(--mz-gold)}
+
+/* ═══ 8퍼즐 탐색 활동 — 2026-08-31 새로 짬 ═══
+   판을 transform 으로 옮기던 방식을 버리고 상태에서 매번 다시 그립니다.
+   ⚠ 색 토큰은 :root 에도 둡니다 (다크 블록에만 넣으면 라이트에서 사라집니다) */
+:root{ --p8-path:#B4741E; --p8-path-lt:#F6E6C6; }
+[data-theme="dark"]{ --p8-path:#E7B45C; --p8-path-lt:#3E3320; }
+
+/* 판 */
+.p8-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:0 auto}
+.p8-grid.big{width:min(300px,72vw)}
+.p8-grid.mid{width:132px;gap:4px}
+.p8-grid.mini{width:96px;gap:3px}
+.p8-cell{display:flex;align-items:center;justify-content:center;aspect-ratio:1;
+  border:0;border-radius:10px;background:var(--p8-tile);color:var(--p8-tile-text);
+  font:inherit;font-weight:900;font-style:normal;cursor:default;
+  box-shadow:0 1px 0 rgba(0,0,0,.06)}
+.p8-grid.big .p8-cell{font-size:clamp(22px,6.5vw,32px)}
+.p8-grid.mid .p8-cell{font-size:17px;border-radius:7px}
+.p8-grid.mini .p8-cell{font-size:13px;border-radius:6px}
+.p8-cell.blank{background:transparent;box-shadow:none;border:1px dashed var(--border)}
+.p8-cell.can{cursor:pointer;box-shadow:0 0 0 2px var(--p8-path) inset,0 1px 0 rgba(0,0,0,.06)}
+.p8-cell.can:hover{filter:brightness(1.06)}
+.p8-cell.can:active{filter:brightness(.94)}
+.p8-grid.play .p8-cell:not(.can):not(.blank){filter:brightness(.94)}
+
+/* 대기 화면 — 초기 상태 → 목표 상태 */
+.p8-pair{margin:18px auto 6px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+.p8-pair-one{display:flex;flex-direction:column;align-items:center;gap:7px}
+.p8-pair-label{font-size:11.5px;font-weight:800;color:var(--text3);letter-spacing:.2px}
+.p8-pair-label.goal{color:var(--p8-path)}
+.p8-pair-arrow{font-size:22px;font-weight:900;color:var(--text3)}
+
+/* 진행 화면 */
+.p8-turn{font-size:22px;font-weight:900;color:var(--text);line-height:1}
+.p8-turn span{margin-left:4px;font-size:12px;font-weight:700;color:var(--text3)}
+.p8-play{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+.p8-play-main{flex:0 0 auto}
+.p8-play-side{flex:1 1 210px;min-width:190px;display:flex;flex-direction:column;gap:14px}
+.p8-steps{border:1px solid var(--border);border-radius:12px;background:var(--surface2);padding:11px 12px}
+.p8-steps-head{font-size:12px;font-weight:800;color:var(--text3);margin-bottom:8px}
+.p8-steps-none{font-size:12.5px;color:var(--text3)}
+.p8-step{display:flex;align-items:baseline;gap:8px;padding:5px 6px;border-radius:7px;font-size:13px}
+.p8-step.now{background:var(--p8-path-lt)}
+.p8-step-n{font-weight:800;color:var(--text3);white-space:nowrap}
+.p8-step-d{color:var(--text2)}
+.p8-step-d b{color:var(--text);font-weight:800}
+.p8-rollback{margin-top:8px;padding:6px 8px;border-radius:7px;font-size:12px;
+  background:var(--warn-bg);color:var(--warn-txt);border:1px solid var(--warn-bd)}
+
+/* 완료 화면 */
+.p8-final em{display:block;margin-top:6px;font-size:12.5px;font-style:normal;
+  font-weight:700;color:var(--text3)}
+.p8-treebox{margin:22px auto 0;max-width:100%;border:1px solid var(--border);
+  border-radius:14px;background:var(--surface);padding:14px 12px}
+.p8-tree-title{font-size:14.5px;font-weight:900;color:var(--text);text-align:center}
+.p8-tree-lead{margin-top:6px;text-align:center;font-size:12px;color:var(--text3)}
+.p8-tree-lead b{color:var(--text2)}
+.p8-tree-key{white-space:nowrap}
+.p8-tree-key i{display:inline-block;width:16px;height:3px;border-radius:2px;
+  background:var(--p8-path);vertical-align:middle;margin-right:4px}
+.p8-tree-scroll{margin-top:10px;overflow-x:auto}
+.p8-tree{display:block;margin:0 auto}
+
+/* 트리 — 간선 */
+.p8e{stroke:var(--border2);stroke-width:1.6}
+.p8e.on{stroke:var(--p8-path);stroke-width:3}
+.p8e-t{font-size:11px;font-weight:800;fill:var(--text3);text-anchor:middle;
+  paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.p8e-t.on{fill:var(--p8-path)}
+/* 트리 — 노드 */
+.p8n-box{fill:var(--surface);stroke:var(--border2);stroke-width:1.4;rx:6}
+.p8n.on .p8n-box{stroke:var(--p8-path);stroke-width:2.4}
+.p8n-cell{fill:var(--p8-tile);stroke:var(--surface);stroke-width:1.4}
+.p8n-cell.blank{fill:var(--surface2)}
+.p8n-t{font-size:11px;font-weight:800;fill:var(--p8-tile-text);
+  text-anchor:middle;dominant-baseline:central}
+.p8n-tag{font-size:11px;font-weight:800;fill:var(--text3);text-anchor:middle}
+.p8n-tag.goal{fill:var(--p8-path)}
+
+.p8-rank-head{font-size:12px;font-weight:800;color:var(--text3);margin-bottom:8px}
+/* 지금 누를 수 있는 타일을 더 뚜렷하게 — 교실 프로젝터에서도 보이게 */
+.p8-grid.play .p8-cell.can{box-shadow:0 0 0 3px var(--p8-path) inset,0 2px 0 rgba(0,0,0,.08)}
+.p8-grid.play .p8-cell:not(.can):not(.blank){filter:brightness(.88);opacity:.85}
