@@ -34,7 +34,7 @@ const GAMES = {
   },
   'puzzle-8': {
     ico: '🧩', label: '8퍼즐 맞추기',
-    desc: '빈칸으로 타일을 밀어 목표 모양 만들기 → 적은 수로 맞출수록 높은 순위',
+    desc: '학습지 앞면과 같은 판 · 빈칸을 옮겨 목표 상태 만들기 → 맞추면 깊이 2 탐색 트리로 내 경로 확인',
     view: () => vPuzzle8(),
     leave: () => p8Leave(),
     loadRank: () => p8LoadRank(),
