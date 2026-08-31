@@ -27,7 +27,7 @@ if('serviceWorker' in navigator){
 <!-- Pretendard 폰트 (Google Fonts에는 없음 — 공식 JSDelivr CDN 사용)
      Variable font 버전이라 가볍고 모든 굵기 지원 + JSDelivr는 적절한 CORP 헤더 보냄(coi-serviceworker 환경 호환) -->
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
-<link rel="stylesheet" href="css/styles.css?v=202608310946">
+<link rel="stylesheet" href="css/styles.css?v=202608310950">
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -54,82 +54,82 @@ if('serviceWorker' in navigator){
 <!-- ═══ 앱 스크립트 (로드 순서 중요!) ═══ -->
 
 <!-- 1) 설정 & 상태 (다른 파일에서 참조하는 전역 변수) -->
-<script src="js/config.js?v=202608310946"></script>
-<script src="js/constants.js?v=202608310946"></script>
-<script src="js/state.js?v=202608310946"></script>
+<script src="js/config.js?v=202608310950"></script>
+<script src="js/constants.js?v=202608310950"></script>
+<script src="js/state.js?v=202608310950"></script>
 
 <!-- 2) 유틸리티 & Firebase (함수 정의) -->
-<script src="js/utils.js?v=202608310946"></script>
-<script src="js/firebase.js?v=202608310946"></script>
+<script src="js/utils.js?v=202608310950"></script>
+<script src="js/firebase.js?v=202608310950"></script>
 
 <!-- 3) 뷰 (화면 렌더링 함수) -->
-<script src="js/views/shared.js?v=202608310946"></script>
-<script src="js/views/home.js?v=202608310946"></script>
-<script src="js/views/auth.js?v=202608310946"></script>
-<script src="js/views/student.js?v=202608310946"></script>
-<script src="js/views/teacher.js?v=202608310946"></script>
-<script src="js/views/post.js?v=202608310946"></script>
-<script src="js/views/assignment.js?v=202608310946"></script>
-<script src="js/views/oj.js?v=202608310946"></script>
-<script src="js/views/notebook.js?v=202608310946"></script>
-<script src="js/views/mission.js?v=202608310946"></script>
-<script src="js/views/curriculum.js?v=202608310946"></script>
+<script src="js/views/shared.js?v=202608310950"></script>
+<script src="js/views/home.js?v=202608310950"></script>
+<script src="js/views/auth.js?v=202608310950"></script>
+<script src="js/views/student.js?v=202608310950"></script>
+<script src="js/views/teacher.js?v=202608310950"></script>
+<script src="js/views/post.js?v=202608310950"></script>
+<script src="js/views/assignment.js?v=202608310950"></script>
+<script src="js/views/oj.js?v=202608310950"></script>
+<script src="js/views/notebook.js?v=202608310950"></script>
+<script src="js/views/mission.js?v=202608310950"></script>
+<script src="js/views/curriculum.js?v=202608310950"></script>
 <!-- 실습 게임 — GAMES 목록을 views/unit.js 가 쓰므로 반드시 먼저 실립니다 -->
-<script src="js/games/plantwater.js?v=202608310946"></script>
-<script src="js/games/puzzle8.js?v=202608310946"></script>
-<script src="js/games/maze.js?v=202608310946"></script>
-<script src="js/games/citycost.js?v=202608310946"></script>
-<script src="js/games/games.js?v=202608310946"></script>
-<script src="js/views/unit.js?v=202608310946"></script>
-<script src="js/views/slides.js?v=202608310946"></script>
-<script src="js/views/coderead.js?v=202608310946"></script>
-<script src="js/assessment-data.js?v=202608310946"></script>
-<script src="js/views/assessment.js?v=202608310946"></script>
-<script src="js/views/score.js?v=202608310946"></script>
-<script src="js/views/aicode.js?v=202608310946"></script>
-<script src="js/aiactivity-data.js?v=202608310946"></script>
-<script src="js/library-holdings.js?v=202608310946"></script>
-<script src="js/book-picker.js?v=202608310946"></script>
-<script src="js/views/aiactivity.js?v=202608310946"></script>
-<script src="js/ml-data.js?v=202608310946"></script>
-<script src="js/ml-engine.js?v=202608310946"></script>
-<script src="js/ml-project-data.js?v=202608310946"></script>
-<script src="js/ml-assessment-data.js?v=202608310946"></script>
-<script src="js/views/ml.js?v=202608310946"></script>
-<script src="js/views/mlproj.js?v=202608310946"></script>
-<script src="js/views/mlassess.js?v=202608310946"></script>
+<script src="js/games/plantwater.js?v=202608310950"></script>
+<script src="js/games/puzzle8.js?v=202608310950"></script>
+<script src="js/games/maze.js?v=202608310950"></script>
+<script src="js/games/citycost.js?v=202608310950"></script>
+<script src="js/games/games.js?v=202608310950"></script>
+<script src="js/views/unit.js?v=202608310950"></script>
+<script src="js/views/slides.js?v=202608310950"></script>
+<script src="js/views/coderead.js?v=202608310950"></script>
+<script src="js/assessment-data.js?v=202608310950"></script>
+<script src="js/views/assessment.js?v=202608310950"></script>
+<script src="js/views/score.js?v=202608310950"></script>
+<script src="js/views/aicode.js?v=202608310950"></script>
+<script src="js/aiactivity-data.js?v=202608310950"></script>
+<script src="js/library-holdings.js?v=202608310950"></script>
+<script src="js/book-picker.js?v=202608310950"></script>
+<script src="js/views/aiactivity.js?v=202608310950"></script>
+<script src="js/ml-data.js?v=202608310950"></script>
+<script src="js/ml-engine.js?v=202608310950"></script>
+<script src="js/ml-project-data.js?v=202608310950"></script>
+<script src="js/ml-assessment-data.js?v=202608310950"></script>
+<script src="js/views/ml.js?v=202608310950"></script>
+<script src="js/views/mlproj.js?v=202608310950"></script>
+<script src="js/views/mlassess.js?v=202608310950"></script>
 
 <!-- 게임 엔진 + 미션 런타임 + 코드읽기 분석기 -->
-<script src="js/games/flappybird.js?v=202608310946"></script>
-<script src="js/games/typehunter.js?v=202608310946"></script>
-<script src="js/games/lockerdrop.js?v=202608310946"></script>
-<script src="js/mission-runner.js?v=202608310946"></script>
-<script src="js/coderead-runner.js?v=202608310946"></script>
-<script src="js/visual-widgets.js?v=202608310946"></script>
+<script src="js/games/flappybird.js?v=202608310950"></script>
+<script src="js/games/typehunter.js?v=202608310950"></script>
+<script src="js/games/lockerdrop.js?v=202608310950"></script>
+<script src="js/mission-runner.js?v=202608310950"></script>
+<script src="js/coderead-runner.js?v=202608310950"></script>
+<script src="js/visual-widgets.js?v=202608310950"></script>
 
 <!-- 4) 렌더링 코어 (render, go, goHome 등) -->
-<script src="js/render.js?v=202608310946"></script>
+<script src="js/render.js?v=202608310950"></script>
 
 <!-- 5) 이벤트 핸들러 (기능별 분리) -->
-<script src="js/events/actions.js?v=202608310946"></script>
-<script src="js/events/forms.js?v=202608310946"></script>
-<script src="js/events/oj-actions.js?v=202608310946"></script>
-<script src="js/events/notebook.js?v=202608310946"></script>
-<script src="js/events/mission.js?v=202608310946"></script>
-<script src="js/events/curriculum.js?v=202608310946"></script>
-<script src="js/events/unit.js?v=202608310946"></script>
-<script src="js/events/slides.js?v=202608310946"></script>
-<script src="js/events/coderead.js?v=202608310946"></script>
-<script src="js/events/assessment.js?v=202608310946"></script>
-<script src="js/events/score.js?v=202608310946"></script>
-<script src="js/events/aicode.js?v=202608310946"></script>
-<script src="js/events/aiactivity.js?v=202608310946"></script>
-<script src="js/events/ml.js?v=202608310946"></script>
-<script src="js/events/mlproj.js?v=202608310946"></script>
-<script src="js/events/mlassess.js?v=202608310946"></script>
+<script src="js/events/actions.js?v=202608310950"></script>
+<script src="js/events/forms.js?v=202608310950"></script>
+<script src="js/events/oj-actions.js?v=202608310950"></script>
+<script src="js/events/notebook.js?v=202608310950"></script>
+<script src="js/events/mission.js?v=202608310950"></script>
+<script src="js/events/curriculum.js?v=202608310950"></script>
+<script src="js/events/unit.js?v=202608310950"></script>
+<script src="js/events/slides.js?v=202608310950"></script>
+<script src="js/events/coderead.js?v=202608310950"></script>
+<script src="js/events/assessment.js?v=202608310950"></script>
+<script src="js/events/score.js?v=202608310950"></script>
+<script src="js/events/aicode.js?v=202608310950"></script>
+<script src="js/events/aiactivity.js?v=202608310950"></script>
+<script src="js/events/ml.js?v=202608310950"></script>
+<script src="js/events/mlproj.js?v=202608310950"></script>
+<script src="js/events/mlassess.js?v=202608310950"></script>
 
 <!-- 6) 앱 초기화 -->
-<script src="js/app.js?v=202608310946"></script>
+<script src="js/app.js?v=202608310950"></script>
 
 </body>
 </html>

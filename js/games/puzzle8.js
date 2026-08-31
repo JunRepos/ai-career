@@ -164,9 +164,10 @@ function _p8Result(){
       ${isBest ? `<div class="p8-newbest">가장 적은 횟수예요</div>` : ''}
     </div>
     <div class="p8-treebox">
-      <div class="p8-tree-title">내가 지나온 탐색 트리</div>
+      <div class="p8-tree-title">깊이 2까지의 탐색 트리 — 학습지 앞면과 같습니다</div>
       <div class="p8-tree-lead">간선에 적힌 것은 <b>빈칸이 간 방향</b>입니다 ·
-        <span class="p8-tree-key"><i class="on"></i>초기 상태에서 목표 상태까지의 경로</span></div>
+        <span class="p8-tree-key"><i class="on"></i>내가 지나온 길</span> ·
+        <span class="p8-tree-key">연한 것은 <b>가 보지 않은 상태</b></span></div>
       <div class="p8-tree-scroll">${_p8TreeSvg()}</div>
     </div>
     <div class="p8-intro">
@@ -181,13 +182,47 @@ function _p8Clock(sec){
 
 /* ── 탐색 트리 그리기 ── */
 
-const P8_NODE = 62;    // 노드(작은 판) 한 변
-const P8_GAPX = 26;    // 옆 노드와의 사이
-const P8_ROWH = 118;   // 깊이 한 층
+const P8_NODE  = 62;    // 노드(작은 판) 한 변
+const P8_GAPX  = 26;    // 옆 노드와의 사이
+const P8_ROWH  = 118;   // 깊이 한 층
+const P8_DEPTH = 2;     // 학습지 앞면과 같은 깊이까지 전부 그립니다
+const P8_LABEL = '가나다라마바사';   // 학습지 앞면의 이름표 (깊이 2 트리 = 7 노드)
+
+/* 그릴 트리 — 깊이 2 까지는 **가 보지 않은 상태도 전부**, 학생이 더 멀리 갔으면 그것도.
+   너비 우선으로 펼치므로 순서가 학습지의 가·나·다·라·마·바·사 와 같습니다. */
+function _p8FullTree(){
+  const tree = {}, order = [];
+  const rootKey = _p8Key(P8_START);
+  tree[rootKey] = { board: P8_START.slice(), parent: null, dir: null, depth: 0 };
+  order.push(rootKey);
+
+  let frontier = [rootKey];
+  for(let d = 1; d <= P8_DEPTH; d++){
+    const next = [];
+    for(const pk of frontier){
+      for(const [from, dir] of _p8Moves(tree[pk].board)){
+        const board = _p8Apply(tree[pk].board, from), k = _p8Key(board);
+        if(tree[k]) continue;                       // 처음 만난 자리에만 답니다
+        tree[k] = { board, parent: pk, dir, depth: d };
+        order.push(k); next.push(k);
+      }
+    }
+    frontier = next;
+  }
+  // 학생이 깊이 2 보다 멀리 갔으면 그 상태들도 이어 붙입니다
+  for(const k of P8.order){
+    if(tree[k]) continue;
+    const n = P8.tree[k];
+    tree[k] = { board: n.board, parent: n.parent, dir: n.dir,
+                depth: (tree[n.parent]?.depth ?? 0) + 1 };
+    order.push(k);
+  }
+  return { tree, order };
+}
 
 /* 자식들을 넣은 순서대로 늘어놓고, 부모는 자식들 가운데에 둡니다 */
-function _p8Layout(){
-  const kids = k => P8.order.filter(x => P8.tree[x].parent === k);
+function _p8Layout(P8T){
+  const kids = k => P8T.order.filter(x => P8T.tree[x].parent === k);
   const pos = {};
   let cursor = 0;
 
@@ -202,14 +237,14 @@ function _p8Layout(){
     pos[k] = { x: (xs[0] + xs[xs.length - 1]) / 2, y: depth * P8_ROWH };
     return pos[k].x;
   };
-  place(P8.order[0], 0);
+  place(P8T.order[0], 0);
 
-  const maxDepth = Math.max(...P8.order.map(k => P8.tree[k].depth));
+  const maxDepth = Math.max(...P8T.order.map(k => P8T.tree[k].depth));
   return { pos, w: cursor + P8_GAPX, h: maxDepth * P8_ROWH + P8_NODE + 34 };
 }
 
-/* 노드 하나 — 3×3 판 */
-function _p8NodeSvg(board, x, y, on){
+/* 노드 하나 — 3×3 판 · cls: 'on'(내 경로) · ''(가 봤음) · 'off'(안 가 봄) */
+function _p8NodeSvg(board, x, y, cls){
   const c = P8_NODE / 3;
   const cells = board.map((v, i) => {
     const cx = x + (i % 3) * c, cy = y + Math.floor(i / 3) * c;
@@ -217,34 +252,46 @@ function _p8NodeSvg(board, x, y, on){
               class="p8n-cell${v ? '' : ' blank'}"/>` +
       (v ? `<text x="${cx + c / 2}" y="${cy + c / 2}" class="p8n-t">${v}</text>` : '');
   }).join('');
-  return `<g class="p8n${on ? ' on' : ''}">
+  return `<g class="p8n${cls ? ' ' + cls : ''}">
     <rect x="${x}" y="${y}" width="${P8_NODE}" height="${P8_NODE}" class="p8n-box"/>
     ${cells}
   </g>`;
 }
 
 function _p8TreeSvg(){
-  const { pos, w, h } = _p8Layout();
-  const onPath = new Set(P8.path.map(n => n.key));
+  const P8T = _p8FullTree();
+  const { pos, w, h } = _p8Layout(P8T);
 
-  const edges = P8.order.filter(k => P8.tree[k].parent).map(k => {
-    const n = P8.tree[k], p = pos[n.parent], q = pos[k];
-    const on = onPath.has(k) && onPath.has(n.parent);
+  const onPath  = new Set(P8.path.map(n => n.key));
+  const visited = new Set(P8.order);
+  // 내 경로의 간선 — 이어 간 두 상태의 짝으로 봅니다
+  const pathEdge = new Set();
+  for(let i = 1; i < P8.path.length; i++) pathEdge.add(P8.path[i - 1].key + '>' + P8.path[i].key);
+  const isPathEdge = (a, b) => pathEdge.has(a + '>' + b) || pathEdge.has(b + '>' + a);
+
+  const edges = P8T.order.filter(k => P8T.tree[k].parent).map(k => {
+    const n = P8T.tree[k], p = pos[n.parent], q = pos[k];
+    const cls = isPathEdge(n.parent, k) ? ' on' : (visited.has(k) ? '' : ' off');
     const x1 = p.x, y1 = p.y + P8_NODE, x2 = q.x, y2 = q.y;
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="p8e${on ? ' on' : ''}"/>
-      <text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2}" class="p8e-t${on ? ' on' : ''}">${n.dir}</text>`;
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="p8e${cls}"/>
+      <text x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2}" class="p8e-t${cls}">${n.dir}</text>`;
   }).join('');
 
-  const nodes = P8.order.map(k => {
-    const n = P8.tree[k], p = pos[k];
+  const nodes = P8T.order.map((k, i) => {
+    const n = P8T.tree[k], p = pos[k];
     const x = p.x - P8_NODE / 2;
-    let tag = '';
-    if(!n.parent)             tag = `<text x="${p.x}" y="${p.y - 9}" class="p8n-tag">초기 상태</text>`;
-    else if(_p8Same(n.board, P8_GOAL)) tag = `<text x="${p.x}" y="${p.y + P8_NODE + 17}" class="p8n-tag goal">목표 상태</text>`;
-    return tag + _p8NodeSvg(n.board, x, p.y, onPath.has(k));
+    const cls = onPath.has(k) ? 'on' : (visited.has(k) ? '' : 'off');
+    const ch = P8_LABEL[i] || '';        // 학습지와 같은 이름표 (깊이 2 안쪽만)
+    const c2 = cls ? ' ' + cls : '';     // 이름표는 판 바깥에 있어 표시를 따로 붙입니다
+    let tag = ch ? `<circle cx="${x - 11}" cy="${p.y + 9}" r="9.5" class="p8n-ch-bg${c2}"/>
+        <text x="${x - 11}" y="${p.y + 9}" class="p8n-ch${c2}">${ch}</text>` : '';
+    if(!n.parent) tag += `<text x="${p.x}" y="${p.y - 16}" class="p8n-tag">초기 상태</text>`;
+    else if(_p8Same(n.board, P8_GOAL))
+      tag += `<text x="${p.x}" y="${p.y + P8_NODE + 17}" class="p8n-tag goal">목표 상태</text>`;
+    return _p8NodeSvg(n.board, x, p.y, cls) + tag;
   }).join('');
 
-  return `<svg class="p8-tree" viewBox="0 -16 ${w} ${h}" width="${w}" height="${h}"
+  return `<svg class="p8-tree" viewBox="-24 -30 ${w + 26} ${h + 14}" width="${w + 26}" height="${h + 14}"
       xmlns="http://www.w3.org/2000/svg">${edges}${nodes}</svg>`;
 }
 

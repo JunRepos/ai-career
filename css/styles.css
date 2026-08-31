@@ -4951,3 +4951,13 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 /* 지금 누를 수 있는 타일을 더 뚜렷하게 — 교실 프로젝터에서도 보이게 */
 .p8-grid.play .p8-cell.can{box-shadow:0 0 0 3px var(--p8-path) inset,0 2px 0 rgba(0,0,0,.08)}
 .p8-grid.play .p8-cell:not(.can):not(.blank){filter:brightness(.88);opacity:.85}
+/* 트리 — 안 가 본 상태는 연하게 · 학습지와 같은 이름표(가~사) */
+.p8e.off{stroke:var(--border);stroke-dasharray:4 4}
+.p8e-t.off{fill:var(--text3);opacity:.55}
+.p8n.off{opacity:.42}
+.p8n-ch-bg{fill:var(--p8-soft);stroke:var(--border2);stroke-width:1}
+.p8n-ch{font-size:11px;font-weight:900;fill:var(--text2);
+  text-anchor:middle;dominant-baseline:central}
+.p8n-ch-bg.on{fill:var(--p8-path);stroke:var(--p8-path)}
+.p8n-ch.on{fill:#fff}
+.p8n-ch-bg.off,.p8n-ch.off{opacity:.42}
