@@ -46,7 +46,10 @@ def city_neighbors(x):
 
 
 def city_astar():
-    """책 36쪽과 같은 방식 — f = g + h 가 가장 작은 후보를 골라 테스트합니다."""
+    """책 36쪽과 같은 방식 — f = g + h 가 가장 작은 후보를 골라 테스트합니다.
+
+    슬라이드에서 단계별로 보여 줄 수 있게 **테스트한 뒤의 오픈 리스트**도 함께 남깁니다.
+    """
     tie = count()
     open_list = [(CITY_H[CITY_START], 0, next(tie), CITY_START, [CITY_START])]
     closed, steps = [], []
@@ -55,13 +58,25 @@ def city_astar():
         if node in closed:
             continue
         closed.append(node)
-        steps.append({'test': node, 'g': g, 'h': CITY_H[node], 'f': f, 'path': list(path)})
+        rec = {'test': node, 'g': g, 'h': CITY_H[node], 'f': f, 'path': list(path)}
         if node == CITY_GOAL:
+            rec['open'] = []
+            steps.append(rec)
             return steps, path, g
         for nxt, w in city_neighbors(node):
             if nxt in closed:
                 continue
             heapq.heappush(open_list, (g + w + CITY_H[nxt], g + w, next(tie), nxt, path + [nxt]))
+        # 이 시점의 오픈 리스트 — 같은 도시가 여러 번 들어 있으면 작은 f 만 남깁니다
+        best = {}
+        for f2, g2, _t, n2, _p in open_list:
+            if n2 in closed:
+                continue
+            if n2 not in best or f2 < best[n2][0]:
+                best[n2] = (f2, g2)
+        rec['open'] = [{'node': n2, 'g': v[1], 'h': CITY_H[n2], 'f': v[0]}
+                       for n2, v in sorted(best.items(), key=lambda kv: (kv[1][0], kv[0]))]
+        steps.append(rec)
     return steps, None, None
 
 
@@ -229,7 +244,8 @@ def main():
         'city': {
             'edges': {'%s-%s' % k: v for k, v in CITY_EDGES.items()},
             'h': CITY_H,
-            'steps': [{'test': s['test'], 'g': s['g'], 'h': s['h'], 'f': s['f']} for s in steps],
+            'steps': [{'test': s['test'], 'g': s['g'], 'h': s['h'], 'f': s['f'],
+                       'open': s.get('open', []), 'path': s['path']} for s in steps],
             'path': path, 'cost': cost, 'tested': len(steps),
             'f_printed': f_of,
             'uniform': {'order': [s2['test'] for s2 in usteps], 'tested': len(usteps),

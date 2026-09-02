@@ -786,6 +786,7 @@ const LAYOUT = {
       drawBoard(pptx, s, x, y, size, it.board, {
         border: it.accent ? T.gold : T.line, lw: it.accent ? 2.5 : 1.5,
         tile: it.accent ? T.gold2 : T.pill,
+        grid: it.grid, lines: it.lines,
       });
       if(i < n - 1 && d.arrow !== false)
         s.addShape(pptx.ShapeType.rightArrow, { x: x + size + 0.5, y: y + size / 2 - 0.3, w: 1.0, h: 0.6,
@@ -798,21 +799,47 @@ const LAYOUT = {
   },
 };
 
-/* 8-퍼즐 같은 3×3 판 하나 */
+/* 8-퍼즐 같은 3×3 판 하나
+   opt.grid  : true 면 칸 사이에 줄을 그립니다 (틱택토 판처럼)
+   opt.lines : [[i,j,k], …] 세 칸을 잇는 줄을 판 위에 덧그립니다 (이길 수 있는 선) */
 function drawBoard(pptx, s, x, y, size, board, opt = {}){
   const N = 3, pad = 0.09;
   const cell = (size - pad * 2) / N;
   s.addShape(pptx.ShapeType.roundRect, { x, y, w: size, h: size,
     fill: { color: opt.fill || T.white },
     line: { color: opt.border || T.line, width: opt.lw || 1.5 }, rectRadius: 0.16 });
+
+  if(opt.grid){
+    for(let k = 1; k < N; k++){
+      s.addShape(pptx.ShapeType.line, { x: x + pad + k * cell, y: y + pad, w: 0, h: cell * N,
+        line: { color: T.line, width: 2 } });
+      s.addShape(pptx.ShapeType.line, { x: x + pad, y: y + pad + k * cell, w: cell * N, h: 0,
+        line: { color: T.line, width: 2 } });
+    }
+  }
   board.forEach((v, i) => {
     if(v === '' || v == null) return;                 // 빈칸은 그리지 않음
     const cx = x + pad + (i % N) * cell, cy = y + pad + Math.floor(i / N) * cell;
-    s.addShape(pptx.ShapeType.roundRect, { x: cx + 0.03, y: cy + 0.03, w: cell - 0.06, h: cell - 0.06,
-      fill: { color: opt.tile || T.pill }, line: { type: 'none' }, rectRadius: 0.09 });
+    if(!opt.grid)
+      s.addShape(pptx.ShapeType.roundRect, { x: cx + 0.03, y: cy + 0.03, w: cell - 0.06, h: cell - 0.06,
+        fill: { color: opt.tile || T.pill }, line: { type: 'none' }, rectRadius: 0.09 });
     s.addText(String(v), { x: cx, y: cy, w: cell, h: cell, fontFace: T.fT,
       fontSize: Math.round(cell * 46), color: opt.dim ? T.label : T.ink, align: 'center', valign: 'middle' });
   });
+
+  /* 이길 수 있는 선 — 세 칸의 가운데를 잇습니다 */
+  if(opt.lines){
+    const ctr = i => [x + pad + (i % N) * cell + cell / 2, y + pad + Math.floor(i / N) * cell + cell / 2];
+    for(const ln of opt.lines){
+      const [x1, y1] = ctr(ln[0]), [x2, y2] = ctr(ln[ln.length - 1]);
+      const dx = x2 - x1, dy = y2 - y1;
+      s.addShape(pptx.ShapeType.line, {
+        x: Math.min(x1, x2), y: Math.min(y1, y2), w: Math.abs(dx), h: Math.abs(dy),
+        line: { color: opt.lineColor || T.brown, width: 3.5 },
+        flipV: dx * dy < 0,
+      });
+    }
+  }
 }
 
 /* 노드와 간선을 실제로 그리는 부분 — diagram 과 tree 가 같이 씁니다 */
