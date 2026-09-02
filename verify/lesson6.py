@@ -65,6 +65,27 @@ def city_astar():
     return steps, None, None
 
 
+
+def city_uniform():
+    """책 32~33쪽 안내 그대로 — 누적 비용이 가장 작은 상태를 먼저 테스트합니다."""
+    tie = count()
+    open_list = [(0, next(tie), CITY_START, [CITY_START])]
+    closed, steps = [], []
+    while open_list:
+        g, _, node, path = heapq.heappop(open_list)
+        if node in closed:
+            continue
+        closed.append(node)
+        steps.append({'test': node, 'g': g, 'path': list(path)})
+        if node == CITY_GOAL:
+            return steps, path, g
+        for nxt, w in city_neighbors(node):
+            if nxt in closed:
+                continue
+            heapq.heappush(open_list, (g + w, next(tie), nxt, path + [nxt]))
+    return steps, None, None
+
+
 # ────────────────────────────────────────────────
 # ② 8퍼즐 — A* (책 37쪽 활동3)
 # ────────────────────────────────────────────────
@@ -135,6 +156,13 @@ def main():
     def say(s):
         log.append(s)
 
+    # ⓪ 균일 비용 (되짚기용) — 같은 지도에서 직접 돌립니다
+    usteps, upath, ucost = city_uniform()
+    say('■ ⓪ 도시 방문 경로 — 균일 비용 탐색 (되짚기)')
+    say('   테스트 순서 : %s (%d개)' % (' – '.join(s2['test'] for s2 in usteps), len(usteps)))
+    say('   찾은 경로 : %s · 비용 %d' % (' → '.join(upath), ucost))
+    say('')
+
     # ① 도시
     steps, path, cost = city_astar()
     say('■ ① 도시 방문 경로 — A*')
@@ -187,6 +215,10 @@ def main():
     say('■ ④ 상태 공간의 크기 (책 34쪽)')
     say('   8퍼즐 9! = %s' % format(math.factorial(9), ','))
     say('   15퍼즐 15! = %s' % format(math.factorial(15), ','))
+    say('')
+    say('■ ⑤ 순회 외판원 문제 (책 34쪽 AI 이야기)')
+    for n in (4, 5, 10):
+        say('   도시 %2d곳 → 경로 %s가지' % (n, format(math.factorial(n), ',')))
     say('   ※ 실제로 도달 가능한 8퍼즐 상태는 9!/2 = %s (활동지A 에 쓴 값)' % format(math.factorial(9)//2, ','))
 
     text = '\n'.join(log)
@@ -200,7 +232,9 @@ def main():
             'steps': [{'test': s['test'], 'g': s['g'], 'h': s['h'], 'f': s['f']} for s in steps],
             'path': path, 'cost': cost, 'tested': len(steps),
             'f_printed': f_of,
-            'uniform_tested': 5,          # 5차시에서 검산한 값 (균일 비용은 5개)
+            'uniform': {'order': [s2['test'] for s2 in usteps], 'tested': len(usteps),
+                        'path': upath, 'cost': ucost},
+            'uniform_tested': len(usteps),
         },
         'puzzle': {
             'start': list(P_START), 'goal': list(P_GOAL),
@@ -213,6 +247,8 @@ def main():
             'path_states': [list(s) for s in ppath],
         },
         'ttt': {'corner': corner, 'center': center, 'edge': edge},
+        'space': {'p8': math.factorial(9), 'p15': math.factorial(15)},
+        'tsp': {str(n): math.factorial(n) for n in (4, 5, 10)},
         'ok': {'city': ok1, 'puzzle': ok2, 'ttt': ok3},
     }
     io.open(os.path.join(HERE, 'lesson6-facts.json'), 'w', encoding='utf-8').write(
