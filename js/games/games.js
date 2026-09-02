@@ -32,6 +32,14 @@ const GAMES = {
     loadRank: () => ccLoadRank(),
     teacherBoard: () => ccBoardForTeacher(),
   },
+  'city-astar': {
+    ico: '🧭', label: '도시 배달 — 지도를 보고',
+    desc: '도시마다 목적지까지의 직선거리가 적힌 지도 · g+h 가 가장 작은 곳부터 열어 A* 를 스스로 찾아냄',
+    view: () => vCityAstar(),
+    leave: () => caLeave(),
+    loadRank: () => caLoadRank(),
+    teacherBoard: () => caBoardForTeacher(),
+  },
   'puzzle-8': {
     ico: '🧩', label: '8퍼즐 맞추기',
     desc: '학습지 앞면과 같은 판 · 빈칸을 옮겨 목표 상태 만들기 → 맞추면 깊이 2 탐색 트리로 내 경로 확인',

@@ -38,6 +38,8 @@ document.addEventListener('click', async e => {
   if(act === 'mz-finish'){ mzFinish(); return; }
   if(act === 'cc-start'){ ccStart(); render(); return; }
   if(act === 'cc-pick'){ ccPick(el.dataset.id); return; }
+  if(act === 'ca-start'){ caStart(); render(); return; }
+  if(act === 'ca-pick'){ caPick(el.dataset.id); return; }
 
   // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
   if(act === 'sl-game-add' && TC_CLS && SLIDE_DECK){

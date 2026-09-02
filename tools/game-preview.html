@@ -48,6 +48,7 @@ function render(){ document.getElementById('stage').innerHTML = gameView(CURRENT
 <script src="../js/games/puzzle8.js"></script>
 <script src="../js/games/maze.js"></script>
 <script src="../js/games/citycost.js"></script>
+<script src="../js/games/cityastar.js"></script>
 <script src="../js/games/games.js"></script>
 
 <script>
@@ -61,6 +62,8 @@ const PV_ACTIONS = {
   'mz-next':  () => mzNext(),
   'cc-start': () => { ccStart(); render(); },
   'cc-pick':  el => ccPick(el.dataset.id),
+  'ca-start': () => { caStart(); render(); },
+  'ca-pick':  el => caPick(el.dataset.id),
   'pw-start': () => { pwStart(); },
   'p8-start': () => { p8Start(); },
   'p8-move':  el => p8Move(+el.dataset.i),

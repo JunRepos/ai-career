@@ -4961,3 +4961,5 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .p8n-ch-bg.on{fill:var(--p8-path);stroke:var(--p8-path)}
 .p8n-ch.on{fill:#fff}
 .p8n-ch-bg.off,.p8n-ch.off{opacity:.42}
+/* 도시 배달 A* — 도시 이름 아래에 h(또는 g+h) 를 한 줄 내려 씁니다 (2026-09-02) */
+.cc-node .ca-h{display:block;line-height:1.05;margin-top:1px;font-size:.66em;opacity:.95}
