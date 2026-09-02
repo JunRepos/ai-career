@@ -44,6 +44,10 @@ const T = {
   line:  'C9B79F',  // 카드 테두리
   line2: 'E0D2BF',  // 옅은 테두리
   white: 'FFFFFF',
+  /* diagram·tree 노드에 color:"blue"|"red" 를 주면 씁니다 (2026-09-01 추가)
+     — 큰 탐색 트리에서 시작 노드와 목표 노드를 가려 보이게 하려고 넣었습니다 */
+  blue:   '3B6EA5', blueBg: 'E4EDF7',
+  red:    'C0504D', redBg:  'FAE5E3',
   fT:    'Jua',       // 제목·강조
   fB:    'Gothic A1', // 본문
 };
@@ -846,7 +850,9 @@ function drawGraph(pptx, s, d, nodesIn, edges){
   const xs = [...new Set(nodes.map(n => n.x))].sort((a, b) => a - b);
   let colGap = Infinity;
   for(let i = 1; i < xs.length; i++) colGap = Math.min(colGap, (xs[i] - xs[i - 1]) / 100 * A.w);
-  const maxW = colGap === Infinity ? 99 : Math.max(1.1, colGap - 0.22);
+  /* nodeMinW — 노드가 아주 많은 큰 트리에서 동그라미를 더 작게 (2026-09-01 추가) */
+  const minW = d.nodeMinW || 1.1;
+  const maxW = colGap === Infinity ? 99 : Math.max(minW, colGap - 0.22);
 
   const pos = {};
   const wOf = n => n.board ? NH
@@ -905,32 +911,39 @@ function drawGraph(pptx, s, d, nodesIn, edges){
     }
   }
 
+  /* color:"blue"|"red" — 시작·목표를 가려 보이게 (없으면 기존 accent/dim 규칙 그대로) */
+  const hue = n => n.color === 'blue' ? { line: T.blue, fill: T.blueBg, text: T.blue }
+                 : n.color === 'red'  ? { line: T.red,  fill: T.redBg,  text: T.red }
+                 : null;
+
   for(const n of nodes){
     const p = pos[n.id];
+    const H = hue(n);
     if(n.board){
       drawBoard(pptx, s, p.cx - NH / 2, p.cy - NH / 2, NH, n.board, {
-        fill: n.dim ? T.bg : T.white,
-        border: n.accent ? T.gold : (n.dim ? T.line2 : T.line),
-        lw: n.accent ? 2.5 : 1.5,
+        fill: H ? H.fill : (n.dim ? T.bg : T.white),
+        border: H ? H.line : (n.accent ? T.gold : (n.dim ? T.line2 : T.line)),
+        lw: H ? 2.5 : (n.accent ? 2.5 : 1.5),
         tile: n.dim ? T.soft : (n.accent ? T.gold2 : T.pill),
         dim: n.dim,
       });
       if(n.label)
         s.addText(n.label, { x: p.cx - NH / 2 - 0.5, y: p.cy + NH / 2 + 0.05, w: NH + 1.0, h: 0.45,
-          fontFace: T.fT, fontSize: 21, color: n.accent ? T.brown : T.muted, align: 'center', valign: 'middle' });
+          fontFace: T.fT, fontSize: 21, color: H ? H.text : (n.accent ? T.brown : T.muted), align: 'center', valign: 'middle' });
       continue;
     }
     s.addShape(pptx.ShapeType.roundRect, {
       x: p.cx - p.w / 2, y: p.cy - NH / 2, w: p.w, h: NH,
-      fill: { color: n.dim ? T.bg : (n.accent ? T.pill : T.white) },
-      line: { color: n.dim ? T.line2 : (n.accent ? T.gold : T.line), width: n.accent ? 2.25 : 1.5,
+      fill: { color: H ? H.fill : (n.dim ? T.bg : (n.accent ? T.pill : T.white)) },
+      line: { color: H ? H.line : (n.dim ? T.line2 : (n.accent ? T.gold : T.line)),
+              width: H ? 2.75 : (n.accent ? 2.25 : 1.5),
               dashType: n.dim ? 'dash' : 'solid' },
       rectRadius: NH / 2,
     });
     /* 좁은 자리에서는 글자를 줄여 한 줄에 넣습니다 */
     let fs = 24;
     while(fs > 15 && textWidth(n.label, fs) > p.w - 0.3) fs -= 1;
-    s.addText(runs(n.label, { fontFace: T.fT, fontSize: fs, color: n.dim ? T.label : T.ink }),
+    s.addText(runs(n.label, { fontFace: T.fT, fontSize: fs, color: H ? H.text : (n.dim ? T.label : T.ink) }),
       { x: p.cx - p.w / 2, y: p.cy - NH / 2, w: p.w, h: NH, align: 'center', valign: 'middle' });
   }
 

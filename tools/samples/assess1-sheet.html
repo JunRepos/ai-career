@@ -1,0 +1,108 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>수행평가 평가지</title><style>
+@page { size: A4 portrait; margin: 12mm 14mm; }
+html, body { background:#fff; color-scheme: light only; }
+body { font-family:"맑은 고딕","Malgun Gothic",sans-serif; color:#111;
+       font-size:10.5pt; line-height:1.55; margin:0; width:182mm; }
+h1 { font-size:16pt; margin:0 0 2mm; letter-spacing:-0.3px }
+h2 { font-size:12pt; margin:6mm 0 2mm; padding-bottom:1mm; border-bottom:1.4pt solid #222 }
+h3 { font-size:11pt; margin:4mm 0 1.5mm }
+.top { display:flex; justify-content:space-between; align-items:flex-end;
+       border-bottom:2.2pt solid #111; padding-bottom:2mm; margin-bottom:3mm }
+.top .sub { font-size:9.5pt; color:#444 }
+.name { font-size:10pt; border:1pt solid #444; padding:2mm 3mm; white-space:nowrap }
+table { border-collapse:collapse; width:100%; margin:2mm 0 }
+th, td { border:0.8pt solid #666; padding:1.6mm 2mm; font-size:9.8pt; vertical-align:top }
+th { background:#f0f0f0; font-weight:700; text-align:center }
+.center { text-align:center }
+.q { margin:4mm 0 0; padding:2.5mm 3mm; border:1pt solid #222; background:#fafafa;
+     font-weight:700; font-size:11pt; display:flex; justify-content:space-between }
+.q .pt { font-weight:700; color:#333 }
+.hint { font-size:9.3pt; color:#444; margin:1.5mm 0 }
+.rule { border:1pt solid #222; padding:3mm; margin:3mm 0; background:#f7f7f7 }
+.rule ol { margin:0; padding-left:5mm }
+.rule li { margin:1mm 0; font-size:10pt }
+.ans { border:0.8pt solid #888; min-height:18mm; margin:2mm 0; padding:2mm }
+.lines div { border-bottom:0.6pt solid #999; height:7.2mm }
+.bd { display:inline-block; border:1.2pt solid #222; border-collapse:collapse }
+.bd table { margin:0; width:auto }
+.bd td { width:7.5mm; height:7.5mm; text-align:center; font-size:11pt; font-weight:700;
+         border:0.8pt solid #666; padding:0 }
+.bd td.blank { background:#eee }
+.sm td { width:6mm; height:6mm; font-size:9pt }
+.row { display:flex; gap:6mm; align-items:center; flex-wrap:wrap; margin:2mm 0 }
+.cap { font-size:9pt; color:#333; text-align:center; margin-top:1mm }
+.pair { display:flex; gap:3mm; align-items:center }
+.arrow { font-size:14pt; color:#444 }
+.grid { display:flex; gap:4mm; flex-wrap:wrap }
+.slot { text-align:center }
+.note { font-size:9.2pt; color:#333; border-left:2.5pt solid #999; padding-left:2.5mm; margin:2mm 0 }
+.pagebreak { page-break-before:always }
+.small { font-size:9pt; color:#444 }
+</style></head><body><div class="top"><div><h1>수행평가 평가지</h1><div class="sub">인공지능 기초 · 1차 수행평가 · 탐색 알고리즘을 적용하여 문제 해결 과정 설계하기</div></div><div class="name">2학년 &nbsp; 반 &nbsp; 번 &nbsp; 이름</div></div>
+<p class="hint">아래 2×3 퍼즐을 <b>초기 상태에서 목표 상태로</b> 바꾸려고 합니다.
+수업에서 다룬 8퍼즐과 원리가 같고 판만 작습니다.</p>
+<div class="row"><div class="slot"><span class="bd "><table><tr><td>2</td><td class="blank"></td><td>3</td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">초기 상태</div></div><div class="arrow">→</div><div class="slot"><span class="bd "><table><tr><td>1</td><td>2</td><td>3</td></tr><tr><td>4</td><td>5</td><td class="blank"></td></tr></table></span><div class="cap">목표 상태</div></div></div>
+
+<div class="rule"><b>모든 문항에 공통으로 적용하는 규칙</b>
+<ol>
+ <li>한 번에 <b>빈칸과 붙어 있는 타일 하나</b>를 빈칸으로 밀어 판을 바꾼다.</li>
+ <li>가지를 펼치는 순서는 <b>위 → 아래 → 왼 → 오른</b> 이다. (빈칸이 움직이는 방향)</li>
+ <li><b>앞에서 이미 나온 상태는 다시 만들지 않는다.</b> 나오면 ✕ 로 표시하고 그 아래로 펼치지 않는다.</li>
+ <li>휴리스틱값 <b>h(n) = 목표 상태와 다른 자리에 있는 타일의 수</b> (빈칸은 세지 않는다)</li>
+ <li>f 값이 같으면 <b>h 가 작은 것을 먼저</b> 테스트한다.</li>
+</ol></div>
+
+
+<div class="q"><span>① 상태 공간으로 나타내기</span><span class="pt">[2점]</span></div>
+<p class="hint">이 문제를 탐색 문제로 보았을 때, 아래 네 가지가 각각 무엇인지 쓰시오.</p>
+<table>
+<tr><th style="width:28mm">상태</th><td style="height:11mm"></td></tr>
+<tr><th>간선(행동)</th><td style="height:11mm"></td></tr>
+<tr><th>초기 상태</th><td style="height:11mm"></td></tr>
+<tr><th>목표 상태</th><td style="height:11mm"></td></tr>
+</table>
+
+<div class="q"><span>② 탐색 트리 그리기</span><span class="pt">[2점]</span></div>
+<p class="hint">규칙 ②③ 을 지켜 <b>깊이 2까지</b> 탐색 트리를 그리시오.
+판 안에 숫자를 적고, 화살표 옆에 빈칸이 간 방향(위·아래·왼·오른)을 쓰시오.</p>
+<div class="ans" style="min-height:78mm"></div>
+
+<div class="q"><span>③ 너비 우선 탐색</span><span class="pt">[2점]</span></div>
+<p class="hint">너비 우선 탐색으로 <b>깊이 2까지</b> 방문하는 순서를 차례대로 쓰고(판 대신
+「위·아래·왼·오른」 으로 가는 길을 적어도 됩니다), 목표 상태를 찾을 때까지
+<b>테스트해야 하는 상태가 모두 몇 개</b>인지 쓰시오.</p>
+<div class="ans lines"><div></div><div></div><div></div><div></div></div>
+<table><tr><th style="width:56mm">테스트한 상태의 수</th><td style="height:11mm"></td></tr></table>
+
+<div class="pagebreak"></div>
+<div class="q"><span>④ 휴리스틱값 구하기</span><span class="pt">[3점]</span></div>
+<p class="hint">초기 상태에서 한 번 옮겨 만들 수 있는 상태들의 <b>h 값을 각각 구하고</b>,
+그중 어느 것을 먼저 테스트해야 하는지 <b>h 값을 근거로</b> 설명하시오.</p>
+<table>
+<tr><th style="width:22mm">옮긴 방향</th><th style="width:38mm">만들어진 상태</th><th style="width:16mm">h 값</th></tr>
+<tr><td style="height:13mm"></td><td></td><td></td></tr>
+<tr><td style="height:13mm"></td><td></td><td></td></tr>
+<tr><td style="height:13mm"></td><td></td><td></td></tr>
+</table>
+<p class="hint">먼저 테스트할 상태와 그 까닭:</p>
+<div class="ans lines"><div></div><div></div><div></div></div>
+
+<div class="q"><span>⑤ A* 탐색 적용</span><span class="pt">[2점]</span></div>
+<p class="hint">A* 탐색으로 목표 상태를 찾는 과정을 표에 쓰시오.
+(f = g + h · g 는 지금까지 옮긴 횟수)</p>
+<table>
+<tr><th style="width:14mm">차례</th><th style="width:44mm">테스트한 상태</th>
+<th style="width:14mm">g</th><th style="width:14mm">h</th><th style="width:14mm">f</th></tr>
+<tr><td class="center">1</td><td style="height:12mm"></td><td></td><td></td><td></td></tr><tr><td class="center">2</td><td style="height:12mm"></td><td></td><td></td><td></td></tr><tr><td class="center">3</td><td style="height:12mm"></td><td></td><td></td><td></td></tr><tr><td class="center">4</td><td style="height:12mm"></td><td></td><td></td><td></td></tr><tr><td class="center">5</td><td style="height:12mm"></td><td></td><td></td><td></td></tr>
+</table>
+
+<div class="q"><span>⑥ 두 탐색을 견주어 서술하기</span><span class="pt">[5점]</span></div>
+<p class="hint">너비 우선 탐색과 A* 탐색이 이 문제에서 <b>테스트한 상태의 수</b>가 왜 그렇게 차이 나는지
+설명하고, <b>퍼즐이 아닌 다른 문제</b>를 하나 들어 그 문제에서는 무엇이 휴리스틱값 역할을 하는지 쓰시오.
+(12줄 안팎)</p>
+<div class="ans lines"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+
+<h3>인공지능 활용 기록란</h3>
+<p class="small">평가를 준비하면서 생성형 인공지능의 도움을 받았다면 무엇을 물어봤는지 적어 주세요. 감점하지 않습니다.</p>
+<div class="ans lines"><div></div><div></div></div>
+</body></html>

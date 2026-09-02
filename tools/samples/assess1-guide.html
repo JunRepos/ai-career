@@ -1,0 +1,91 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>수행평가 안내서</title><style>
+@page { size: A4 portrait; margin: 12mm 14mm; }
+html, body { background:#fff; color-scheme: light only; }
+body { font-family:"맑은 고딕","Malgun Gothic",sans-serif; color:#111;
+       font-size:10.5pt; line-height:1.55; margin:0; width:182mm; }
+h1 { font-size:16pt; margin:0 0 2mm; letter-spacing:-0.3px }
+h2 { font-size:12pt; margin:6mm 0 2mm; padding-bottom:1mm; border-bottom:1.4pt solid #222 }
+h3 { font-size:11pt; margin:4mm 0 1.5mm }
+.top { display:flex; justify-content:space-between; align-items:flex-end;
+       border-bottom:2.2pt solid #111; padding-bottom:2mm; margin-bottom:3mm }
+.top .sub { font-size:9.5pt; color:#444 }
+.name { font-size:10pt; border:1pt solid #444; padding:2mm 3mm; white-space:nowrap }
+table { border-collapse:collapse; width:100%; margin:2mm 0 }
+th, td { border:0.8pt solid #666; padding:1.6mm 2mm; font-size:9.8pt; vertical-align:top }
+th { background:#f0f0f0; font-weight:700; text-align:center }
+.center { text-align:center }
+.q { margin:4mm 0 0; padding:2.5mm 3mm; border:1pt solid #222; background:#fafafa;
+     font-weight:700; font-size:11pt; display:flex; justify-content:space-between }
+.q .pt { font-weight:700; color:#333 }
+.hint { font-size:9.3pt; color:#444; margin:1.5mm 0 }
+.rule { border:1pt solid #222; padding:3mm; margin:3mm 0; background:#f7f7f7 }
+.rule ol { margin:0; padding-left:5mm }
+.rule li { margin:1mm 0; font-size:10pt }
+.ans { border:0.8pt solid #888; min-height:18mm; margin:2mm 0; padding:2mm }
+.lines div { border-bottom:0.6pt solid #999; height:7.2mm }
+.bd { display:inline-block; border:1.2pt solid #222; border-collapse:collapse }
+.bd table { margin:0; width:auto }
+.bd td { width:7.5mm; height:7.5mm; text-align:center; font-size:11pt; font-weight:700;
+         border:0.8pt solid #666; padding:0 }
+.bd td.blank { background:#eee }
+.sm td { width:6mm; height:6mm; font-size:9pt }
+.row { display:flex; gap:6mm; align-items:center; flex-wrap:wrap; margin:2mm 0 }
+.cap { font-size:9pt; color:#333; text-align:center; margin-top:1mm }
+.pair { display:flex; gap:3mm; align-items:center }
+.arrow { font-size:14pt; color:#444 }
+.grid { display:flex; gap:4mm; flex-wrap:wrap }
+.slot { text-align:center }
+.note { font-size:9.2pt; color:#333; border-left:2.5pt solid #999; padding-left:2.5mm; margin:2mm 0 }
+.pagebreak { page-break-before:always }
+.small { font-size:9pt; color:#444 }
+</style></head><body><div class="top"><div><h1>수행평가 안내서</h1><div class="sub">인공지능 기초 · 1차 수행평가 · 탐색 알고리즘을 적용하여 문제 해결 과정 설계하기</div></div><div class="name">2학년 &nbsp; 반 &nbsp; 번 &nbsp; 이름</div></div>
+<h2>1. 무엇을 평가하는가</h2>
+<table>
+<tr><th style="width:26mm">평가 요소</th><td>탐색 알고리즘을 적용하여 문제 해결 과정을 설계하기</td></tr>
+<tr><th>성취기준</th><td>[12인기01-02] 탐색의 중요성을 이해하고 문제 해결을 위한 탐색 과정을 설계한다<br>
+[12인기01-03] 맹목적 탐색과 정보 이용 탐색의 차이를 중심으로 지능적 탐색의 원리를 파악한다<br>
+[12인기01-04] 지능적 탐색이 필요한 문제를 찾고 정보 이용 탐색 알고리즘을 적용한다</td></tr>
+<tr><th>배점</th><td><b>20점</b> (학기 성적의 20%) · 기본점수 <b>4점</b> (응시하면 받습니다)</td></tr>
+<tr><th>방식</th><td>수업 시간에 <b>종이로</b> 봅니다. 두 차시에 나누어 봅니다 (1차시 ①~③ · 2차시 ④~⑥)</td></tr>
+<tr><th>준비물</th><td>필기구 · 자 (컴퓨터·휴대전화 사용하지 않습니다)</td></tr>
+</table>
+
+<h2>2. 문제는 이렇게 나옵니다</h2>
+<p class="hint">수업에서 다룬 <b>8퍼즐(3×3)과 원리가 같고, 판의 크기만 2×3 으로 작습니다.</b>
+아래가 실제 평가에 나오는 판입니다. 규칙도 평가지에 그대로 인쇄됩니다.</p>
+<div class="row"><div class="slot"><span class="bd "><table><tr><td>2</td><td class="blank"></td><td>3</td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">초기 상태</div></div><div class="arrow">→</div><div class="slot"><span class="bd "><table><tr><td>1</td><td>2</td><td>3</td></tr><tr><td>4</td><td>5</td><td class="blank"></td></tr></table></span><div class="cap">목표 상태</div></div></div>
+
+<div class="rule"><b>모든 문항에 공통으로 적용하는 규칙</b>
+<ol>
+ <li>한 번에 <b>빈칸과 붙어 있는 타일 하나</b>를 빈칸으로 밀어 판을 바꾼다.</li>
+ <li>가지를 펼치는 순서는 <b>위 → 아래 → 왼 → 오른</b> 이다. (빈칸이 움직이는 방향)</li>
+ <li><b>앞에서 이미 나온 상태는 다시 만들지 않는다.</b> 나오면 ✕ 로 표시하고 그 아래로 펼치지 않는다.</li>
+ <li>휴리스틱값 <b>h(n) = 목표 상태와 다른 자리에 있는 타일의 수</b> (빈칸은 세지 않는다)</li>
+ <li>f 값이 같으면 <b>h 가 작은 것을 먼저</b> 테스트한다.</li>
+</ol></div>
+
+
+<h2>3. 채점 기준표</h2>
+<table>
+<tr><th style="width:8mm">문항</th><th style="width:32mm">무엇을 보는가</th><th style="width:10mm">배점</th>
+<th>잘함 (배점 전부)</th><th>보통 (절반)</th><th>노력 요함 (0점)</th></tr>
+<tr><td class="center">①</td><td>상태 공간 표현</td><td class="center">2</td><td>상태·간선·초기 상태·목표 상태를 이 문제에 맞게 짚었다</td><td>넷 중 둘 이상을 바르게 적었다</td><td>넷 중 하나만 적었거나 못 적었다</td></tr><tr><td class="center">②</td><td>탐색 트리 (깊이 2)</td><td class="center">2</td><td>규칙 ②③ 을 지켜 깊이 2까지 빠짐없이 그렸다</td><td>깊이 1까지 맞거나, 깊이 2에서 한두 개를 놓쳤다</td><td>규칙을 지키지 못했다</td></tr><tr><td class="center">③</td><td>너비 우선 탐색</td><td class="center">2</td><td>방문 순서와 테스트한 상태 수를 모두 바르게 적었다</td><td>둘 중 하나만 바르다</td><td>둘 다 틀렸다</td></tr><tr><td class="center">④</td><td>휴리스틱값</td><td class="center">3</td><td>h 값을 바르게 계산하고, <b>왜 그 상태를 고르는지</b>를 h 의 크기로 설명했다</td><td>h 값은 맞으나 고르는 근거를 못 적었다</td><td>h 계산이 틀렸다</td></tr><tr><td class="center">⑤</td><td>A* 적용</td><td class="center">2</td><td>f = g + h 를 적용해 확장 순서를 바르게 적었다</td><td>g 또는 h 중 하나만 바르게 적었다</td><td>f 를 적용하지 못했다</td></tr><tr><td class="center">⑥</td><td>논술 — 두 탐색의 차이</td><td class="center">5</td><td>두 방법의 테스트 수를 근거로 들고, <b>퍼즐 밖의 사례</b>에서 무엇이 휴리스틱 역할을 하는지 짚었다</td><td>두 방법의 차이는 설명했으나 퍼즐 밖 사례가 없다</td><td>한쪽 방법만 서술했다</td></tr>
+</table>
+<p class="small">기본점수 4점을 더해 <b>20점 만점</b>입니다. 결시자는 학교 학업성적관리규정에 따릅니다.</p>
+
+<h2>4. 이렇게 준비하세요</h2>
+<table>
+<tr><th style="width:26mm">이것만은</th><td>
+① 빈칸을 옮겨 다음 상태를 만드는 연습 — 방향 순서(위·아래·왼·오른)를 지켜서<br>
+② 이미 나온 상태에 ✕ 표시하기 — 안 하면 트리가 무한히 늘어납니다<br>
+③ h 세기 — 목표와 <b>다른 자리</b>에 있는 타일 수 (빈칸 제외)<br>
+④ f = g + h 계산 — g 는 지금까지 옮긴 횟수</td></tr>
+<tr><th>수업 자료</th><td>앱 → 수업자료 「6. 지능적 탐색」 과 교과서 34~37쪽</td></tr>
+<tr><th>연습</th><td>앱 → 실습 「8퍼즐 맞추기」 — 맞추면 내가 지나온 탐색 트리를 보여 줍니다</td></tr>
+</table>
+
+<h2>5. 인공지능 사용에 대하여</h2>
+<p class="hint">이 평가는 수업 중에 종이로 봅니다. 생성형 인공지능을 <b>쓸 수 없습니다.</b>
+평가 전 연습 과정에서 인공지능의 도움을 받았다면, 평가지 맨 뒤 <b>「인공지능 활용 기록란」</b>에
+무엇을 물어봤는지 적어 주세요. 적었다고 감점하지 않습니다.</p>
+</body></html>
