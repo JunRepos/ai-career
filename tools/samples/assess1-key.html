@@ -16,14 +16,13 @@ th { background:#f0f0f0; font-weight:700; text-align:center }
 .center { text-align:center }
 .q { margin:4mm 0 0; padding:2.5mm 3mm; border:1pt solid #222; background:#fafafa;
      font-weight:700; font-size:11pt; display:flex; justify-content:space-between }
-.q .pt { font-weight:700; color:#333 }
 .hint { font-size:9.3pt; color:#444; margin:1.5mm 0 }
 .rule { border:1pt solid #222; padding:3mm; margin:3mm 0; background:#f7f7f7 }
 .rule ol { margin:0; padding-left:5mm }
 .rule li { margin:1mm 0; font-size:10pt }
 .ans { border:0.8pt solid #888; min-height:18mm; margin:2mm 0; padding:2mm }
 .lines div { border-bottom:0.6pt solid #999; height:7.2mm }
-.bd { display:inline-block; border:1.2pt solid #222; border-collapse:collapse }
+.bd { display:inline-block; border:1.2pt solid #222 }
 .bd table { margin:0; width:auto }
 .bd td { width:7.5mm; height:7.5mm; text-align:center; font-size:11pt; font-weight:700;
          border:0.8pt solid #666; padding:0 }
@@ -31,7 +30,6 @@ th { background:#f0f0f0; font-weight:700; text-align:center }
 .sm td { width:6mm; height:6mm; font-size:9pt }
 .row { display:flex; gap:6mm; align-items:center; flex-wrap:wrap; margin:2mm 0 }
 .cap { font-size:9pt; color:#333; text-align:center; margin-top:1mm }
-.pair { display:flex; gap:3mm; align-items:center }
 .arrow { font-size:14pt; color:#444 }
 .grid { display:flex; gap:4mm; flex-wrap:wrap }
 .slot { text-align:center }
@@ -39,90 +37,73 @@ th { background:#f0f0f0; font-weight:700; text-align:center }
 .pagebreak { page-break-before:always }
 .small { font-size:9pt; color:#444 }
 </style></head><body><div class="top"><div><h1>교사용 정답지 · 채점 기준</h1><div class="sub">인공지능 기초 · 1차 수행평가 · 탐색 알고리즘을 적용하여 문제 해결 과정 설계하기</div></div><div class="name">교사용</div></div>
-<div class="note">이 정답지는 <b>verify/assess1.py</b> 가 실제로 알고리즘을 돌려 만든 것입니다.
-값을 손으로 고치지 말고, 문제를 바꾸면 스크립트를 다시 돌리세요.</div>
+<div class="note"><b>배점과 채점 기준은 평가 운영 계획 6-가 의 것을 그대로 옮겼습니다.</b>
+정답은 <b>verify/assess1.py</b> 가 알고리즘을 실제로 돌려 만든 값입니다.
+문제를 바꾸면 스크립트를 다시 돌리세요 (손으로 고치지 마세요).</div>
 
 <div class="rule"><b>모든 문항에 공통으로 적용하는 규칙</b>
 <ol>
  <li>한 번에 <b>빈칸과 붙어 있는 타일 하나</b>를 빈칸으로 밀어 판을 바꾼다.</li>
  <li>가지를 펼치는 순서는 <b>위 → 아래 → 왼 → 오른</b> 이다. (빈칸이 움직이는 방향)</li>
  <li><b>앞에서 이미 나온 상태는 다시 만들지 않는다.</b> 나오면 ✕ 로 표시하고 그 아래로 펼치지 않는다.</li>
- <li>휴리스틱값 <b>h(n) = 목표 상태와 다른 자리에 있는 타일의 수</b> (빈칸은 세지 않는다)</li>
  <li>f 값이 같으면 <b>h 가 작은 것을 먼저</b> 테스트한다.</li>
+</ol></div>
+ 
+<div class="rule"><b>휴리스틱 두 가지</b>
+<ol>
+ <li><b>h₁</b> = 목표 상태와 <b>다른 자리에 있는 타일의 수</b> (빈칸은 세지 않는다)</li>
+ <li><b>h₂</b> = 각 타일이 제자리까지 가려면 최소 몇 칸을 움직여야 하는지를 <b>모두 더한 값</b>
+     (가로로 몇 칸 + 세로로 몇 칸, 빈칸은 세지 않는다)</li>
 </ol></div>
 
 
-<h2>① 상태 공간 표현 [2점]</h2>
+<h2>① 상태 공간으로 표현하기 [3점]</h2>
 <table>
-<tr><th style="width:28mm">상태</th><td>타일 5개와 빈칸이 놓인 <b>판의 배치</b> 하나하나</td></tr>
+<tr><th style="width:26mm">상태</th><td>타일 5개와 빈칸이 놓인 <b>판의 배치</b> 하나하나</td></tr>
 <tr><th>간선(행동)</th><td>빈칸과 붙은 타일 하나를 빈칸으로 미는 것 (위·아래·왼·오른)</td></tr>
-<tr><th>초기 상태</th><td><span class="bd "><table><tr><td>2</td><td class="blank"></td><td>3</td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span></td></tr>
-<tr><th>목표 상태</th><td><span class="bd "><table><tr><td>1</td><td>2</td><td>3</td></tr><tr><td>4</td><td>5</td><td class="blank"></td></tr></table></span></td></tr>
 </table>
-<p class="small">채점 — 넷 다 맞으면 2점 · 둘 이상 맞으면 1점 · 그 아래 0점.
-'상태 = 판의 배치' 라는 뜻이 담겼으면 표현이 달라도 인정합니다.</p>
+<p class="small">초기 상태에서 한 번 옮겨 만들 수 있는 상태 — <b>3개</b> (아래가 전부)</p>
+<div class="grid"><div class="slot"><span class="bd sm"><table><tr><td>2</td><td class="blank"></td><td>3</td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">위</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td>3</td></tr><tr><td class="blank"></td><td>1</td><td>5</td></tr></table></span><div class="cap">왼</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td>3</td></tr><tr><td>1</td><td>5</td><td class="blank"></td></tr></table></span><div class="cap">오른</div></div></div>
+<p class="small">※ 아래쪽으로는 빈칸이 판 밖으로 나가므로 만들 수 없습니다. 세 개를 모두 그려야 3점입니다.</p>
 
-<h2>② 깊이 2 탐색 트리 [2점] — 노드 8개 (뿌리 포함)</h2>
-<h3>깊이 1 — 3개</h3>
-<div class="grid"><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td>3</td></tr><tr><td>1</td><td class="blank"></td><td>5</td></tr></table></span><div class="cap">아래</div></div><div class="slot"><span class="bd sm"><table><tr><td class="blank"></td><td>2</td><td>3</td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">왼</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>3</td><td class="blank"></td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">오른</div></div></div>
-<h3>깊이 2 — 4개</h3>
-<div class="grid"><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td>3</td></tr><tr><td class="blank"></td><td>1</td><td>5</td></tr></table></span><div class="cap">왼</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td>3</td></tr><tr><td>1</td><td>5</td><td class="blank"></td></tr></table></span><div class="cap">오른</div></div><div class="slot"><span class="bd sm"><table><tr><td>1</td><td>2</td><td>3</td></tr><tr><td class="blank"></td><td>4</td><td>5</td></tr></table></span><div class="cap">아래</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>3</td><td>5</td></tr><tr><td>1</td><td>4</td><td class="blank"></td></tr></table></span><div class="cap">아래</div></div></div>
-<p class="small">채점 — 규칙 ②③ 을 지켜 빠짐없이 그렸으면 2점 · 깊이 1 까지만 맞거나 깊이 2 에서
-한두 개를 놓쳤으면 1점. <b>중복 상태를 지우지 않아 노드가 늘어난 답안은 감점</b>합니다.</p>
-<p class="small">※ 깊이 2 에서 <b>1 2 3 / _ 4 5</b> 가 나옵니다. 목표와 한 수 차이지만 아직 목표가 아닙니다.</p>
+<h2>② 탐색 트리 작성하기 [3점] — 노드 8개 (뿌리 포함)</h2>
+<h3>깊이 1 — 3개</h3><div class="grid"><div class="slot"><span class="bd sm"><table><tr><td>2</td><td class="blank"></td><td>3</td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">위</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td>3</td></tr><tr><td class="blank"></td><td>1</td><td>5</td></tr></table></span><div class="cap">왼</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td>3</td></tr><tr><td>1</td><td>5</td><td class="blank"></td></tr></table></span><div class="cap">오른</div></div></div>
+<h3>깊이 2 — 4개</h3><div class="grid"><div class="slot"><span class="bd sm"><table><tr><td class="blank"></td><td>2</td><td>3</td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">왼</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>3</td><td class="blank"></td></tr><tr><td>1</td><td>4</td><td>5</td></tr></table></span><div class="cap">오른</div></div><div class="slot"><span class="bd sm"><table><tr><td class="blank"></td><td>4</td><td>3</td></tr><tr><td>2</td><td>1</td><td>5</td></tr></table></span><div class="cap">위</div></div><div class="slot"><span class="bd sm"><table><tr><td>2</td><td>4</td><td class="blank"></td></tr><tr><td>1</td><td>5</td><td>3</td></tr></table></span><div class="cap">위</div></div></div>
+<p class="small">✕ 로 막아야 하는 곳 — 깊이 1 의 각 상태에서 <b>부모(초기 상태)로 되돌아가는 가지 3곳</b>.
+「이미 나온 상태라 다시 펼치면 같은 곳을 무한히 맴돌기 때문」 이라는 뜻이 담기면 인정합니다.</p>
 
-<h2>③ 너비 우선 탐색 [2점]</h2>
-<p class="small">깊이 2까지의 방문 순서(정답)와, 목표를 찾을 때까지 테스트하는 상태 수 <b>16개</b>.</p>
+<h2>③ 맹목적 탐색 수행하기 [3점]</h2>
+<p class="small">깊이 2까지 방문 순서 (8개) · <b>깊이 2까지 전개해도 목표는 나오지 않습니다</b> (최단 5수).
+목표를 찾을 때까지 방문하는 상태는 <b>20개</b>입니다.</p>
+<table><tr><th style="width:14mm">차례</th><th>상태</th><th style="width:16mm">깊이</th></tr><tr><td class="center">1</td><td class="center">2 4 3 / 1 _ 5</td><td class="center">0</td></tr><tr><td class="center">2</td><td class="center">2 _ 3 / 1 4 5</td><td class="center">1</td></tr><tr><td class="center">3</td><td class="center">2 4 3 / _ 1 5</td><td class="center">1</td></tr><tr><td class="center">4</td><td class="center">2 4 3 / 1 5 _</td><td class="center">1</td></tr><tr><td class="center">5</td><td class="center">_ 2 3 / 1 4 5</td><td class="center">2</td></tr><tr><td class="center">6</td><td class="center">2 3 _ / 1 4 5</td><td class="center">2</td></tr><tr><td class="center">7</td><td class="center">_ 4 3 / 2 1 5</td><td class="center">2</td></tr><tr><td class="center">8</td><td class="center">2 4 _ / 1 5 3</td><td class="center">2</td></tr></table>
+<p class="small">※ 방향(위·아래·왼·오른)으로 적은 답안도 인정합니다.</p>
+
+<div class="pagebreak"></div>
+<h2>④ 휴리스틱 설계하고 근거 제시하기 [3점]</h2>
+<p class="small">초기 상태 2 4 3 / 1 _ 5 — <b>h₁ = 4 · h₂ = 5</b> · 실제 남은 비용 5</p>
 <table>
-<tr><th style="width:14mm">차례</th><th>상태</th><th style="width:16mm">깊이</th></tr>
-<tr><td class="center">1</td><td class="center">2 _ 3 / 1 4 5</td><td class="center">0</td></tr><tr><td class="center">2</td><td class="center">2 4 3 / 1 _ 5</td><td class="center">1</td></tr><tr><td class="center">3</td><td class="center">_ 2 3 / 1 4 5</td><td class="center">1</td></tr><tr><td class="center">4</td><td class="center">2 3 _ / 1 4 5</td><td class="center">1</td></tr><tr><td class="center">5</td><td class="center">2 4 3 / _ 1 5</td><td class="center">2</td></tr><tr><td class="center">6</td><td class="center">2 4 3 / 1 5 _</td><td class="center">2</td></tr><tr><td class="center">7</td><td class="center">1 2 3 / _ 4 5</td><td class="center">2</td></tr><tr><td class="center">8</td><td class="center">2 3 5 / 1 4 _</td><td class="center">2</td></tr><tr><td class="center">9</td><td class="center">_ 4 3 / 2 1 5</td><td class="center">3</td></tr><tr><td class="center">10</td><td class="center">2 4 _ / 1 5 3</td><td class="center">3</td></tr><tr><td class="center">11</td><td class="center">1 2 3 / 4 _ 5</td><td class="center">3</td></tr><tr><td class="center">12</td><td class="center">2 3 5 / 1 _ 4</td><td class="center">3</td></tr><tr><td class="center">13</td><td class="center">4 _ 3 / 2 1 5</td><td class="center">4</td></tr><tr><td class="center">14</td><td class="center">2 _ 4 / 1 5 3</td><td class="center">4</td></tr><tr><td class="center">15</td><td class="center">1 _ 3 / 4 2 5</td><td class="center">4</td></tr><tr><td class="center">16</td><td class="center">1 2 3 / 4 5 _</td><td class="center">4</td></tr>
-</table>
-<p class="small">채점 — 방문 순서(깊이 2까지)와 개수(16) 둘 다 맞으면 2점 · 하나만 맞으면 1점.
-<b>순서를 방향(위·아래·왼·오른)으로 적은 답안도 인정</b>합니다.</p>
+<tr><th style="width:20mm">한 번 옮기면</th><th>상태</th><th style="width:14mm">h₁</th>
+<th style="width:14mm">h₂</th><th style="width:26mm">실제 남은 비용</th></tr><tr><td class="center">위</td><td class="center">2 _ 3 / 1 4 5</td><td class="center">4</td><td class="center">4</td><td class="center">4</td></tr><tr><td class="center">왼</td><td class="center">2 4 3 / _ 1 5</td><td class="center">4</td><td class="center">6</td><td class="center">6</td></tr><tr><td class="center">오른</td><td class="center">2 4 3 / 1 5 _</td><td class="center">3</td><td class="center">4</td><td class="center">6</td></tr></table>
+<p class="small"><b>골라야 할 것 — h₂.</b> 두 값 모두 실제 남은 비용을 넘지 않지만(허용 가능),
+h₂ 가 언제나 h₁ 보다 크거나 같아 <b>목표에 더 가까운 추정</b>이고, 그래서 탐색량이 줄어듭니다.
+실제로 이 문제에서 확장한 노드는 <b>h₁ 이면 7개, h₂ 면 6개</b>입니다.</p>
+<div class="note"><b>3점 판별 질문</b> — ① 두 값을 모두 바르게 계산했는가
+② <b>실제 비용을 넘지 않으면서 더 큰 값</b>이 탐색량을 줄인다는 근거를 적었는가. 둘 다 있어야 3점.</div>
 
-<h2>④ 휴리스틱값 [3점]</h2>
-<p class="small">h(초기 상태) = <b>4</b></p>
-<table>
-<tr><th style="width:22mm">옮긴 방향</th><th>만들어진 상태</th><th style="width:16mm">h</th></tr>
-<tr><td class="center">아래</td><td class="center">2 4 3 / 1 _ 5</td><td class="center">4</td></tr><tr><td class="center">왼</td><td class="center">_ 2 3 / 1 4 5</td><td class="center">3</td></tr><tr><td class="center">오른</td><td class="center">2 3 _ / 1 4 5</td><td class="center">5</td></tr>
-</table>
-<p class="small"><b>먼저 테스트할 상태</b> — 「왼」 으로 옮긴 _ 2 3 / 1 4 5 (h=3).
-h 가 가장 작다 = 목표에 가장 가까울 것으로 추정된다.</p>
-<div class="note"><b>3점 판별 질문</b> — ① h 값 세 개를 모두 바르게 구했는가
-② <b>h 가 작은 것을 먼저</b> 라는 근거를 적었는가. 둘 다 있어야 3점, 하나만 있으면 2점.</div>
+<h2>⑤ A* 탐색 적용하기 [3점] — 확장 6개</h2>
+<table><tr><th style="width:14mm">차례</th><th>테스트한 상태</th>
+<th style="width:14mm">g</th><th style="width:14mm">h</th><th style="width:14mm">f</th></tr><tr><td class="center">1</td><td class="center">2 4 3 / 1 _ 5</td><td class="center">0</td><td class="center">5</td><td class="center">5</td></tr><tr><td class="center">2</td><td class="center">2 _ 3 / 1 4 5</td><td class="center">1</td><td class="center">4</td><td class="center">5</td></tr><tr><td class="center">3</td><td class="center">_ 2 3 / 1 4 5</td><td class="center">2</td><td class="center">3</td><td class="center">5</td></tr><tr><td class="center">4</td><td class="center">1 2 3 / _ 4 5</td><td class="center">3</td><td class="center">2</td><td class="center">5</td></tr><tr><td class="center">5</td><td class="center">1 2 3 / 4 _ 5</td><td class="center">4</td><td class="center">1</td><td class="center">5</td></tr><tr><td class="center">6</td><td class="center">1 2 3 / 4 5 _</td><td class="center">5</td><td class="center">0</td><td class="center">5</td></tr></table>
+<p class="small">최적 경로 — <b>위 → 왼 → 아래 → 오른 → 오른</b> (5수) · 확장 노드 수 <b>6개</b>.
+이 문제에서는 f 값이 처음부터 끝까지 <b>5</b> 로 일정합니다. 헛걸음이 한 번도 없다는 뜻입니다.</p>
 
-<h2>⑤ A* 탐색 [2점] — 확장 5개</h2>
-<table>
-<tr><th style="width:14mm">차례</th><th>테스트한 상태</th>
-<th style="width:14mm">g</th><th style="width:14mm">h</th><th style="width:14mm">f</th></tr>
-<tr><td class="center">1</td><td class="center">2 _ 3 / 1 4 5</td><td class="center">0</td><td class="center">4</td><td class="center">4</td></tr><tr><td class="center">2</td><td class="center">_ 2 3 / 1 4 5</td><td class="center">1</td><td class="center">3</td><td class="center">4</td></tr><tr><td class="center">3</td><td class="center">1 2 3 / _ 4 5</td><td class="center">2</td><td class="center">2</td><td class="center">4</td></tr><tr><td class="center">4</td><td class="center">1 2 3 / 4 _ 5</td><td class="center">3</td><td class="center">1</td><td class="center">4</td></tr><tr><td class="center">5</td><td class="center">1 2 3 / 4 5 _</td><td class="center">4</td><td class="center">0</td><td class="center">4</td></tr>
-</table>
-<p class="small">찾은 해 — <b>왼 → 아래 → 오른 → 오른</b> (4수). 이 문제에서는 f 값이 처음부터 끝까지 4 로 일정합니다.
-즉 <b>휴리스틱이 정확해서 헛걸음이 한 번도 없습니다.</b></p>
-<p class="small">채점 — 확장 순서가 맞으면 2점 · g 또는 h 한쪽만 맞으면 1점.</p>
-
-<h2>⑥ 논술 [5점]</h2>
-<table>
-<tr><th style="width:16mm">5점</th><td>① 너비 우선 <b>16개</b> vs A* <b>5개</b> 라는 수를 근거로 들고,
-② 그 까닭을 <b>목표까지의 추정값(휴리스틱)을 쓰기 때문</b>이라고 설명하고,
-③ <b>퍼즐 밖 사례</b>를 하나 들어 그 문제에서 무엇이 휴리스틱 역할을 하는지 짚었다
-(예 — 길 찾기의 직선거리, 병 진단에서 증상의 수)</td></tr>
-<tr><th>3점</th><td>①②는 있으나 퍼즐 밖 사례가 없다</td></tr>
-<tr><th>2점</th><td>두 방법의 차이를 언급했으나 근거가 되는 수가 없다</td></tr>
-<tr><th>0점</th><td>한쪽 방법만 서술했거나 백지</td></tr>
-</table>
-<div class="note"><b>5점 판별 질문</b>(운영 패키지) — 「퍼즐 밖 사례가 있는가 +
-그 사례에서 무엇이 휴리스틱 역할을 하는지 짚었는가」 둘 다 있어야 5점.</div>
+<h2>⑥ 논술 — 두 탐색을 비교‧분석하기 [5점]</h2>
+<p class="small">근거가 되는 수 — 너비 우선 <b>20개</b> vs A*(h₂) <b>6개</b></p>
+<table><tr><th style="width:8mm">문항</th><th style="width:30mm">평가요소</th><th>수행 수준 (채점 기준)</th><th style="width:14mm">배점</th></tr><tr><td class="center" rowspan="3">①</td><td class="center" rowspan="3">상태 공간으로 표현하기<br>(3점)</td><td>초기 상태와 목표 상태를 정의하고, 빈칸 이동 규칙을 반영하여 가능한 다음 상태를 모두 정확하게 표현함.</td><td class="center">3점</td></tr><tr><td>초기 상태와 목표 상태를 정의하고, 다음 상태를 일부 표현함.</td><td class="center">2점</td></tr><tr><td>가능한 다음 상태를 표현하지 못함.</td><td class="center">1점</td></tr><tr><td class="center" rowspan="3">②</td><td class="center" rowspan="3">탐색 트리 작성하기<br>(3점)</td><td>탐색 트리를 정확하게 작성하고, 중복 상태를 표시하여 전개를 중단한 까닭을 설명함.</td><td class="center">3점</td></tr><tr><td>탐색 트리를 작성함.</td><td class="center">2점</td></tr><tr><td>탐색 트리를 작성하지 못함.</td><td class="center">1점</td></tr><tr><td class="center" rowspan="3">③</td><td class="center" rowspan="3">맹목적 탐색 수행하기<br>(3점)</td><td>너비 우선 탐색의 방문 순서를 정확하게 제시하고, 일정 깊이까지 전개해도 목표에 도달하지 못함을 노드 수와 함께 확인함.</td><td class="center">3점</td></tr><tr><td>너비 우선 탐색의 방문 순서를 제시하고 노드 수를 셈.</td><td class="center">2점</td></tr><tr><td>너비 우선 탐색의 방문 순서를 제시하지 못함.</td><td class="center">1점</td></tr><tr><td class="center" rowspan="3">④</td><td class="center" rowspan="3">휴리스틱 설계하고 근거 제시하기<br>(3점)</td><td>두 휴리스틱 값을 정확하게 계산하고, 실제 남은 비용을 넘지 않으면서 더 큰 값을 주는 휴리스틱이 목표에 가까운 추정이므로 탐색량을 줄인다는 근거를 들어 선택함.</td><td class="center">3점</td></tr><tr><td>두 휴리스틱 값을 계산하고 하나를 선택함.</td><td class="center">2점</td></tr><tr><td>휴리스틱 값을 계산하지 못함.</td><td class="center">1점</td></tr><tr><td class="center" rowspan="3">⑤</td><td class="center" rowspan="3">A* 탐색 적용하기<br>(3점)</td><td>g‧h‧f를 정확하게 계산하며 A* 탐색을 적용하여 최적 경로와 확장 노드 수를 모두 정확하게 구함.</td><td class="center">3점</td></tr><tr><td>g‧h‧f를 계산하며 A* 탐색을 적용하여 목표에 도달함.</td><td class="center">2점</td></tr><tr><td>A* 탐색을 적용하여 목표에 도달하지 못함.</td><td class="center">1점</td></tr><tr><td class="center" rowspan="4">⑥</td><td class="center" rowspan="4">논술 — 두 탐색을 비교‧분석하기<br>(5점)</td><td>두 탐색의 차이를 정확하게 설명하고, 확장 노드 수를 근거로 효율을 비교하며, 문제 밖의 다른 사례에서도 지능적 탐색의 원리를 파악하여 분석함.</td><td class="center">5점</td></tr><tr><td>두 탐색의 차이를 정확하게 설명하고, 확장 노드 수를 근거로 효율을 비교함.</td><td class="center">4점</td></tr><tr><td>두 탐색의 차이를 설명하고, 지능적 탐색의 원리를 서술함.</td><td class="center">3점</td></tr><tr><td>맹목적 탐색과 정보 이용 탐색의 차이를 서술하지 못함.</td><td class="center">2점</td></tr></table>
 
 <h2>배점 합계</h2>
 <table>
-<tr><th>기본점수</th><th>①</th><th>②</th><th>③</th><th>④</th><th>⑤</th><th>⑥</th><th>합계</th></tr>
-<tr><td class="center">4</td><td class="center">2</td><td class="center">2</td>
-<td class="center">2</td><td class="center">3</td><td class="center">2</td>
-<td class="center">5</td><td class="center"><b>20</b></td></tr>
+<tr><th>①</th><th>②</th><th>③</th><th>④</th><th>⑤</th><th>⑥</th><th>합계</th><th>기본점수</th></tr>
+<tr><td class="center">3</td><td class="center">3</td><td class="center">3</td><td class="center">3</td><td class="center">3</td><td class="center">5</td><td class="center"><b>20</b></td><td class="center">7</td></tr>
 </table>
-
-<h2>세특 기록용 표시 (운영 패키지)</h2>
-<p class="small">명렬표 비고란에 두 코드만 적습니다 — <b>㉮</b> 문항 ④ 만점(근거까지 완성)
-· <b>㉯</b> 문항 ⑥ 에서 진로와 이어지는 사례를 들었음.</p>
+<p class="small">최저점의 합(1+1+1+1+1+2)이 기본점수 7점과 같습니다. 장기 미인정 결석자는 6점입니다.</p>
 </body></html>
