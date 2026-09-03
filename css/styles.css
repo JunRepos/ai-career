@@ -4963,3 +4963,27 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .p8n-ch-bg.off,.p8n-ch.off{opacity:.42}
 /* 도시 배달 A* — 도시 이름 아래에 h(또는 g+h) 를 한 줄 내려 씁니다 (2026-09-02) */
 .cc-node .ca-h{display:block;line-height:1.05;margin-top:1px;font-size:.66em;opacity:.95}
+
+/* ═══ 8퍼즐 A* 탐색 실습 (2026-09-03) — 학생이 g·h·f 를 직접 넣습니다 ═══ */
+.pa-wrap{max-width:1000px;margin:0 auto}
+.pa-pair{display:flex;gap:18px;align-items:center;justify-content:center;margin:14px 0}
+.pa-one{text-align:center}
+.pa-arrow{font-size:26px;color:var(--mz-muted,#8b98a6)}
+.pa-cap{margin-top:6px;font-size:12px;color:var(--text3)}
+.pa-top{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;margin:10px 0 14px}
+.pa-mk{font-size:13px;color:var(--text2);max-width:150px;text-align:center}
+.pa-rows{display:flex;flex-direction:column;gap:10px}
+.pa-row{display:flex;align-items:center;gap:16px;padding:10px 12px;
+  border:1px solid var(--border);border-radius:12px;background:var(--surface2)}
+.pa-rb{text-align:center}
+.pa-ins{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pa-ins label{font-size:15px;font-weight:800;color:var(--text2);width:16px;text-align:center}
+.pa-in{width:58px;height:44px;text-align:center;font:inherit;font-size:19px;font-weight:800;
+  border:1.5px solid var(--border2);border-radius:9px;background:var(--surface);color:var(--text)}
+.pa-in:focus{outline:none;border-color:var(--accent)}
+.pa-in.bad{border-color:var(--danger);background:var(--danger-bg);color:var(--danger-txt)}
+.pa-btns{margin-top:14px;text-align:center}
+.pa-chips{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+.pa-chip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 14px;height:auto}
+.pa-chip em{font-style:normal;font-size:12px;color:var(--text3)}
+.pa-chip b{font-size:15px}

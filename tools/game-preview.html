@@ -46,6 +46,7 @@ function render(){ document.getElementById('stage').innerHTML = gameView(CURRENT
 <!-- 게임 파일들 (index.html 과 같은 순서) -->
 <script src="../js/games/plantwater.js"></script>
 <script src="../js/games/puzzle8.js"></script>
+<script src="../js/games/puzzleastar.js"></script>
 <script src="../js/games/maze.js"></script>
 <script src="../js/games/citycost.js"></script>
 <script src="../js/games/cityastar.js"></script>
@@ -67,6 +68,9 @@ const PV_ACTIONS = {
   'pw-start': () => { pwStart(); },
   'p8-start': () => { p8Start(); },
   'p8-move':  el => p8Move(+el.dataset.i),
+  'pa-start': () => { paStart(); render(); },
+  'pa-check': () => paCheck(),
+  'pa-pick':  el => paPick(+el.dataset.i),
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');

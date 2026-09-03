@@ -40,6 +40,14 @@ const GAMES = {
     loadRank: () => caLoadRank(),
     teacherBoard: () => caBoardForTeacher(),
   },
+  'puzzle-astar': {
+    ico: '🧠', label: '8퍼즐 A* 탐색',
+    desc: '교과서 37쪽 활동3 · 만들어진 상태마다 g·h·f 를 직접 계산해 넣고 f 가 가장 작은 것을 고름',
+    view: () => vPuzzleAstar(),
+    leave: () => paLeave(),
+    loadRank: () => paLoadRank(),
+    teacherBoard: () => paBoardForTeacher(),
+  },
   'puzzle-8': {
     ico: '🧩', label: '8퍼즐 맞추기',
     desc: '학습지 앞면과 같은 판 · 빈칸을 옮겨 목표 상태 만들기 → 맞추면 깊이 2 탐색 트리로 내 경로 확인',

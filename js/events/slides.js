@@ -40,6 +40,9 @@ document.addEventListener('click', async e => {
   if(act === 'cc-pick'){ ccPick(el.dataset.id); return; }
   if(act === 'ca-start'){ caStart(); render(); return; }
   if(act === 'ca-pick'){ caPick(el.dataset.id); return; }
+  if(act === 'pa-start'){ paStart(); render(); return; }
+  if(act === 'pa-check'){ paCheck(); return; }        // 입력칸을 읽어 채점 — render() 안 함
+  if(act === 'pa-pick'){ paPick(+el.dataset.i); return; }
 
   // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
   if(act === 'sl-game-add' && TC_CLS && SLIDE_DECK){
