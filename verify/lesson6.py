@@ -82,23 +82,48 @@ def city_astar():
 
 
 def city_uniform():
-    """책 32~33쪽 안내 그대로 — 누적 비용이 가장 작은 상태를 먼저 테스트합니다."""
-    tie = count()
-    open_list = [(0, next(tie), CITY_START, [CITY_START])]
-    closed, steps = [], []
-    while open_list:
-        g, _, node, path = heapq.heappop(open_list)
-        if node in closed:
-            continue
-        closed.append(node)
-        steps.append({'test': node, 'g': g, 'path': list(path)})
+    """책 32~33쪽 안내 그대로 — 누적 비용이 가장 작은 상태를 먼저 테스트합니다.
+
+    책 33쪽 그림([그림 Ⅰ-…] 균일 비용 탐색 알고리즘 진행 과정)을 슬라이드로 옮기려면
+    **단계마다 오픈/닫힌 리스트와 제외된 자식**이 필요합니다. 그것까지 남깁니다.
+    """
+    open_map = {CITY_START: 0}            # 도시 → 누적 비용 (오픈 리스트)
+    closed = {}                           # 도시 → 누적 비용 (닫힌 리스트)
+    steps = []
+    while open_map:
+        node = min(open_map, key=lambda n: (open_map[n], n))
+        g = open_map.pop(node)
+        closed[node] = g
+        rec = {'test': node, 'g': g, 'made': [], 'skipped': []}
+        if node != CITY_GOAL:
+            for nxt, w in city_neighbors(node):
+                ng = g + w
+                if nxt in closed:
+                    rec['skipped'].append({'node': nxt, 'g': ng, 'why': 'tested'})
+                elif nxt in open_map and open_map[nxt] <= ng:
+                    rec['skipped'].append({'node': nxt, 'g': ng, 'why': 'worse',
+                                           'kept': open_map[nxt]})
+                else:
+                    if nxt in open_map:
+                        rec['skipped'].append({'node': nxt, 'g': open_map[nxt], 'why': 'replaced',
+                                               'kept': ng})
+                    open_map[nxt] = ng
+                    rec['made'].append({'node': nxt, 'g': ng})
+        rec['open'] = [{'node': n, 'g': v} for n, v in sorted(open_map.items(), key=lambda kv: (kv[1], kv[0]))]
+        rec['closed'] = [{'node': n, 'g': v} for n, v in closed.items()]
+        steps.append(rec)
         if node == CITY_GOAL:
-            return steps, path, g
-        for nxt, w in city_neighbors(node):
-            if nxt in closed:
-                continue
-            heapq.heappush(open_list, (g + w, next(tie), nxt, path + [nxt]))
-    return steps, None, None
+            break
+    # 경로 되짚기 — 닫힌 리스트의 누적 비용으로 거꾸로 따라갑니다
+    path, cur = [CITY_GOAL], CITY_GOAL
+    while cur != CITY_START:
+        for nb, w in city_neighbors(cur):
+            if nb in closed and closed[nb] + w == closed[cur]:
+                path.append(nb)
+                cur = nb
+                break
+    path.reverse()
+    return steps, path, closed[CITY_GOAL]
 
 
 # ────────────────────────────────────────────────
@@ -249,7 +274,7 @@ def main():
             'path': path, 'cost': cost, 'tested': len(steps),
             'f_printed': f_of,
             'uniform': {'order': [s2['test'] for s2 in usteps], 'tested': len(usteps),
-                        'path': upath, 'cost': ucost},
+                        'path': upath, 'cost': ucost, 'steps': usteps},
             'uniform_tested': len(usteps),
         },
         'puzzle': {

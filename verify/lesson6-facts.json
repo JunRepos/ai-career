@@ -132,7 +132,216 @@
         "d",
         "e"
       ],
-      "cost": 12
+      "cost": 12,
+      "steps": [
+        {
+          "test": "a",
+          "g": 0,
+          "made": [
+            {
+              "node": "b",
+              "g": 5
+            },
+            {
+              "node": "c",
+              "g": 4
+            }
+          ],
+          "skipped": [],
+          "open": [
+            {
+              "node": "c",
+              "g": 4
+            },
+            {
+              "node": "b",
+              "g": 5
+            }
+          ],
+          "closed": [
+            {
+              "node": "a",
+              "g": 0
+            }
+          ]
+        },
+        {
+          "test": "c",
+          "g": 4,
+          "made": [
+            {
+              "node": "d",
+              "g": 7
+            }
+          ],
+          "skipped": [
+            {
+              "node": "a",
+              "g": 8,
+              "why": "tested"
+            },
+            {
+              "node": "b",
+              "g": 9,
+              "why": "worse",
+              "kept": 5
+            }
+          ],
+          "open": [
+            {
+              "node": "b",
+              "g": 5
+            },
+            {
+              "node": "d",
+              "g": 7
+            }
+          ],
+          "closed": [
+            {
+              "node": "a",
+              "g": 0
+            },
+            {
+              "node": "c",
+              "g": 4
+            }
+          ]
+        },
+        {
+          "test": "b",
+          "g": 5,
+          "made": [
+            {
+              "node": "e",
+              "g": 14
+            }
+          ],
+          "skipped": [
+            {
+              "node": "a",
+              "g": 10,
+              "why": "tested"
+            },
+            {
+              "node": "c",
+              "g": 10,
+              "why": "tested"
+            },
+            {
+              "node": "d",
+              "g": 13,
+              "why": "worse",
+              "kept": 7
+            }
+          ],
+          "open": [
+            {
+              "node": "d",
+              "g": 7
+            },
+            {
+              "node": "e",
+              "g": 14
+            }
+          ],
+          "closed": [
+            {
+              "node": "a",
+              "g": 0
+            },
+            {
+              "node": "c",
+              "g": 4
+            },
+            {
+              "node": "b",
+              "g": 5
+            }
+          ]
+        },
+        {
+          "test": "d",
+          "g": 7,
+          "made": [
+            {
+              "node": "e",
+              "g": 12
+            }
+          ],
+          "skipped": [
+            {
+              "node": "b",
+              "g": 15,
+              "why": "tested"
+            },
+            {
+              "node": "c",
+              "g": 10,
+              "why": "tested"
+            },
+            {
+              "node": "e",
+              "g": 14,
+              "why": "replaced",
+              "kept": 12
+            }
+          ],
+          "open": [
+            {
+              "node": "e",
+              "g": 12
+            }
+          ],
+          "closed": [
+            {
+              "node": "a",
+              "g": 0
+            },
+            {
+              "node": "c",
+              "g": 4
+            },
+            {
+              "node": "b",
+              "g": 5
+            },
+            {
+              "node": "d",
+              "g": 7
+            }
+          ]
+        },
+        {
+          "test": "e",
+          "g": 12,
+          "made": [],
+          "skipped": [],
+          "open": [],
+          "closed": [
+            {
+              "node": "a",
+              "g": 0
+            },
+            {
+              "node": "c",
+              "g": 4
+            },
+            {
+              "node": "b",
+              "g": 5
+            },
+            {
+              "node": "d",
+              "g": 7
+            },
+            {
+              "node": "e",
+              "g": 12
+            }
+          ]
+        }
+      ]
     },
     "uniform_tested": 5
   },

@@ -953,6 +953,7 @@ function drawGraph(pptx, s, d, nodesIn, edges){
         lw: H ? 2.5 : (n.accent ? 2.5 : 1.5),
         tile: n.dim ? T.soft : (n.accent ? T.gold2 : T.pill),
         dim: n.dim,
+        grid: n.grid, lines: n.lines,        // 틱택토처럼 줄을 그려야 할 때
       });
       if(n.label)
         s.addText(n.label, { x: p.cx - NH / 2 - 0.5, y: p.cy + NH / 2 + 0.05, w: NH + 1.0, h: 0.45,
