@@ -8,3 +8,6 @@ tools/samples/*.pptx
 # deck-png.mjs 가 뽑는 슬라이드 그림 — 앱에 올리는 용도라 레포에는 두지 않습니다
 tools/samples/*_png/
 __pycache__/
+
+# 검산기가 찍는 결과 파일 — 소스가 아니라 실행 결과입니다
+verify/*.txt

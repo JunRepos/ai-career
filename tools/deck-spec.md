@@ -1,10 +1,10 @@
 # 덱 JSON 설명서
 
 `tools/deck-build.mjs` 가 읽는 파일 모양입니다. 옵시디언 차시 노트를 이 JSON 으로 옮기면
-pptx 가 나옵니다. 표본은 `tools/samples/lesson3-system.deck.json` (3차시 전체).
+pptx 가 나옵니다. 표본은 `tools/samples/lesson2-system.deck.json` (2차시 전체).
 
 ```bash
-node tools/deck-build.mjs tools/samples/lesson3-system.deck.json
+node tools/deck-build.mjs tools/samples/lesson2-system.deck.json
 node tools/deck-png.mjs "인공지능기초_3차시_인공지능시스템.pptx"
 ```
 

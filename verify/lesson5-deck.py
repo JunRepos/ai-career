@@ -13,7 +13,7 @@
   · 8장 — 정의 글자를 키울 것 → 카드에 def:true (라벨 36 · 본문 40.5)
   · 5·6·7장(맹목적 탐색의 한계·상태 공간·큰 트리 40개)은 **지능적 탐색 차시로** 넘깁니다
 
-자리는 verify/lesson5-check.mjs 로 겹침·간선 스침을 검사했습니다.
+자리는 verify/layout-check.mjs 로 겹침·간선 스침을 검사했습니다.
 """
 import io, sys, json, importlib.util
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')

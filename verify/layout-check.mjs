@@ -1,4 +1,9 @@
-/* diagram 좌표 검사 — deck-build.mjs 의 drawGraph 기하를 그대로 흉내 냅니다.
+/* verify/layout-check.mjs — diagram 좌표 검사 (불러 쓰는 도구)
+
+   직접 실행하면 아무 일도 안 합니다. 좌표를 손으로 놓을 때 작은 .mjs 를 만들어
+   import { check } from '../verify/layout-check.mjs' 로 씁니다.
+
+   diagram 좌표 검사 — deck-build.mjs 의 drawGraph 기하를 그대로 흉내 냅니다.
    ① 노드끼리 겹치는가  ② 간선이 상관없는 노드를 스치고 지나가는가 */
 const M = { x:1.15, right:18.85, w:17.70, top:2.60, bottom:10.62 };
 const bodyH = () => M.bottom - M.top;

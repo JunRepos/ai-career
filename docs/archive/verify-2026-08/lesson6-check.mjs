@@ -1,4 +1,4 @@
-import { check } from './lesson6-layout.mjs';
+import { check } from '../../verify/layout-check.mjs';
 
 /* 산 판 — 지금 덱이 쓰는 자리 */
 const P = {

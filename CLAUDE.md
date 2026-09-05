@@ -10,6 +10,8 @@
 | 슬라이드 배치 종류와 옵션 | `tools/deck-spec.md` |
 
 이 파일은 **수업자료를 만들 때 지킬 규칙**만 담습니다.
+**읽는 문서는 이 넷뿐입니다.** `docs/archive/` 는 옛 문서라 지금 상태와 어긋납니다 — 읽지 않습니다.
+**진도·상태는 `docs/course-map.md` 한 곳에만** 적습니다. 다른 문서에 또 적지 않습니다.
 
 **반은 `ai-2B`(수·목·금) · `ai-2D`(월·화·금) 로만 부릅니다.**
 진도표 엑셀의 '2반/3반' 과 어긋나므로 (2반 = ai-2D, 3반 = ai-2B) 그 표기를 쓰지 않습니다.
@@ -23,16 +25,23 @@
 | 교과서 PDF | `D:/Google drive/신동고등학교/01_교과_인공지능/교과서 및 교사용 지도서/고_인공지능 기초(김현철)_교과서.pdf` |
 | 차시 노트 | `D:/Google drive/Obsidian Vault/01_Projects/수업/인공지능 기초/` |
 | 노트에 붙인 그림 | `D:/Google drive/Obsidian Vault/04_Archive/99_media/` |
-| 덱 원본(JSON) | `tools/samples/lessonN-*.deck.json` |
+| 검산기 · 덱 생성기 | `verify/lessonN.py` → `lessonN-facts.json` → `verify/lessonN-deck.py` |
+| 덱 원본(JSON) | `tools/samples/lessonN-*.deck.json` — 이름 규칙은 그 폴더 `README.md` |
 | 배치 설명서 | `tools/deck-spec.md` |
+
+**`lessonN` 의 N = 진도표 차시 = 덱 제목 앞 번호.** 셋을 늘 같게 씁니다
+(옵시디언 노트의 차시 번호만 하나씩 큽니다).
 
 > **책 쪽 = PDF 쪽 − 3** (PDF 33쪽 = 책 30쪽)
 > 교과서는 `python + fitz` 로 읽고 **결과를 UTF-8 파일로 저장한 뒤 읽습니다.**
 > 콘솔로 바로 출력하면 한글이 깨집니다(cp949).
 
 ```bash
+python verify/lessonN.py                # 검산 → lessonN-facts.json
+python verify/lessonN-deck.py           # facts 를 읽어 덱 JSON
 node tools/deck-build.mjs <덱.json>      # pptx 만들기
 node tools/deck-png.mjs <파일.pptx>      # 슬라이드1.PNG … 로 내보내기
+node tools/deck-upload.mjs <PNG폴더> --title "…" --classes ai-2B,ai-2D
 ```
 
 ---
@@ -41,6 +50,12 @@ node tools/deck-png.mjs <파일.pptx>      # 슬라이드1.PNG … 로 내보내
 
 0. **`docs/course-map.md` 를 먼저 읽는다.** 이번 차시가 어디쯤인지, 다루기로 한 것과
    빼기로 한 것이 무엇인지 확인한다. 자료를 만든 뒤에는 **진도표 상태를 갱신한다.**
+0-1. **폐기한 것을 다시 넣지 않는다.** `course-map.md` 4절의 '빼는 것' 을 확인하고, 자료를 만든 뒤
+   **그 낱말이 0번 나오는지 실제로 세어 본다.** 지금 폐기 목록 — **언덕 오르기 · 최상 우선 ·
+   지역 탐색 · 봉우리**. (2026-09-02 에 다시 넣었다가 되돌린 적 있음)
+0-2. **평가와 관련된 것은 계획서 최종본을 끝까지 읽는다.** 수행평가 세부계획은 **문서 뒤쪽**에 있다.
+   「…교수학습 및 평가 운영 계획 양식(최종본)신동고.hwpx」 **하나만** 근거로 삼는다.
+   평가요소·배점·수행 수준·기본점수는 **내가 정하지 않는다. 그대로 옮긴다.**
 1. 수업자료를 만들기 전 **교과서 해당 쪽을 먼저 읽는다.** 읽지 않고 시작하지 않는다.
 2. 옵시디언 **차시 노트를 처음부터 끝까지** 읽는다. 교과서와 노트가 다르면 **노트가 우선**이다.
 3. 노트에 `> [!slide]` 지시가 있으면 그대로 따른다. 지시가 없으면 배치는 내가 정한다.

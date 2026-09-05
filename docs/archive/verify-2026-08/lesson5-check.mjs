@@ -1,4 +1,4 @@
-import { check } from './lesson6-layout.mjs';
+import { check } from '../../verify/layout-check.mjs';
 
 /* 교과서 a~f 트리 — 지난 시간 복습용. 자식 수가 달라 tree 자동배치가 기울어서 손으로 놓습니다 */
 const T = { a:[51,4], b:[17,50], c:[85,50], d:[0,96], e:[34,96], f:[85,96] };
