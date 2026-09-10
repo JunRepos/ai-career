@@ -842,8 +842,10 @@ async function loadAllClassData(cid){
     loadCustomActivities(cid),
     loadActivityOpen(cid),
     loadActivityHidden(cid),
-    loadDecks(cid)
+    loadDecks(cid),
+    loadA1Open(cid)
   ]);
+  a1WatchOpen(cid);   // 1차 수행평가 작성 범위 — 인공지능 기초 반만 (views/assess1.js)
 
   // 이번 시간에 열어둔 자료가 무엇인지 먼저 확인해야 메모를 제대로 찾습니다.
   try {

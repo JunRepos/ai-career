@@ -1,21 +1,33 @@
 # -*- coding: utf-8 -*-
 """
-verify/assess1-docs.py — 1차 수행평가 문서 세 종
+verify/assess1-docs.py — 1차 수행평가 문서 세 종 (2026-09-10 논술형 문항 형식으로 고쳐 씀)
 
-  ① assess1-guide.html  학생 배부용 안내서 (채점 기준 포함)
-  ② assess1-sheet.html  평가지
-  ③ assess1-key.html    교사용 채점 기준 · 예시 답안
+  ① assess1-guide.html  학생 배부용 안내 (평가 개요 · 문항 · 참고 자료 · 채점기준표 · 유의 사항)
+  ② assess1-sheet.html  평가지 (문항 5 — 발문 + 작성 조건 + 답안란)
+  ③ assess1-key.html    교사용 채점기준표 · 예시 답안 · 학교생활기록부 기재 참고
 
-⚠ **평가요소·배점·수행 수준(채점 기준)·기본점수는 제가 정하지 않습니다.**
-   「2026학년도 2학년 2학기 인공지능 기초 교수학습 및 평가 운영 계획 양식(최종본)신동고」
-   6-가 의 것을 **글자 그대로** 옮겼습니다.
-     논술 15점 = 문제 상황 탐색·구상 5 + 특성 적용 설명 5 + 도입 전후 비교·분석 5
-     도식화 5점 = 인공지능 시스템의 구조로 표현하기
-     기본점수 8점 (장기 미인정 결석자 7점) · 최저점의 합 2+2+2+2 = 8
+말투와 형식의 근거 — 「2026학년도 중등 학생평가 및 학업성적관리 이해하기」(선생님 평가계획서 폴더)
+  · 논술형 문항은 **발문(문두) + 보기 또는 자료 + 조건** 으로 구성한다.
+  · 발문에는 반응 지시어(서술하시오 · 설명하시오 · 비교하시오 · 구성하시오 …)를 쓴다.
+  · 조건은 "자료에서 찾아 쓸 것", "사례를 구체적으로 제시할 것" 처럼 **'~할 것'** 으로 적는다.
+  · 조건에 정답 전체 또는 일부가 암시되지 않도록 한다.  ← 옛 판의 '느리다·놓친다·비싸다' 식
+    예시 나열과 권유형 물음("~을 떠올려 보세요")을 모두 걷어낸 까닭입니다.
+  · 채점기준표의 수행 수준에 조건의 내용을 포함하여 진술한다.
+  채점 기준의 물음형("~하였는가?")과 "N가지를 충족한 경우"는 완산고 인공지능기초 평가규정의 판을
+  따랐습니다 (research/wansan.txt).
 
-⚠ 문항에 쓰는 용어는 verify/assess1-terms.py 로 **교과서 22~24쪽에 있는지 대조**했습니다.
+⚠ 평가요소 이름 4개 · 배점 5·5·5·5 · 기본점수 8점은 계획서 6-가 그대로입니다.
+   채점은 요소마다 **채점 기준 3개**로 합니다 (3개 충족=5 · 2개=4 · 1개=3 · 0개=2).
+   계획서의 수행 수준 문장은 교사용에 참고로 함께 싣습니다.
+⚠ '인공지능의 특성' = 교과서 16쪽 그림 Ⅰ-3 의 다섯 가지 (인식·추론·학습·생성·문제 해결).
+   2차시에 이 다섯으로 가르쳤습니다. 23쪽 '인공지능 시스템의 특성' 세 가지와 다른 것입니다.
+⚠ 문항에 쓰는 용어는 verify/assess1-terms.py 로 교과서 16·22~24쪽에 있는지 대조했습니다.
+⚠ 2026-09-09 의 '다섯 칸 + 안내 물음' 판은
+   C:/Users/PC/AppData/Local/Temp/claude/assess1-docs.boxes.py 에 남겼습니다.
+   그 판에서 선생님이 캔버스로 고치신 두 가지를 반영했습니다 —
+   문항 3 의 빈칸 문장 틀을 없애고 그 자리에 특성 표를 자료로 넣었고, 문항 4 의 비교 표를 없앴습니다.
 """
-import json, io, os
+import re, json, io, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -26,14 +38,63 @@ assert not T['missing'], '교과서에 없는 말이 있습니다: %s' % T['miss
 AREA = '인공지능의 특성을 활용하여 문제 해결 방안 설계하기'
 FULL, BASE, BASE_ABSENT = 20, 8, 7
 WHEN = '9월 2주 ~ 3주'
+ESSAY = '15%'
 STANDARD = ('[12인기01-01]', '인공지능의 지능적 판단에 대한 이해를 바탕으로 인공지능을 활용한 '
                              '실생활 및 다양한 학문 분야의 문제 해결 사례를 비교･분석한다.')
-TASKS = ['문제 상황을 탐색하여 필요한 인공지능 구상하기',
-         '인공지능의 특성을 적용하여 설명하기',
-         '인공지능 도입 전후를 비교·분석하기',
-         '인공지능 시스템의 구조로 표현하기']
 
-# (갈래, 문항, 평가요소, 배점, [(점수, 수행 수준)…]) — 계획서 문구 그대로
+FEATURES = T['features']      # 교과서 16쪽 그림 Ⅰ-3 — 인식·추론·학습·생성·문제 해결
+TRAITS = T['traits']          # 교과서 23쪽 — 안내에서 '실수 가능성' 한 줄만 씀
+AGENT = T['agent']            # 교과서 22쪽 그림 Ⅰ-5 구조
+FEAT_NAMES = ' · '.join(n for n, _ in FEATURES)
+
+# 문두
+TOPIC = ('자신의 진로 또는 관심 분야에서 인공지능으로 해결할 수 있는 문제 상황을 하나 선정하고, '
+         '그 문제를 해결할 인공지능을 구상하여 아래 다섯 문항에 답하시오. <b>[총 20점]</b>')
+TOPIC_SUB = ''
+
+# 문항 (번호, 제목, 배점, 평가요소, 발문, [작성 조건], 답안 줄 수)
+ITEMS = [
+    ('1', '문제 상황 선정', 5, '①',
+     '선정한 문제 상황과 그 문제를 선정한 이유를 서술하시오.',
+     ['문제 상황을 접한 경로를 위 칸에 밝힐 것. 기사나 뉴스인 경우 제목, 매체, 날짜를 함께 적을 것',
+      '선정한 이유를 자신의 진로나 관심 분야, 실생활과의 연계, 기존 해결 방식의 한계 가운데 '
+      '하나 이상과 연결하여 서술할 것'], 7),
+    ('2', '문제 상황 분석', 5, '①',
+     '선정한 문제 상황을 자신의 말로 설명하고, 이 문제에 인공지능이 필요한 까닭을 서술하시오.',
+     ['누가, 언제, 어떤 어려움을 겪는지 구체적으로 밝힐 것',
+      '현재의 해결 방식과 그 방식의 한계를 함께 제시할 것',
+      '문제가 해결되었다고 판단할 수 있는 기준을 한 가지 이상 제시할 것'], 8),
+    ('3', '인공지능 구상', 5, '②',
+     '문제를 해결할 인공지능에 대하여 아래 제시된 인공지능의 특성과 연관지어 자세하게 서술하시오. '
+     '(제시어를 모두 활용할 필요는 없음)',
+     [], 9),
+    ('4', '도입 전후 비교', 5, '③',
+     '인공지능 도입 전과 후를 비교하여 서술하고, 도입에 따라 새로 발생할 수 있는 문제를 분석하시오.',
+     ['비교 기준을 두 가지 이상 제시하고, 그 기준에 따라 도입 전과 후를 각각 서술할 것',
+      '기대되는 변화를 서술할 것',
+      '인공지능이 잘못 판단하는 경우에 생기는 문제와, 사람이 담당해야 할 부분을 함께 서술할 것'],
+     [('', 3), ('', 7)]),
+    ('5', '인공지능 시스템의 구조', 5, '④',
+     '구상한 인공지능이 환경 및 인간과 주고받는 과정을 아래 제시어의 다섯 단계로 나누어 서술하시오.',
+     ['다섯 단계마다 자신의 인공지능에서 무엇에 해당하는지 쓸 것',
+      '인공지능이 스스로 판단하는 부분과 그 판단의 내용을 밝힐 것',
+      '행동의 결과가 환경을 어떻게 바꾸는지, 이러한 과정이 어떤 프로세스로 반복되는지 서술할 것'], 12),
+]
+
+# 자료 2 — 지능 에이전트 구조 (교과서 22쪽 그림 Ⅰ-5 의 다섯 단계를 칸 넷으로)
+# 평가지에는 제시어만 둡니다 (뜻과 예는 안내에).
+# 경기도교육청 논술형 자료집의 '제시어를 모두 사용하여 서술하시오' 방식입니다.
+
+# 유의 사항 (평가지 · 안내 공통)
+NOTICE = [
+    '평가 중 화면은 녹화된다.',
+    '평가 중 생성형 인공지능을 활용하다 적발되면 해당 영역은 기본점수(%d점)를 부여한다. '
+    '인터넷 검색 결과에 나타나는 생성형 인공지능의 답변을 활용한 경우도 포함한다.' % BASE,
+    '답안을 저장하고 제출하여 교사 화면에 표시되지 않으면 채점할 수 없다. 제출 뒤 표시되었는지 반드시 확인한다.',
+    '인공지능으로 타인의 결과물을 모방하거나 공정한 평가를 방해하는 행위는 부정행위로 간주한다.',
+]
+
+# 계획서 6-가 의 수행 수준 문장 (참고용 · 글자 그대로)
 RUBRIC = [
     ('논술 (15점)', '①', '문제 상황을 탐색하고 필요한 인공지능 구상하기', 5, [
         (5, '인공지능으로 해결할 수 있는 문제 상황을 구체적으로 탐색하고, 그 문제를 해결할 인공지능이 '
@@ -65,8 +126,72 @@ RUBRIC = [
 assert sum(r[3] for r in RUBRIC) == FULL
 assert sum(r[4][-1][0] for r in RUBRIC) == BASE
 
-TRAITS = T['traits']          # 교과서 23쪽 특성 세 가지
-AGENT = T['agent']            # 교과서 22쪽 그림 Ⅰ-5 구조
+# 채점 기준 — 실제 채점은 이것으로 (요소, 이름, 해당 문항, [(점수, 수준)…])
+# 계획서 6-가 수행 수준 문장을 우리 문항의 조건에 맞춰 풀어 썼습니다.
+SCALE = [
+    ('①', '문제 상황을 탐색하고 필요한 인공지능 구상하기', '1 · 2번', [
+        (5, '문제 상황을 접한 경로와 선정 이유를 밝히고, 누가 · 언제 · 어떤 어려움을 겪는지, 현재의 해결 방식과 '
+            '그 한계, 해결 판단 기준을 구체적으로 제시하여 인공지능이 필요한 까닭을 문제의 특성과 연결지어 서술함.'),
+        (4, '문제 상황과 선정 이유, 인공지능이 필요한 까닭을 서술하였으나, 어려움을 겪는 대상과 상황, '
+            '현재 해결 방식의 한계, 해결 판단 기준 가운데 일부가 빠지거나 구체적이지 않음.'),
+        (3, '문제 상황만 제시하고 선정 이유나 인공지능이 필요한 까닭을 제한적으로 서술함.'),
+        (2, '미작성이거나 인공지능으로 해결할 수 있는 문제 상황을 제시하지 못함.')]),
+    ('②', '인공지능의 특성을 적용하여 설명하기', '3번', [
+        (5, '구상한 인공지능이 하는 일을 밝히고, 인공지능의 특성 가운데 해당하는 것을 인공지능의 구체적인 동작에 '
+            '대응시켜 그렇게 판단한 근거를 특성의 뜻과 연결하여 서술함.'),
+        (4, '인공지능이 하는 일과 해당하는 특성을 밝히고 동작에 대응시켰으나, 특성의 뜻과 연결한 근거가 부족함.'),
+        (3, '인공지능의 특성을 제시하였으나 이름만 나열하여 인공지능의 동작과 대응시키지 못함.'),
+        (2, '미작성이거나 인공지능의 특성과 연결하여 서술하지 못함.')]),
+    ('③', '인공지능 도입 전후를 비교·분석하기', '4번', [
+        (5, '비교 기준을 두 가지 이상 제시하여 기준별로 도입 전과 후를 비교하고, 기대되는 변화와 함께 '
+            '인공지능이 잘못 판단하는 경우에 생기는 문제와 사람이 담당해야 할 부분을 서술함.'),
+        (4, '비교 기준에 따라 도입 전후를 비교하고 기대되는 변화를 서술하였으나, 비교 기준이 한 가지이거나 '
+            '잘못 판단하는 경우의 문제, 사람이 담당할 부분 가운데 일부가 빠짐.'),
+        (3, '비교 기준이 드러나지 않은 채 도입 후 기대되는 변화 위주로 서술함.'),
+        (2, '미작성이거나 도입 전후를 비교하지 못함.')]),
+    ('④', '인공지능 시스템의 구조로 표현하기', '5번', [
+        (5, '다섯 단계마다 자신의 인공지능에서 해당하는 내용을 쓰고, 스스로 판단하는 부분과 그 판단의 내용, '
+            '행동의 결과가 환경을 바꾸어 과정이 반복되는 흐름을 서술함.'),
+        (4, '다섯 단계를 자신의 인공지능 내용으로 서술하였으나, 판단의 내용이나 반복되는 흐름 가운데 '
+            '일부가 빠지거나 구체적이지 않음.'),
+        (3, '일부 단계만 자신의 인공지능 내용에 대응시켜 서술함.'),
+        (2, '미작성이거나 단계 이름만 나열하여 자신의 인공지능 내용이 드러나지 않음.')]),
+]
+assert sum(lv[0][0] for *_, lv in SCALE) == FULL
+assert sum(lv[-1][0] for *_, lv in SCALE) == BASE
+
+# [12인기01-01] 성취수준 — 계획서 6-가 에 실린 문장 그대로
+LEVELS = [
+    ('A', '인공지능의 개념과 특성을 <b>올바르게 설명</b>하고, 인공지능을 활용한 실생활 및 다양한 학문 '
+          '분야의 문제 해결 사례를 <b>구체적으로 비교･분석</b>하여 인공지능의 필요성과 적용 가능성을 '
+          '<b>내면화</b>할 수 있다.'),
+    ('B', '… <b>올바르게 설명</b>하고, … 사례를 <b>비교･분석</b>하여 … <b>인식</b>할 수 있다.'),
+    ('C', '… <b>설명</b>하고, … 사례를 <b>비교･분석</b>하여 … <b>인식</b>할 수 있다.'),
+    ('D', '… <b>설명</b>하고, … 사례를 <b>부분적으로 비교･분석</b>하여 … <b>수용</b>할 수 있다.'),
+    ('E', '… <b>인지</b>하고, … 사례를 <b>부분적으로 비교･분석</b>하여 … <b>수용</b>할 수 있다.'),
+]
+
+# 2시간 운영
+PLAN = [
+    ('1차시', '평가지와 안내를 배부한다. 교과서 16 · 22 ~ 24쪽을 확인한 뒤 1 ~ 3번을 작성한다. '
+              '차시 종료 시 평가지를 걷는다.'),
+    ('2차시', '평가지를 다시 배부한다. 4 ~ 5번을 작성하여 제출한다.'),
+]
+
+# 분야별 문제 상황 예시 — 교과서 17~19쪽 분야 표를 뼈대로
+CASES = [
+    ('보건 · 의료', '엑스레이에서 작은 결절을 놓친다 → 영상을 읽어 의심 부위를 표시하는 인공지능'),
+    ('교육', '틀린 문제를 다시 틀린다 → 오답 유형에 따라 다음 문제를 제시하는 인공지능'),
+    ('농업 · 환경', '병든 잎을 늦게 발견한다 → 잎 사진으로 병해를 판별하는 인공지능'),
+    ('공학 · 제조', '기계가 갑자기 멈춘다 → 소리로 고장을 예측하는 인공지능'),
+    ('예술 · 미디어', '영상 자막 작업에 시간이 오래 걸린다 → 자동 자막 및 번역 인공지능'),
+    ('체육', '운동 자세가 잘못되어도 알기 어렵다 → 영상으로 자세를 분석하는 인공지능'),
+    ('경영 · 금융', '카드 도용을 늦게 확인한다 → 이상 거래를 탐지하는 인공지능'),
+    ('사회 · 복지 · 행정', '독거 어르신의 이상을 늦게 확인한다 → 안부를 확인하는 스피커 인공지능'),
+    ('교통', '보행자가 많을 때 신호 시간이 부족하다 → 보행자 수에 따라 신호를 조절하는 인공지능'),
+    ('언어 · 소통', '외국어 안내문을 읽지 못한다 → 촬영한 문장을 번역하는 인공지능'),
+    ('학교생활', '급식 대기 줄이 길다 → 대기 상황을 보고 이동 시점을 알려 주는 인공지능'),
+]
 
 CSS = """
 @page { size: A4 portrait; margin: 12mm 14mm; }
@@ -74,7 +199,7 @@ html, body { background:#fff; color-scheme: light only; }
 body { font-family:"맑은 고딕","Malgun Gothic",sans-serif; color:#111;
        font-size:10.5pt; line-height:1.55; margin:0; width:182mm; }
 h1 { font-size:16pt; margin:0 0 2mm }
-h2 { font-size:12pt; margin:6mm 0 2mm; padding-bottom:1mm; border-bottom:1.4pt solid #222 }
+h2 { font-size:12pt; margin:5mm 0 2mm; padding-bottom:1mm; border-bottom:1.4pt solid #222 }
 h3 { font-size:11pt; margin:4mm 0 1.5mm }
 .top { display:flex; justify-content:space-between; align-items:flex-end;
        border-bottom:2.2pt solid #111; padding-bottom:2mm; margin-bottom:3mm }
@@ -84,19 +209,70 @@ table { border-collapse:collapse; width:100%; margin:2mm 0 }
 th, td { border:0.8pt solid #666; padding:1.6mm 2mm; font-size:9.8pt; vertical-align:top }
 th { background:#f0f0f0; font-weight:700; text-align:center }
 .center { text-align:center }
-.q { margin:5mm 0 0; padding:2.5mm 3mm; border:1pt solid #222; background:#fafafa;
-     font-weight:700; font-size:11pt; display:flex; justify-content:space-between }
-.hint { font-size:9.3pt; color:#444; margin:1.5mm 0 }
-.rule { border:1pt solid #222; padding:3mm; margin:3mm 0; background:#f7f7f7 }
-.rule ol, .rule ul { margin:0; padding-left:5mm }
-.rule li { margin:1mm 0; font-size:10pt }
-.ans { border:0.8pt solid #888; min-height:18mm; margin:2mm 0; padding:2mm }
-.lines div { border-bottom:0.6pt solid #999; height:7.4mm }
+.hint { font-size:9.5pt; color:#333; margin:1.5mm 0 }
 .note { font-size:9.2pt; color:#333; border-left:2.5pt solid #999; padding-left:2.5mm; margin:2mm 0 }
 .pagebreak { page-break-before:always }
+table.tight th, table.tight td { font-size:9pt; padding:1.1mm 1.6mm; line-height:1.4 }
+table.dense th, table.dense td { font-size:8.7pt; padding:.8mm 1.4mm; line-height:1.35 }
+.facts td, .facts th { font-size:9.5pt; padding:1.3mm 2mm }
 .small { font-size:9pt; color:#444 }
-.draw { border:1pt solid #444; height:105mm; margin:2mm 0; position:relative }
-.draw span { position:absolute; left:3mm; top:2mm; font-size:9pt; color:#777 }
+.topic { font-size:10.8pt; padding:3mm 4mm; border:1.6pt solid #111; margin:2mm 0 1.5mm;
+         line-height:1.6 }
+.topic .sub2 { font-size:9.4pt; color:#444; margin-top:1.2mm }
+/* 문항 */
+.item { border:1pt solid #222; margin:3mm 0 0 }
+.item .ih { display:flex; align-items:baseline; gap:2.5mm; background:#f0f0f0;
+            border-bottom:0.8pt solid #222; padding:1.4mm 2.5mm }
+.item .ih .n { font-size:12pt; font-weight:700 }
+.item .ih .t { font-size:11pt; font-weight:700 }
+.item .ih .p { font-size:9.6pt; margin-left:auto; white-space:nowrap }
+.item .ib { padding:2mm 2.5mm 0 }
+.ask { font-size:10.2pt; line-height:1.6; margin:0 0 1.5mm }
+.cond { border:0.8pt solid #555; background:#fafafa; padding:1.6mm 2.5mm; margin:0 0 1.5mm }
+.cond .ct { font-size:9.4pt; font-weight:700; margin-bottom:.6mm }
+.cond .cl { font-size:9.5pt; line-height:1.55; display:flex; gap:1.6mm; margin:.2mm 0 }
+.cond .cl .cn { flex:0 0 3mm }
+.res { display:flex; gap:3mm; align-items:center; font-size:9.8pt; margin:0 0 1.5mm }
+.res .rl { flex:1; border-bottom:0.7pt solid #666; height:5.5mm }
+/* 답안란 */
+.paper { border-top:0.8pt solid #999; margin:0 -2.5mm; padding:0 3mm }
+.paper div { border-bottom:0.6pt solid #aaa; height:8.4mm }
+.paper div:last-child { border-bottom:0 }
+.alab { font-size:9.6pt; margin:1.2mm 0 0 }
+/* 자료 */
+.src { border:1pt solid #444; padding:2mm 2.5mm; margin:0 0 2mm }
+.src .st { font-size:9.6pt; font-weight:700; margin-bottom:1mm }
+.src table { margin:0 }
+.src .fl { display:flex; gap:2mm; font-size:9.2pt; line-height:1.45; margin:.3mm 0 }
+.src .fl .fn { flex:0 0 17mm; font-weight:700 }
+.kw { border:0.8pt solid #555; background:#fafafa; padding:1.6mm 2.5mm; margin:0 0 1.6mm;
+      text-align:center; font-size:10.4pt; letter-spacing:.15mm }
+.kw .t { font-size:9pt; color:#555; letter-spacing:0; margin-right:4mm }
+.ex5 .row { display:flex; align-items:stretch }
+.ex5 .b { flex:1; border:0.9pt solid #333; padding:1.2mm 1.2mm; font-size:7.8pt; line-height:1.35;
+          text-align:center; background:#fff }
+.ex5 .b b { font-size:8.4pt }
+.ex5 .a { flex:0 0 15mm; display:flex; flex-direction:column; align-items:center; justify-content:center;
+          font-size:7pt; color:#555; text-align:center; line-height:1.25 }
+.ex5 .a .ar { font-size:12pt; color:#333; line-height:1 }
+.ex5 .loop { font-size:7.8pt; color:#555; text-align:center; margin-top:1.2mm;
+             border-top:0.7pt dashed #999; padding-top:1mm }
+.zone { border:1pt solid #444; height:132mm; margin:1mm 0 2mm; position:relative; background:#fff }
+.zone .zd { position:absolute; left:36%; top:0; bottom:0; border-left:0.8pt dashed #bbb }
+.zone .zl, .zone .zr { position:absolute; top:1.6mm; font-size:8.6pt; color:#999 }
+.zone .zl { left:3mm }
+.zone .zr { left:36%; margin-left:3mm }
+.agent { display:flex; align-items:stretch; margin:1mm 0 }
+.abox { flex:1; border:1pt solid #333; min-height:132mm; padding:1.6mm 2mm; background:#fff }
+.abox .at { font-weight:700; font-size:10pt; text-align:center; border-bottom:0.6pt solid #999;
+            padding-bottom:1mm; margin-bottom:1.5mm }
+.abox .aq { font-size:8.4pt; color:#777; text-align:center }
+.aarr { flex:0 0 8mm; display:flex; align-items:center; justify-content:center;
+        font-size:15pt; color:#333 }
+.loop { font-size:9pt; color:#555; text-align:right; margin:.5mm 0 0 }
+/* 예시 답안 */
+.ex p { margin:0 0 2mm; font-size:9.8pt; line-height:1.6; text-align:justify }
+.ex .m { color:#555; font-size:8.6pt }
 """
 
 
@@ -110,218 +286,312 @@ HEAD = ('<div class="top"><div><h1>%s</h1>'
         '<div class="sub">인공지능 기초 · 1차 수행평가 · ' + AREA + '</div></div>'
         '<div class="name">%s</div></div>')
 
+NUM = '①②③④⑤⑥'
 
-def rubric_table():
+
+# ── 조각 ──────────────────────────────────────
+def paper(n):
+    if isinstance(n, list):
+        return ''.join((('<div class="alab">%s</div>' % lab) if lab else '')
+                       + '<div class="paper">%s</div>' % ''.join('<div></div>' for _ in range(k))
+                       for lab, k in n)
+    return '<div class="paper">%s</div>' % ''.join('<div></div>' for _ in range(n))
+
+
+def cond_box(conds):
+    if not conds:
+        return ''
+    rows = ''.join('<div class="cl"><span class="cn">∙</span><span>%s</span></div>' % c
+                   for c in conds)
+    return '<div class="cond"><div class="ct">&lt;조건&gt;</div>%s</div>' % rows
+
+
+def item_head(no, title, pt):
+    # 1번은 배점을 표기하지 않습니다 (2026-09-10 선생님 편집).
+    badge = '' if no == '1' else '<span class="p">[%d점]</span>' % pt
+    return ('<div class="ih"><span class="n">%s.</span><span class="t">%s</span>%s</div>'
+            % (no, title, badge))
+
+
+def feat_keywords():
+    return keywords([n for n, _ in FEATURES])
+
+
+def agent_keywords():
+    return keywords(AGENT)
+
+
+def keywords(words):
+    return ('<div class="kw"><span class="t">제시어</span>%s</div>'
+            % '&nbsp;&nbsp;&nbsp;&nbsp;'.join(words))
+
+
+def notice_list(tag='p'):
+    return ''.join('<div class="hint" style="margin:.8mm 0">∙ %s</div>' % n for n in NOTICE)
+
+
+def scale_table():
     rows = ''
-    for group, no, name, pt, levels in RUBRIC:
-        n = len(levels)
-        for i, (sc, desc) in enumerate(levels):
-            first = ''
-            if i == 0:
-                g = '<td class="center" rowspan="%d">%s</td>' % (n * 3, group) if group == '논술 (15점)' \
-                    else ('<td class="center" rowspan="%d">%s</td>' % (n, group) if group else '')
-                first = g + ('<td class="center" rowspan="%d">%s<br>%s<br>(%d점)</td>'
-                             % (n, no, name, pt))
-            rows += '<tr>%s<td>%s</td><td class="center">%d점</td></tr>' % (first, desc, sc)
-    return ('<table><tr><th style="width:20mm">갈래</th><th style="width:34mm">평가요소</th>'
-            '<th>수행 수준 (채점 기준)</th><th style="width:13mm">배점</th></tr>%s</table>' % rows)
+    for no, name, where, levels in SCALE:
+        for k, (pt, txt) in enumerate(levels):
+            first = ('<td class="center" rowspan="4">%s %s<br><span class="small">(%s)</span></td>'
+                     % (no, name, where)) if k == 0 else ''
+            rows += '<tr>%s<td class="center">%d점</td><td>%s</td></tr>' % (first, pt, txt)
+    return ('<table class="tight dense"><tr><th style="width:46mm">평가 요소</th><th style="width:12mm">배점</th>'
+            '<th>채점 기준</th></tr>%s</table>' % rows)
 
 
-TRAIT_ROWS = ''.join('<tr><td class="center">%s</td><td>%s</td></tr>' % (n, d) for n, d in TRAITS)
+def plan_table():
+    return '<table>%s</table>' % ''.join(
+        '<tr><th style="width:18mm">%s</th><td>%s</td></tr>' % p for p in PLAN)
 
 
-# ══════════════════════════════════════════════
-def guide():
-    body = HEAD % ('수행평가 안내서', '2학년 &nbsp; 반 &nbsp; 번 &nbsp; 이름') + """
-<div class="note">평가요소·배점·채점 기준·기본점수는
-「2026학년도 2학년 2학기 인공지능 기초 교수‧학습 및 평가 운영 계획」에 실린 것을 그대로 옮긴 것입니다.</div>
-
-<h2>1. 무엇을 평가하는가</h2>
-<table>
-<tr><th style="width:26mm">평가 영역명</th><td>%s</td></tr>
-<tr><th>영역 만점</th><td><b>%d점</b> · 기본점수 <b>%d점</b> (장기 미인정 결석자 %d점)</td></tr>
-<tr><th>평가 시기</th><td>%s</td></tr>
-<tr><th>평가 방법</th><td>■ 논술 &nbsp; ■ 기타 &nbsp; ■ 교사 관찰 및 기록</td></tr>
-<tr><th>성취기준</th><td>%s %s</td></tr>
-<tr><th>수행 과제</th><td><ul style="margin:0;padding-left:5mm">%s</ul></td></tr>
-</table>
-
-<h2>2. 무엇을 준비해야 하는가</h2>
-<p class="hint">교과서 <b>22~24쪽</b>에서 배운 것을 그대로 씁니다. 아래 두 가지는 반드시 챙기세요.</p>
-
-<h3>인공지능 시스템의 특성 (교과서 23쪽)</h3>
-<table><tr><th style="width:60mm">특성</th><th>뜻</th></tr>%s</table>
-
-<h3>지능 에이전트의 기본 구조 (교과서 22쪽 그림 Ⅰ-5)</h3>
-<div class="rule"><b>%s</b>
-<p class="small" style="margin:2mm 0 0">환경·인간에게서 <b>인식</b>해 들여오고, <b>상황을 판단</b>하고
-<b>행동을 결정</b>해 <b>행동</b>으로 내보내며, 이 과정을 <b>반복</b>합니다.
-지능적 판단에는 문제 해결·추론·학습이 들어갑니다.</p></div>
-
-<h2>3. 어떤 문제 상황을 골라도 되는가</h2>
-<p class="hint"><b>내 주변에서 직접 고릅니다.</b> 학교·집·동네에서 겪는 불편, 또는 <b>내 진로 분야</b>에서
-사람이 하기 번거롭거나 놓치기 쉬운 일이면 좋습니다.
-교과서에 나온 것(챗봇, 맞춤형 도서 추천, 로봇 청소기, 공항 안내 로봇)을 <b>그대로 쓰지는 마세요</b> —
-그것을 참고해 <b>내 문제 상황</b>을 찾는 것이 이 평가입니다.</p>
-
-<div class="pagebreak"></div>
-<h2>4. 채점 기준</h2>
-%s
-<p class="small">최저점을 모두 받으면 %d점이 되며, 이것이 기본점수입니다.</p>
-
-<h2>5. 인공지능 활용에 대하여</h2>
-<p class="hint">이 과목의 논술형 평가는 <b>컴퓨터 및 전자기기를 사용하지 않고 수업 중에 작성</b>합니다.
-평가를 준비하며 인공지능을 활용했다면 <b>사용한 인공지능 종류·질문 내용·출처</b>를 평가지 마지막 칸에
-적어 주세요. 적었다고 감점하지 않습니다.
-인공지능으로 타인의 결과물을 모방하거나 공정한 평가를 방해하는 행위는 <b>부정행위로 간주</b>합니다.</p>
-""" % (AREA, FULL, BASE, BASE_ABSENT, WHEN, STANDARD[0], STANDARD[1],
-       ''.join('<li>%s</li>' % t for t in TASKS), TRAIT_ROWS,
-       ' → '.join(AGENT), rubric_table(), BASE)
-    return page('수행평가 안내서', body)
+CASE_ROWS = ''.join('<tr><td class="center">%s</td><td>%s</td></tr>' % c for c in CASES)
 
 
 # ══════════════════════════════════════════════
-def qhead(no, name, pt):
-    return '<div class="q"><span>%s %s</span><span>[%d점]</span></div>' % (no, name, pt)
-
-
-def lines(n):
-    return '<div class="ans lines">%s</div>' % ('<div></div>' * n)
-
-
 def sheet():
-    trait_rows = ''.join(
-        '<tr><td class="center" style="width:44mm">%s</td>'
-        '<td style="height:20mm"></td><td style="height:20mm"></td></tr>' % n
-        for n, _ in TRAITS)
-    body = HEAD % ('수행평가 평가지', '2학년 &nbsp; 반 &nbsp; 번 &nbsp; 이름') + """
-<p class="hint">내 주변이나 내 진로 분야에서 <b>인공지능으로 해결할 수 있는 문제 상황</b>을 하나 골라
-아래 물음에 답하시오. 교과서 22~24쪽에서 배운 말을 쓰시오.</p>
+    def block(i, pre='', mid='', note=''):
+        no, title, pt, elem, ask, conds, lines = ITEMS[i]
+        return ('<div class="item">%s<div class="ib">%s<div class="ask">%s</div>%s%s%s%s</div></div>'
+                % (item_head(no, title, pt), pre, ask, note, cond_box(conds), mid,
+                   paper(lines) if lines else ''))
 
-%s
-<p class="hint">(1) 고른 문제 상황과, 그 문제를 해결할 인공지능이 하는 일을 쓰시오.</p>
-<table>
-<tr><th style="width:42mm">문제 상황</th><td style="height:16mm"></td></tr>
-<tr><th>지금은 어떻게 해결하고 있는가</th><td style="height:16mm"></td></tr>
-<tr><th>내가 구상한 인공지능이 하는 일</th><td style="height:22mm"></td></tr>
-</table>
-<p class="hint">(2) 이 문제를 <b>왜 인공지능으로</b> 해결해야 하는지, <b>문제의 특성과 연결지어</b> 쓰시오.</p>
-%s
+    b1 = block(0, mid='<div class="res"><span>문제 상황을 접한 경로</span><span class="rl"></span></div>')
+    b2 = block(1)
+    b3 = block(2, note=feat_keywords(),
+               mid='<table style="margin:0 0 1.5mm"><tr><th style="width:30mm">인공지능의 명칭</th>'
+                   '<td style="height:8mm"></td>'
+                   '<th style="width:44mm">기존의 것 / 새로 구상한 것</th><td style="width:20mm"></td></tr></table>')
+    b4 = block(3)
+    n5, t5, p5, e5, a5, c5, l5 = ITEMS[4]
+    b5 = block(4, note=agent_keywords())
 
+    body = ('<div class="top"><div><h1>%s</h1></div>'
+            '<div class="name">2학년 &nbsp; 반 &nbsp; 번 &nbsp; 이름</div></div>' % AREA) + """
+<div class="topic">%s</div>
 %s
-<p class="hint">교과서 23쪽의 <b>인공지능 시스템의 특성</b> 세 가지가 내가 구상한 인공지능의
-<b>어떤 동작</b>에 해당하는지 쓰고, <b>그렇게 볼 수 있는 까닭</b>을 함께 쓰시오.</p>
-<table>
-<tr><th>인공지능 시스템의 특성</th><th style="width:52mm">내 인공지능의 어떤 동작인가</th>
-<th>그렇게 볼 수 있는 까닭</th></tr>
-%s
-</table>
-
-%s
-<p class="hint">인공지능을 <b>도입하기 전과 후</b>의 문제 해결 과정을 <b>기준을 정해</b> 비교하시오.
-(기준의 예 — 걸리는 시간, 사람이 하는 일, 정확도, 비용)</p>
-<table>
-<tr><th style="width:32mm">비교 기준</th><th>도입 전</th><th>도입 후</th></tr>
-<tr><td style="height:16mm"></td><td></td><td></td></tr>
-<tr><td style="height:16mm"></td><td></td><td></td></tr>
-<tr><td style="height:16mm"></td><td></td><td></td></tr>
-</table>
-<p class="hint">기대되는 변화와, <b>새로 발생할 수 있는 문제</b>를 각각 쓰시오.</p>
 %s
 
 <div class="pagebreak"></div>
 %s
-<p class="hint">내가 구상한 인공지능을 <b>인공지능 시스템의 구조</b>로 그리시오.
-교과서 22쪽 그림 Ⅰ-5 처럼, <b>환경·인간과 주고받는 과정</b>과 <b>자율적으로 판단하는 부분</b>이
-모두 드러나야 합니다. 화살표 옆에 무엇이 오가는지 적으시오.</p>
-<div class="draw"><span>이 칸 안에 그리시오</span></div>
-<p class="hint">그림에서 <b>자율적으로 판단하는 부분</b>이 어디인지, 그곳에서 무엇을 판단하는지 쓰시오.</p>
 %s
 
-<h3>인공지능 활용 기록란</h3>
-<p class="small">평가를 준비하며 인공지능을 활용했다면 사용한 인공지능 종류·질문 내용·출처를 적어 주세요. 감점하지 않습니다.</p>
+<div class="pagebreak"></div>
 %s
-""" % (qhead('①', RUBRIC[0][2], RUBRIC[0][3]), lines(5),
-       qhead('②', RUBRIC[1][2], RUBRIC[1][3]), trait_rows,
-       qhead('③', RUBRIC[2][2], RUBRIC[2][3]), lines(5),
-       qhead('④', RUBRIC[3][2], RUBRIC[3][3]), lines(3), lines(2))
-    return page('수행평가 평가지', body)
+""" % (TOPIC, b1, b2, b3, b4, b5)
+    return page('1차 수행평가 평가지', body)
 
 
 # ══════════════════════════════════════════════
-def key():
-    body = HEAD % ('교사용 채점 기준 · 예시 답안', '교사용') + """
-<div class="note"><b>배점과 수행 수준은 평가 운영 계획 6-가 의 것을 그대로 옮겼습니다.</b>
-문항에 쓴 용어는 <b>verify/assess1-terms.py</b> 로 교과서 22~24쪽에 실제로 있는지 대조했습니다.
-논술이라 정답은 없습니다 — 아래 예시는 <b>채점 눈금을 맞추기 위한 것</b>입니다.</div>
+def guide_scale_table():
+    """채점 기준 — 요소 한 줄, 점수별 칸. 안내 1쪽용."""
+    title = {n: t for n, t, *_ in ITEMS}
+    rows = ''
+    for no, name, where, levels in SCALE:
+        nums = re.findall(r'\d', where)
+        head = '<b>%s</b><br>%s' % (' · '.join(nums) + '번', '<br>'.join(title[n] for n in nums))
+        rows += ('<tr><td class="center">%s</td>%s</tr>'
+                 % (head, ''.join('<td>%s</td>' % txt for pt, txt in levels)))
+    return ('<table class="tight dense"><tr><th style="width:24mm">문항</th>'
+            '<th>5점</th><th>4점</th><th>3점</th><th style="width:26mm">2점</th></tr>%s</table>' % rows)
 
-<h2>채점 기준 (계획서 그대로)</h2>
+
+def guide():
+    body = ('<style>h2{margin:3.4mm 0 1.2mm} table{margin:1.2mm 0} .hint{margin:1mm 0}'
+            ' p.small{margin:1mm 0}'
+            ' table.dense th,table.dense td{font-size:8.6pt;padding:.8mm 1.4mm;line-height:1.35}</style>'
+            '<div class="top"><div><h1>1차 수행평가 안내</h1>'
+            '<div class="sub">인공지능 기초 · %s</div></div>'
+            '<div class="name">2학년 &nbsp; 반 &nbsp; 번 &nbsp; 이름</div></div>' % AREA) + """
+<table class="facts tight">
+<tr><th style="width:22mm">영역 만점</th><td style="width:52mm"><b>%d점</b> · 기본점수 <b>%d점</b></td>
+    <th style="width:22mm">평가 시기</th><td>%s</td></tr>
+<tr><th>평가 방법</th><td>논술 및 교사 관찰</td>
+    <th>성취기준</th><td>%s</td></tr>
+</table>
+
+<h2>1. 채점 기준</h2>
 %s
-<p class="small">최저점의 합 2+2+2+2 = 기본점수 <b>%d점</b> · 장기 미인정 결석자 %d점</p>
+<p class="small">1번과 2번은 함께 보고 점수를 매긴다.</p>
+
+<h2>2. 문제 상황 선정</h2>
+<p class="hint" style="border:1pt solid #222; padding:2.5mm 3mm; margin:1.5mm 0">문제 상황은 다음 두 가지를 갖추어야 한다.<br>
+∙ <b>인공지능으로 해결할 수 있을 것.&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;&nbsp;</b>∙ <b>자신의 진로나 생활과 이어질 것.</b><br>
+</p>
+
+<h2>3. 참고 — 교과서 16 · 22쪽</h2>
+<p class="hint" style="margin:.8mm 0"><b>인공지능의 특성</b> (16쪽) &nbsp; %s &nbsp;— 3번 제시어</p>
+<p class="hint" style="margin:.8mm 0"><b>지능 에이전트의 구조</b> (22쪽) &nbsp; %s&nbsp; <br>&nbsp;- 행동의 결과가 환경을 바꾸고 지속적으로 반복</p>
+
+<h2>4. 유의 사항</h2>
+%s
+""" % (FULL, BASE, WHEN, STANDARD[0],
+       guide_scale_table(),
+       FEAT_NAMES, ' → '.join(AGENT), notice_list())
+    return page('1차 수행평가 안내', body)
+
+
+def key():
+    plan_rubric = ''
+    for group, no, name, pt, levels in RUBRIC:
+        for i, (sc, desc) in enumerate(levels):
+            first = ('<td class="center" rowspan="4">%s %s</td>' % (no, name)) if i == 0 else ''
+            plan_rubric += '<tr>%s<td>%s</td><td class="center">%d점</td></tr>' % (first, desc, sc)
+    plan_rubric = ('<table class="tight"><tr><th style="width:38mm">평가 요소</th><th>수행 수준 (계획서 6-가)</th>'
+                   '<th style="width:12mm">배점</th></tr>%s</table>' % plan_rubric)
+
+    body = HEAD % ('1차 수행평가 채점기준표 · 예시 답안', '교사용') + """
+<div class="note">평가 요소의 이름과 배점 5·5·5·5, 기본점수 8점은 계획서 6-가 그대로이며,
+채점은 평가 요소마다 <b>5 · 4 · 3 · 2점 네 수준</b>으로 한다. 계획서의 수행 수준 문장은 뒤에 참고로 실었다.
+'인공지능의 특성'은 <b>교과서 16쪽의 다섯 가지</b>(%s)이다. 23쪽의 '인공지능 시스템의 특성' 세 가지와 다르다.
+문항의 용어는 <b>verify/assess1-terms.py</b> 로 교과서와 대조하였다.</div>
+
+<table class="facts">
+<tr><th style="width:26mm">평가 영역명</th><td>%s</td>
+    <th style="width:22mm">평가 시기</th><td style="width:32mm">%s</td></tr>
+<tr><th>영역 만점</th><td><b>%d점</b> · 기본점수 <b>%d점</b> (장기 미인정 결석자 %d점)</td>
+    <th>논술형 반영</th><td><b>%s</b></td></tr>
+<tr><th>성취기준</th><td colspan="3">%s %s</td></tr>
+</table>
+
+<h2>채점 기준</h2>
+%s
+
+<div class="note" style="border-left-color:#555">
+∙ 채점 기준의 내용은 문항의 작성 조건과 같다. 답안 어디에 있든 해당 내용이 있으면 서술한 것으로 본다.
+문장의 완성도와 분량은 채점 대상이 아니다.<br>
+∙ 2점은 미작성이거나 문항과 무관한 내용을 서술한 경우에 부여한다.<br>
+∙ 평가 요소 ①은 1 · 2번 문항을 함께 보고 판정한다.<br>
+∙ 기존의 인공지능을 선택한 경우와 새로 구상한 경우를 동일하게 채점한다.
+4번 문항의 '도입 전'은 인공지능을 사용하지 않는 현재 상황을 가리킨다.<br>
+∙ 4번 문항의 '사람이 담당해야 할 부분'은 결론의 방향을 채점하지 않는다.
+근거가 앞서 서술한 오판 상황과 연결되는지만 확인한다.<br>
+∙ 5번은 서술 문항이나 <b>평가요소는 '구조로 표현하기'</b>이다. 단계 이름을 그대로 쓰지 않아도,
+입력 · 판단 · 결정 · 출력의 차례가 드러나면 다섯 단계를 서술한 것으로 본다. 표나 화살표로 정리한 답안도 같이 인정한다.<br>
+∙ 채점 시 답안 여백에 평가 요소 기호와 점수를 표기하면 결과 확인 및 이의 신청 시 근거가 된다.
+</div>
+
+<h2>계획서 수행 수준 (참고)</h2>
+<p class="small">위 채점 기준은 이 문장을 문항의 조건에 맞추어 풀어 쓴 것이다.</p>
+%s
 
 <div class="pagebreak"></div>
-<h2>예시 답안 — 「급식실 대기 줄 안내」로 답한 경우</h2>
+<h2>대표 예시 답안 — 흉부 엑스레이 판독 보조</h2>
+<p class="small">채점 척도를 맞추기 위한 예시로, 네 요소 모두 5점이다. 회색 표기는 해당 평가 요소이다.
+학생 답안이 이보다 짧아도 기준의 내용이 있으면 서술한 것으로 본다. <b>이 예시는 학생에게 배부하지 않는다.</b></p>
+<div class="ex">
+<p><b>1번. 문제 상황 선정</b> &nbsp;접한 경로: 기사 「건강검진 엑스레이 판독 지연, 결절 놓쳐」(○○일보, 2026. 8.).
+나는 영상의학과에 관심이 있고, 지난 건강검진에서 결과가 며칠 뒤에야 나온 일을 겪었다. 건강검진은 누구나 받는
+검사인데 의사 한 명이 하루에 수백 장을 판독해야 하여 결과가 늦고 작은 병변을 놓친다.</p>
 
-<h3>① 문제 상황을 탐색하고 필요한 인공지능 구상하기</h3>
-<table>
-<tr><th style="width:36mm">문제 상황</th><td>점심시간에 급식실 줄이 얼마나 긴지 몰라 교실에서 나갔다가
-오래 서 있게 된다.</td></tr>
-<tr><th>지금은</th><td>먼저 간 친구에게 물어보거나, 직접 가 보고 판단한다.</td></tr>
-<tr><th>구상한 인공지능</th><td>급식실 입구 카메라로 줄 길이를 인식해 지금 가면 몇 분 기다릴지
-예상해 알려 주고, 학년별로 언제 가면 좋을지 추천한다.</td></tr>
+<p><b>2번. 문제 상황 분석</b> &nbsp;건강검진을 받은 사람이 결과를 기다리는 동안, 영상의학과 의사는 엑스레이를
+한 장씩 눈으로 판독하고 의심되는 부위가 있으면 추가 촬영을 지시한다. 하루에 수백 장을 판독하면 피로가 쌓여
+작은 결절을 놓치고 판독이 며칠씩 지연된다. 한 장을 판독하는 시간이 줄고 놓치는
+결절이 줄면 문제가 해결된 것으로 본다. 결절은 크기와 모양, 위치가 일정하지 않아 규칙을 미리 정해 둘 수 없고
+많은 영상을 근거로 판단해야 하므로 인공지능이 필요하다 <span class="m">〔①〕</span>.</p>
+
+<p><b>3번. 인공지능 구상</b> &nbsp;명칭: 흉부 엑스레이 판독 보조(기존의 것). 이 인공지능은 엑스레이 영상을
+입력받아 결절로 보이는 부위와 그 의심도를 판단하고, 표시한 영상과 의심도 점수를 산출한다. 해당하는 특성은 인식, 학습, 추론이다. 영상에서 결절 모양을
+찾아내는 동작이 인식, 수만 장의 영상과 판독 결과로 판별 모델을 만든 것이 학습, 처음 보는 영상에서 결절
+가능성을 이끌어 내는 것이 추론이다. 각각 이미지를 인식하고 이해하는 것, 예시 데이터로부터
+일반화된 모델을 만드는 것, 주어진 사실로부터 새로운 사실을 이끌어 내는 것에 해당하므로 그렇게 판단하였다
+<span class="m">〔②〕</span>.</p>
+
+<p><b>4번. 도입 전후 비교</b> &nbsp;비교 기준은 한 장당 판독 시간과 놓치는 결절의 수이다. 판독 시간은 도입 전
+수 분에서 도입 후 표시된 부위를 중심으로 확인하여 수십 초로 줄고, 놓치는 결절은 도입 전에는 피로도에 따라
+늘어나지만 도입 후에는 인공지능이 먼저 표시하므로 줄어든다. 판독이 빨라지고 놓치는
+사례가 줄어들 것으로 기대된다. 다만 갈비뼈와 겹친 작은 결절이나 학습 데이터에 적었던
+소아 영상은 잘못 판단할 수 있다. 놓친 경우 환자가 치료 시기를 놓치고, 잘못 표시한 경우 불필요한 추가 촬영과
+불안이 생긴다. 따라서 많은 영상 가운데 의심 영상을 선별하는 부분까지는 인공지능이 담당하고, 최종 판독과
+이상 없음으로 분류된 영상의 확인은 사람이 담당해야 한다 <span class="m">〔③〕</span>.</p>
+
+<p><b>5번. 인공지능 시스템의 구조</b> &nbsp;환경 · 인간은 환자와 의사, 촬영 장비이다. 인식 단계에서 엑스레이
+영상과 환자 정보를 입력받는다. 상황 판단 단계에서 결절로 보이는 부위가 있는지와 얼마나 의심되는지를 판정하고,
+행동 결정 단계에서 표시할지와 우선 검토를 요청할지를 정한다. 행동 단계에서 표시된 영상과 의심도 점수를
+화면에 출력한다. 이 가운데 결절 여부와 의심도를 판정하는 부분이 인공지능이 스스로
+판단하는 부분이다. 의사가 표시를 확인하고 최종 판독을 내리면 그 결과가 판독 기록으로
+쌓이고, 다음 환자의 영상이 다시 입력되어 같은 과정이 되풀이된다. 판독 기록이 쌓일수록 학습에 쓸 자료가
+늘어난다 <span class="m">〔④〕</span>.</p>
+</div>
+<p class="small"><b>같은 사례에서 나올 수 있는 다른 답</b> — 4번의 마지막은 "전부 담당하게 하여도 된다",
+"사용해서는 안 된다" 모두 가능하다. 잘못 판단하는 경우와 이어지면 서술한 것으로 본다.</p>
+
+<div class="pagebreak"></div>
+<h2>학교생활기록부 기재 참고</h2>
+<p class="small">기재 어휘는 계획서의 성취수준 진술에서 가져온다. 점수, 등급, 석차는 기재하지 않는다.</p>
+<table class="tight"><tr><th style="width:12mm">수준</th><th>성취수준 진술 (계획서 6-가)</th></tr>%s</table>
+
+<h3>답안에서 가져오는 내용</h3>
+<table class="tight">
+<tr><th style="width:22mm">기재 요소</th><th style="width:16mm">문항</th><th>내용</th></tr>
+<tr><td class="center">동기</td><td class="center">1</td><td>선정 경로와 선정 이유</td></tr>
+<tr><td class="center">과정</td><td class="center">3 · 5</td><td>특성을 동작에 대응시킨 내용, 구조로 표현한 내용</td></tr>
+<tr><td class="center">탐구</td><td class="center">2 · 4</td><td>문제를 자신의 말로 정의한 내용, 자신이 정한 기준으로 전후를 비교한 내용, 오판 상황을 분석한 내용</td></tr>
+<tr><td class="center">결과 · 역량</td><td class="center">4</td><td>사람이 담당할 부분을 손해의 크기를 근거로 판단한 내용</td></tr>
 </table>
-<p class="small"><b>5점 판별</b> — 「왜 인공지능이어야 하는가」가 <b>문제의 특성</b>과 이어져야 합니다.
-예 — 줄 길이는 <b>시시각각 달라지고</b> 규칙이 고정돼 있지 않아, 정해진 계산식이 아니라
-<b>상황을 보고 판단</b>해야 하므로 인공지능이 필요하다. 이 연결이 없으면 4점입니다.</p>
 
-<h3>② 인공지능의 특성을 적용하여 설명하기</h3>
-<table>
-<tr><th style="width:44mm">특성</th><th style="width:52mm">어떤 동작인가</th><th>까닭</th></tr>
-<tr><td class="center">%s</td><td>급식 안내 앱 안에서 대기 시간을 예상하는 기능만 인공지능이 맡는다</td>
-<td>앱의 나머지 기능(식단표 보기)은 정해진 자료를 보여 줄 뿐이다</td></tr>
-<tr><td class="center">%s</td><td>카메라로 줄을 인식해 스스로 판단하고 추천을 내보낸다</td>
-<td>사람이 매번 세어 입력하지 않아도 판단과 행동을 자율적으로 한다</td></tr>
-<tr><td class="center">%s</td><td>줄이 겹쳐 보이면 인원을 잘못 셀 수 있다</td>
-<td>데이터에 맞춰 만든 모델이라 오류를 예상해야 한다</td></tr>
-</table>
-<p class="small"><b>5점 판별</b> — 세 특성을 <b>자기 인공지능의 동작</b>에 대응시키고 <b>까닭</b>까지 적었는가.
-특성 이름만 옮겨 적고 동작이 없으면 3점입니다.</p>
+<h3>기재 문장 틀</h3>
+<p class="hint" style="border:1pt solid #222; padding:2.5mm 3mm">
+○○ 분야에 관심을 두고 ○○ 문제를 선정하여 누가 어떤 어려움을 겪는지 자신의 말로 정의하고, 이를 해결할
+인공지능이 ○○ 특성을 어떤 동작에서 활용하는지 근거를 들어 설명하고 지능 에이전트 구조로 표현함.
+○○을 기준으로 도입 전후를 비교하고 ○○ 상황에서 오판할 수 있음을 분석하여 "○○은 인공지능이 담당하되
+○○은 사람이 확인해야 한다"고 판단하는 등, 인공지능의 실수 가능성까지 고려하여 적용 가능성을 판단하는
+안목을 보임.</p>
 
-<h3>③ 인공지능 도입 전후를 비교·분석하기</h3>
-<table>
-<tr><th style="width:32mm">비교 기준</th><th>도입 전</th><th>도입 후</th></tr>
-<tr><td class="center">기다리는 시간</td><td>가 봐야 알 수 있어 평균 10분 이상 서 있는다</td>
-<td>붐비지 않는 때를 골라 가서 줄이 짧다</td></tr>
-<tr><td class="center">사람이 하는 일</td><td>직접 확인하거나 친구에게 묻는다</td>
-<td>알림을 확인하기만 한다</td></tr>
-</table>
-<p class="small">기대되는 변화 — 점심시간을 더 쓸 수 있다.
-<b>새로 생길 수 있는 문제</b> — 모두가 같은 시각을 추천받아 <b>그때 오히려 몰릴 수 있다</b> ·
-카메라가 얼굴을 찍어 사생활 문제가 생길 수 있다.</p>
-<p class="small"><b>5점 판별</b> — <b>비교 기준이 명시</b>되어 있고, <b>새로 발생할 수 있는 문제</b>까지
-분석했는가. 기대되는 변화만 있으면 3점입니다.</p>
+<h3>기재 예시 — 위 예시 답안의 학생</h3>
+<p class="hint" style="border:1pt solid #222; padding:2.5mm 3mm">
+영상의학 분야에 관심을 두고 흉부 엑스레이 판독 지연 문제를 선정하여 의사가 하루 수백 장을 판독하며 작은
+결절을 놓치는 상황으로 정의하고, 이를 보조하는 인공지능이 인식·학습·추론 특성을 어떤 동작에서 활용하는지
+근거를 들어 설명하고 지능 에이전트 구조로 표현함. 판독 시간과 놓치는 결절 수를 기준으로 도입 전후를
+비교하고 갈비뼈와 겹친 결절을 놓칠 수 있음을 분석하여 "선별은 인공지능이 담당하되 최종 판독은 의사가
+한다"고 손해의 크기를 근거로 판단하는 등, 인공지능의 실수 가능성까지 고려하여 적용 가능성을 판단하는
+안목을 보임.</p>
+<p class="small">분량이 부족한 경우 1번(동기), 4번(판단), 4번(기준과 오판) 순으로 남긴다.
+3번과 5번은 학생 간 차이가 적어 후순위로 한다.</p>
+""" % (FEAT_NAMES, AREA, WHEN, FULL, BASE, BASE_ABSENT, ESSAY, STANDARD[0], STANDARD[1],
+       scale_table(), plan_rubric,
+       ''.join('<tr><td class="center"><b>%s</b></td><td>%s</td></tr>' % l for l in LEVELS))
+    return page('1차 수행평가 채점기준표', body)
 
-<h3>④ 인공지능 시스템의 구조로 표현하기 (도식화)</h3>
-<p class="small">교과서 22쪽 그림 Ⅰ-5 의 뼈대 — <b>%s</b> — 가 자기 인공지능의 내용으로 채워져야 합니다.</p>
-<table>
-<tr><th style="width:30mm">환경·인간</th><td>급식실 줄, 학생</td></tr>
-<tr><th>인식 (입력)</th><td>입구 카메라 영상 · 현재 시각</td></tr>
-<tr><th>상황 판단</th><td>줄 인원을 세어 대기 시간을 예상</td></tr>
-<tr><th>행동 결정</th><td>지금 갈지, 몇 분 뒤에 갈지 정함</td></tr>
-<tr><th>행동 (출력)</th><td>교실 화면·앱으로 안내</td></tr>
-<tr><th>반복</th><td>학생이 이동하면 줄이 바뀌므로 다시 인식한다</td></tr>
-</table>
-<p class="small"><b>5점 판별</b> — ① <b>환경과 주고받는 과정</b>(입력과 출력 화살표가 환경에 닿는가)과
-② <b>자율적으로 판단하는 부분</b>(판단·결정 자리가 표시되고 무엇을 판단하는지 적혀 있는가)이
-<b>둘 다</b> 있어야 5점. 화살표만 있고 판단 내용이 없으면 4점입니다.</p>
 
-<h2>세특 기록용 표시</h2>
-<p class="small">명렬표 비고란에 두 코드만 적습니다 —
-<b>㉮</b> ①에서 문제의 특성과 인공지능의 필요를 연결함 ·
-<b>㉯</b> ③에서 새로 발생할 수 있는 문제까지 분석함.</p>
-""" % (rubric_table(), BASE, BASE_ABSENT,
-       TRAITS[0][0], TRAITS[1][0], TRAITS[2][0], ' → '.join(AGENT))
-    return page('교사용 채점 기준', body)
+# ══════════════════════════════════════════════
+# 앱 — 학생이 사이트에서 쓰는 평가지 (js/assess1-data.js). 종이 평가지와 같은 글을 씁니다.
+#   칸 id 는 저장 위치(aiactivity/submissions/{반}/assess1/{학번}/answers/{id})라 바꾸지 않습니다.
+APP_FIELDS = {
+    '1': [dict(id='q1src', label='문제 상황을 접한 경로', type='text'),
+          dict(id='q1', label='', type='area', rows=7)],
+    '2': [dict(id='q2', label='', type='area', rows=8)],
+    '3': [dict(id='q3name', label='인공지능의 명칭', type='text'),
+          dict(id='q3kind', label='기존의 것 / 새로 구상한 것', type='choice', options=['기존의 것', '새로 구상한 것']),
+          dict(id='q3', label='', type='area', rows=9)],
+    '4': [dict(id='q4', label='', type='area', rows=10)],
+    '5': [dict(id='q5', label='', type='area', rows=12)],
+}
+
+
+def _plain(t):
+    import html as _h
+    return _h.unescape(re.sub('<[^>]+>', '', t)).strip()
+
+
+def app_data():
+    items = []
+    for no, title, pt, elem, ask, conds, lines in ITEMS:
+        kw = [n for n, _ in FEATURES] if no == '3' else (list(AGENT) if no == '5' else [])
+        items.append(dict(no=no, title=title, pt=pt, showPt=(no != '1'), ask=_plain(ask),
+                          conds=[_plain(c) for c in conds], kw=kw, fields=APP_FIELDS[no]))
+    topic = _plain(TOPIC).replace('[총 %d점]' % FULL, '').strip()
+    return dict(title=AREA, topic=topic, total=FULL, base=BASE,
+                notice=[_plain(n) for n in NOTICE], items=items,
+                scale=[dict(no=no, name=name, where=where, levels=[[pt, txt] for pt, txt in lv])
+                       for no, name, where, lv in SCALE])
+
+
+_js = ('/* 자동 생성 — verify/assess1-docs.py 가 종이 평가지와 같은 글로 만듭니다. 직접 고치지 마세요. */\n'
+       'const A1 = %s;\n' % json.dumps(app_data(), ensure_ascii=False, indent=1))
+io.open(os.path.join(ROOT, 'js', 'assess1-data.js'), 'w', encoding='utf-8', newline='\n').write(_js)
+print('-> js/assess1-data.js')
 
 
 for name, html in (('assess1-guide', guide()), ('assess1-sheet', sheet()), ('assess1-key', key())):
