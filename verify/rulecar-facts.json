@@ -128,10 +128,9 @@
   },
   {
    "id": 5,
-   "name": "앞에 차가 서 있다",
+   "name": "신호등 없는 길, 앞차가 서 있다",
    "facts": [
     "run",
-    "green",
     "obs"
    ],
    "hidden": [
@@ -142,10 +141,9 @@
   },
   {
    "id": 6,
-   "name": "앞차가 달리고 있다",
+   "name": "신호등 없는 길, 앞차가 달린다",
    "facts": [
     "run",
-    "green",
     "obs"
    ],
    "hidden": [
@@ -153,34 +151,6 @@
    ],
    "expect": "slow",
    "needCheck": true
-  },
-  {
-   "id": 7,
-   "name": "출발하려는데 앞에 차가 있다",
-   "facts": [
-    "stop",
-    "green",
-    "obs"
-   ],
-   "hidden": [
-    "still"
-   ],
-   "expect": "wait",
-   "needCheck": true
-  },
-  {
-   "id": 8,
-   "name": "빨간불인데 앞차는 움직인다",
-   "facts": [
-    "run",
-    "red",
-    "obs"
-   ],
-   "hidden": [
-    "ahead"
-   ],
-   "expect": "halt",
-   "needCheck": false
   }
  ],
  "reference": [
@@ -195,8 +165,7 @@
   {
    "conds": [
     "stop",
-    "green",
-    "noobs"
+    "green"
    ],
    "op": "AND",
    "act": "start"
@@ -204,8 +173,7 @@
   {
    "conds": [
     "run",
-    "green",
-    "noobs"
+    "green"
    ],
    "op": "AND",
    "act": "go"
@@ -227,7 +195,6 @@
   },
   {
    "conds": [
-    "run",
     "still"
    ],
    "op": "AND",
@@ -235,32 +202,25 @@
   },
   {
    "conds": [
-    "green",
     "ahead"
    ],
    "op": "AND",
    "act": "slow"
-  },
-  {
-   "conds": [
-    "stop",
-    "still"
-   ],
-   "op": "AND",
-   "act": "wait"
   }
  ],
- "minRules": 8,
- "maxConds": 3,
- "need3": [
+ "minRules": 7,
+ "maxConds": 2,
+ "need2": [
+  1,
   2,
-  3
+  3,
+  4
  ],
  "ok": {
   "facts": true,
   "unique": true,
   "reference": true,
-  "need3": true,
+  "need2": true,
   "min": true,
   "js_data": true,
   "js_engine": true,

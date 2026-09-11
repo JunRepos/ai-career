@@ -3,16 +3,17 @@
 verify/rulecar.py — 「자율주행차 규칙 만들기」 실습(js/games/rulecar.js)의 판과 추론 엔진 검산
 
 선생님 학습지 「새로운 상태공간을 위한 추론」 의 조건·행동 카드로 IF-THEN 규칙(지식 베이스)을 만들고,
-주행 시험 여덟 상황을 모두 통과하게 하는 실습입니다. 2026-09-11 선생님과 정한 것 —
+주행 시험 여섯 상황을 모두 통과하게 하는 실습입니다. 2026-09-11 선생님과 정한 것 —
   · 조건 빈칸 두 칸 = 「자동차가 멈춰 있다」「자동차가 달리고 있다」
   · 조건이 맞는 규칙은 모두 쓴다. 행동이 서로 다르면 「충돌」로 실패 (7차시 추론 엔진 세 걸음과 같음)
   · 「전방의 장애물을 확인한다」 는 연쇄 — 확인하면 장애물이 움직이는지가 새 사실로 드러난다
-  · 한 규칙의 조건은 AND 또는 OR 한 가지로 세 개까지 (교과서 45쪽 「조건이 여러 개일 경우 AND, OR」)
+  · 한 규칙의 조건은 AND 로 두 개까지 — 2026-09-11 「너무 어렵다, 10분 안에」 로 쉽게 바꿈
+    (8상황·조건 세 개 → 6상황·조건 두 개. 앞차 상황은 신호등 없는 길로 옮겨 조건 셋이 필요 없게)
 
 이 검산기가 확인하는 것
   ① 상황마다 사실이 모순되지 않는다 — 신호 · 차 상태 · 장애물이 하나씩, 숨은 사실은 장애물이 있을 때만
   ② 모범 규칙이 여덟 상황을 모두 통과한다 — 풀 수 있는 판이다
-  ③ 조건 두 개까지로는 풀 수 없는 상황이 있다 — 그래서 세 개까지 허용한다 (코드로 보임)
+  ③ 조건 하나로는 풀 수 없는 상황이 있다 — 그래서 AND 로 두 개까지 잇게 한다 (코드로 보임)
   ④ 가장 적은 규칙 수 — 점수는 규칙이 적을수록 높으므로 목표치로 보여 줌
   ⑤ 게임 코드의 판 데이터가 여기 값과 같고, 게임의 추론 엔진이 같은 판정을 낸다 (node 로 실행)
   ⑥ 주행 장면(js/games/rulecar-sim.js)이 판정과 맞는다 — 통과면 통과 장면, 아니면 쾅(사고)·실격 장면 ·
@@ -59,26 +60,21 @@ SCENARIOS = [
      'expect': 'go', 'needCheck': False},
     {'id': 4, 'name': '달리다가 빨간불', 'facts': ['run', 'red', 'noobs'], 'hidden': [],
      'expect': 'halt', 'needCheck': False},
-    {'id': 5, 'name': '앞에 차가 서 있다', 'facts': ['run', 'green', 'obs'], 'hidden': ['still'],
+    {'id': 5, 'name': '신호등 없는 길, 앞차가 서 있다', 'facts': ['run', 'obs'], 'hidden': ['still'],
      'expect': 'halt', 'needCheck': True},
-    {'id': 6, 'name': '앞차가 달리고 있다', 'facts': ['run', 'green', 'obs'], 'hidden': ['ahead'],
+    {'id': 6, 'name': '신호등 없는 길, 앞차가 달린다', 'facts': ['run', 'obs'], 'hidden': ['ahead'],
      'expect': 'slow', 'needCheck': True},
-    {'id': 7, 'name': '출발하려는데 앞에 차가 있다', 'facts': ['stop', 'green', 'obs'], 'hidden': ['still'],
-     'expect': 'wait', 'needCheck': True},
-    {'id': 8, 'name': '빨간불인데 앞차는 움직인다', 'facts': ['run', 'red', 'obs'], 'hidden': ['ahead'],
-     'expect': 'halt', 'needCheck': False},
 ]
 
 # 모범 지식 베이스 — 교사용 (게임에는 보여 주지 않음)
 REFERENCE = [
     {'conds': ['stop', 'red'], 'op': 'AND', 'act': 'wait'},
-    {'conds': ['stop', 'green', 'noobs'], 'op': 'AND', 'act': 'start'},
-    {'conds': ['run', 'green', 'noobs'], 'op': 'AND', 'act': 'go'},
+    {'conds': ['stop', 'green'], 'op': 'AND', 'act': 'start'},
+    {'conds': ['run', 'green'], 'op': 'AND', 'act': 'go'},
     {'conds': ['run', 'red'], 'op': 'AND', 'act': 'halt'},
     {'conds': ['obs'], 'op': 'AND', 'act': 'check'},
-    {'conds': ['run', 'still'], 'op': 'AND', 'act': 'halt'},
-    {'conds': ['green', 'ahead'], 'op': 'AND', 'act': 'slow'},
-    {'conds': ['stop', 'still'], 'op': 'AND', 'act': 'wait'},
+    {'conds': ['still'], 'op': 'AND', 'act': 'halt'},
+    {'conds': ['ahead'], 'op': 'AND', 'act': 'slow'},
 ]
 
 ORDER = [c[0] for c in CONDS]
@@ -136,7 +132,6 @@ def exprs(max_n):
                 out.append({'conds': list(combo), 'op': 'AND'})
             else:
                 out.append({'conds': list(combo), 'op': 'AND'})
-                out.append({'conds': list(combo), 'op': 'OR'})
     return out
 
 
@@ -158,7 +153,7 @@ def main():
     for sc in SCENARIOS:
         f = set(sc['facts'])
         groups = [{'green', 'red'}, {'stop', 'run'}, {'obs', 'noobs'}]
-        if any(len(f & g) != 1 for g in groups):
+        if len(f & {'green', 'red'}) > 1 or any(len(f & g) != 1 for g in groups[1:]):   # 신호등 없는 길도 있음
             bad.append(sc['id'])
         if sc['hidden'] and 'obs' not in f:
             bad.append(sc['id'])
@@ -196,12 +191,12 @@ def main():
                    ' → '.join(A[a] for a in res['acts']), ' / '.join(steps)))
     ok['reference'] = all(v == 'pass' for v in ref_results)
 
-    # ③ 조건 두 개까지로 풀 수 있는가
+    # ③ 조건 하나로 풀 수 있는가
     #    어떤 행동 a 의 규칙이 상황 s 에서 불려야 하는데, 그 조건식이 답이 a 가 아닌 상황 t 에서
     #    처음부터 아는 사실만으로도 불린다면 t 에서 반드시 충돌·틀린 행동이 난다.
     log.append('')
-    log.append('■ ③ 조건 두 개까지로는 풀 수 없는 상황')
-    E2 = exprs(2)
+    log.append('■ ③ 조건 하나로는 풀 수 없는 상황')
+    E2 = exprs(1)
     unsolvable = []
     for sc in SCENARIOS:
         a = sc['expect']
@@ -213,16 +208,16 @@ def main():
             for e in [e for e in E2 if fires_full(e, sc)][:3]:
                 t = next(t for t in others if fires_visible(e, t))
                 kill.append('%s → 상황 %d 에서도 불림' % ((' %s ' % e['op']).join(C[c] for c in e['conds']), t['id']))
-            log.append('   상황 %d 「%s」 (%s) — 두 조건 규칙은 모두 다른 상황에서도 불림. 예: %s'
+            log.append('   상황 %d 「%s」 (%s) — 조건 하나짜리 규칙은 모두 다른 상황에서도 불림. 예: %s'
                        % (sc['id'], sc['name'], A[a], ' / '.join(kill)))
-    ok['need3'] = bool(unsolvable)
-    log.append('   → 조건을 세 개까지 잇게 합니다' if unsolvable else '   (두 조건으로도 풀림 — 세 개는 필요 없음)')
+    ok['need2'] = bool(unsolvable)
+    log.append('   → 조건을 AND 로 두 개까지 잇게 합니다' if unsolvable else '   (조건 하나로도 풀림)')
 
-    # ④ 가장 적은 규칙 수 (조건 세 개까지)
+    # ④ 가장 적은 규칙 수 (조건 두 개까지)
     #    행동마다 「답이 그 행동인 상황에서만 불리는」 조건식으로 그 상황들을 덮는 가장 작은 수 + 확인 규칙 1개
     log.append('')
-    log.append('■ ④ 가장 적은 규칙 수 (조건 세 개까지)')
-    E3 = exprs(3)
+    log.append('■ ④ 가장 적은 규칙 수 (조건 두 개까지)')
+    E3 = exprs(2)
     total, best_rules = 0, []
     for a in [x[0] for x in ACTS if x[0] != 'check']:
         T = {sc['id'] for sc in SCENARIOS if sc['expect'] == a}
@@ -253,7 +248,7 @@ def main():
     facts = {
         'conds': CONDS, 'acts': ACTS, 'opposite': OPPOSITE,
         'scenarios': SCENARIOS, 'reference': REFERENCE,
-        'minRules': total, 'maxConds': 3, 'need3': unsolvable,
+        'minRules': total, 'maxConds': 2, 'need2': unsolvable,
     }
     # 게임에 옮기는 판 데이터 — 모범 답은 학생 브라우저로 나가지 않게 뺍니다
     facts_js = {k: v for k, v in facts.items() if k != 'reference'}

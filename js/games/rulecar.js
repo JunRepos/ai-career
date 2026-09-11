@@ -2,16 +2,16 @@
    games/rulecar.js — 🚗 자율주행차 규칙 만들기 (지식 베이스 · 추론 엔진)
 
    7차시(지식의 표현과 추론) 실습. 선생님 학습지 「새로운 상태공간을 위한 추론」 의 조건·행동 카드로
-   IF-THEN 규칙을 만들어 자율주행차의 지식 베이스를 짓고, 주행 시험 여덟 상황을 모두 통과하게 합니다.
+   IF-THEN 규칙을 만들어 자율주행차의 지식 베이스를 짓고, 주행 시험 여섯 상황을 모두 통과하게 합니다.
 
    2026-09-11 선생님과 정한 규칙
      · 조건 빈칸 두 칸 = 「자동차가 멈춰 있다」「자동차가 달리고 있다」
      · 조건이 맞는 규칙은 모두 쓴다 — 행동이 서로 다르면 「충돌」 (7차시 추론 엔진 세 걸음과 같음)
      · 「전방의 장애물을 확인한다」 는 연쇄 — 확인하면 장애물이 움직이는지가 새 사실로 드러난다
-     · 한 규칙의 조건은 AND 또는 OR 한 가지로 세 개까지
-       (두 개까지로는 「출발한다」「앞으로 움직인다」 를 한 상황에만 걸 수 없음 — verify/rulecar.py ③)
+     · 한 규칙의 조건은 AND 로 두 개까지 — 2026-09-11 「너무 어렵다, 10분 안에」 로 쉽게 바꿈
+       (8상황·조건 세 개 → 6상황·조건 두 개. 앞차 상황은 신호등 없는 길로 옮김)
 
-   점수 — 통과한 상황 수 × 100 − 규칙 수 (통과가 같으면 규칙이 적은 쪽이 위). 가장 적게는 8개.
+   점수 — 통과한 상황 수 × 100 − 규칙 수 (통과가 같으면 규칙이 적은 쪽이 위). 가장 적게는 7개.
    ⚠ 판 데이터는 손으로 고치지 말고 verify/rulecar.py 를 고친 뒤 verify/rulecar-data.json 을 옮기세요.
      검산기가 이 파일의 판 데이터와 추론 엔진(rcRun)을 node 로 돌려 파이썬 판정과 대조합니다.
    ⚠ 모범 답(지식 베이스)은 여기 넣지 않습니다 — 학생 브라우저로 나가므로.
@@ -19,12 +19,13 @@
 ═══════════════════════════════════════ */
 
 /* ═══ 판 데이터 시작 — verify/rulecar-data.json 에서 옮긴 값 ═══ */
-const RC_DATA = {"conds": [["green", "신호등이 녹색이다"], ["red", "신호등이 적색이다"], ["obs", "전방에 장애물이 있다"], ["noobs", "전방에 장애물이 없다"], ["stop", "자동차가 멈춰 있다"], ["run", "자동차가 달리고 있다"], ["still", "전방의 장애물이 움직이지 않는다"], ["ahead", "전방의 장애물이 앞으로 움직인다"]], "acts": [["go", "앞으로 움직인다"], ["halt", "멈춘다"], ["check", "전방의 장애물을 확인한다"], ["start", "출발한다"], ["slow", "속도를 줄인다"], ["wait", "기다린다"]], "opposite": [["green", "red"], ["obs", "noobs"], ["stop", "run"], ["still", "ahead"]], "scenarios": [{"id": 1, "name": "빨간불 앞에 서 있다", "facts": ["stop", "red", "noobs"], "hidden": [], "expect": "wait", "needCheck": false}, {"id": 2, "name": "초록불로 바뀌었다", "facts": ["stop", "green", "noobs"], "hidden": [], "expect": "start", "needCheck": false}, {"id": 3, "name": "뻥 뚫린 길을 달린다", "facts": ["run", "green", "noobs"], "hidden": [], "expect": "go", "needCheck": false}, {"id": 4, "name": "달리다가 빨간불", "facts": ["run", "red", "noobs"], "hidden": [], "expect": "halt", "needCheck": false}, {"id": 5, "name": "앞에 차가 서 있다", "facts": ["run", "green", "obs"], "hidden": ["still"], "expect": "halt", "needCheck": true}, {"id": 6, "name": "앞차가 달리고 있다", "facts": ["run", "green", "obs"], "hidden": ["ahead"], "expect": "slow", "needCheck": true}, {"id": 7, "name": "출발하려는데 앞에 차가 있다", "facts": ["stop", "green", "obs"], "hidden": ["still"], "expect": "wait", "needCheck": true}, {"id": 8, "name": "빨간불인데 앞차는 움직인다", "facts": ["run", "red", "obs"], "hidden": ["ahead"], "expect": "halt", "needCheck": false}], "minRules": 8, "maxConds": 3, "need3": [2, 3]};
+const RC_DATA = {"conds": [["green", "신호등이 녹색이다"], ["red", "신호등이 적색이다"], ["obs", "전방에 장애물이 있다"], ["noobs", "전방에 장애물이 없다"], ["stop", "자동차가 멈춰 있다"], ["run", "자동차가 달리고 있다"], ["still", "전방의 장애물이 움직이지 않는다"], ["ahead", "전방의 장애물이 앞으로 움직인다"]], "acts": [["go", "앞으로 움직인다"], ["halt", "멈춘다"], ["check", "전방의 장애물을 확인한다"], ["start", "출발한다"], ["slow", "속도를 줄인다"], ["wait", "기다린다"]], "opposite": [["green", "red"], ["obs", "noobs"], ["stop", "run"], ["still", "ahead"]], "scenarios": [{"id": 1, "name": "빨간불 앞에 서 있다", "facts": ["stop", "red", "noobs"], "hidden": [], "expect": "wait", "needCheck": false}, {"id": 2, "name": "초록불로 바뀌었다", "facts": ["stop", "green", "noobs"], "hidden": [], "expect": "start", "needCheck": false}, {"id": 3, "name": "뻥 뚫린 길을 달린다", "facts": ["run", "green", "noobs"], "hidden": [], "expect": "go", "needCheck": false}, {"id": 4, "name": "달리다가 빨간불", "facts": ["run", "red", "noobs"], "hidden": [], "expect": "halt", "needCheck": false}, {"id": 5, "name": "신호등 없는 길, 앞차가 서 있다", "facts": ["run", "obs"], "hidden": ["still"], "expect": "halt", "needCheck": true}, {"id": 6, "name": "신호등 없는 길, 앞차가 달린다", "facts": ["run", "obs"], "hidden": ["ahead"], "expect": "slow", "needCheck": true}], "minRules": 7, "maxConds": 2, "need2": [1, 2, 3, 4]};
 /* ═══ 판 데이터 끝 ═══ */
 
 const RC_TXT = { cond: Object.fromEntries(RC_DATA.conds), act: Object.fromEntries(RC_DATA.acts) };
 const RC_ORDER = RC_DATA.conds.map(c => c[0]);
 const RC_MAX = 15;                 // 규칙은 15개까지
+const RC_SCORE_ID = 'rule-car-2';  // 점수 자리 — 쉽게 바꾸면서 새로 (옛 8상황 기록이 섞이지 않게)
 const RC_VERDICT = {
   pass: '통과', none: '행동 없음', conflict: '충돌', wrong: '틀린 행동', nocheck: '확인 안 함',
 };
@@ -80,7 +81,7 @@ function _rcKey(){ return 'rc-rules-' + ((typeof ST_USER !== 'undefined' && ST_U
 function _rcValid(r){
   return r && Array.isArray(r.conds) && r.conds.length >= 1 && r.conds.length <= RC_DATA.maxConds &&
     r.conds.every(c => RC_TXT.cond[c]) && new Set(r.conds).size === r.conds.length &&
-    RC_TXT.act[r.act] && (r.op === 'AND' || r.op === 'OR');
+    RC_TXT.act[r.act] && (r.op === 'AND' || r.conds.length === 1);
 }
 function _rcLoad(){
   try {
@@ -114,7 +115,7 @@ function _rcIntro(){
       <b>충돌</b> — 한 상황에서 서로 다른 행동이 함께 나오면 통과할 수 없습니다. 조건을 <b>AND</b> 로 더 좁혀 보세요.<br>
       <b>확인</b> — 「전방의 장애물을 확인한다」 를 하면 장애물이 움직이는지가 <b>새 사실</b>로 드러나고, 그 사실로 다음 규칙이 불립니다.<br>
       주행 시험에서는 차가 상황 1부터 차례로 달립니다. 규칙이 틀리면 <b>쾅</b> — 사고가 납니다.<br>
-      조건은 AND 나 OR 로 <b>${RC_DATA.maxConds}개까지</b> 이을 수 있습니다. 통과가 같으면 <b>규칙이 적을수록</b> 좋은 기록입니다.
+      조건은 <b>AND</b> 로 <b>${RC_DATA.maxConds}개까지</b> 이을 수 있습니다 — 예: IF 자동차가 멈춰 있다 AND 신호등이 적색이다 THEN 기다린다. 통과가 같으면 <b>규칙이 적을수록</b> 좋은 기록입니다.
     </div>
     ${best}
     <button class="mz-btn" data-action="rc-start">시작하기</button>
@@ -142,21 +143,18 @@ function _rcDecks(){
 
 function _rcBuilder(){
   const d = RC.draft;
-  const op = v => `<option value="${v}"${d.op === v ? ' selected' : ''}>${v}</option>`;
   return `<div class="rc-build" id="rc-build">
     <span class="kw">IF</span>
     <select class="rc-sel" id="rc-c1" aria-label="조건 1">${_rcOpts(RC_DATA.conds, d.c1)}</select>
-    <select class="rc-sel rc-op" id="rc-op" aria-label="조건을 잇는 말">${op('AND')}${op('OR')}</select>
-    <select class="rc-sel" id="rc-c2" aria-label="조건 2">${_rcOpts(RC_DATA.conds, d.c2, '(조건 2 쓰지 않음)')}</select>
-    <span></span>
-    <select class="rc-sel" id="rc-c3" aria-label="조건 3">${_rcOpts(RC_DATA.conds, d.c3, '(조건 3 쓰지 않음)')}</select>
+    <span class="kw">AND</span>
+    <select class="rc-sel" id="rc-c2" aria-label="조건 2">${_rcOpts(RC_DATA.conds, d.c2, '(조건 하나만 쓸 때는 비워 둠)')}</select>
     <span class="kw">THEN</span>
     <div class="rc-then">
       <select class="rc-sel" id="rc-act" aria-label="행동">${_rcOpts(RC_DATA.acts, d.act)}</select>
       <button class="rc-add" data-action="rc-add">규칙 넣기</button>
     </div>
   </div>
-  <div class="rc-hint">조건 2·3 은 왼쪽에서 고른 말로 이어집니다 — <b>AND</b> 는 모두 맞을 때, <b>OR</b> 는 하나라도 맞을 때</div>
+  <div class="rc-hint">조건을 두 개 고르면 <b>두 조건이 모두 맞을 때(AND)</b>만 규칙이 불립니다</div>
   <div class="rc-msg">${RC.msg || ''}</div>`;
 }
 
@@ -230,7 +228,7 @@ function _rcPlay(){
   const done = R && !playing && pass === S.length ? `<div class="mz-speech cc-name rc-done">
       ${S.length}개 상황을 모두 통과했습니다 — 규칙 <b>${n}개</b>${n > min ? ` · 가장 적게는 <b>${min}개</b>로도 됩니다` : ' · <b>가장 적은 수</b>입니다'}.<br>
       방금 만든 규칙들이 <b>전문가 시스템의 지식 베이스</b>이고, 주행 시험을 돌린 것이 <b>추론 엔진</b>입니다.
-      그런데 상황이 여덟 개가 아니라 수천 개라면? 사람이 모든 경우를 규칙으로 적어 넣기는 어렵습니다 —
+      그런데 상황이 여섯 개가 아니라 수천 개라면? 사람이 모든 경우를 규칙으로 적어 넣기는 어렵습니다 —
       이것이 전문가 시스템의 한계이고, <b>기계학습</b>이 나온 까닭입니다.
     </div>` : '';
   return `<div class="mz-wrap rc-wrap">
@@ -389,7 +387,7 @@ async function _rcScore(pass, n){
   if(RC_BEST && RC_BEST.pass * 100 - RC_BEST.rules >= score) return;
   RC_BEST = { pass, rules: n };
   if(typeof SEL_CLS !== 'undefined' && SEL_CLS && ST_USER){
-    try { await saveGameScore(SEL_CLS.id, ST_USER.number, ST_USER.name, score, 'rule-car'); }
+    try { await saveGameScore(SEL_CLS.id, ST_USER.number, ST_USER.name, score, RC_SCORE_ID); }
     catch(e){ console.warn('[자율주행차 규칙] 기록 저장 실패:', e.message || e); }
   }
 }
@@ -399,7 +397,7 @@ function rcLeave(){ _rcStop(); RC = null; }
 async function rcLoadRank(){
   if(typeof SEL_CLS === 'undefined' || !SEL_CLS) return;
   try {
-    const all = await loadGameScores(SEL_CLS.id, 'rule-car');
+    const all = await loadGameScores(SEL_CLS.id, RC_SCORE_ID);
     RC_RANK = Object.entries(all).map(([num, v]) => {
       const best = v.best || 0;
       const pass = Math.ceil(best / 100);

@@ -50,7 +50,7 @@ const GAMES = {
   },
   'rule-car': {
     ico: '🚗', label: '자율주행차 규칙 만들기',
-    desc: '조건·행동 카드로 IF-THEN 규칙(지식 베이스)을 만들어 주행 시험 8개 상황을 통과 · 규칙이 부딪치면 충돌',
+    desc: '조건·행동 카드로 IF-THEN 규칙(지식 베이스)을 만들어 주행 시험 6개 상황을 통과 · 규칙이 부딪치면 충돌',
     view: () => vRuleCar(),
     leave: () => rcLeave(),
     loadRank: () => rcLoadRank(),

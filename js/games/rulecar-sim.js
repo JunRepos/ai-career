@@ -146,7 +146,10 @@ function _rsKF(name, tr, D){
     `${e ? ';animation-timing-function:' + e : ''}}`).join('') + '}';
 }
 
-function _rsRoad(red){
+function _rsRoad(light){          // 'red' · 'green' · null = 신호등 없는 길
+  if(!light) return `<rect class="rs-grass" width="720" height="170"/>
+    <rect class="rs-road" y="55" width="720" height="70"/><path class="rs-dash" d="M0 90H720"/><path class="rs-rail" d="M0 129H720"/>`;
+  const red = light === 'red';
   return `<rect class="rs-grass" width="720" height="170"/>
     <rect class="rs-road" y="55" width="720" height="70"/><rect class="rs-road" x="440" width="70" height="170"/>
     <path class="rs-dash" d="M0 90H440M510 90H720M475 0V55M475 125V170"/>
@@ -216,14 +219,14 @@ function rcScene(i){
   const hit = o.kind === 'crash' ? ` rs-hit" style="animation-delay:${d2(s.boom[0])}s` : '';
   const need = (sc.needCheck ? esc(RC_TXT.act.check) + ' → ' : '') + esc(RC_TXT.act[sc.expect]);
   return `<div class="rs-stage" id="rc-stage"><style>${css.join('')}</style>
-    <svg class="rs-svg${hit}" viewBox="0 0 720 170" role="img" aria-label="상황 ${sc.id} 주행 장면">${_rsRoad(sc.facts.includes('red'))}${g}</svg>
+    <svg class="rs-svg${hit}" viewBox="0 0 720 170" role="img" aria-label="상황 ${sc.id} 주행 장면">${_rsRoad(sc.facts.includes('red') ? 'red' : sc.facts.includes('green') ? 'green' : null)}${g}</svg>
     <div class="rs-cap"><b>상황 ${sc.id}/${RC_DATA.scenarios.length}</b> ${esc(sc.name)}
       <span class="rs-need">해야 할 행동 — ${need}</span>
       <div class="rs-res ${o.kind}" style="animation-delay:${d2(s.tEnd)}s">${esc(_rsResult(sc, r, o))}</div></div></div>`;
 }
 
 function rcStageIdle(){
-  return `<div class="rs-stage" id="rc-stage"><svg class="rs-svg" viewBox="0 0 720 170" aria-hidden="true">${_rsRoad(true)}
+  return `<div class="rs-stage" id="rc-stage"><svg class="rs-svg" viewBox="0 0 720 170" aria-hidden="true">${_rsRoad('red')}
       <g transform="translate(${RS.waitX} ${RS.Y})">${_rsCar('rs-me')}</g></svg>
     <div class="rs-cap rs-idle">규칙을 넣고 <b>주행 시험 하기</b>를 누르면 상황 1부터 ${RC_DATA.scenarios.length}까지 차례로 달립니다 —
       실수하면 <b>쾅</b>, 사고가 납니다.</div></div>`;

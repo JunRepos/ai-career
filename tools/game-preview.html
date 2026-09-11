@@ -121,7 +121,7 @@ if(Q.get('start') === '1'){
     rcStart();
     if(Q.get('demo') === '1'){
       RC.rules = [{ conds: ['stop', 'red'], op: 'AND', act: 'wait' },
-                  { conds: ['stop', 'green', 'noobs'], op: 'AND', act: 'start' },
+                  { conds: ['stop', 'green'], op: 'AND', act: 'start' },
                   { conds: ['obs'], op: 'AND', act: 'check' }];
       rcTest();
       if(Q.get('show')) rcShow(+Q.get('show') - 1);   // &show=4 — 상황 4 장면을 바로 (스크린샷용)
