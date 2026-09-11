@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<base href="../">
+<title>노트북 미리보기</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  body{margin:0;padding:14px;background:var(--bg,#f6f7f9)}
+  .pv-top{max-width:1200px;margin:0 auto 10px;display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+  .pv-top button{padding:5px 11px;border:1px solid #bbb;border-radius:6px;background:#fff;cursor:pointer}
+  .pv-note{max-width:1200px;margin:0 auto 10px;font-size:12px;color:#777}
+  #stage{max-width:1200px;margin:0 auto}
+  #pv-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;display:none;z-index:99}
+</style>
+</head>
+<body>
+<div class="pv-top"><b>📓 노트북 미리보기</b>
+  <button onclick="toggleTheme()">🌗 테마</button>
+  <button onclick="localStorage.removeItem('nb-preview-progress');location.reload()">처음부터</button>
+</div>
+<div class="pv-note">앱 로그인 없이 학생 화면 그대로 띄웁니다. 코드는 진짜로 실행되고, 저장만 이 브라우저(localStorage)에 흉내 냅니다.</div>
+<div id="stage"></div>
+<div id="modal-root"></div>
+<div id="pv-toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="js/state.js"></script>
+<script>
+/* ── 앱에서 쓰는 것들 흉내 ── */
+IS_TC = false;
+ST_USER = { number: '20101', name: '미리보기' };
+SEL_CLS = { id: 'ai-2B', label: '인공지능 기초 2B', type: 'ai' };
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDt(s){ return s ? new Date(s).toLocaleString('ko-KR') : ''; }
+function genId(){ return Math.random().toString(36).slice(2, 10); }
+function emptyBox(ic, msg){ return `<div style="padding:30px;text-align:center;color:#888">${ic} ${esc(msg)}</div>`; }
+function toast(msg){ const t = document.getElementById('pv-toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 2600); }
+function closeModal(){ document.getElementById('modal-root').innerHTML = ''; }
+function toggleTheme(){ const r = document.documentElement; r.setAttribute('data-theme', r.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); }
+function multiClassPicker(){ return ''; }
+const db = { ref: () => ({ update: async () => {}, set: async () => {}, get: async () => ({ exists: () => false, val: () => null }) }) };
+async function loadNotebookProgress(){ try { return JSON.parse(localStorage.getItem('nb-preview-progress') || 'null'); } catch(e){ return null; } }
+async function saveNotebookProgress(cid, nbId, snum, cells){ localStorage.setItem('nb-preview-progress', JSON.stringify({ cells, updatedAt: new Date().toISOString() })); }
+function render(){ document.getElementById('stage').innerHTML = SEL_NOTEBOOK ? vNotebookDetail(false) : emptyBox('📓', '노트북 없음'); initNotebookCMs(); }
+const MD = s => s;
+NOTEBOOKS = [{ id: 'demo', title: '데이터 분석 실습 — 산곡고 설문', createdAt: '2026-09-11', cells: [
+  { id: 'c0', type: 'markdown', source: '# 데이터 분석 실습\n산곡고 1학년 설문 데이터로 **결측치·이상치**를 정리하고 **상관계수**를 구합니다.\n\n## step 1 데이터 불러오기' },
+  { id: 'c1', type: 'code', source: '!git clone https://github.com/ryuk0305/sangokAI.git' },
+  { id: 'c2', type: 'code', source: 'import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv("/content/sangokAI/1grage_sangok.csv")\ndf.shape' },
+  { id: 'c3', type: 'code', source: 'df.head()' },
+  { id: 'c4', type: 'markdown', source: '## step 2 결측치와 이상치' },
+  { id: 'c5', type: 'code', source: 'df = df.dropna()\nplt.boxplot(df["평균등급"])\nplt.title("평균등급 상자그림")\nplt.show()\nprint("남은 행 수:", len(df))' },
+  { id: 'c6', type: 'markdown', source: '## step 3 상관계수' },
+  { id: 'c7', type: 'code', source: 'import seaborn as sns\nsns.heatmap(df.corr(numeric_only=True), annot=True, fmt=".2f", cmap="coolwarm")\nplt.title("속성 사이의 상관계수")' },
+  { id: 'c8', type: 'code', source: 'df.corr()' },
+  { id: 'c9', type: 'code', source: 'for i in range(5):\n    print(i, "번째 줄")\nname = input("이름을 입력하세요: ")\nprint("반가워요,", name)' },
+] }];
+</script>
+<script src="js/views/notebook.js"></script>
+<script src="js/events/notebook.js"></script>
+<script src="js/notebook-colab.js"></script>
+<script>
+openNotebook('demo');
+</script>
+</body>
+</html>

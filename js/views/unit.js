@@ -120,6 +120,19 @@ function _ucStudentCard(it, unitKey){
       <div class="row-right"><span style="color:var(--text3);font-size:15px">${gone ? '—' : '→'}</span></div>
     </div>`;
   }
+  // 노트북 — 누르면 Colab 처럼 코드 실습 (학생마다 저장)
+  if(it.type === 'notebook'){
+    const nb = NOTEBOOKS.find(n => n.id === it.nbId);
+    const gone = !nb;
+    return `<div class="list-row${gone ? '' : ' click'}" ${gone ? '' : `data-action="uc-open-app" data-reftype="notebook" data-refid="${esc(it.nbId || '')}" data-unit="${esc(unitKey || '')}" data-sec="${esc(ST_UNIT_SEC)}"`}>
+      <div class="row-icon">📓</div>
+      <div class="row-info">
+        <div class="row-title">${esc(it.title || nb?.title || '노트북')}</div>
+        <div class="row-meta">${gone ? '선생님이 지운 노트북입니다' : `${it.desc ? esc(it.desc) + ' · ' : ''}코드 실습 · 열기 →`}</div>
+      </div>
+      <div class="row-right"><span style="color:var(--text3);font-size:15px">${gone ? '—' : '→'}</span></div>
+    </div>`;
+  }
   if(it.type === 'app'){
     const m = UC_APP_META[it.refType] || { ico: '🔌', label: '앱' };
     const isAll = it.refId === '*';
@@ -205,7 +218,7 @@ function _ucTcRow(it, i, n){
   const am = it.type === 'app' ? (UC_APP_META[it.refType] || { ico: '🔌', label: '앱' }) : null;
   const ico = it.type === 'file' ? '📎' : it.type === 'slides' ? '🖥️'
     : it.type === 'game' ? (UC_GAMES[it.gameId]?.ico || '🎮') : it.type === 'sheet' ? '📋'
-    : it.type === 'link' ? '🔗' : it.type === 'text' ? '📝' : (am ? am.ico : '🔌');
+    : it.type === 'notebook' ? '📓' : it.type === 'link' ? '🔗' : it.type === 'text' ? '📝' : (am ? am.ico : '🔌');
   const deck = it.type === 'slides' ? deckById(it.deckId) : null;
   const sheet = it.type === 'sheet' ? aiaById(it.sheetId) : null;
   const meta = it.type === 'file'
@@ -216,6 +229,8 @@ function _ucTcRow(it, i, n){
     ? (sheet ? `📋 학습지 — ${esc(sheet.title)}` : '⚠️ 연결된 학습지가 삭제됨')
     : it.type === 'slides'
     ? (deck ? `🖥️ 수업자료 ${(deck.images || []).length}장` : '⚠️ 연결된 수업자료가 삭제됨')
+    : it.type === 'notebook'
+    ? (NOTEBOOKS.find(n => n.id === it.nbId) ? `📓 노트북 — ${esc(NOTEBOOKS.find(n => n.id === it.nbId).title)}` : '⚠️ 연결된 노트북이 삭제됨')
     : it.type === 'link'
     ? `🔗 ${esc(it.url || '')}`
     : it.type === 'text'
@@ -249,6 +264,7 @@ function _ucForm(){
   const types = UC_TC_SEC === 'practice'
     ? [['game', '실습 게임'], ['sheet', '학습지'], ['slides', '수업자료'], ['file', '파일'], ['link', '링크'], ['text', '글']]
     : [['file', '파일'], ['slides', '수업자료'], ['sheet', '학습지'], ['game', '실습 게임'], ['link', '링크'], ['text', '글']];
+  if(TC_CLS?.type === 'ai') types.splice(2, 0, ['notebook', '노트북']);   // Colab 노트북 실습
   const typeBtns = types.map(([k, l]) =>
     `<button class="btn-sm ${d.type === k ? 'btn-p' : ''}" data-action="uc-type" data-type="${k}">${l}</button>`
   ).join(' ');
@@ -293,6 +309,12 @@ function _ucForm(){
           💡 학생은 수업자료 화면 그대로 보고, <b>수업 때 쓴 메모가 그대로 남아 있습니다.</b>
           (제목을 비우면 수업자료 제목을 씁니다)</div></div>`;
     }
+  } else if(d.type === 'notebook'){
+    const opts = NOTEBOOKS.map(n => `<option value="${n.id}" ${d.nbId === n.id ? 'selected' : ''}>${esc(n.title)}</option>`).join('');
+    typeFields = NOTEBOOKS.length
+      ? `<div class="field"><label>연결할 노트북</label><select id="uc-nbid">${d.nbId ? '' : '<option value="">— 노트북 선택 —</option>'}${opts}</select>
+          <div style="font-size:11px;color:var(--text3);margin-top:5px">💡 노트북은 왼쪽 메뉴 <b>콘텐츠 › 📓 노트북</b>에서 Colab 에서 내려받은 .ipynb 로 올립니다. 학생이 고친 코드는 학생마다 저장됩니다. (제목을 비우면 노트북 제목)</div></div>`
+      : `<div class="box-warn" style="font-size:12px">올린 노트북이 없습니다. 먼저 <b>콘텐츠 › 📓 노트북</b>에서 .ipynb 를 올리세요.</div>`;
   } else if(d.type === 'file'){
     const cur = (d._files || []);
     typeFields = `${cur.length ? `<div class="box-ok" style="font-size:12px">현재 파일: ${cur.map(f => esc(f.name)).join(', ')} <span style="color:var(--text3)">(새로 선택하면 교체)</span></div>` : ''}
@@ -329,7 +351,7 @@ function _ucForm(){
     typeFields = `<div><label style="display:block;margin-bottom:5px">연결 종류</label><div style="display:flex;gap:5px;flex-wrap:wrap">${refBtns}</div></div>${picker}`;
   }
 
-  const titleHint = d.type === 'app' ? ` <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(비우면 연결한 항목 제목 사용)</span>` : '';
+  const titleHint = (d.type === 'app' || d.type === 'notebook') ? ` <span style="font-weight:400;color:var(--text3);text-transform:none;letter-spacing:0">(비우면 연결한 항목 제목 사용)</span>` : '';
   return `<div class="section">
     <div class="sec-title">${editing ? '✏️ 항목 수정' : '+ 새 항목'}</div>
     <div class="form">

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>노트북 엔진 시험</title>
+<style>
+  body{font-family:"Malgun Gothic",sans-serif;background:#fff;color:#111;padding:16px;margin:0}
+  #status{position:sticky;top:0;background:#fff8d6;padding:6px 10px;border:1px solid #e5d58a;font-size:13px}
+  .cell{border:1px solid #ccc;border-radius:6px;margin:10px 0;padding:8px 10px}
+  .code{background:#f4f4f4;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;padding:6px;margin:0 0 6px}
+  pre{white-space:pre-wrap;margin:3px 0;font-size:12.5px}
+  .err{color:#c00}
+  .hint{color:#8a5a00}
+  img{max-width:460px;border:1px solid #ddd;display:block;margin:4px 0}
+  table{border-collapse:collapse;font-size:12px} td,th{border:1px solid #ddd;padding:2px 6px}
+  .meta{font-size:11px;color:#777}
+</style>
+</head>
+<body>
+<div id="status">대기</div>
+<p class="meta">노트북 워커(js/notebook-worker.js)에 셀을 차례로 보내 결과를 보여 줍니다. 앱 로그인 없이 엔진만 확인하는 개발용 페이지입니다.</p>
+<div id="log"></div>
+<script>
+const CELLS = [
+  "!git clone https://github.com/ryuk0305/sangokAI.git",
+  "import pandas as pd\nimport matplotlib.pyplot as plt\ndf = pd.read_csv('/content/sangokAI/1grage_sangok.csv')\ndf.shape",
+  "df.head()",
+  "df.info()",
+  "df = df.dropna()\nplt.boxplot(df['평균등급'])\nplt.title('평균등급 상자그림')\nplt.show()\nprint('행 수', len(df))",
+  "df.corr()",
+  "df.corr(numeric_only=True)['키']['발사이즈']",
+  "import seaborn as sns\nsns.heatmap(df.corr(numeric_only=True), annot=True, fmt='.1f')",
+  "!ls -l sangokAI\n%cd sangokAI\n!pwd\n%cd ..",
+  "import maplotlib.pyplot as plt",
+  "import tensorflow as tf",
+  "x = input('이름: ')\nprint('안녕', x)",
+  "from sklearn.tree import DecisionTreeClassifier\ny = df['발사이즈'] > 250\nm = DecisionTreeClassifier(max_depth=2).fit(df[['키']], y)\nm.score(df[['키']], y)",
+  "%%writefile hello.py\nprint('hi from file')",
+  "!python hello.py\n!pip install seaborn\n!nvidia-smi\n!foo",
+  "!git clone https://github.com/ryuk0305/sangokAI.git",
+  "files = !ls\nfiles",
+];
+const W = new Worker('../js/notebook-worker.js?v=test' + Date.now());
+let seq = 0;
+const cbs = {}, outs = {};
+W.onmessage = e => {
+  const m = e.data;
+  if(m.type === 'status'){ document.getElementById('status').textContent = m.text || '준비됨'; return; }
+  if(m.type === 'out'){ (outs[m.id] = outs[m.id] || []).push(m); return; }
+  if(m.type === 'request-input'){ setTimeout(() => W.postMessage({type: 'input-reply', value: '홍길동'}), 300); return; }
+  if(m.id && cbs[m.id]){ const f = cbs[m.id]; delete cbs[m.id]; f(m); }
+};
+function call(msg){ return new Promise(r => { const i = ++seq; cbs[i] = r; W.postMessage({...msg, id: i}); }); }
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function show(code, res, items, ms){
+  const d = document.createElement('div');
+  d.className = 'cell';
+  let h = `<pre class="code">${esc(code)}</pre><div class="meta">ok=${res.ok} · ${ms}ms</div>`;
+  for(const it of items){
+    if(it.kind === 'stream') h += `<pre${it.a === 'stderr' ? ' class="err"' : ''}>${esc(it.b)}</pre>`;
+    else if(it.kind === 'image') h += `<img src="data:${it.b || 'image/png'};base64,${it.a}">`;
+    else if(it.kind === 'html') h += `<div>${it.a}</div>`;
+    else if(it.kind === 'text') h += `<pre>${esc(it.a)}</pre>`;
+    else if(it.kind === 'error'){ const j = JSON.parse(it.a); h += `<pre class="err">${esc(j.tb)}</pre>${j.hint ? `<pre class="hint">💡 ${esc(j.hint)}</pre>` : ''}`; }
+    else h += `<pre>[${it.kind}] ${esc(it.a).slice(0, 200)}</pre>`;
+  }
+  d.innerHTML = h;
+  document.getElementById('log').appendChild(d);
+}
+window.__results = [];
+(async () => {
+  const t0 = performance.now();
+  const pre = await call({action: 'preload'});
+  window.__preloadMs = Math.round(performance.now() - t0);
+  window.__preload = pre;
+  for(const code of CELLS){
+    const t = performance.now();
+    const res = await call({action: 'run', code, cellId: 'c'});
+    const items = outs[res.id] || [];
+    const ms = Math.round(performance.now() - t);
+    show(code, res, items, ms);
+    window.__results.push({code: code.slice(0, 40), ok: res.ok, ms, err: res.error || null,
+      items: items.map(it => it.kind === 'image' ? {kind: 'image', len: it.a.length} : {kind: it.kind, a: it.a.slice(0, 300), b: it.b.slice(0, 600)})});
+  }
+  const fl = await call({action: 'fs-list'});
+  window.__files = fl.files;
+  window.__done = true;
+  document.getElementById('status').textContent = '끝 — preload ' + window.__preloadMs + 'ms';
+})();
+</script>
+</body>
+</html>

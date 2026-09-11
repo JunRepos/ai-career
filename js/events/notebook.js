@@ -88,29 +88,25 @@ function setNBSaveStatus(state){
 }
 
 // 워커 코드 변경 시 이 버전을 올려 브라우저 캐시 무효화 (GitHub Pages 캐시 우회)
-const NB_WORKER_VER = '20260506-input-prompt';
+const NB_WORKER_VER = '20260911-colab-2';
 
 function getNBWorker(){
   if(!_nbWorker){
     _nbWorker = new Worker('js/notebook-worker.js?v=' + NB_WORKER_VER);
     _nbWorker.onmessage = (e) => {
-      const data = e.data;
-      // 입력 요청 (Python input() 호출)
-      if(data.type === 'request-input'){
-        // 진단 로그 (prompt 가 메인까지 잘 도달하는지 확인용)
-        console.log('[notebook] request-input received, prompt =', JSON.stringify(data.prompt), 'type=', typeof data.prompt);
-        handleInputRequest(data.cellId, data.prompt);
-        return;
-      }
-      // stdin 초기화 응답
-      if(data.type === 'init-stdin-done'){
-        _nbStdinSupported = !!data.supported;
-        return;
-      }
+      const data = e.data || {};
+      if(data.type === 'status'){ nbSetRuntime(data.text); return; }            // 런타임 상태 (notebook-colab.js)
+      if(data.type === 'out'){ nbAppendOut(data); return; }                    // 셀 출력 — 나오는 즉시
+      if(data.type === 'download'){ nbSaveBlob(data.name, data.bytes); return; } // files.download()
+      if(data.type === 'request-input'){ handleInputRequest(data.cellId, data.prompt); return; }
+      if(data.type === 'init-stdin-done'){ _nbStdinSupported = !!data.supported; return; }
       const cb = _nbCallbacks[data.id];
       if(cb){ delete _nbCallbacks[data.id]; cb(data); }
     };
-    _nbWorker.onerror = (err) => console.error('Notebook worker error:', err);
+    _nbWorker.onerror = (err) => {
+      console.error('Notebook worker error:', err);
+      nbSetRuntime('⚠ 파이썬을 불러오지 못했습니다 — 인터넷 연결을 확인하세요');
+    };
 
     // stdin SharedArrayBuffer 셋업 (가능하면)
     initStdinSAB();
@@ -151,7 +147,8 @@ async function handleInputRequest(cellId, prompt){
 
 // 사용자 응답을 SharedArrayBuffer 에 쓰고 worker 깨우기
 function submitInputResponse(value){
-  if(!_nbStdinCtrl || !_nbStdinData) return;
+  // 교차 출처 격리가 꺼져 있으면(이 사이트 기본) SAB 대신 메시지로 돌려줍니다 — 워커가 JSPI 로 기다림
+  if(!_nbStdinCtrl || !_nbStdinData){ _nbWorker?.postMessage({type: 'input-reply', value}); _nbAwaitingInput = null; return; }
   if(value === null){
     Atomics.store(_nbStdinCtrl, 0, 2); // abort
     Atomics.store(_nbStdinCtrl, 1, 0);
@@ -179,6 +176,7 @@ function showInlineInputPrompt(cellId, prompt){
     // 출력 박스 안 하단에 끼워넣기 (없으면 셀 끝에)
     const outDiv = cellDiv.querySelector('.cb-output');
     const outBody = outDiv?.querySelector('.cb-out-body');
+    outDiv?.classList.remove('cb-out-noitems');   // 출력이 아직 없어도 입력칸은 보여야 함
 
     const div = document.createElement('div');
     div.className = 'cb-input-prompt';
@@ -204,13 +202,7 @@ function showInlineInputPrompt(cellId, prompt){
     const submit = () => {
       const val = input.value;
       div.remove();
-      // 사용자가 입력한 값을 출력 영역에 보존 (어떤 값을 넣었는지 보임)
-      if(outBody){
-        const echo = document.createElement('div');
-        echo.className = 'cb-input-echo';
-        echo.textContent = (prompt ? prompt : '') + val;
-        outBody.appendChild(echo);
-      }
+      // 입력한 값은 파이썬이 출력으로 다시 보냅니다 (prompt + 값)
       resolve(val);
     };
     const cancel = () => {
@@ -227,16 +219,10 @@ function showInlineInputPrompt(cellId, prompt){
 }
 
 function runNBPython(code, stdin, cellId){
+  // 시간 제한 없음 (Colab 처럼). 멈추려면 ⏹ 중지 — nbStopRuntime()
   return new Promise(resolve => {
     const id = ++_nbMsgId;
-    // input() 대기 중일 수 있으므로 타임아웃 길게(5분), 진짜 무한 루프 방지용
-    const timer = setTimeout(() => {
-      delete _nbCallbacks[id];
-      // worker가 input 대기 중이면 abort 신호
-      if(_nbAwaitingInput) submitInputResponse(null);
-      resolve({success: false, output: '', error: '시간 초과 (5분)', images: []});
-    }, 300000);
-    _nbCallbacks[id] = data => { clearTimeout(timer); resolve(data); };
+    _nbCallbacks[id] = data => resolve(data);
     getNBWorker().postMessage({id, action: 'run', code, stdin, cellId});
   });
 }
@@ -372,7 +358,9 @@ async function openNotebook(nbId){
   NB_SELECTED = NB_CELLS[0]?.id || null;
   NB_EDITING_MD = null;
   destroyAllCMs();
-  await resetNBWorker().catch(() => {});
+  NB_FILES = null;
+  resetNBWorker().catch(() => {});   // 기다리지 않음 — 파이썬이 뜨는 동안에도 노트북은 바로 보이게
+  nbPreload();                       // pandas · matplotlib · 한글 글꼴을 미리
   render();
   // 로드된 진행 상황이 있었으면 저장됨 상태로 표시
   if(savedCells) setNBSaveStatus('saved');
@@ -509,21 +497,9 @@ function cellSource(cellId){
 // ── 셀 실행 ──
 //   진짜 input() 모드: stdin 인자는 빈 값이거나 batch 테스트용 미리 입력
 //   input() 호출 시 worker가 메인에 request-input 메시지를 보냄 → showInlineInputPrompt 처리
+// 셀은 한 번에 하나씩, 누른 차례대로 (notebook-colab.js 의 줄 세우기)
 async function runCell(cellId){
-  const cell = NB_CELLS.find(c => c.id === cellId);
-  if(!cell || cell.type !== 'code') return;
-  const code = cellSource(cellId);
-  cell.source = code; // sync
-
-  NB_CELL_OUTPUTS[cellId] = {running: true};
-  updateCellOutputDom(cellId);
-
-  const startedAt = performance.now();
-  const result = await runNBPython(code, '', cellId);
-  const elapsedMs = performance.now() - startedAt;
-  NB_EXEC_COUNT++;
-  NB_CELL_OUTPUTS[cellId] = {...result, execCount: NB_EXEC_COUNT, elapsedMs, running: false};
-  updateCellOutputDom(cellId);
+  return nbQueueRun(cellId);
 }
 
 async function runCellAndNext(cellId){
@@ -552,9 +528,7 @@ async function runCellAndInsert(cellId){
 }
 
 async function runAll(){
-  for(const cell of [...NB_CELLS]){
-    if(cell.type === 'code') await runCell(cell.id);
-  }
+  await Promise.all(NB_CELLS.filter(c => c.type === 'code').map(c => nbQueueRun(c.id)));
 }
 
 // ── 셀 추가/삭제/이동/복제 ──
@@ -647,7 +621,7 @@ function updateCellOutputDom(cellId){
   // 실행 프롬프트 갱신
   const promptEl = cellDiv.querySelector('.cb-exec-prompt');
   if(promptEl){
-    if(result?.running) promptEl.textContent = '[*]';
+    if(result?.running || result?.queued) promptEl.textContent = '[*]';
     else if(result?.execCount) promptEl.textContent = `[${result.execCount}]`;
     else promptEl.textContent = '[ ]';
   }
@@ -655,15 +629,6 @@ function updateCellOutputDom(cellId){
   // 출력 영역 갱신
   let outDiv = cellDiv.querySelector('.cb-output');
   if(!result){ outDiv?.remove(); return; }
-
-  if(result.running){
-    if(!outDiv){
-      outDiv = document.createElement('div');
-      cellDiv.appendChild(outDiv);
-    }
-    outDiv.outerHTML = `<div class="cb-output cb-out-running" data-cellid="${cellId}"><div class="cb-out-header"><span class="cb-out-prompt">Out [*]:</span><span class="cb-out-time">⏱ 실행 중</span></div><div class="cb-out-body"><pre style="color:#999;font-style:italic;margin:0;padding:0 12px">⏳ 실행 중...</pre></div></div>`;
-    return;
-  }
 
   const html = vNbOutput(result, cellId);
   const tmp = document.createElement('div');
@@ -737,8 +702,8 @@ document.addEventListener('click', async e => {
         }
 
         const nbTitle = (files.length === 1 && title) ? title : file.name.replace(/\.ipynb$/i, '');
+        const nid = genId();   // 여러 반에 올려도 같은 id — 단원 항목을 두 반에 한꺼번에 걸 수 있게
         for(const targetCid of targetClasses){
-          const nid = genId();
           await db.ref(`notebooks/${targetCid}/${nid}`).set({
             title: nbTitle, cells, createdAt: now
           });
@@ -763,7 +728,12 @@ document.addEventListener('click', async e => {
   // 노트북 열기
   if(act.action === 'open-notebook'){ await openNotebook(act.nid); return; }
   // 노트북 목록으로
-  if(act.action === 'nb-close'){ closeNotebook(); return; }
+  if(act.action === 'nb-close'){
+    const back = !IS_TC && UNIT_RETURN;   // 단원에서 열었으면 단원으로
+    closeNotebook();
+    if(back && typeof returnToUnit === 'function') returnToUnit();
+    return;
+  }
   // 노트북 삭제 (선생님)
   if(act.action === 'del-notebook'){
     if(!confirm(`"${act.ntitle}" 노트북을 삭제할까요?`)) return;
@@ -792,6 +762,7 @@ document.addEventListener('click', async e => {
   if(act.action === 'nb-reset-all'){
     closeNbMenu();
     if(!confirm('런타임을 재시작할까요? 선언한 모든 변수가 사라집니다.')) return;
+    if(NB_RUNNING) nbStopRuntime(true);
     el.textContent = '⏳'; el.disabled = true;
     // 입력 대기 중이면 먼저 abort (worker hang 방지)
     if(_nbAwaitingInput) submitInputResponse(null);
@@ -807,6 +778,7 @@ document.addEventListener('click', async e => {
   if(act.action === 'nb-reset-and-run-all'){
     closeNbMenu();
     if(!confirm('런타임을 재시작 후 모든 셀을 실행할까요?')) return;
+    if(NB_RUNNING) nbStopRuntime(true);
     if(_nbAwaitingInput) submitInputResponse(null);
     document.querySelectorAll('.cb-input-prompt').forEach(el => el.remove());
     await resetNBWorker();
@@ -1061,27 +1033,7 @@ function downloadIpynb(){
       const sourceArr = lines.map((l, i) => i < lines.length - 1 ? l + '\n' : l);
       if(c.type === 'code'){
         const result = NB_CELL_OUTPUTS[c.id];
-        const outputs = [];
-        if(result?.output){
-          outputs.push({
-            output_type: 'stream', name: 'stdout',
-            text: result.output.split('\n').map((l, i, a) => i < a.length - 1 ? l + '\n' : l)
-          });
-        }
-        if(result?.images?.length){
-          for(const b64 of result.images){
-            outputs.push({
-              output_type: 'display_data',
-              data: {'image/png': b64}, metadata: {}
-            });
-          }
-        }
-        if(result?.error){
-          outputs.push({
-            output_type: 'error', ename: 'Error', evalue: '',
-            traceback: result.error.split('\n')
-          });
-        }
+        const outputs = result ? nbIpynbOutputs(result) : [];
         return {
           cell_type: 'code', source: sourceArr,
           metadata: {id: c.id},

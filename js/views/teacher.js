@@ -78,6 +78,8 @@ function _tcNavGroups(isInfo){
     const items = [];
     if(assignUnits().length) items.push({key:'unit', ico:'📚', label:'단원 구성'});
     if(aiaListFor(TC_CLS).length) items.push({key:'aia', ico:'📋', label:'학습지'});
+    // Colab 노트북(.ipynb)을 올려 학생이 사이트에서 실행 — 단원 항목 '노트북'으로 학생에게 엽니다
+    if(TC_CLS?.type === 'ai') items.push({key:'notebook', ico:'📓', label:'노트북'});
     if(items.length) groups.push({ label: '콘텐츠', items });
   }
   if(TC_CLS?.type === 'ai') groups.push({ label: '평가', items: [{key:'assess1', ico:'📝', label:'1차 수행평가'}] });

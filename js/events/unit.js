@@ -17,6 +17,7 @@ function _ucReadForm(){
   if(g('uc-deckid')) UC_DRAFT.deckId = g('uc-deckid').value;
   if(g('uc-gameid')) UC_DRAFT.gameId = g('uc-gameid').value;
   if(g('uc-sheetid')) UC_DRAFT.sheetId = g('uc-sheetid').value;
+  if(g('uc-nbid')) UC_DRAFT.nbId = g('uc-nbid').value;
 }
 
 // 앱연결 항목 열기 — 단원에서 기능(노트북/미션/OJ/퀴즈/AI코딩/과제) 진입
@@ -215,7 +216,7 @@ document.addEventListener('click', async e => {
     const it = (((UNIT_CONTENT[UC_TC_UNIT] || {})[UC_TC_SEC]) || []).find(x => x.id === el.dataset.id);
     if(!it) return;
     UC_EDIT = it.id;
-    UC_DRAFT = { type: it.type || 'file', title: it.title || '', desc: it.desc || '', url: it.url || '', body: it.body || '', refType: it.refType || 'notebook', refId: it.refId || '', deckId: it.deckId || '', gameId: it.gameId || 'plant-water', sheetId: it.sheetId || '', _files: _ucFiles(it) };
+    UC_DRAFT = { type: it.type || 'file', title: it.title || '', desc: it.desc || '', url: it.url || '', body: it.body || '', refType: it.refType || 'notebook', refId: it.refId || '', deckId: it.deckId || '', gameId: it.gameId || 'plant-water', sheetId: it.sheetId || '', nbId: it.nbId || '', _files: _ucFiles(it) };
     render(); return;
   }
   if(act === 'uc-cancel'){
@@ -231,7 +232,8 @@ document.addEventListener('click', async e => {
     const d = UC_DRAFT || {};
     const type = d.type || 'file';
     // 수업자료는 제목을 비우면 그 자료 제목을 씁니다 — 제목 필수에서 제외
-    if(!['app','slides','game','sheet'].includes(type) && !(d.title || '').trim()){ setErr('제목을 입력하세요.'); return; }
+    if(!['app','slides','game','sheet','notebook'].includes(type) && !(d.title || '').trim()){ setErr('제목을 입력하세요.'); return; }
+    if(type === 'notebook' && !(d.nbId || '').trim()){ setErr('연결할 노트북을 선택하세요.'); return; }
     if(type === 'slides' && !(d.deckId || '').trim()){ setErr('연결할 수업자료를 선택하세요.'); return; }
     if(type === 'sheet' && !(d.sheetId || '').trim()){ setErr('연결할 학습지를 선택하세요.'); return; }
     if(type === 'link' && !(d.url || '').trim()){ setErr('링크 주소를 입력하세요.'); return; }
@@ -268,6 +270,10 @@ document.addEventListener('click', async e => {
       if(type === 'sheet'){
         data.sheetId = (d.sheetId || '').trim();
         if(!data.title) data.title = aiaById(data.sheetId)?.title || '학습지';
+      }
+      if(type === 'notebook'){
+        data.nbId = (d.nbId || '').trim();
+        if(!data.title) data.title = NOTEBOOKS.find(n => n.id === data.nbId)?.title || '노트북';
       }
       if(type === 'app'){
         const refType = d.refType || 'notebook';
@@ -310,6 +316,17 @@ document.addEventListener('click', async e => {
         targets = ok;
       }
 
+      /* 노트북도 그 반에 같은 id 로 올라가 있어야 열립니다 (여러 반에 한꺼번에 올리면 id 가 같음) */
+      if(type === 'notebook'){
+        const ok = [];
+        for(const t of targets){
+          if(t === cid){ ok.push(t); continue; }
+          let exists = false;
+          try { exists = (await db.ref(`notebooks/${t}/${data.nbId}`).get()).exists(); } catch(e){}
+          if(exists) ok.push(t); else skipped.push(classById(t)?.short || t);
+        }
+        targets = ok;
+      }
       const prog = document.getElementById('uc-prog');
       const pctEl = document.getElementById('uc-pct');
       const fillEl = document.getElementById('uc-pfill');
