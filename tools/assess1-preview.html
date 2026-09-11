@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>1차 수행평가 미리보기</title>
+<!-- 앱의 진짜 CSS 를 그대로 씁니다 -->
+<link rel="stylesheet" href="../css/styles.css">
+<style>
+  body{margin:0;padding:18px;background:#12181f;color:#e8e8e8;font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+  .pv-top{max-width:1100px;margin:0 auto 10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:13px}
+  .pv-top b{margin-right:6px}
+  .pv-top button{padding:6px 11px;background:#2b3a4b;color:#e8e8e8;border:1px solid #4a5c70;border-radius:6px;cursor:pointer;font:inherit}
+  .pv-top button.on{background:#f2c76b;color:#1c2731;border-color:#f2c76b;font-weight:800}
+  .pv-note{max-width:1100px;margin:0 auto 14px;font-size:12px;color:#8b98a6}
+  #stage{max-width:1100px;margin:0 auto;display:block}
+  #pv-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#222;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;display:none;z-index:99}
+</style>
+</head>
+<body>
+<div class="pv-top">
+  <b>1차 수행평가 미리보기</b>
+  <button data-pv="st-q13">학생 · 1~3번</button>
+  <button data-pv="st-q45">학생 · 4~5번</button>
+  <button data-pv="st-closed">학생 · 닫힘</button>
+  <button data-pv="st-test">test 계정 · 닫힘</button>
+  <button data-pv="tc">선생님</button>
+  <label style="margin-left:8px"><input type="checkbox" id="pv-fail"> 저장 실패 흉내</label>
+  <button id="pv-seed">샘플 답안 넣기</button>
+  <button id="pv-reset">저장소 비우기</button>
+</div>
+<div class="pv-note">앱 밖에서 화면만 띄웁니다. 저장은 이 페이지의 가짜 저장소(브라우저 localStorage)에 합니다 — 실제 DB 에는 쓰지 않습니다.</div>
+<main class="content" id="stage"></main>
+<div id="pv-toast"></div>
+
+<script>
+/* ── 가짜 저장소 — Firebase compat 의 ref().get/set/update/on/off 흉내 ── */
+const PV_KEY = 'assess1-preview-db';
+let TREE = {};
+try { TREE = JSON.parse(localStorage.getItem(PV_KEY) || '{}'); } catch(e){ TREE = {}; }
+const WATCH = [];
+function _get(path){ return path.split('/').reduce((o, k) => (o == null ? undefined : o[k]), TREE); }
+function _setp(path, v){
+  const ks = path.split('/'); let o = TREE;
+  for(let i = 0; i < ks.length - 1; i++){ if(typeof o[ks[i]] !== 'object' || o[ks[i]] === null) o[ks[i]] = {}; o = o[ks[i]]; }
+  if(v === null || v === undefined) delete o[ks[ks.length - 1]];
+  else o[ks[ks.length - 1]] = JSON.parse(JSON.stringify(v));
+}
+function _snap(path){ const v = _get(path); return { exists: () => v !== undefined && v !== null, val: () => (v === undefined ? null : JSON.parse(JSON.stringify(v))) }; }
+function _commit(){ try { localStorage.setItem(PV_KEY, JSON.stringify(TREE)); } catch(e){} WATCH.forEach(w => setTimeout(() => w.fn(_snap(w.path)), 0)); }
+const _net = () => new Promise((res, rej) => setTimeout(() => document.getElementById('pv-fail').checked ? rej(new Error('네트워크 끊김(흉내)')) : res(), 200));
+const db = { ref(path){ return {
+  get: async () => { await _net(); return _snap(path); },
+  set: async v => { await _net(); _setp(path, v); _commit(); },
+  update: async o => { await _net(); for(const k in o) _setp(path + '/' + k, o[k]); _commit(); },
+  on(ev, fn){ WATCH.push({ path, fn }); setTimeout(() => fn(_snap(path)), 0); },
+  off(ev, fn){ const i = WATCH.findIndex(w => w.fn === fn); if(i >= 0) WATCH.splice(i, 1); },
+}; } };
+
+/* ── 앱에서 쓰는 것들 흉내 ── */
+let VIEW = 'student', ST_TAB = 'assess1', TC_TAB = 'assess1';
+const CLS = { id: 'ai-2B', label: '인공지능 기초 2B', type: 'ai' };
+let SEL_CLS = CLS, TC_CLS = null;
+let ST_USER = { number: '20101', name: '김미리' };
+const STUDENTS = [{ number: '20101', name: '김미리' }, { number: '20102', name: '이보기' },
+                  { number: '20103', name: '박화면' }, { number: '20104', name: '최빈칸' }, { number: 'test', name: '확인용' }];
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function toast(msg){ const t = document.getElementById('pv-toast'); t.textContent = msg; t.style.display = 'block'; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = 'none', 2200); }
+function emptyBox(ic, msg){ return `<div class="empty" style="padding:30px;text-align:center;color:#8b98a6">${ic} ${esc(msg)}</div>`; }
+function withTimeout(p, ms, label){ let t; return Promise.race([Promise.resolve(p).finally(() => clearTimeout(t)), new Promise((_, rej) => { t = setTimeout(() => rej(new Error('시간 초과: ' + label)), ms); })]); }
+function render(){ document.getElementById('stage').innerHTML = VIEW === 'teacher' ? vTcAssess1() : vStAssess1(); }
+</script>
+
+<script src="../js/assess1-data.js"></script>
+<script src="../js/views/assess1.js"></script>
+<script src="../js/events/assess1.js"></script>
+
+<script>
+function pvStage(stage){ _setp(`aiactivity/submissions/${CLS.id}/assess1Open`, stage); _commit(); A1_OPEN[CLS.id] = stage; }
+const MODES = {
+  'st-q13':    () => { pvStage('q13'); VIEW = 'student'; ST_USER = { number: '20101', name: '김미리' }; },
+  'st-q45':    () => { pvStage('q45'); VIEW = 'student'; ST_USER = { number: '20101', name: '김미리' }; },
+  'st-closed': () => { pvStage('closed'); VIEW = 'student'; ST_USER = { number: '20101', name: '김미리' }; },
+  'st-test':   () => { pvStage('closed'); VIEW = 'student'; ST_USER = { number: 'test', name: '확인용' }; },
+  'tc':        () => { VIEW = 'teacher'; TC_CLS = CLS; A1_TC_FOR = null; A1_TC_VIEW = 'list'; },
+};
+function pvGo(m){
+  MODES[m]();
+  A1_FOR = null; A1_DIRTY = false; A1_TOUCHED = new Set();
+  document.querySelectorAll('[data-pv]').forEach(b => b.classList.toggle('on', b.dataset.pv === m));
+  history.replaceState(null, '', '?mode=' + m);
+  render();
+}
+document.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => pvGo(b.dataset.pv));
+document.getElementById('pv-reset').onclick = () => { TREE = {}; _commit(); pvGo(new URLSearchParams(location.search).get('mode') || 'st-q13'); };
+document.getElementById('pv-seed').onclick = () => {
+  const base = `aiactivity/submissions/${CLS.id}/assess1`;
+  const full = { q1src: '기사 「예시」(○○일보, 2026. 9. 1.)', q1: '선정 이유 예시 문장입니다.', q2: '문제 상황 분석 예시.',
+                 q3name: '예시 인공지능', q3kind: '새로 구상한 것', q3: '인식 · 추론 예시.', q4: '', q5: '' };
+  _setp(base + '/20102', { name: '이보기', answers: full, updatedAt: '2026-09-10T03:10:00Z', submitted: { answers: full, at: '2026-09-10T03:10:00Z' } });
+  _setp(base + '/20103', { name: '박화면', answers: { ...full, q2: full.q2 + ' 제출 뒤 고친 문장.' }, updatedAt: '2026-09-10T03:20:00Z', submitted: { answers: full, at: '2026-09-10T03:12:00Z' } });
+  _setp(base + '/20104', { name: '최빈칸', answers: { q1: '쓰다 만 답' }, updatedAt: '2026-09-10T03:05:00Z' });
+  _commit(); render();
+};
+a1WatchOpen(CLS.id);
+pvGo(new URLSearchParams(location.search).get('mode') || 'st-q13');
+</script>
+</body>
+</html>

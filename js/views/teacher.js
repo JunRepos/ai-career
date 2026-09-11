@@ -78,8 +78,11 @@ function _tcNavGroups(isInfo){
     const items = [];
     if(assignUnits().length) items.push({key:'unit', ico:'📚', label:'단원 구성'});
     if(aiaListFor(TC_CLS).length) items.push({key:'aia', ico:'📋', label:'학습지'});
+    // Colab 노트북(.ipynb)을 올려 학생이 사이트에서 실행 — 단원 항목 '노트북'으로 학생에게 엽니다
+    if(TC_CLS?.type === 'ai') items.push({key:'notebook', ico:'📓', label:'노트북'});
     if(items.length) groups.push({ label: '콘텐츠', items });
   }
+  if(TC_CLS?.type === 'ai') groups.push({ label: '평가', items: [{key:'assess1', ico:'📝', label:'1차 수행평가'}] });
   if(isInfo){
     groups.push({ label: '콘텐츠', items: [
       {key:'unit',     ico:'📚', label:'단원 구성'},
@@ -107,7 +110,7 @@ function _tcNavGroups(isInfo){
 
 // 본문을 넓게(IDE/표형) 쓰는 선생님 탭
 function _tcWideTab(){
-  return ['notebook','mission','oj','coderead','curriculum','asmt','scores','mlassess','aicode'].includes(TC_TAB);
+  return ['notebook','mission','oj','coderead','curriculum','asmt','scores','mlassess','aicode','assess1'].includes(TC_TAB);
 }
 function _tcAutoCollapse(){ return TC_TAB === 'notebook' || TC_TAB === 'mission'; }
 function toggleTcNav(){ TC_NAV_COLLAPSED = !TC_NAV_COLLAPSED; render(); }
@@ -131,6 +134,7 @@ function _tcTabBody(){
   else if(TC_TAB === 'ml')         return vTcMl();
   else if(TC_TAB === 'asmt')       return vTcAssessment();
   else if(TC_TAB === 'mlassess')   return vTcMlAssess();
+  else if(TC_TAB === 'assess1')    return vTcAssess1();
   else if(TC_TAB === 'scores')     return vTcScores();
   else if(TC_TAB === 'curriculum') return vTcCurriculum();
   else if(TC_TAB === 'settings')   return vTcSettings();
@@ -147,6 +151,8 @@ function _tcNormalizeTab(){
 
 function setTC(t){
   TC_TAB = t;
+  // 1차 수행평가 실시간 구독은 그 탭에 있을 때만
+  if(t !== 'assess1') a1TcStop(); else { A1_TC_VIEW = 'list'; A1_TC_SNUM = null; }
   // 수업자료 탭은 늘 목록부터 (지난번에 열어본 자료가 그대로 뜨지 않게)
   if(t === 'slides' && TC_CLS){
     SLIDE_TC_SEL = null; SLIDE_TC_NOTES = false;
