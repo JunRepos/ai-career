@@ -108,6 +108,7 @@ firebase deploy --only storage --project sindong-informatics
 | `city-astar` | 🧭 도시 배달 — 지도를 보고 | 도시마다 **직선거리 h** 가 적힌 지도 · `f = g + h` 가 작은 곳부터 | `verify/cityastar.py` (판 설계 `cityastar-design.py`) |
 | `puzzle-astar` | 🧠 8퍼즐 A\* 탐색 | **교과서 37쪽 활동3** · 학생이 **g·h·f 를 직접 입력**해야 다음으로 | `verify/lesson6.py` |
 | `puzzle-8` | 🧩 8퍼즐 맞추기 | **학습지 앞면과 같은 판**(`_13/824/765` → `123/8_4/765`) · 맞추면 깊이 2 탐색 트리 | |
+| `rule-car` | 🚗 자율주행차 규칙 만들기 | 선생님 학습지 「새로운 상태공간을 위한 추론」 의 카드로 **IF-THEN 규칙(지식 베이스)** 을 만들어 주행 시험 8상황 통과 · 조건이 맞는 규칙은 모두 불리고 행동이 다르면 **충돌** · 「확인한다」 는 숨은 사실을 드러냄(연쇄) · 주행 시험은 **도로 장면**으로 상황 1~8 을 차례로 달림 — 틀리면 **쾅(사고)** 이나 **삐빅(실격)** (`rulecar-sim.js`) | `verify/rulecar.py` — 판 데이터·추론 엔진·장면 종류를 node 로 돌려 대조 · **모범 답은 검산기의 `REFERENCE` 에만** (게임 코드에는 없음) |
 
 브라우저로 `tools/game-preview.html` 을 열면 앱 없이 게임만 따로 확인됩니다
 (`?game=maze&start=1` 처럼 열면 시작한 화면부터).
@@ -119,7 +120,7 @@ firebase deploy --only storage --project sindong-informatics
 
 - 슬라이드 중간에 끼우기 — 수업자료 조작판의 `＋ 🌿 …` `＋ 🧩 …` 버튼 (지금 장 **다음**에 들어감)
 - 점수는 `slides/{반}/scores/{게임id}/{학번}` 에 **최고 기록만**. 저장 함수가 '클수록 좋음' 이라
-  적을수록 좋은 게임은 빼서 넣습니다 — 8퍼즐은 `1000 − 수`
+  적을수록 좋은 게임은 빼서 넣습니다 — 8퍼즐은 `1000 − 수` · 자율주행차 규칙은 `통과 수 × 100 − 규칙 수`
 
 > 「숨바꼭질」은 2026-08-27 에 **폐기**했습니다. 코드·CSS·DB 항목을 전부 걷어냈습니다.
 > 되살릴 일이 있으면 `.backup/hideseek-2026-08-27/` 에 있습니다.
@@ -143,6 +144,10 @@ firebase deploy --only storage --project sindong-informatics
     `gameView(id)` · `gameLoadRank(id)` · `gameLeaveAll()` · `gameTeacherBoard(id)`.
     `gameDef()` 가 모르는 id 를 물 주기로 떨어뜨리기 때문에, 잘못 불러도 화면이 안 비고
     **엉뚱한 게임이 조용히 뜹니다.**
+13. **게임 안의 `select` 는 전역 규칙에 덮입니다.** 전역 `select{width:100%}` 와 다크 테마의
+    `[data-theme="dark"] select{background:var(--bg)}` 가 클래스 하나짜리 규칙보다 앞서서,
+    글자만 어둡게 주면 **어두운 바탕에 어두운 글자**가 되어 안 보입니다.
+    `.rc-build select.rc-sel` 처럼 부모 클래스까지 붙여 우선순위를 높이세요. (2026-09-11 자율주행차 규칙 게임)
 
 ---
 

@@ -50,6 +50,8 @@ function render(){ document.getElementById('stage').innerHTML = gameView(CURRENT
 <script src="../js/games/maze.js"></script>
 <script src="../js/games/citycost.js"></script>
 <script src="../js/games/cityastar.js"></script>
+<script src="../js/games/rulecar.js"></script>
+<script src="../js/games/rulecar-sim.js"></script>
 <script src="../js/games/games.js"></script>
 
 <script>
@@ -71,6 +73,13 @@ const PV_ACTIONS = {
   'pa-start': () => { paStart(); render(); },
   'pa-check': () => paCheck(),
   'pa-pick':  el => paPick(+el.dataset.i),
+  'rc-start': () => { rcStart(); render(); },
+  'rc-add':   () => rcAdd(),
+  'rc-del':   el => rcDel(+el.dataset.i),
+  'rc-show':  el => rcShow(+el.dataset.i),
+  'rc-test':  () => rcTest(),
+  'rc-reset': () => rcReset(),
+  'rc-skip':  () => rcSkip(),
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');
@@ -107,6 +116,17 @@ if(want === 'city-cost' && Q.get('start') === '1'){
   render();
 }
 if(Q.get('start') === '1'){
+  /* ?game=rule-car&start=1&demo=1 — 일부러 덜 만든 규칙 세 개로 주행 시험까지 (스크린샷용 · 모범 답 아님) */
+  if(want === 'rule-car'){
+    rcStart();
+    if(Q.get('demo') === '1'){
+      RC.rules = [{ conds: ['stop', 'red'], op: 'AND', act: 'wait' },
+                  { conds: ['stop', 'green', 'noobs'], op: 'AND', act: 'start' },
+                  { conds: ['obs'], op: 'AND', act: 'check' }];
+      rcTest();
+      if(Q.get('show')) rcShow(+Q.get('show') - 1);   // &show=4 — 상황 4 장면을 바로 (스크린샷용)
+    }
+  }
   if(want === 'maze'){
     mzStart();
     const act = +Q.get('act') || 0;

@@ -43,6 +43,13 @@ document.addEventListener('click', async e => {
   if(act === 'pa-start'){ paStart(); render(); return; }
   if(act === 'pa-check'){ paCheck(); return; }        // 입력칸을 읽어 채점 — render() 안 함
   if(act === 'pa-pick'){ paPick(+el.dataset.i); return; }
+  if(act === 'rc-start'){ rcStart(); render(); return; }
+  if(act === 'rc-add'){ rcAdd(); return; }            // 고르기 칸을 읽어 규칙을 더함
+  if(act === 'rc-del'){ rcDel(+el.dataset.i); return; }
+  if(act === 'rc-show'){ rcShow(+el.dataset.i); return; }
+  if(act === 'rc-test'){ rcTest(); return; }
+  if(act === 'rc-reset'){ rcReset(); return; }
+  if(act === 'rc-skip'){ rcSkip(); return; }            // 주행 장면 건너뛰고 결과만
 
   // 선생님: 지금 장 다음에 실습 슬라이드 끼워 넣기 / 빼기
   if(act === 'sl-game-add' && TC_CLS && SLIDE_DECK){

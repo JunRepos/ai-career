@@ -4987,3 +4987,127 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .pa-chip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 14px;height:auto}
 .pa-chip em{font-style:normal;font-size:12px;color:var(--text3)}
 .pa-chip b{font-size:15px}
+
+/* ═══ 🚗 자율주행차 규칙 만들기 (2026-09-11) — 조건·행동 카드로 지식 베이스를 만들어 주행 시험 ═══
+   판과 추론 엔진은 verify/rulecar.py 가 검산합니다 (js/games/rulecar.js) */
+.rc-wrap{max-width:1040px}
+.rc-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}
+.rc-deck{padding:9px 11px;background:#1a2431;border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #3b4b5d}
+.rc-deck h4{margin:0 0 4px;font-size:12px;color:var(--mz-gold);letter-spacing:1px}
+.rc-deck span{display:inline-block;margin:4px 5px 0 0;padding:3px 8px;background:#243242;
+  border:2px solid #0f151d;font-size:12.5px;color:var(--mz-text)}
+.rc-build{display:grid;grid-template-columns:76px minmax(0,1fr);gap:7px 8px;align-items:center;padding:10px;
+  background:#1a2431;border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #3b4b5d}
+.rc-build .kw{font-weight:900;color:var(--mz-gold);font-size:14px;text-align:center;letter-spacing:1px}
+/* 전역 select{width:100%} · [data-theme="dark"] select{background:…} 를 덮습니다 (우선순위를 높여서) */
+.rc-build select.rc-sel{display:block;width:100%;min-width:0;height:auto;margin:0;font-family:inherit;font-size:13.5px;
+  padding:6px 26px 6px 9px;color:#17202a;background-color:#f5f1df;border:3px solid var(--mz-ink);border-radius:0;
+  box-shadow:none;outline:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2317202a' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 8px center}
+.rc-build select.rc-sel:focus{border-color:var(--mz-gold)}
+.rc-build select.rc-op{font-weight:900;padding-right:22px}
+.rc-then{display:flex;gap:8px;align-items:center;min-width:0}
+.rc-then select.rc-sel{flex:1}
+.rc-then .rc-add{flex:none}
+.rc-hint{margin-top:6px;font-size:12px;line-height:1.5;color:var(--mz-muted)}
+.rc-hint b{color:var(--mz-gold)}
+/* 전역 button{display:inline-flex} 를 덮습니다 */
+.rc-add{display:inline-block;margin:0;padding:7px 14px;cursor:pointer;background:var(--mz-btn);color:#1c2731;
+  font:inherit;font-size:13px;font-weight:800;border:3px solid var(--mz-ink);
+  box-shadow:inset 0 0 0 2px var(--mz-btn-in),3px 3px 0 #0d1218}
+.rc-add:active{transform:translate(2px,2px);box-shadow:inset 0 0 0 2px var(--mz-btn-in),1px 1px 0 #0d1218}
+.rc-msg{margin-top:6px;font-size:12.5px;line-height:1.5;color:#f0a58f;min-height:16px}
+.rc-none{margin-top:10px}
+.rc-rules{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.rc-rule{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;background:#202c3a;
+  border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #46596e;font-size:13px;line-height:1.55}
+.rc-rule.hot{box-shadow:inset 0 0 0 2px var(--mz-gold);background:#2a3524}
+.rc-rule .no{flex:none;min-width:30px;font-weight:900;color:var(--mz-gold)}
+.rc-rule .tx{flex:1;min-width:0}
+.rc-rule .tx b{color:var(--mz-gold);font-weight:900}
+.rc-rule .tx em{font-style:normal;color:#9bcf9c;font-weight:700}
+.rc-x{display:inline-block;flex:none;cursor:pointer;background:transparent;border:0;color:var(--mz-muted);
+  font:inherit;font-size:15px;padding:0 4px;line-height:1.4}
+.rc-x:hover{color:#f0a58f}
+.rc-scs{display:flex;flex-direction:column;gap:6px}
+.rc-sc{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;cursor:pointer;text-align:left;
+  background:#202c3a;color:var(--mz-text);font:inherit;font-size:13px;
+  border:3px solid #0f151d;box-shadow:inset 0 0 0 2px #46596e}
+.rc-sc.on{box-shadow:inset 0 0 0 2px var(--mz-gold)}
+.rc-sc .n{flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;
+  background:var(--mz-gold);color:#1c2731;font-weight:900;font-size:12px;border:2px solid var(--mz-ink)}
+.rc-sc .nm{flex:1;min-width:0}
+.rc-badge{flex:none;padding:2px 8px;font-size:12px;font-weight:900;border:2px solid var(--mz-ink)}
+.rc-badge.pass{background:#9bcf9c;color:#17202a}
+.rc-badge.none,.rc-badge.nocheck{background:#e9c46a;color:#17202a}
+.rc-badge.conflict,.rc-badge.wrong{background:#e8867b;color:#17202a}
+.rc-badge.idle{background:#3b4b5d;color:var(--mz-muted)}
+.rc-detail{margin-top:12px;padding:12px 14px;background:var(--mz-cream);color:#1c2731;
+  border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px var(--mz-cream-in);font-size:13.5px;line-height:1.7}
+.rc-detail h4{margin:0 0 4px;font-size:15px}
+.rc-row{margin-top:4px}
+.rc-k{display:inline-block;min-width:112px;margin-right:4px;font-weight:900;color:#8a5a1e}
+.rc-fact{display:inline-block;margin:2px 5px 2px 0;padding:0 8px;background:#fff;border:2px solid #1c2731;font-size:12.5px}
+.rc-fact.hid{background:#e6dfc5;border-style:dashed;color:#5a4a2a}
+.rc-steps{margin:4px 0 0;padding-left:20px}
+.rc-steps li{margin:1px 0}
+.rc-new{color:#2f6b37;font-weight:700}
+.rc-wait{color:#6b5a3a}
+.rc-verdict{margin-top:6px;font-weight:900}
+.rc-verdict.pass{color:#2f6b37}
+.rc-verdict.bad{color:#a2372d}
+.rc-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.rc-btns .mz-btn{display:inline-block;margin:14px 0 4px}
+.rc-btns .rc-small{background:#3b4b5d;color:var(--mz-text);box-shadow:inset 0 0 0 3px #53677b,5px 5px 0 #0d1218}
+.rc-done{max-width:none;margin-top:12px}
+@media(max-width:760px){ .rc-cards{grid-template-columns:1fr}
+  .rc-then{flex-wrap:wrap} .rc-then select.rc-sel{flex:1 1 100%} }
+/* 주행 시험 장면 (js/games/rulecar-sim.js) — 통과 · 쾅(사고) · 실격 */
+.rs-stage{margin-top:12px;background:#141c25;border:4px solid var(--mz-ink);box-shadow:inset 0 0 0 3px #3b4b5d;overflow:hidden}
+.rs-svg{display:block;width:100%;height:auto}
+.rs-grass{fill:#2d3b2b}
+.rs-road{fill:#4a525c}
+.rs-dash{stroke:#e8e1c4;stroke-width:2;stroke-dasharray:14 12;fill:none}
+.rs-stop{stroke:#fff;stroke-width:4}
+.rs-rail{stroke:#a9b3bf;stroke-width:3;stroke-dasharray:2 4;fill:none}
+.rs-pole{fill:#10151b;stroke:#000}
+.rs-red{fill:#4a2323}.rs-red.on{fill:#ff4d4d}
+.rs-green{fill:#1d3a29}.rs-green.on{fill:#3ddc84}
+.rs-mv{transform-box:fill-box;transform-origin:center}
+.rs-car .b{stroke:#10151b;stroke-width:2}
+.rs-car .w{fill:#1c2731;opacity:.85}
+.rs-me .b{fill:#f2c76b}.rs-o .b{fill:#6fa8dc}.rs-r .b{fill:#9aa4b2}.rs-x .b{fill:#e8867b}
+.rs-tag{font-size:13px;font-weight:800;fill:#fff;text-anchor:middle;paint-order:stroke;stroke:#10151b;stroke-width:3px;animation:rsFade .3s both}
+.rs-ping{fill:none;stroke:#7fe3ff;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:rsPing .9s ease-out both}
+.rs-say{animation:rsFade .25s both}
+.rs-say rect{fill:#f5f1df;stroke:#10151b;stroke-width:2}
+.rs-say text{font-size:13px;font-weight:800;fill:#17202a;text-anchor:middle}
+.rs-honk rect{fill:#ffe08a}
+.rs-boom{transform-box:fill-box;transform-origin:center;animation:rsPop .45s cubic-bezier(.2,1.6,.4,1) both}
+.rs-boom polygon{fill:#ffd23f;stroke:#e8503a;stroke-width:4;stroke-linejoin:round}
+.rs-boom text{font-size:20px;font-weight:900;fill:#b3261e;text-anchor:middle}
+.rs-stamp{transform-box:fill-box;transform-origin:center;animation:rsStamp .4s cubic-bezier(.3,1.5,.5,1) both}
+.rs-stamp rect{fill:rgba(179,38,30,.15);stroke:#e8503a;stroke-width:5}
+.rs-stamp text{font-size:30px;font-weight:900;fill:#e8503a;text-anchor:middle;letter-spacing:6px}
+.rs-ok{transform-box:fill-box;transform-origin:center;animation:rsPop .4s ease-out both}
+.rs-ok rect{fill:#9bcf9c;stroke:#10151b;stroke-width:2}
+.rs-ok text{font-size:17px;font-weight:900;fill:#17202a;text-anchor:middle}
+.rs-hit{animation:rsShake .5s both}
+.rs-cap{padding:8px 12px 10px;font-size:13.5px;line-height:1.6;color:var(--mz-text);background:#1a2431;border-top:3px solid #0f151d}
+.rs-cap b{color:var(--mz-gold)}
+.rs-need{margin-left:8px;color:var(--mz-muted)}
+.rs-res{margin-top:2px;font-weight:900;animation:rsFade .3s both}
+.rs-res.pass{color:#9bcf9c}.rs-res.crash{color:#ff8a7a}.rs-res.dq{color:#e9c46a}
+.rs-idle{color:var(--mz-muted)}
+.rs-sum{padding:18px 14px;text-align:center}
+.rs-sum-h{font-size:20px;font-weight:900;color:var(--mz-gold)}
+.rs-sum-s{margin-top:4px;font-size:13px;color:var(--mz-muted)}
+.rc-late{animation:rsFade .3s both}
+.rc-badge.run{background:var(--mz-gold);color:#17202a;animation:rsBlink .8s infinite alternate}
+@keyframes rsFade{from{opacity:0}to{opacity:1}}
+@keyframes rsPing{0%{opacity:0;transform:scale(.3)}15%{opacity:.9}100%{opacity:0;transform:scale(9)}}
+@keyframes rsPop{0%{opacity:0;transform:scale(0)}100%{opacity:1;transform:scale(1)}}
+@keyframes rsStamp{0%{opacity:0;transform:scale(2.4) rotate(-14deg)}100%{opacity:1;transform:scale(1) rotate(-8deg)}}
+@keyframes rsShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
+@keyframes rsBlink{from{opacity:1}to{opacity:.55}}

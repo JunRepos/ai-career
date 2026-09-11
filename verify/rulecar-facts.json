@@ -1,0 +1,269 @@
+{
+ "conds": [
+  [
+   "green",
+   "신호등이 녹색이다"
+  ],
+  [
+   "red",
+   "신호등이 적색이다"
+  ],
+  [
+   "obs",
+   "전방에 장애물이 있다"
+  ],
+  [
+   "noobs",
+   "전방에 장애물이 없다"
+  ],
+  [
+   "stop",
+   "자동차가 멈춰 있다"
+  ],
+  [
+   "run",
+   "자동차가 달리고 있다"
+  ],
+  [
+   "still",
+   "전방의 장애물이 움직이지 않는다"
+  ],
+  [
+   "ahead",
+   "전방의 장애물이 앞으로 움직인다"
+  ]
+ ],
+ "acts": [
+  [
+   "go",
+   "앞으로 움직인다"
+  ],
+  [
+   "halt",
+   "멈춘다"
+  ],
+  [
+   "check",
+   "전방의 장애물을 확인한다"
+  ],
+  [
+   "start",
+   "출발한다"
+  ],
+  [
+   "slow",
+   "속도를 줄인다"
+  ],
+  [
+   "wait",
+   "기다린다"
+  ]
+ ],
+ "opposite": [
+  [
+   "green",
+   "red"
+  ],
+  [
+   "obs",
+   "noobs"
+  ],
+  [
+   "stop",
+   "run"
+  ],
+  [
+   "still",
+   "ahead"
+  ]
+ ],
+ "scenarios": [
+  {
+   "id": 1,
+   "name": "빨간불 앞에 서 있다",
+   "facts": [
+    "stop",
+    "red",
+    "noobs"
+   ],
+   "hidden": [],
+   "expect": "wait",
+   "needCheck": false
+  },
+  {
+   "id": 2,
+   "name": "초록불로 바뀌었다",
+   "facts": [
+    "stop",
+    "green",
+    "noobs"
+   ],
+   "hidden": [],
+   "expect": "start",
+   "needCheck": false
+  },
+  {
+   "id": 3,
+   "name": "뻥 뚫린 길을 달린다",
+   "facts": [
+    "run",
+    "green",
+    "noobs"
+   ],
+   "hidden": [],
+   "expect": "go",
+   "needCheck": false
+  },
+  {
+   "id": 4,
+   "name": "달리다가 빨간불",
+   "facts": [
+    "run",
+    "red",
+    "noobs"
+   ],
+   "hidden": [],
+   "expect": "halt",
+   "needCheck": false
+  },
+  {
+   "id": 5,
+   "name": "앞에 차가 서 있다",
+   "facts": [
+    "run",
+    "green",
+    "obs"
+   ],
+   "hidden": [
+    "still"
+   ],
+   "expect": "halt",
+   "needCheck": true
+  },
+  {
+   "id": 6,
+   "name": "앞차가 달리고 있다",
+   "facts": [
+    "run",
+    "green",
+    "obs"
+   ],
+   "hidden": [
+    "ahead"
+   ],
+   "expect": "slow",
+   "needCheck": true
+  },
+  {
+   "id": 7,
+   "name": "출발하려는데 앞에 차가 있다",
+   "facts": [
+    "stop",
+    "green",
+    "obs"
+   ],
+   "hidden": [
+    "still"
+   ],
+   "expect": "wait",
+   "needCheck": true
+  },
+  {
+   "id": 8,
+   "name": "빨간불인데 앞차는 움직인다",
+   "facts": [
+    "run",
+    "red",
+    "obs"
+   ],
+   "hidden": [
+    "ahead"
+   ],
+   "expect": "halt",
+   "needCheck": false
+  }
+ ],
+ "reference": [
+  {
+   "conds": [
+    "stop",
+    "red"
+   ],
+   "op": "AND",
+   "act": "wait"
+  },
+  {
+   "conds": [
+    "stop",
+    "green",
+    "noobs"
+   ],
+   "op": "AND",
+   "act": "start"
+  },
+  {
+   "conds": [
+    "run",
+    "green",
+    "noobs"
+   ],
+   "op": "AND",
+   "act": "go"
+  },
+  {
+   "conds": [
+    "run",
+    "red"
+   ],
+   "op": "AND",
+   "act": "halt"
+  },
+  {
+   "conds": [
+    "obs"
+   ],
+   "op": "AND",
+   "act": "check"
+  },
+  {
+   "conds": [
+    "run",
+    "still"
+   ],
+   "op": "AND",
+   "act": "halt"
+  },
+  {
+   "conds": [
+    "green",
+    "ahead"
+   ],
+   "op": "AND",
+   "act": "slow"
+  },
+  {
+   "conds": [
+    "stop",
+    "still"
+   ],
+   "op": "AND",
+   "act": "wait"
+  }
+ ],
+ "minRules": 8,
+ "maxConds": 3,
+ "need3": [
+  2,
+  3
+ ],
+ "ok": {
+  "facts": true,
+  "unique": true,
+  "reference": true,
+  "need3": true,
+  "min": true,
+  "js_data": true,
+  "js_engine": true,
+  "js_scene": true
+ }
+}

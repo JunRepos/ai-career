@@ -48,6 +48,14 @@ const GAMES = {
     loadRank: () => paLoadRank(),
     teacherBoard: () => paBoardForTeacher(),
   },
+  'rule-car': {
+    ico: '🚗', label: '자율주행차 규칙 만들기',
+    desc: '조건·행동 카드로 IF-THEN 규칙(지식 베이스)을 만들어 주행 시험 8개 상황을 통과 · 규칙이 부딪치면 충돌',
+    view: () => vRuleCar(),
+    leave: () => rcLeave(),
+    loadRank: () => rcLoadRank(),
+    teacherBoard: () => rcBoardForTeacher(),
+  },
   'puzzle-8': {
     ico: '🧩', label: '8퍼즐 맞추기',
     desc: '학습지 앞면과 같은 판 · 빈칸을 옮겨 목표 상태 만들기 → 맞추면 깊이 2 탐색 트리로 내 경로 확인',
