@@ -67,6 +67,10 @@ const GAMES = {
 };
 
 // 모르는 id 가 와도 화면이 비지 않게 첫 게임으로 떨어집니다
+/* 학생 홈 「🎮 실습 게임」 칸에 늘 보이는 게임 — 반 종류(type)별.
+   수업자료에 끼우지 않고 홈에서 바로 엽니다 (2026-09-11 선생님 요청) */
+const HOME_GAMES = { ai: ['rule-car'] };
+
 function gameDef(id){ return GAMES[id] || GAMES['plant-water']; }
 function gameView(id){ return gameDef(id).view(); }
 function gameTeacherBoard(id){ return gameDef(id).teacherBoard(); }

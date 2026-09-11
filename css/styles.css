@@ -5223,3 +5223,17 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 @keyframes rsStamp{0%{opacity:0;transform:scale(2.4) rotate(-14deg)}100%{opacity:1;transform:scale(1) rotate(-8deg)}}
 @keyframes rsShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-7px,3px)}40%{transform:translate(6px,-4px)}60%{transform:translate(-4px,2px)}80%{transform:translate(3px,-1px)}}
 @keyframes rsBlink{from{opacity:1}to{opacity:.55}}
+
+/* ═══ 학생 홈 「🎮 실습 게임」 칸 (2026-09-11) — 수업자료에 끼우지 않고 홈에서 바로 여는 게임 (games.js 의 HOME_GAMES) ═══ */
+.dash-games{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.dash-game{display:flex;align-items:center;gap:14px;width:100%;padding:16px 18px;text-align:left;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border2);border-radius:14px;color:var(--text);font:inherit;
+  transition:box-shadow .15s,transform .15s}
+.dash-game:hover{box-shadow:0 6px 18px rgba(0,0,0,.12);transform:translateY(-1px)}
+.dash-game-ico{flex:none;width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:28px;
+  background:#18202a;border-radius:12px}
+.dash-game-body{display:block;flex:1;min-width:0}
+.dash-game-title{display:block;font-size:15px;font-weight:700}
+.dash-game-desc{margin-top:3px;font-size:12px;line-height:1.5;color:var(--text3);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.dash-game-go{flex:none;font-size:12.5px;font-weight:700;color:var(--accent)}

@@ -197,7 +197,9 @@ function vStudent(){
   if(ST_TAB.indexOf('unit-') === 0) UNIT_RETURN = null;
   const backBar = UNIT_RETURN
     ? `<div class="unit-return-bar" onclick="returnToUnit()">← ${esc((assignUnit(UNIT_RETURN.unitKey) || {}).label || '단원')}(으)로 돌아가기</div>`
-    : '';
+    : ST_TAB === 'game'     // 홈의 「🎮 실습 게임」 에서 연 게임
+      ? `<div class="unit-return-bar" onclick="setST('dashboard')">← 홈으로 돌아가기</div>`
+      : '';
   return backBar + _stTabBody();
 }
 
@@ -535,6 +537,18 @@ function vStDashboard(){
        </div>`
     : '';
 
+  // ⑤ 실습 게임 — 수업자료에 끼우지 않고 홈에서 바로 (반 종류별 목록은 games.js 의 HOME_GAMES)
+  const homeGames = (HOME_GAMES[SEL_CLS?.type] || []).filter(id => GAMES[id]);
+  const gameBlock = homeGames.length
+    ? `<div class="dash-sec-label">🎮 실습 게임</div><div class="dash-games">${homeGames.map(id => `
+        <button class="dash-game" data-action="st-open-game" data-gameid="${esc(id)}">
+          <span class="dash-game-ico">${GAMES[id].ico}</span>
+          <span class="dash-game-body"><span class="dash-game-title">${esc(GAMES[id].label)}</span>
+            <span class="dash-game-desc">${esc(GAMES[id].desc || '')}</span></span>
+          <span class="dash-game-go">하러 가기 →</span>
+        </button>`).join('')}</div>`
+    : '';
+
   const nowBlock = (slideCards.length || sheetCards.length)
     ? `<div class="now-label">이번 시간</div>
        ${nowGroup('is-slide', '🖥️', '수업자료', slideCards)}
@@ -549,6 +563,7 @@ function vStDashboard(){
     </div>
     ${noticeBanner}
     ${unitsBlock}
+    ${gameBlock}
     ${scoreBlock}
   `;
 }

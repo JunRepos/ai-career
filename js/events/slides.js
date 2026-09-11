@@ -106,6 +106,15 @@ document.addEventListener('click', async e => {
 
   // 학생: 홈 '이번 시간' 카드 → 수업자료로
   if(act === 'st-go-slides'){ setST('slides'); return; }
+  /* 학생 홈의 「🎮 실습 게임」 — 수업자료에 끼우지 않고 바로 (목록은 games.js 의 HOME_GAMES) */
+  if(act === 'st-open-game'){
+    if(!SEL_CLS || !ST_USER){ toast('로그인 후 이용할 수 있어요.', 'err'); return; }
+    gameLeaveAll();
+    UNIT_GAME = el.dataset.gameid;
+    setST('game');                   // 단원 복귀 마커를 지우고 게임 화면으로 (안에서 render)
+    gameLoadRank(UNIT_GAME);         // 순위·내 최고점 (내부에서 render)
+    return;
+  }
 
   // ── 선생님: 수업자료 목록 ↔ 자료 하나 ──
   if(act === 'sl-open' && IS_TC){
