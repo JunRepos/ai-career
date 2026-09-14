@@ -119,6 +119,38 @@ function a1RenderKeep(){
   }
 }
 
+/* ─────────── 입장 비밀번호 (2026-09-14) ───────────
+   js/assess1-gate.js 에는 비밀번호가 없고 PBKDF2 해시만 있습니다 (tools/assess1-gate.mjs).
+   맞게 넣으면 그 탭(sessionStorage)에서는 다시 묻지 않습니다 — 창을 닫으면 다시 묻습니다.
+   선생님 화면에는 걸지 않습니다. 확인용 test 계정도 학생과 똑같이 거칩니다. */
+let A1_GATE_OK   = '';      // 통과한 사람의 열쇠 (반 · 학번 · 해시 앞자리)
+let A1_GATE_BUSY = false;
+let A1_GATE_ERR  = '';
+function _a1GateKey(){ return 'a1gate:' + (SEL_CLS?.id || '') + ':' + (ST_USER?.number || '') + ':' + A1_GATE.hash.slice(0, 12); }
+function _a1GateOpen(){
+  if(typeof A1_GATE === 'undefined') return true;
+  const k = _a1GateKey();
+  if(A1_GATE_OK === k) return true;
+  try { if(sessionStorage.getItem(k) === '1'){ A1_GATE_OK = k; return true; } } catch(e){}
+  return false;
+}
+async function a1GateCheck(pw){
+  const salt = Uint8Array.from(A1_GATE.salt.match(/../g).map(h => parseInt(h, 16)));
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations: A1_GATE.iter, hash: 'SHA-256' }, key, 256);
+  return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, '0')).join('') === A1_GATE.hash;
+}
+function _a1GateView(){
+  return `<div class="a1-gate"><div class="a1-gate-box">
+    <div class="a1-gate-ic">🔒</div>
+    <div class="a1-gate-t">1차 수행평가 입장</div>
+    <div class="a1-gate-s">선생님이 알려 준 입장 비밀번호를 입력하세요.</div>
+    <input type="password" id="a1-gate-pw" class="a1-in a1-gate-in" inputmode="numeric" autocomplete="off" maxlength="16" placeholder="비밀번호" ${A1_GATE_BUSY ? 'disabled' : ''}/>
+    ${A1_GATE_ERR ? `<div class="a1-gate-err">${esc(A1_GATE_ERR)}</div>` : ''}
+    <button class="btn-p" data-action="a1-gate" ${A1_GATE_BUSY ? 'disabled' : ''}>${A1_GATE_BUSY ? '확인 중…' : '입장하기'}</button>
+  </div></div>`;
+}
+
 /* ─────────── 학생 ─────────── */
 async function a1LoadMine(){
   const cid = SEL_CLS?.id, snum = ST_USER?.number;
@@ -258,6 +290,7 @@ function vStAssess1(){
   if(typeof A1 === 'undefined') return emptyBox('📝', '평가 문항을 불러오지 못했습니다. 새로고침 해 주세요.');
   const cid = SEL_CLS?.id, snum = ST_USER?.number;
   if(!cid || !snum) return '';
+  if(!_a1GateOpen()) return _a1GateView();          // 입장 비밀번호를 넣기 전에는 아무것도 보이지 않음
   if(A1_FOR !== cid + '/' + snum && !A1_LOADING){ A1_LOADING = true; setTimeout(a1LoadMine, 0); }
   if(A1_LOADING) return `<div class="section"><div class="ml-sub-explain">⏳ 내 답안을 불러오는 중…</div></div>`;
   if(A1_LOAD_ERR){
@@ -344,7 +377,8 @@ function vTcAssess1(){
     `<button class="${k === stage ? 'on' : ''}" data-action="a1-stage" data-stage="${k}">${A1_STAGE_LABEL[k]}</button>`).join('');
   const control = `<div class="a1-stage ${stage === 'closed' ? '' : 'on'}">
     <div><b>학생 작성 범위</b> · ${esc(TC_CLS.label)} — 지금 <b>${A1_STAGE_LABEL[stage]}</b>
-      <div class="a1-stage-sub">바꾸면 학생 화면에 바로 반영됩니다. 반마다 따로 정합니다.</div></div>
+      <div class="a1-stage-sub">바꾸면 학생 화면에 바로 반영됩니다. 반마다 따로 정합니다.</div>
+      ${typeof A1_GATE !== 'undefined' ? '<div class="a1-stage-sub">🔒 학생은 입장 비밀번호를 넣어야 문항이 보입니다 (확인용 test 계정 포함).</div>' : ''}</div>
     <div class="a1-seg">${seg}</div>
   </div>`;
 

@@ -85,6 +85,29 @@ async function a1Submit(){
   }
 }
 
+/* ─── 입장 비밀번호 ─── */
+async function a1GateSubmit(){
+  if(A1_GATE_BUSY) return;
+  const pw = (document.getElementById('a1-gate-pw')?.value || '').trim();
+  if(!pw){ A1_GATE_ERR = '비밀번호를 입력하세요.'; render(); return; }
+  A1_GATE_BUSY = true; A1_GATE_ERR = ''; render();
+  let ok = false;
+  try { ok = await a1GateCheck(pw); }
+  catch(err){ A1_GATE_ERR = '확인하지 못했습니다 — ' + (err.message || err); }
+  if(!ok) await new Promise(r => setTimeout(r, 800));   // 마구 넣어 보기 늦추기
+  A1_GATE_BUSY = false;
+  if(ok){
+    A1_GATE_OK = _a1GateKey();
+    try { sessionStorage.setItem(A1_GATE_OK, '1'); } catch(e){}
+    toast('🔓 입장했습니다', 'ok');
+  } else if(!A1_GATE_ERR) A1_GATE_ERR = '비밀번호가 맞지 않습니다.';
+  render();
+  if(!ok) setTimeout(() => document.getElementById('a1-gate-pw')?.focus(), 0);
+}
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && e.target && e.target.id === 'a1-gate-pw'){ e.preventDefault(); a1GateSubmit(); }
+});
+
 /* ─── 입력 ─── */
 document.addEventListener('input', e => {
   const el = e.target.closest && e.target.closest('[data-a1fid]');
@@ -130,6 +153,7 @@ document.addEventListener('click', async e => {
   const act = el.dataset.action;
   if(act.indexOf('a1-') !== 0) return;
 
+  if(act === 'a1-gate'){ await a1GateSubmit(); return; }
   if(act === 'a1-retry'){ A1_FOR = null; A1_LOAD_ERR = ''; render(); return; }
   if(act === 'a1-save'){ await a1SaveNow(false); return; }
   if(act === 'a1-submit'){ await a1Submit(); return; }
