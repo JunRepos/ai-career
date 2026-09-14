@@ -5099,6 +5099,7 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .a1-gate-s{font-size:13px;line-height:1.6;color:var(--text2)}
 .a1-gate-in{text-align:center;font-size:22px;letter-spacing:8px}
 .a1-gate-err{font-size:13px;color:#dc2626;font-weight:700}
+.a1-gate-box .btn-p{justify-content:center;text-align:center;font-size:15px;padding:10px}
 @media (max-width:640px){ .a1-stats{grid-template-columns:repeat(3,1fr)} }
 
 
