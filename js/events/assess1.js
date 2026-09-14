@@ -103,14 +103,16 @@ document.addEventListener('focusout', e => {
   if(e.target.closest && e.target.closest('[data-a1fid]') && A1_TOUCHED.size) a1SaveNow(true);
 });
 // 답안 칸에는 붙여넣기·끌어다 놓기를 받지 않습니다 (생성형 인공지능 답변 붙여넣기 방지)
+//   단, 1번 「링크」 칸(data-a1paste)은 기사 주소를 붙여 넣는 칸이라 허용합니다 (2026-09-14)
+function _a1NoPaste(t){ const f = t && t.closest && t.closest('[data-a1fid]'); return !!f && !f.dataset.a1paste; }
 document.addEventListener('paste', e => {
-  if(e.target.closest && e.target.closest('[data-a1fid]')){
+  if(_a1NoPaste(e.target)){
     e.preventDefault();
-    toast('답안 칸에는 붙여넣기를 할 수 없습니다. 직접 입력하세요.', 'err');
+    toast('링크 칸 말고는 붙여넣기를 할 수 없습니다. 직접 입력하세요.', 'err');
   }
 }, true);
 document.addEventListener('beforeinput', e => {
-  if(e.target.closest && e.target.closest('[data-a1fid]') && /^insertFrom(Paste|Drop|PasteAsQuotation)/.test(e.inputType || '')){
+  if(_a1NoPaste(e.target) && /^insertFrom(Paste|Drop|PasteAsQuotation)/.test(e.inputType || '')){
     e.preventDefault();
   }
 }, true);
@@ -144,6 +146,12 @@ document.addEventListener('click', async e => {
   /* 문제 상황 카드 팝업 */
   if(act === 'a1-cards'){ a1CardsOpen(); return; }
   if(act === 'a1-cards-f'){ A1_CARD_F = el.dataset.f; a1CardsRepaint(); return; }
+  if(act === 'a1-cards-copy'){
+    const url = el.dataset.url;
+    try { await navigator.clipboard.writeText(url); toast('🔗 기사 주소를 복사했습니다 — 1번 「링크」 칸에 붙여 넣으세요', 'ok'); }
+    catch(err){ prompt('아래 주소를 복사하세요 (Ctrl+C)', url); }
+    return;
+  }
   if(act === 'a1-cards-close'){
     if(el.id === 'a1-cards-ov' && e.target !== el) return;   // 팝업 안쪽(카드 · 기사 링크)을 누른 것은 닫지 않음
     a1CardsClose(); return;

@@ -133,7 +133,7 @@ def page(cards):
            '<header><h1>문제 상황 카드 — 진로 분야별 · 실생활</h1>'
            '<div class="sub">인공지능 기초 · 1차 수행평가 1번 「문제 상황 선정」 · 카드 %d장</div></header>' % len(cards),
            '<div class="how"><b>스스로 찾은 문제 상황</b>으로 쓰면 선정한 동기가 더 잘 드러나 좋다 (점수와는 관계없음). '
-           '카드를 골랐다면 기사를 직접 읽고, 1번 「문제 상황을 접한 경로」에 <b>기사 제목 · 매체 · 날짜</b>를 적는다.</div>',
+           '카드를 골랐다면 기사를 직접 읽고, 1번 「링크」 칸에 <b>기사 주소</b>를 붙여 넣는다.</div>',
            '<nav class="noprint"><button class="on" data-f="*">전체</button>%s</nav>'
            % ''.join('<button data-f="%s">%s</button>' % (e(f), e(f)) for f in FIELDS if any(c['field'] == f for c in cards))]
     n = 0

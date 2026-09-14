@@ -148,7 +148,8 @@ function _a1Field(f, editable){
     return `${label}<div class="a1-choice">${btns}</div>`;
   }
   if(f.type === 'text'){
-    return `${label}<input type="text" class="a1-in" data-a1fid="${f.id}" value="${esc(v)}" autocomplete="off"${ro}/>`;
+    const ph = f.ph ? ` placeholder="${esc(f.ph)}"` : '', pa = f.paste ? ' data-a1paste="1"' : '';   // 링크 칸만 붙여넣기 허용
+    return `${label}<input type="text" class="a1-in" data-a1fid="${f.id}" value="${esc(v)}" autocomplete="off"${ph}${pa}${ro}/>`;
   }
   return `${label}<textarea class="a1-area" data-a1fid="${f.id}" rows="${f.rows || 8}" spellcheck="false"${ro}>${esc(v)}</textarea>
     <span class="a1-count" data-a1count="${f.id}">${v.length}자</span>`;
@@ -189,11 +190,12 @@ function _a1CardsHtml(){
   return `<div class="a1-cm">
     <div class="a1-cm-h"><b>🗂 문제 상황 카드 <small>${PC_CARDS.cards.length}장</small></b><button class="a1-cm-x" data-action="a1-cards-close">✕ 닫기</button></div>
     <div class="a1-cm-note">📣 <b>스스로 찾은 문제 상황</b>으로 쓰면 선정한 동기가 더 잘 드러나 좋습니다 (점수와는 관계없습니다).<br>
-      카드를 골랐다면 기사를 직접 읽고, 1번 「문제 상황을 접한 경로」에 <b>기사 제목 · 매체 · 날짜</b>를 적으세요.</div>
+      카드를 골랐다면 기사를 직접 읽고, <b>🔗 주소 복사</b>를 눌러 1번 「링크」 칸에 붙여 넣으세요.</div>
     <div class="a1-cm-f">${['*', ...fs].map(f => `<button class="${f === A1_CARD_F ? 'on' : ''}" data-action="a1-cards-f" data-f="${esc(f)}">${f === '*' ? '전체' : esc(f)}</button>`).join('')}</div>
     <div class="a1-cm-grid">${list.map(c => `<div class="a1-cc"><div class="fl">${esc(c.field)}</div><div class="t">${esc(c.title)}</div>
       <div class="s">${esc(c.summary)}</div>
-      <a class="src" href="${esc(c.src.url)}" target="_blank" rel="noopener">📰 ${esc(c.src.title)}<br><span>${esc(c.src.outlet)} · ${esc(c.src.date)}</span></a></div>`).join('')}</div>
+      <a class="src" href="${esc(c.src.url)}" target="_blank" rel="noopener">📰 ${esc(c.src.title)}<br><span>${esc(c.src.outlet)} · ${esc(c.src.date)}</span></a>
+      <button class="a1-cc-copy" data-action="a1-cards-copy" data-url="${esc(c.src.url)}">🔗 주소 복사</button></div>`).join('')}</div>
   </div>`;
 }
 function a1CardsOpen(){
@@ -394,7 +396,8 @@ function _a1AnswerBlocks(ans){
       ${_a1ItemHead(it)}
       <div class="a1-qb">${it.fields.map(f => {
         const v = String((ans || {})[f.id] || '').trim();
-        return `${f.label ? `<div class="a1-flabel">${esc(f.label)}</div>` : ''}<div class="a1-ans ${v ? '' : 'empty'}">${v ? esc(v) : '(비어 있음)'}</div>`;
+        const body = !v ? '(비어 있음)' : (f.paste && /^https?:\/\/\S+$/.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v)}</a>` : esc(v));
+        return `${f.label ? `<div class="a1-flabel">${esc(f.label)}</div>` : ''}<div class="a1-ans ${v ? '' : 'empty'}">${body}</div>`;
       }).join('')}</div></div>`).join('');
 }
 
