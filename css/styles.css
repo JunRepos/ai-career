@@ -5028,7 +5028,7 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .a1-status .err{color:#dc2626;font-weight:700}
 .a1-status .ok{color:var(--ok,#16a34a);font-weight:700}
 .a1-status .warn{color:#d97706;font-weight:700}
-.a1-scale{font-size:12.5px;min-width:640px}
+.a1-scale{font-size:12.5px;min-width:820px}
 .a1-scale th,.a1-scale td{vertical-align:top;line-height:1.55;padding:6px 8px}
 .a1-scale tbody th{white-space:nowrap;text-align:left}
 .a1-scale tbody th small{font-weight:500;color:var(--text3);white-space:normal}
@@ -5049,6 +5049,20 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .a1-chip-draft{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
 .a1-ans{white-space:pre-wrap;word-break:break-word;font-size:13.5px;line-height:1.75;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text)}
 .a1-ans.empty{color:var(--text3);font-style:italic}
+/* 1차 수행평가 — 작성 안내 · 특성 표 · 결격 사유 채점 기준 (2026-09-14) */
+.a1-guide{border:1px dashed var(--border);border-radius:8px;margin:0 0 10px;background:var(--surface)}
+.a1-guide>summary{cursor:pointer;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--text2)}
+.a1-guide .gb{padding:0 12px 10px}
+.a1-guide .gl{display:flex;gap:10px;font-size:13px;line-height:1.7;color:var(--text);padding:4px 0;border-top:1px dotted var(--border)}
+.a1-guide .gl b{flex:0 0 150px;color:var(--text2)}
+.a1-guide .gm{font-size:12.5px;line-height:1.65;color:var(--text3);margin-top:6px}
+.a1-ref{width:100%;font-size:13px;margin:0 0 10px}
+.a1-ref th,.a1-ref td{padding:6px 10px;line-height:1.55;text-align:left;vertical-align:top}
+.a1-ref td:first-child{white-space:nowrap;font-weight:700}
+.a1-rule{font-size:12.5px;line-height:1.7;margin:8px 0;color:var(--text)}
+.a1-rule>b{display:block;color:var(--text2)}
+.a1-scale td.df{min-width:210px}
+@media (max-width:640px){ .a1-guide .gl{flex-direction:column;gap:0} .a1-guide .gl b{flex:none} }
 @media (max-width:640px){ .a1-stats{grid-template-columns:repeat(3,1fr)} }
 
 

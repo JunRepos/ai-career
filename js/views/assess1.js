@@ -166,12 +166,34 @@ function _a1ItemHead(it, extra){
   return `<div class="a1-qh"><span class="a1-qn">${esc(it.no)}.</span> ${esc(it.title)}${it.showPt ? ` <span class="mla-pt">[${it.pt}점]</span>` : ''}${extra || ''}</div>`;
 }
 
+// 작성 안내 — 무엇을 어떤 차례로 쓰면 되는지 (2026-09-14)
+function _a1Guide(it){
+  if(!it.guide || !it.guide.length) return '';
+  return `<details class="a1-guide" open><summary>✏️ 작성 안내</summary><div class="gb">
+    ${it.guide.map(g => `<div class="gl"><b>${esc(g[0])}</b><span>${esc(g[1])}</span></div>`).join('')}
+    ${it.more ? `<div class="gm">더 쓰면 좋은 것 (점수와 관계없음) — ${esc(it.more)}</div>` : ''}</div></details>`;
+}
+// 3번 — 특성과 그 뜻 (교과서 16쪽)
+function _a1RefTable(it){
+  return `<div style="overflow-x:auto"><table class="tbl a1-ref"><thead><tr><th>제시어</th><th>뜻 (교과서 16쪽)</th></tr></thead>
+    <tbody>${it.ref.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
 function _a1ScaleTable(){
   const nums = { '①': '1 · 2번', '②': '3번', '③': '4번', '④': '5번' };
-  const rows = A1.scale.map(s => `<tr><th>${esc(s.where || nums[s.no] || '')}<br><small>${esc(s.no)} ${esc(s.name)}</small></th>${s.levels.map(l => `<td>${esc(l[1])}</td>`).join('')}</tr>`).join('');
+  const mk = '㉮㉯㉰㉱';
+  const rows = A1.scale.map(s => `<tr><th>${esc(s.where || nums[s.no] || '')}<br><small>${esc(s.no)} ${esc(s.name)}</small></th>
+    <td class="df">${(s.defects || []).map((d, i) => `<div>${mk[i] || '∙'} ${esc(d)}</div>`).join('')}</td>
+    ${s.levels.map(l => `<td>${esc(l[1])}</td>`).join('')}</tr>`).join('');
+  const list = (t, a) => (a && a.length) ? `<div class="a1-rule"><b>${t}</b>${a.map(x => `<div>∙ ${esc(x)}</div>`).join('')}</div>` : '';
   return `<details class="mla-rubric"><summary>📊 채점 기준 보기</summary>
-    <div class="mla-rubric-body"><div style="overflow-x:auto"><table class="tbl a1-scale">
-      <thead><tr><th>문항</th><th>5점</th><th>4점</th><th>3점</th><th>2점</th></tr></thead><tbody>${rows}</tbody></table></div></div></details>`;
+    <div class="mla-rubric-body">
+      ${A1.principle ? `<div class="a1-rule"><b>채점 원칙</b><div>${esc(A1.principle)}</div></div>` : ''}
+      <div style="overflow-x:auto"><table class="tbl a1-scale">
+      <thead><tr><th>문항</th><th>결격 사유</th><th>5점</th><th>4점</th><th>3점</th><th>2점</th></tr></thead><tbody>${rows}</tbody></table></div>
+      ${list('성의 없는 답안 — 결격 사유와 관계없이 그 영역 3점', A1.sloppy)}
+      ${list('감점하지 않는 것', A1.nopenalty)}
+    </div></details>`;
 }
 
 function _a1StatusHtml(){
@@ -222,7 +244,7 @@ function vStAssess1(){
       ${_a1ItemHead(it, ed ? '' : '<span class="a1-lock">🔒 지금은 작성할 수 없음</span>')}
       <div class="a1-qb">
         <div class="a1-ask">${esc(it.ask)}</div>
-        ${_a1Keywords(it)}${_a1Conds(it)}
+        ${it.ref && it.ref.length ? _a1RefTable(it) : _a1Keywords(it)}${_a1Conds(it)}${_a1Guide(it)}
         ${it.fields.map(f => _a1Field(f, ed)).join('')}
       </div></div>`;
   }).join('');
