@@ -166,12 +166,15 @@ function _a1ItemHead(it, extra){
   return `<div class="a1-qh"><span class="a1-qn">${esc(it.no)}.</span> ${esc(it.title)}${it.showPt ? ` <span class="mla-pt">[${it.pt}점]</span>` : ''}${extra || ''}</div>`;
 }
 
-// 작성 안내 — 무엇을 어떤 차례로 쓰면 되는지 (2026-09-14)
-function _a1Guide(it){
-  if(!it.guide || !it.guide.length) return '';
-  return `<details class="a1-guide" open><summary>✏️ 작성 안내</summary><div class="gb">
-    ${it.guide.map(g => `<div class="gl"><b>${esc(g[0])}</b><span>${esc(g[1])}</span></div>`).join('')}
-    ${it.more ? `<div class="gm">더 쓰면 좋은 것 (점수와 관계없음) — ${esc(it.more)}</div>` : ''}</div></details>`;
+// **굵게** 표시만 살려서 (나머지는 이스케이프)
+function _a1Md(s){ return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+// 문항마다 그 문항의 결격 사유 — 눈에 띄게 (2026-09-14 · 조건과 작성 안내 대신)
+function _a1Crit(it){
+  const c = it.crit;
+  if(!c || !c.items || !c.items.length) return '';
+  const rule = c.shared ? '1 · 2번을 함께 세어 1가지면 4점 · 2가지 이상이면 3점' : '1가지면 4점 · 2가지 이상이면 3점';
+  return `<div class="a1-crit"><div class="ct">📌 채점 기준 <span>— 아래에 해당하면 감점 (${rule})</span></div>
+    ${c.items.map(x => `<div class="cl"><span class="mk">${esc(x[0])}</span><span>${_a1Md(x[1])}</span></div>`).join('')}</div>`;
 }
 // 3번 — 특성과 그 뜻 (교과서 16쪽)
 function _a1RefTable(it){
@@ -183,7 +186,7 @@ function _a1ScaleTable(){
   const nums = { '①': '1 · 2번', '②': '3번', '③': '4번', '④': '5번' };
   const mk = '㉮㉯㉰㉱';
   const rows = A1.scale.map(s => `<tr><th>${esc(s.where || nums[s.no] || '')}<br><small>${esc(s.no)} ${esc(s.name)}</small></th>
-    <td class="df">${(s.defects || []).map((d, i) => `<div>${mk[i] || '∙'} ${esc(d)}</div>`).join('')}</td>
+    <td class="df">${(s.defects || []).map((d, i) => `<div>${mk[i] || '∙'} ${_a1Md(d)}</div>`).join('')}</td>
     ${s.levels.map(l => `<td>${esc(l[1])}</td>`).join('')}</tr>`).join('');
   const list = (t, a) => (a && a.length) ? `<div class="a1-rule"><b>${t}</b>${a.map(x => `<div>∙ ${esc(x)}</div>`).join('')}</div>` : '';
   return `<details class="mla-rubric"><summary>📊 채점 기준 보기</summary>
@@ -244,7 +247,7 @@ function vStAssess1(){
       ${_a1ItemHead(it, ed ? '' : '<span class="a1-lock">🔒 지금은 작성할 수 없음</span>')}
       <div class="a1-qb">
         <div class="a1-ask">${esc(it.ask)}</div>
-        ${it.ref && it.ref.length ? _a1RefTable(it) : _a1Keywords(it)}${_a1Conds(it)}${_a1Guide(it)}
+        ${it.ref && it.ref.length ? _a1RefTable(it) : _a1Keywords(it)}${_a1Crit(it)}
         ${it.fields.map(f => _a1Field(f, ed)).join('')}
       </div></div>`;
   }).join('');
