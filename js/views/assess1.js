@@ -176,6 +176,36 @@ function _a1Crit(it){
   return `<div class="a1-crit"><div class="ct">📌 채점 기준 <span>— 아래에 해당하면 감점 (${rule})</span></div>
     ${c.items.map(x => `<div class="cl"><span class="mk">${esc(x[0])}</span><span>${_a1Md(x[1])}</span></div>`).join('')}</div>`;
 }
+// 1번 — 문제 상황 카드 (팝업 · js/problem-cards-data.js). 화면을 다시 그려도 팝업은 body 에 따로 남습니다.
+let A1_CARD_F = '*';
+function _a1CardsBar(){
+  if(typeof PC_CARDS === 'undefined') return '';
+  return `<div class="a1-cardsbar"><button class="btn-sm" data-action="a1-cards">🗂 문제 상황 카드 보기</button>
+    <span>스스로 찾은 문제 상황으로 쓰면 선정한 동기가 더 잘 드러나 좋습니다 (점수와는 관계없음)</span></div>`;
+}
+function _a1CardsHtml(){
+  const fs = PC_CARDS.fields;
+  const list = PC_CARDS.cards.filter(c => A1_CARD_F === '*' || c.field === A1_CARD_F);
+  return `<div class="a1-cm">
+    <div class="a1-cm-h"><b>🗂 문제 상황 카드 <small>${PC_CARDS.cards.length}장</small></b><button class="a1-cm-x" data-action="a1-cards-close">✕ 닫기</button></div>
+    <div class="a1-cm-note">📣 <b>스스로 찾은 문제 상황</b>으로 쓰면 선정한 동기가 더 잘 드러나 좋습니다 (점수와는 관계없습니다).<br>
+      카드를 골랐다면 기사를 직접 읽고, 1번 「문제 상황을 접한 경로」에 <b>기사 제목 · 매체 · 날짜</b>를 적으세요.</div>
+    <div class="a1-cm-f">${['*', ...fs].map(f => `<button class="${f === A1_CARD_F ? 'on' : ''}" data-action="a1-cards-f" data-f="${esc(f)}">${f === '*' ? '전체' : esc(f)}</button>`).join('')}</div>
+    <div class="a1-cm-grid">${list.map(c => `<div class="a1-cc"><div class="fl">${esc(c.field)}</div><div class="t">${esc(c.title)}</div>
+      <div class="s">${esc(c.summary)}</div>
+      <a class="src" href="${esc(c.src.url)}" target="_blank" rel="noopener">📰 ${esc(c.src.title)}<br><span>${esc(c.src.outlet)} · ${esc(c.src.date)}</span></a></div>`).join('')}</div>
+  </div>`;
+}
+function a1CardsOpen(){
+  a1CardsClose();
+  const ov = document.createElement('div');
+  ov.id = 'a1-cards-ov'; ov.className = 'modal-ov a1-cards-ov'; ov.dataset.action = 'a1-cards-close';
+  ov.innerHTML = _a1CardsHtml();
+  document.body.appendChild(ov);
+}
+function a1CardsRepaint(){ const ov = document.getElementById('a1-cards-ov'); if(ov) ov.innerHTML = _a1CardsHtml(); }
+function a1CardsClose(){ const ov = document.getElementById('a1-cards-ov'); if(ov) ov.remove(); }
+
 // 3번 — 특성과 그 뜻 (교과서 16쪽)
 function _a1RefTable(it){
   return `<div style="overflow-x:auto"><table class="tbl a1-ref"><thead><tr><th>제시어</th><th>뜻 (교과서 16쪽)</th></tr></thead>
@@ -247,7 +277,7 @@ function vStAssess1(){
       ${_a1ItemHead(it, ed ? '' : '<span class="a1-lock">🔒 지금은 작성할 수 없음</span>')}
       <div class="a1-qb">
         <div class="a1-ask">${esc(it.ask)}</div>
-        ${it.ref && it.ref.length ? _a1RefTable(it) : _a1Keywords(it)}${_a1Crit(it)}
+        ${it.ref && it.ref.length ? _a1RefTable(it) : _a1Keywords(it)}${_a1Crit(it)}${it.no === '1' ? _a1CardsBar() : ''}
         ${it.fields.map(f => _a1Field(f, ed)).join('')}
       </div></div>`;
   }).join('');

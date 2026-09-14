@@ -114,6 +114,8 @@ document.addEventListener('beforeinput', e => {
     e.preventDefault();
   }
 }, true);
+// Esc 로 문제 상황 카드 팝업 닫기
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('a1-cards-ov')) a1CardsClose(); });
 // 저장 안 된 입력이 있으면 창을 닫기 전에 묻습니다
 window.addEventListener('beforeunload', e => {
   if(A1_DIRTY || A1_SAVING){ e.preventDefault(); e.returnValue = ''; }
@@ -137,6 +139,14 @@ document.addEventListener('click', async e => {
     a1RenderKeep();
     a1SaveNow(true);
     return;
+  }
+
+  /* 문제 상황 카드 팝업 */
+  if(act === 'a1-cards'){ a1CardsOpen(); return; }
+  if(act === 'a1-cards-f'){ A1_CARD_F = el.dataset.f; a1CardsRepaint(); return; }
+  if(act === 'a1-cards-close'){
+    if(el.id === 'a1-cards-ov' && e.target !== el) return;   // 팝업 안쪽(카드 · 기사 링크)을 누른 것은 닫지 않음
+    a1CardsClose(); return;
   }
 
   /* 선생님 */

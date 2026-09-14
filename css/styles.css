@@ -5062,6 +5062,25 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .a1-rule{font-size:12.5px;line-height:1.7;margin:8px 0;color:var(--text)}
 .a1-rule>b{display:block;color:var(--text2)}
 .a1-scale td.df{min-width:210px}
+/* 1차 수행평가 — 문제 상황 카드 팝업 */
+.a1-cardsbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;font-size:12.5px;line-height:1.6;color:var(--text2)}
+.a1-cards-ov{align-items:flex-start;overflow:auto}
+.a1-cm{width:min(980px,96vw);background:var(--surface);color:var(--text);border-radius:12px;padding:14px 16px;margin:auto;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.a1-cm-h{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:16px;margin-bottom:8px}
+.a1-cm-h small{font-size:12px;font-weight:500;color:var(--text3);margin-left:4px}
+.a1-cm-x{padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text);cursor:pointer;font:inherit;font-size:13px}
+.a1-cm-note{border:1.5px solid #3b82f6;background:rgba(59,130,246,.09);border-radius:8px;padding:9px 12px;font-size:13px;line-height:1.7;margin-bottom:10px}
+.a1-cm-f{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.a1-cm-f button{padding:5px 11px;border:1px solid var(--border);border-radius:14px;background:var(--surface);color:var(--text2);font-size:12.5px;cursor:pointer;font-family:inherit}
+.a1-cm-f button.on{background:#6366f1;border-color:#6366f1;color:#fff;font-weight:700}
+.a1-cm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.a1-cc{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--surface2);display:flex;flex-direction:column;gap:5px}
+.a1-cc .fl{font-size:11.5px;color:var(--text3)}
+.a1-cc .t{font-size:14.5px;font-weight:800;line-height:1.45}
+.a1-cc .s{font-size:13px;line-height:1.65;color:var(--text)}
+.a1-cc .src{font-size:12px;line-height:1.5;color:#3b82f6;text-decoration:none;margin-top:auto;padding-top:4px;border-top:1px dotted var(--border)}
+.a1-cc .src span{color:var(--text3)}
+.a1-cc .src:hover{text-decoration:underline}
 @media (max-width:640px){ .a1-stats{grid-template-columns:repeat(3,1fr)} }
 
 
