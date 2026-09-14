@@ -181,8 +181,10 @@ function _a1Crit(it){
 let A1_CARD_F = '*';
 function _a1CardsBar(){
   if(typeof PC_CARDS === 'undefined') return '';
-  return `<div class="a1-cardsbar"><button class="btn-sm" data-action="a1-cards">🗂 문제 상황 카드 보기</button>
-    <span>스스로 찾은 문제 상황으로 쓰면 선정한 동기가 더 잘 드러나 좋습니다 (점수와는 관계없음)</span></div>`;
+  return `<button class="a1-cardsbar" data-action="a1-cards">
+    <span class="ic">🗂</span>
+    <span class="tx"><b>문제 상황 카드 ${PC_CARDS.cards.length}장 보기</b><small>무엇을 쓸지 막막하면 눌러 보세요 · 스스로 찾은 문제 상황이면 동기가 더 잘 드러나 좋습니다 (점수와는 관계없음)</small></span>
+    <span class="go">열기 ›</span></button>`;
 }
 function _a1CardsHtml(){
   const fs = PC_CARDS.fields;

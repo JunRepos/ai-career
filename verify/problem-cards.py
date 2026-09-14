@@ -161,10 +161,10 @@ def main():
         io.open(os.path.join(HERE, 'problem-cards.json'), 'w', encoding='utf-8').write(
             json.dumps(cards, ensure_ascii=False, indent=1))
     cards = json.load(io.open(os.path.join(HERE, 'problem-cards.json'), encoding='utf-8'))
+    # 요약 — 처음 36장은 SUMMARY 에서, 2026-09-14 추가분은 카드에 적힌 summary (조사 때 기사에서 확인한 사실로 씀)
     for c in cards:
-        assert c['title'] in SUMMARY, '요약 없음: ' + c['title']
-        c['summary'] = SUMMARY[c['title']]
-    assert len(SUMMARY) == len(cards), (len(SUMMARY), len(cards))
+        c['summary'] = c.get('summary') or SUMMARY.get(c['title'])
+        assert c['summary'], '요약 없음: ' + c['title']
 
     # 주소가 지금도 열리는지 — 조사 때 WebFetch 로 확인했고, 여기서 한 번 더
     urls = [c['source']['url'] for c in cards]

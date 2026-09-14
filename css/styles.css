@@ -5063,7 +5063,15 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .a1-rule>b{display:block;color:var(--text2)}
 .a1-scale td.df{min-width:210px}
 /* 1차 수행평가 — 문제 상황 카드 팝업 */
-.a1-cardsbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px;font-size:12.5px;line-height:1.6;color:var(--text2)}
+.a1-cardsbar{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;margin:0 0 12px;padding:12px 16px;border:2px solid #6366f1;border-radius:12px;background:linear-gradient(90deg,rgba(99,102,241,.22),rgba(59,130,246,.12));color:var(--text);font-family:inherit;text-align:left;cursor:pointer;animation:a1CardsGlow 2.4s ease-in-out infinite}
+.a1-cardsbar:hover{background:linear-gradient(90deg,rgba(99,102,241,.32),rgba(59,130,246,.18))}
+.a1-cardsbar .ic{font-size:26px;line-height:1}
+.a1-cardsbar .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.a1-cardsbar .tx b{font-size:15.5px;font-weight:800;color:#818cf8}
+.a1-cardsbar .tx small{font-size:12.5px;line-height:1.55;color:var(--text2)}
+.a1-cardsbar .go{flex:0 0 auto;padding:7px 14px;border-radius:9px;background:#6366f1;color:#fff;font-weight:800;font-size:13.5px}
+@keyframes a1CardsGlow{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.0)}50%{box-shadow:0 0 0 5px rgba(99,102,241,.22)}}
+@media (prefers-reduced-motion:reduce){ .a1-cardsbar{animation:none} }
 .a1-cards-ov{align-items:flex-start;overflow:auto}
 .a1-cm{width:min(980px,96vw);background:var(--surface);color:var(--text);border-radius:12px;padding:14px 16px;margin:auto;box-shadow:0 10px 40px rgba(0,0,0,.4)}
 .a1-cm-h{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:16px;margin-bottom:8px}
