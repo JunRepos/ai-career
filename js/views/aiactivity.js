@@ -89,6 +89,14 @@ function _vStAiaDo(){
 }
 
 
+/* 문항에 붙인 사진 — 눌러서 크게 볼 수 있습니다.
+   글 문항뿐 아니라 안내·표 문항에도 붙습니다 (예시 화면을 보여줄 때 씁니다). */
+function _aiaImg(q){
+  if(!q.imageUrl) return '';
+  return `<img class="ws-img" src="${esc(q.imageUrl)}" alt="" data-action="preview-img"
+    data-url="${esc(q.imageUrl)}" data-name="${esc(q.text)}"/>`;
+}
+
 /* ── 문항 렌더 (유형별) ── */
 function _aiaQuestion(q, no){
   const head = `<div class="ws-q-head">
@@ -104,6 +112,7 @@ function _aiaQuestion(q, no){
         ${q.desc ? `<div class="ws-note-body">${esc(q.desc)}</div>` : ''}
         ${q.url ? `<a class="ws-note-url" href="${esc(q.url)}" target="_blank" rel="noopener">${esc(q.url)}</a>` : ''}
       </div>
+      ${_aiaImg(q)}
     </div>`;
   }
 
@@ -144,6 +153,7 @@ function _aiaQuestion(q, no){
     }
     return `<div class="ws-block">
       ${head}
+      ${_aiaImg(q)}
       <div class="ws-table-wrap"><table class="ws-table">
         <thead>${head2}</thead><tbody>${bodyRows}</tbody>
       </table></div>
@@ -156,7 +166,7 @@ function _aiaQuestion(q, no){
   // 기본 — 줄노트 답변칸
   return `<div class="ws-block">
     ${head}
-    ${q.imageUrl ? `<img class="ws-img" src="${esc(q.imageUrl)}" alt="" data-action="preview-img" data-url="${esc(q.imageUrl)}" data-name="${esc(q.text)}"/>` : ''}
+    ${_aiaImg(q)}
     <textarea class="ws-lines" data-action="aia-input" data-fid="${esc(q.id)}" rows="${q.rows || 3}">${esc(AIA_ANSWERS[q.id] || '')}</textarea>
   </div>`;
 }

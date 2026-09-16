@@ -68,6 +68,9 @@ const ed = (path, text, cls) =>
   `<span class="ed${cls ? ' ' + cls : ''}" contenteditable="true" spellcheck="false"
      data-p="${esc(path)}">${esc(text)}</span>`;
 
+// 문항에 붙인 사진 — 앱과 같게 안내·표·글 문항 모두에 나옵니다
+const img = q => q.imageUrl ? `<img class="ws-img" src="${esc(q.imageUrl)}" alt=""/>` : '';
+
 // 안내(note)는 번호를 안 매깁니다 — 앱과 같은 규칙
 function renderQuestion(q, no, qi){
   const P = 'q.' + qi;
@@ -82,7 +85,7 @@ function renderQuestion(q, no, qi){
       <div class="ws-note">
         ${q.desc !== undefined ? `<div class="ws-note-body">${ed(P + '.desc', q.desc)}</div>` : ''}
         ${q.url ? `<a class="ws-note-url" href="${esc(q.url)}">${esc(q.url)}</a>` : ''}
-      </div></div>`;
+      </div>${img(q)}</div>`;
   }
 
   if(q.type === 'check'){
@@ -113,7 +116,7 @@ function renderQuestion(q, no, qi){
     // fillFrom 자리는 학생이 고른 보기가 들어옵니다 — 미리보기에선 그 사실만 표시
     const note = (q.fillFrom || []).length
       ? `<div class="ws-q-desc" style="margin-left:0">↑ 앞에서 고른 보기가 첫 칸에 자동으로 들어갑니다</div>` : '';
-    return `<div class="ws-block">${head}
+    return `<div class="ws-block">${head}${img(q)}
       <div class="ws-table-wrap"><table class="ws-table">
         <thead><tr>${cols.map((c, ci) => `<th>${ed(P + '.cols.' + ci, c)}</th>`).join('')}</tr></thead>
         <tbody>${body}</tbody></table></div>${note}</div>`;
@@ -132,7 +135,7 @@ function renderQuestion(q, no, qi){
   }
 
   if(ANSWER_MODE && q.answer) return `<div class="ws-block">${head}${ansBox(q.answer)}</div>`;
-  return `<div class="ws-block">${head}
+  return `<div class="ws-block">${head}${img(q)}
     <textarea class="ws-lines" rows="${q.rows || 3}"></textarea></div>`;
 }
 
