@@ -69,7 +69,15 @@ const GAMES = {
 // 모르는 id 가 와도 화면이 비지 않게 첫 게임으로 떨어집니다
 /* 학생 홈 「🎮 실습 게임」 칸에 늘 보이는 게임 — 반 종류(type)별.
    수업자료에 끼우지 않고 홈에서 바로 엽니다 (2026-09-11 선생님 요청) */
-const HOME_GAMES = { ai: ['rule-car'] };
+const HOME_GAMES = { ai: ['rule-car']   'data-fix': {
+    ico: '🔁', label: '데이터를 바꾸면 모델이 달라진다',
+    desc: '프로그램은 그대로 두고 학습 사진만 바꿔 두 번 학습 → 좋은 데이터가 좋은 모델을 만든다는 것을 직접 봄',
+    view: () => vDataFix(),
+    leave: () => dfLeave(),
+    loadRank: () => dfLoadRank(),
+    teacherBoard: () => dfBoardForTeacher(),
+  },
+};
 
 function gameDef(id){ return GAMES[id] || GAMES['plant-water']; }
 function gameView(id){ return gameDef(id).view(); }
