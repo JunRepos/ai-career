@@ -3,7 +3,7 @@
 
    수업일은 js/aiplan-data.js (python verify/aiplan.py 로 계산) 에서 옵니다 —
    시간표 · 창체 운영계획(수요일 대체 · 학교 행사) · 정기시험 · 공휴일을 반영한 날짜입니다.
-   선생님이 칸에 적은 진도는 DB aiactivity/plan/{반}/{날짜_교시} 에 저장되어 계산값 위에 덮입니다.
+   선생님이 칸에 적은 진도는 DB aiactivity/submissions/{반}/plan/{날짜_교시} 에 저장되어 계산값 위에 덮입니다.
 ═══════════════════════════════════════ */
 
 let AP_CLS = null;            // 보고 있는 반
@@ -13,7 +13,9 @@ let AP_ERR = '';
 let AP_PAST = false;          // 지난 수업 펼치기
 
 const AP_CIDS = ['ai-2B', 'ai-2D'];
-function _apRef(cid, key){ return db.ref(`aiactivity/plan/${cid}${key ? '/' + key : ''}`); }
+/* DB 규칙이 aiactivity 아래 active · submissions 만 열어 두어 plan 은 submissions/{반} 안에 둡니다
+   (1차 수행평가의 assess1Open 과 같은 자리). aiactivity/plan 은 Permission denied 가 납니다. */
+function _apRef(cid, key){ return db.ref(`aiactivity/submissions/${cid}/plan${key ? '/' + key : ''}`); }
 function _apToday(){
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
