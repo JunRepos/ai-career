@@ -5315,3 +5315,58 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .df-pk span{display:block;font-size:12px;color:var(--muted,#8b98a6);margin-top:3px;line-height:1.5}
 .df-tc{font-size:14px;line-height:1.8;padding:10px}
 @media(max-width:700px){.df-pks{grid-template-columns:1fr}.df-grid,.df-lg{grid-template-columns:repeat(3,1fr)}}
+
+/* ── 📅 진도 계획 · 인공지능 기초 (aiplan) ── */
+.ap-wrap{max-width:1040px;margin:0 auto}
+.ap-top{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.ap-title{font-size:20px;font-weight:800;color:var(--text)}
+.ap-sub{font-size:13px;color:var(--text3);margin-top:4px;line-height:1.6}
+.ap-clss{display:flex;gap:8px}
+.ap-cls{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:8px 14px;border-radius:10px;border:1px solid var(--border2);background:var(--surface);color:var(--text);cursor:pointer;font:inherit}
+.ap-cls b{font-size:15px}.ap-cls span{font-size:12px;color:var(--text3)}
+.ap-cls.on{border-color:#3b6fd9;box-shadow:0 0 0 2px rgba(59,111,217,.18)}
+.ap-mss{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
+.ap-ms{padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface)}
+.ap-ms span{display:block;font-size:12px;color:var(--text3)}
+.ap-ms b{display:block;font-size:17px;margin-top:2px;color:var(--text)}
+.ap-ms.exam{border-left:4px solid #d9534f}.ap-ms.asmt{border-left:4px solid #e0a100}.ap-ms.end{border-left:4px solid #8a8c93}
+.ap-ms.past{opacity:.5}
+.ap-err{padding:10px 12px;border-radius:10px;background:rgba(217,83,79,.1);color:#c9302c;margin-bottom:10px;font-size:14px}
+.ap-loading{padding:30px;text-align:center;color:var(--text3)}
+.ap-pastbtn{display:block;width:100%;padding:9px;margin-bottom:10px;border-radius:10px;border:1px dashed var(--border2);background:transparent;color:var(--text3);cursor:pointer;font:inherit;font-size:13px}
+.ap-week{border:1px solid var(--border);border-radius:12px;background:var(--surface);margin-bottom:10px;overflow:hidden}
+.ap-week.past{opacity:.72}
+.ap-wh{display:flex;align-items:baseline;gap:10px;padding:9px 14px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.ap-wh b{font-size:15px;color:var(--text)}.ap-wh span{font-size:13px;color:var(--text3)}
+.ap-wh em{margin-left:auto;font-style:normal;font-size:11px;color:var(--text3);border:1px solid var(--border2);border-radius:20px;padding:1px 8px}
+.ap-plan{padding:8px 14px 6px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text2)}
+.ap-unit{font-weight:700;margin-right:8px}.ap-codes{font-size:12px;color:var(--text3)}
+.ap-plan ul{margin:4px 0 2px 18px;padding:0}.ap-plan li{line-height:1.6}
+.ap-row{display:grid;grid-template-columns:34px 92px 56px 1fr auto;gap:8px;align-items:center;padding:6px 14px;border-bottom:1px solid var(--border)}
+.ap-row:last-child{border-bottom:none}
+.ap-no{font-size:12px;color:var(--text3);text-align:right}
+.ap-date{font-size:14px;font-weight:700;color:var(--text)}.ap-date small{font-weight:400;color:var(--text3)}
+.ap-per{font-size:13px;color:var(--text2)}
+.ap-in{width:100%;padding:6px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--text);font:inherit;font-size:14px}
+.ap-in:focus{outline:none;border-color:#3b6fd9}
+.ap-in.saving{border-color:#e0a100}.ap-in.saved{border-color:#3fa66b;background:rgba(63,166,107,.08)}.ap-in.fail{border-color:#d9534f}
+.ap-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.ap-tag{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.ap-tag.swap{background:rgba(59,111,217,.12);color:#3b6fd9}
+.ap-tag.asmt{background:rgba(224,161,0,.16);color:#a87700}
+.ap-tag.check{background:rgba(217,83,79,.12);color:#c9302c}
+.ap-tag.now{background:#3b6fd9;color:#fff}
+.ap-row.today{background:rgba(59,111,217,.06)}
+.ap-row.asmt .ap-in{font-weight:700}
+.ap-row.past .ap-in{color:var(--text2)}
+.ap-row.off{background:var(--surface2)}
+.ap-row.off .ap-date,.ap-row.off .ap-per{color:var(--text3)}
+.ap-off{grid-column:4 / 6;font-size:13px;color:var(--text3)}
+.ap-row.off.exam .ap-off{color:#c9302c;font-weight:700}
+.ap-row.off.holiday .ap-off{color:#8a8c93}
+@media(max-width:760px){
+  .ap-mss{grid-template-columns:repeat(2,1fr)}
+  .ap-row{grid-template-columns:28px 72px 44px 1fr}
+  .ap-tags{grid-column:1 / -1;justify-content:flex-start}
+  .ap-off{grid-column:4 / 5}
+}

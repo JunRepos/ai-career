@@ -82,6 +82,7 @@ function _tcNavGroups(isInfo){
     if(TC_CLS?.type === 'ai') items.push({key:'notebook', ico:'📓', label:'노트북'});
     if(items.length) groups.push({ label: '콘텐츠', items });
   }
+  if(TC_CLS?.type === 'ai') groups.push({ label: '계획', items: [{key:'aiplan', ico:'📅', label:'진도 계획'}] });
   if(TC_CLS?.type === 'ai') groups.push({ label: '평가', items: [{key:'assess1', ico:'📝', label:'1차 수행평가'}] });
   if(isInfo){
     groups.push({ label: '콘텐츠', items: [
@@ -110,7 +111,7 @@ function _tcNavGroups(isInfo){
 
 // 본문을 넓게(IDE/표형) 쓰는 선생님 탭
 function _tcWideTab(){
-  return ['notebook','mission','oj','coderead','curriculum','asmt','scores','mlassess','aicode','assess1'].includes(TC_TAB);
+  return ['notebook','mission','oj','coderead','curriculum','asmt','scores','mlassess','aicode','assess1','aiplan'].includes(TC_TAB);
 }
 function _tcAutoCollapse(){ return TC_TAB === 'notebook' || TC_TAB === 'mission'; }
 function toggleTcNav(){ TC_NAV_COLLAPSED = !TC_NAV_COLLAPSED; render(); }
@@ -135,6 +136,7 @@ function _tcTabBody(){
   else if(TC_TAB === 'asmt')       return vTcAssessment();
   else if(TC_TAB === 'mlassess')   return vTcMlAssess();
   else if(TC_TAB === 'assess1')    return vTcAssess1();
+  else if(TC_TAB === 'aiplan')     return vTcAiPlan();
   else if(TC_TAB === 'scores')     return vTcScores();
   else if(TC_TAB === 'curriculum') return vTcCurriculum();
   else if(TC_TAB === 'settings')   return vTcSettings();
