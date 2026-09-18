@@ -30,11 +30,11 @@ function apLoad(cid){
     .finally(() => { delete AP_LOADING[cid]; if(TC_TAB === 'aiplan') render(); });
 }
 
-/* 칸에 보일 진도 — 선생님이 적은 것 > 평가 표시 > 지난 기록 */
+/* 칸에 보일 진도 — 선생님이 적은 것 > 평가 표시 > 지난 기록 > 계획(verify/aiplan.py 의 PLANNED) */
 function apText(cid, r){
   const e = (AP_EDITS[cid] || {})[r.key];
   if(e && typeof e.text === 'string') return e.text;
-  return r.mark || r.done || '';
+  return r.mark || r.done || r.plan || '';
 }
 
 function vTcAiPlan(){
