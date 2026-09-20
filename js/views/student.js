@@ -41,6 +41,11 @@ function _stNavGroups(){
       // 인공지능 기초: 과제 제출을 단원과 별개로 한눈에 (정보반은 단원 안 앱연결로 도달)
       if(!isInfo) groups.push({ items:[{key:'assign', ico:'📝', label:'과제 제출'}] });
     }
+    // 파이썬 실습 — 인공지능 기초 반에서 노트북을 단원에 걸지 않고 바로 열게 (2026-09-21 선생님 요청).
+    // 선생님이 올린 노트북이 하나라도 있을 때만 나옵니다.
+    if((SEL_CLS?.type) === 'ai' && NOTEBOOKS.length){
+      groups.push({ items:[{key:'notebook', ico:'📓', label:'파이썬 실습'}] });
+    }
     // 진로는 학습지로만 운영 — '수업' 메뉴를 쓰지 않습니다.
     // 다시 쓰려면 위 else 자리에 assign 항목을 넣으면 됩니다.
     // 학습지 — 선생님이 '학생에게 보내기' 한 것이 있을 때만
