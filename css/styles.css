@@ -715,7 +715,7 @@ label{font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.04em;tex
   .app-main{max-width:none !important}
   .cb-wrap,.cb-body,.cb-main{display:block !important;border:none !important;box-shadow:none !important}
   .cb-output{break-inside:avoid;border:1px solid #ddd !important}
-  .cb-cell{break-inside:avoid;page-break-inside:avoid}
+  .cb-cell{break-inside:avoid;page-break-inside:avoid;margin-top:14px !important}
 }
 
 /* 셀 리스트 */
@@ -723,7 +723,7 @@ label{font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.04em;tex
 
 /* + 코드 / + 텍스트 추가 버튼 (셀 사이)
    — 해당 위치 호버 시에만 표시, 가운데 얇은 가로선 */
-.cb-add-row{position:relative;display:flex;justify-content:center;align-items:center;gap:6px;height:16px;margin:0 32px;transition:height .15s}
+.cb-add-row{position:relative;display:flex;justify-content:center;align-items:center;gap:6px;height:12px;margin:0 32px;transition:height .15s}
 .cb-add-row::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:transparent;transition:background .18s;pointer-events:none}
 .cb-add-row:hover::before{background:var(--cb-border)}
 .cb-add-row:hover{height:28px}
@@ -736,7 +736,7 @@ label{font-size:11px;color:var(--text2);font-weight:600;letter-spacing:.04em;tex
 .cb-add-row-end .cb-add-btn{opacity:1;transform:none}
 
 /* 개별 셀 */
-.cb-cell{position:relative;margin:6px 16px;padding:4px 4px 4px 6px;border-left:3px solid transparent;border-radius:6px;transition:border-color .15s,background .15s,box-shadow .15s}
+.cb-cell{position:relative;margin:0 16px;padding:4px 4px 4px 6px;border-left:3px solid transparent;border-radius:6px;transition:border-color .15s,background .15s,box-shadow .15s}
 .cb-cell:hover{background:var(--cb-bg-2)}
 .cb-cell.cb-selected{border-left-color:var(--cb-selected);background:var(--cb-bg-2);box-shadow:inset 0 0 0 1px var(--cb-border)}
 
@@ -816,10 +816,15 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
 .cb-out-body::-webkit-scrollbar-thumb{background:var(--cb-border);border-radius:5px;border:2px solid var(--cb-output-bg)}
 .cb-out-body::-webkit-scrollbar-thumb:hover{background:var(--cb-text-3)}
 
-/* 마크다운 셀 */
-.cb-cell-md{cursor:text;padding:4px 8px 4px 12px}
-.cb-cell-md.cb-selected{box-shadow:none}
-.cb-md-render{padding:6px 14px;color:var(--cb-text);line-height:1.7;font-size:14px;min-height:30px;cursor:text;border-radius:4px;transition:background .15s}
+/* 마크다운 셀 — 테두리와 「텍스트 셀」 이름표로 칸이 어디서 어디까지인지 보이게 (2026-09-21 선생님 요청)
+   이름표는 위 테두리에 걸쳐 두어 높이를 더 쓰지 않는다. 호버 툴바는 이름표를 가리지 않게 오른쪽으로. */
+.cb-cell-md{cursor:text;margin:6px 20px 0 25px;padding:0;border:1px solid var(--cb-code-border);background:var(--cb-bg)}
+.cb-cell-md::before{content:'텍스트 셀';position:absolute;top:-9px;left:12px;z-index:1;padding:0 6px;font-size:11px;line-height:16px;font-weight:600;color:var(--cb-text-3);background:var(--cb-bg);border-radius:4px;pointer-events:none}
+.cb-cell-md.cb-selected{border-color:var(--cb-selected);box-shadow:inset 3px 0 0 var(--cb-selected)}
+.cb-cell-md .cb-cell-actions{left:auto;right:12px}
+.cb-md-render{padding:13px 16px 10px;color:var(--cb-text);line-height:1.7;font-size:14px;min-height:30px;cursor:text;border-radius:4px;transition:background .15s}
+.cb-md-render > :first-child{margin-top:0}
+.cb-md-render > :last-child{margin-bottom:0}
 .cb-md-render:hover{background:rgba(0,0,0,.015)}
 [data-theme="dark"] .cb-md-render:hover{background:rgba(255,255,255,.02)}
 .cb-md-render h1{font-size:24px;font-weight:400;margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--cb-border);color:var(--cb-text)}
@@ -842,7 +847,7 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
 .cb-md-render img{max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
 [data-theme="dark"] .cb-md-render img{background:#fff;padding:4px}
 
-.cb-md-editor{padding:4px 8px}
+.cb-md-editor{padding:12px 10px 6px}
 .cb-md-area{display:none}
 .cb-md-editor .CodeMirror{background:var(--cb-code-bg);color:var(--cb-text);font-family:-apple-system,'Pretendard',sans-serif;font-size:14px;line-height:1.6;min-height:80px;padding:6px 8px;border:1px solid var(--cb-code-border);border-radius:4px}
 
