@@ -138,23 +138,34 @@ function _aiaQuestion(q, no){
     const fixed = _tableLabels(q, AIA_ANSWERS);
     const rows = Math.max(fixed.length, (q.fixed || []).length + (q.extra || 0));
     const val = AIA_ANSWERS[q.id] || {};
+    /* 여러 줄 칸 — rowLines(줄마다 칸 높이) 나 cellLines(모든 칸) 가 있으면 칸이 textarea 가 됩니다.
+       항목 이름을 왼쪽에 두고 긴 글을 받는 '양식형' 표를 만들 때 씁니다.
+       이때 휴대폰 카드 모양에서 줄 번호와 '열 이름' 머리글은 군더더기라 뺍니다
+       (열이 셋 이상이거나 왼쪽 항목 칸이 없는 표는 열 이름이 있어야 구분되므로 남김). */
+    const multi = !!(q.rowLines || q.cellLines);
+    const showLabel = !multi || cols.length > 2 || !fixed.length;
     const head2 = `<tr>${cols.map(c => `<th>${esc(c)}</th>`).join('')}</tr>`;
     let bodyRows = '';
     for(let r = 0; r < rows; r++){
       const label = fixed[r];
-      bodyRows += `<tr data-row="${r + 1}">${cols.map((_, c) => {
+      bodyRows += `<tr${multi ? '' : ` data-row="${r + 1}"`}>${cols.map((_, c) => {
         const colName = esc(cols[c] || '');
         if(c === 0 && label !== undefined){
-          return `<td class="ws-td-fixed" data-label="${colName}">${esc(label)}</td>`;
+          return `<td class="ws-td-fixed"${multi ? '' : ` data-label="${colName}"`}>${esc(label)}</td>`;
         }
         const v = val[r]?.[c] || '';
-        return `<td data-label="${colName}"><input type="text" class="ws-cell" data-action="aia-cell" data-fid="${esc(q.id)}" data-r="${r}" data-c="${c}" placeholder="${colName}" value="${esc(v)}"/></td>`;
+        const dl = showLabel ? ` data-label="${colName}"` : '';
+        if(multi){
+          const lines = (q.rowLines && q.rowLines[r]) || q.cellLines || 1;
+          return `<td${dl}><textarea class="ws-cell" rows="${lines}" data-action="aia-cell" data-fid="${esc(q.id)}" data-r="${r}" data-c="${c}">${esc(v)}</textarea></td>`;
+        }
+        return `<td${dl}><input type="text" class="ws-cell" data-action="aia-cell" data-fid="${esc(q.id)}" data-r="${r}" data-c="${c}" placeholder="${colName}" value="${esc(v)}"/></td>`;
       }).join('')}</tr>`;
     }
     return `<div class="ws-block">
       ${head}
       ${_aiaImg(q)}
-      <div class="ws-table-wrap"><table class="ws-table">
+      <div class="ws-table-wrap"><table class="ws-table${multi ? ' ws-table-lines' : ''}${multi && (q.fixed || []).length ? ' ws-table-form' : ''}">
         <thead>${head2}</thead><tbody>${bodyRows}</tbody>
       </table></div>
     </div>`;

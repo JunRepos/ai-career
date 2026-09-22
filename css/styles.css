@@ -3816,6 +3816,16 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   background:transparent;border:none;border-radius:0;box-shadow:none;
   padding:11px 14px;font-size:13.5px;color:var(--ws-ink)}
 .rep input.ws-cell:focus{background:var(--ws-cream);box-shadow:none;border:none}
+/* 여러 줄 칸 (표 문항에 rowLines/cellLines) — 글이 늘면 칸도 따라 늘어남 */
+.rep textarea.ws-cell{display:block;resize:vertical;min-height:0;line-height:1.6;
+  background:transparent;background-image:none;border:none;border-radius:0;box-shadow:none;
+  padding:11px 14px;font-size:13.5px;color:var(--ws-ink);field-sizing:content;
+  overflow-wrap:anywhere}
+.rep textarea.ws-cell:focus{background:var(--ws-cream);box-shadow:none;border:none}
+/* 열 너비 고정 — 긴 링크가 들어와도 표가 옆으로 삐져나가지 않게 */
+.ws-table-lines{table-layout:fixed}
+.ws-table-form th:first-child{width:150px}
+.ws-table-lines .ws-td-fixed{white-space:normal;word-break:keep-all;vertical-align:top}
 
 /* ═══════════════════════════════════════════════════════════════
    모바일 전용 UI/UX (≤ 768px)
@@ -3915,6 +3925,10 @@ input.quiz-cloze-blank:focus{outline:none;background:var(--accent-lt,rgba(99,102
   .rep input.ws-cell{padding:10px 12px;font-size:16px;
     border:1px solid var(--ws-rule);border-radius:8px;background:#fff}
   .rep input.ws-cell:focus{background:var(--ws-cream);border-color:#D8B79E}
+  .rep textarea.ws-cell{padding:10px 12px;font-size:16px;
+    border:1px solid var(--ws-rule);border-radius:8px;background:#fff}
+  .rep textarea.ws-cell:focus{background:var(--ws-cream);border-color:#D8B79E}
+  .ws-table-lines .ws-td-fixed{width:100%}
 
   /* 저장·제출을 화면 아래 고정 — 긴 학습지에서 매번 끝까지 안 내려도 됨 */
   .rep-foot{position:sticky;bottom:calc(58px + env(safe-area-inset-bottom));

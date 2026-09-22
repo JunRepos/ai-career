@@ -104,11 +104,17 @@ function renderQuestion(q, no, qi){
     const rows = Math.max(1, fixed.length + (q.extra ?? 3));
     const ar = (ANSWER_MODE && q.answerRows) ? q.answerRows : null;
     const rowN = ar ? ar.length : rows;
+    // 여러 줄 칸 — 앱과 같게 rowLines/cellLines 가 있으면 textarea (답안 모드면 답을 칸 안에)
+    const multi = !!(q.rowLines || q.cellLines);
     let body = '';
     for(let r = 0; r < rowN; r++){
       body += '<tr>' + cols.map((c, ci) => {
         if(ci === 0 && fixed[r] !== undefined)
           return `<td class="ws-td-fixed">${ed(P + '.fixed.' + r, fixed[r])}</td>`;
+        if(multi){
+          const lines = (q.rowLines && q.rowLines[r]) || q.cellLines || 1;
+          return `<td><textarea class="ws-cell" rows="${lines}">${esc(ar ? ((ar[r] || [])[ci] ?? '') : '')}</textarea></td>`;
+        }
         if(ar) return `<td class="ws-td-ans">${esc((ar[r] || [])[ci] ?? '')}</td>`;
         return `<td><input type="text" class="ws-cell" placeholder="${esc(c)}"/></td>`;
       }).join('') + '</tr>';
@@ -117,7 +123,7 @@ function renderQuestion(q, no, qi){
     const note = (q.fillFrom || []).length
       ? `<div class="ws-q-desc" style="margin-left:0">↑ 앞에서 고른 보기가 첫 칸에 자동으로 들어갑니다</div>` : '';
     return `<div class="ws-block">${head}${img(q)}
-      <div class="ws-table-wrap"><table class="ws-table">
+      <div class="ws-table-wrap"><table class="ws-table${multi ? ' ws-table-lines' : ''}${multi && fixed.length ? ' ws-table-form' : ''}">
         <thead><tr>${cols.map((c, ci) => `<th>${ed(P + '.cols.' + ci, c)}</th>`).join('')}</tr></thead>
         <tbody>${body}</tbody></table></div>${note}</div>`;
   }
