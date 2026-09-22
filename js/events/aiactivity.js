@@ -456,8 +456,14 @@ document.addEventListener('input', e => {
   const cell = e.target.closest('[data-action="aia-cell"]');
   if(!cell) return;
   const fid = cell.dataset.fid, r = cell.dataset.r, c = cell.dataset.c;
-  if(!AIA_ANSWERS[fid] || typeof AIA_ANSWERS[fid] !== 'object' || Array.isArray(AIA_ANSWERS[fid])) AIA_ANSWERS[fid] = {};
-  if(!AIA_ANSWERS[fid][r]) AIA_ANSWERS[fid][r] = {};
+  /* Firebase 는 0,1,2… 키로만 된 객체를 배열로 돌려줍니다. 배열이면 비우지 말고
+     객체로 바꿔 이어 씁니다 — 예전엔 여기서 {} 로 비워서, 다시 들어와 한 칸만
+     고쳐도 표의 나머지 줄이 모두 지워졌습니다. */
+  const toObj = v => Array.isArray(v)
+    ? Object.fromEntries(v.map((x, i) => [i, x]).filter(([, x]) => x != null))
+    : (v && typeof v === 'object' ? v : {});
+  AIA_ANSWERS[fid] = toObj(AIA_ANSWERS[fid]);
+  AIA_ANSWERS[fid][r] = toObj(AIA_ANSWERS[fid][r]);
   AIA_ANSWERS[fid][r][c] = cell.value;
   _aiaQueueSave();
 });
