@@ -618,12 +618,13 @@ function updateCellOutputDom(cellId){
   if(!cellDiv) return;
   const result = NB_CELL_OUTPUTS[cellId];
 
-  // 실행 프롬프트 갱신
+  // 실행 프롬프트 갱신 — ▶ 버튼은 그대로 두고 [ ] 표시만 바꾼다
   const promptEl = cellDiv.querySelector('.cb-exec-prompt');
   if(promptEl){
-    if(result?.running || result?.queued) promptEl.textContent = '[*]';
-    else if(result?.execCount) promptEl.textContent = `[${result.execCount}]`;
-    else promptEl.textContent = '[ ]';
+    const busy = !!(result?.running || result?.queued);
+    promptEl.classList.toggle('cb-running', busy);
+    const countEl = promptEl.querySelector('.cb-exec-count');
+    if(countEl) countEl.textContent = busy ? '[*]' : (result?.execCount ? `[${result.execCount}]` : '[ ]');
   }
 
   // 출력 영역 갱신

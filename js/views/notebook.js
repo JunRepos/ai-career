@@ -250,9 +250,9 @@ function vNbCell(cell, idx){
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="markdown" data-pos="${idx}">+ 텍스트</button>
   </div>`;
 
-  // 셀 호버 툴바
+  // 셀 호버 툴바 (오른쪽 위) — 코드 셀의 ▶ 는 셀 왼쪽 [ ] 자리에 늘 보이게 따로 둔다
   const hoverTb = `<div class="cb-cell-actions">
-    ${!isMd ? `<button class="cb-act-btn" data-action="nb-run-cell" data-cellid="${cell.id}" title="셀 실행 (Ctrl+Enter)">▶</button>` : `<button class="cb-act-btn" data-action="nb-md-edit-btn" data-cellid="${cell.id}" title="편집">✏️</button>`}
+    ${isMd ? `<button class="cb-act-btn" data-action="nb-md-edit-btn" data-cellid="${cell.id}" title="편집">✏️</button>` : ''}
     <button class="cb-act-btn" data-action="nb-move-up" data-cellid="${cell.id}" title="셀 위로 이동">↑</button>
     <button class="cb-act-btn" data-action="nb-move-down" data-cellid="${cell.id}" title="셀 아래로 이동">↓</button>
     <button class="cb-act-btn" data-action="nb-copy" data-cellid="${cell.id}" title="셀 복제">⧉</button>
@@ -278,13 +278,17 @@ function vNbCell(cell, idx){
 
   // 코드 셀
   const result = NB_CELL_OUTPUTS[cell.id];
-  const execLabel = (result?.running || result?.queued) ? '[*]' : (result?.execCount ? `[${result.execCount}]` : '[ ]');
+  const busy = !!(result?.running || result?.queued);
+  const execLabel = busy ? '[*]' : (result?.execCount ? `[${result.execCount}]` : '[ ]');
   const outputHtml = result ? vNbOutput(result, cell.id) : '';
 
   return addRow + `<div class="cb-cell cb-cell-code${selected}" data-cellid="${cell.id}">
     ${hoverTb}
     <div class="cb-code-wrap">
-      <div class="cb-exec-prompt">${execLabel}</div>
+      <div class="cb-exec-prompt${busy ? ' cb-running' : ''}">
+        <button class="cb-run-btn" data-action="nb-run-cell" data-cellid="${cell.id}" title="셀 실행 (Ctrl+Enter)" aria-label="셀 실행">▶</button>
+        <span class="cb-exec-count">${execLabel}</span>
+      </div>
       <div class="cb-code-main">
         <textarea class="cb-code-area" id="cb-code-${cell.id}" data-cellid="${cell.id}" spellcheck="false">${esc(cell.source || '')}</textarea>
       </div>
