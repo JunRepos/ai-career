@@ -745,6 +745,22 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  // 선생님: 노트북 이름 바꾸기 — 칸과 학생 진도는 id 로 이어져 있어 이름만 바뀝니다
+  if(act.action === 'rename-notebook'){
+    if(!IS_TC || !TC_CLS) return;
+    const now = act.ntitle || '';
+    const typed = prompt('노트북 이름을 적으세요.', now);
+    if(typed === null) return;
+    const next = typed.replace(/\s+/g, ' ').trim().slice(0, 80);
+    if(!next){ toast('이름을 비워 둘 수는 없습니다', 'err'); return; }
+    if(next === now) return;
+    el.disabled = true;
+    await db.ref(`notebooks/${TC_CLS.id}/${act.nid}/title`).set(next);
+    await loadNotebooks(TC_CLS.id); render();
+    toast(`이름을 「${next}」 로 바꿨습니다`, 'ok');
+    return;
+  }
+
   // 셀 실행
   if(act.action === 'nb-run-cell'){ runCell(act.cellid); return; }
   if(act.action === 'nb-run-all'){

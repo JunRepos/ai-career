@@ -35,6 +35,7 @@ function vTcNotebook(){
       <div class="row-right">
         <button class="btn-xs" data-action="notebook-move-up" data-nid="${nb.id}" title="위로">▲</button>
         <button class="btn-xs" data-action="notebook-move-down" data-nid="${nb.id}" title="아래로">▼</button>
+        <button class="btn-xs" data-action="rename-notebook" data-nid="${nb.id}" data-ntitle="${esc(nb.title)}" title="노트북 이름 바꾸기">이름 변경</button>
         <button class="btn-xs btn-danger" data-action="del-notebook" data-nid="${nb.id}" data-ntitle="${esc(nb.title)}">삭제</button>
       </div>
     </div>`).join('');
