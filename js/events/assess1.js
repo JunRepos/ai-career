@@ -249,6 +249,17 @@ document.addEventListener('click', async e => {
     toast(next ? A1_STATE_TXT[next] + ' 로 표시했습니다' : '미검토로 되돌렸습니다', 'ok');
     return;
   }
+  const rs = e.target.closest?.('[data-action="a1-w-reset"]');
+  if(rs){
+    const g = _a1G(rs.dataset.snum);
+    const next = { ...(g.w || {}) };
+    delete next[rs.dataset.idx];
+    await db.ref(`aiactivity/submissions/${TC_CLS.id}/assess1grade/${rs.dataset.snum}/w`).set(
+      Object.keys(next).length ? next : null);
+    await _a1GradeSave(rs.dataset.snum, {});
+    toast('처음 적은 사유로 되돌렸습니다', 'ok');
+    return;
+  }
   const mv = e.target.closest?.('[data-action="a1-tc-step"]');
   if(mv){
     const list = _a1TcList();
@@ -262,7 +273,17 @@ document.addEventListener('click', async e => {
 
 document.addEventListener('change', async e => {
   const t = e.target.closest?.('#a1-g-note');
-  if(!t) return;
-  await _a1GradeSave(t.dataset.snum, { note: t.value.trim() });
-  toast('메모를 저장했습니다', 'ok');
+  if(t){
+    await _a1GradeSave(t.dataset.snum, { note: t.value.trim() });
+    toast('메모를 저장했습니다', 'ok');
+    return;
+  }
+  // 채점 사유 — 내가 적은 why 는 그대로 두고 선생님이 고친 글만 w 에 담습니다
+  const w = e.target.closest?.('[data-a1-why]');
+  if(!w) return;
+  const g = _a1G(w.dataset.snum);
+  const next = { ...(g.w || {}) };
+  next[w.dataset.idx] = w.value.trim();
+  await _a1GradeSave(w.dataset.snum, { w: next });
+  toast('채점 사유를 고쳤습니다', 'ok');
 });

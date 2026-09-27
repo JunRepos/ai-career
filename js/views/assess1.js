@@ -469,14 +469,14 @@ function _a1TcStudent(){
   const after = it => _a1AreaBox(snum, g, it, why);
   if(!doc.submitted){
     return head + `<div class="a1-notice">제출하지 않았습니다. 아래는 저장만 된 내용입니다 (마지막 저장 ${_a1Time(doc.updatedAt)}).</div>`
-      + _a1GradeTop(g, why) + _a1AnswerBlocks(doc.answers, after) + _a1GradeTail(snum, g);
+      + _a1GradeTop(snum, g, why) + _a1AnswerBlocks(doc.answers, after) + _a1GradeTail(snum, g);
   }
   const changed = s.key === 'changed';
   return head
     + `<div class="ml-sub-explain">제출본 · ${_a1Time(doc.submitted.at)}</div>`
     + (changed ? `<div class="a1-notice">⚠ 제출 뒤 고친 내용이 있습니다 (마지막 저장 ${_a1Time(doc.updatedAt)}, 미제출).
         <details style="margin-top:6px"><summary>저장만 된 최신 내용 보기</summary>${_a1AnswerBlocks(doc.answers)}</details></div>` : '')
-    + _a1GradeTop(g, why)
+    + _a1GradeTop(snum, g, why)
     + _a1AnswerBlocks(doc.submitted.answers, after)
     + _a1GradeTail(snum, g);
 }
@@ -546,6 +546,26 @@ function _a1SplitWhy(why){
   return out;
 }
 
+/* 채점 사유 — 선생님이 고친 글이 있으면 그것, 없으면 내가 적은 글 */
+function _a1WhyOf(g, why, i){
+  const mine = (g.w || {})[i];
+  return { text: mine == null ? (why[i] || '') : mine, fixed: mine != null && mine !== (why[i] || '') };
+}
+function _a1WhyBox(snum, idx, cur, fixed, label){
+  return `<div style="margin-top:8px">
+    <div style="display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--text3)">
+      <b style="color:var(--text2)">${esc(label)}</b>
+      <span>— 눌러서 고칠 수 있습니다</span>
+      ${fixed ? `<button class="btn-xs" style="margin-left:auto" data-action="a1-w-reset" data-snum="${esc(snum)}" data-idx="${esc(String(idx))}">↺ 처음 글로</button>` : ''}
+    </div>
+    <textarea data-a1-why="1" data-snum="${esc(snum)}" data-idx="${esc(String(idx))}" rows="2"
+      style="width:100%;margin-top:4px;font:inherit;font-size:13.5px;line-height:1.65;padding:8px 10px;border-radius:7px;
+             border:1px solid ${fixed ? 'var(--ok,#16a34a)' : 'var(--border2)'};background:var(--surface);color:var(--text);
+             field-sizing:content;min-height:2.6em;resize:vertical"
+      placeholder="감점한 까닭을 적습니다">${esc(cur)}</textarea>
+  </div>`;
+}
+
 /* 검토 상태 — 없음(미검토) · wip(검토중 · 노랑) · done(확정 · 초록) */
 function _a1StateOf(g){ return g.state || (g.done ? 'done' : ''); }
 const A1_STATE_TXT = { '': '미검토', wip: '검토중', done: '검토 · 확정 완료' };
@@ -571,11 +591,12 @@ function _a1ListScore(snum){
 }
 
 /* 영역과 관계없는 채점 사유 (백지 · 전체에 대한 말) */
-function _a1GradeTop(g, why){
+function _a1GradeTop(snum, g, why){
   if(A1_GRADE === null) return '<div class="ml-sub-explain">⏳ 채점을 불러오는 중…</div>';
+  const w = _a1WhyOf(g, why, 'top');
   const bits = [];
-  if(why.top) bits.push(`<div style="white-space:pre-wrap"><b>채점 사유</b>\n${esc(why.top)}</div>`);
-  if(g.check) bits.push(`<div style="white-space:pre-wrap;margin-top:6px"><b>선생님이 정하실 것</b>\n${esc(g.check)}</div>`);
+  if(w.text || why.top) bits.push(_a1WhyBox(snum, 'top', w.text, w.fixed, '채점 사유 (영역을 가리지 않은 것)'));
+  if(g.check) bits.push(`<div style="white-space:pre-wrap;margin-top:8px"><b>선생님이 정하실 것</b>\n${esc(g.check)}</div>`);
   return bits.length ? `<div class="a1-notice" style="margin-bottom:10px">${bits.join('')}</div>` : '';
 }
 
@@ -607,8 +628,7 @@ function _a1AreaBox(snum, g, it, why){
       <div class="ct">📌 결격 사유 <span>— 1가지면 4점 · 2가지 이상이면 3점</span></div>
       ${(sc.defects || []).map(d => `<div class="cl"><span class="mk">·</span><span>${_a1Md(d)}</span></div>`).join('')}
     </div>
-    ${why[i] ? `<div style="margin-top:8px;font-size:13.5px;line-height:1.65;white-space:pre-wrap;background:var(--surface);border-radius:7px;padding:8px 10px">
-      <b>채점 사유</b> — ${esc(why[i])}</div>` : ''}
+    ${(() => { const w = _a1WhyOf(g, why, i); return _a1WhyBox(snum, i, w.text, w.fixed, '채점 사유'); })()}
   </div>`;
 }
 
