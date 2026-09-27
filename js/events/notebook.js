@@ -1107,3 +1107,176 @@ function showNbShortcuts(){
     </div>`;
   document.getElementById('modal-root').innerHTML = html;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   🧠 복습 퀴즈 문제 — 선생님이 노트북 안에 넣는 칸 (2026-09-27)
+
+   노트북은 출력에 든 HTML 을 걸러 냅니다(display(HTML) 은 sandbox 된 iframe,
+   판다스 표는 nbSanitize 가 input·button·select 를 지움). 그래서 **누르는 위젯은 못 만듭니다.**
+   대신 노트북이 원래 하는 일 — 「답을 쓰고 셀을 실행하면 바로 채점」 으로 만듭니다.
+
+   준비 셀 글은 verify/nb_quiz.py 의 것과 **글자가 같아야 합니다** (한 노트북에 둘이 섞일 수 있음).
+   ═══════════════════════════════════════════════════════════════ */
+const NB_QUIZ_SETUP_ID = 'quiz-setup';
+const NB_QUIZ_MARK = '확인(답,';
+const NB_QUIZ_SETUP = [
+  "# 준비 셀 — 선생님이 만든 셀입니다. 고치지 말고 ▶ 실행만 하세요. (정답은 감춰 두었습니다)",
+  "from base64 import b64decode as _b",
+  "def _간추리기(v):",
+  "    s = ''.join(str(v).split()).lower()",
+  "    for c in (chr(34), chr(39), '(', ')'):",
+  "        s = s.replace(c, '')",
+  "    return s",
+  "def 확인(답, 정답, 풀이='', 힌트=''):",
+  "    맞는답 = _b(정답).decode('utf-8')",
+  "    if _간추리기(답) in [_간추리기(x) for x in 맞는답.split('|')]:",
+  "        print('✅ 맞았습니다!')",
+  "        if 풀이: print(_b(풀이).decode('utf-8'))",
+  "    else:",
+  "        print('❌ 다시 해 보세요.')",
+  "        if 힌트: print('힌트 —', _b(힌트).decode('utf-8'))",
+].join('\n');
+
+function _nbB64(s){
+  const u = new TextEncoder().encode(String(s == null ? '' : s));
+  let bin = ''; u.forEach(c => { bin += String.fromCharCode(c); });
+  return btoa(bin);
+}
+function _nbUnB64(s){
+  try {
+    const bin = atob(String(s || ''));
+    const u = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+    return new TextDecoder().decode(u);
+  } catch(e){ return ''; }
+}
+const _nbIsQuizCell = c => c && c.type === 'code' && String(c.source || '').includes(NB_QUIZ_MARK);
+const NB_QUIZ_NUM = '①②③④⑤⑥⑦⑧';
+
+function _nbQuizMd(no, ask, choices){
+  const lines = [`**문제 ${no}.** ${ask}`];
+  if(choices.length){ lines.push(''); choices.forEach((c, i) => lines.push(`${NB_QUIZ_NUM[i] || '·'} ${c}`)); }
+  lines.push('', '아래 셀의 `답 =` 뒤를 고쳐 쓰고 ▶ 실행하세요 — '
+    + (choices.length ? '번호를 숫자로 씁니다.' : '따옴표 안에 낱말로 씁니다.'));
+  return lines.join('\n');
+}
+function _nbQuizCode(no, choices, ans, why, tip){
+  return [
+    `# 문제 ${no} — 답을 고쳐 쓰고 ▶ 실행하세요 (몇 번이든 다시 해도 됩니다)`,
+    `답 = ${choices.length ? '1' : '"여기에 답"'}`,
+    '',
+    `확인(답, '${_nbB64(ans)}', '${_nbB64(why)}', '${_nbB64(tip)}')   # ← 정답 · 풀이 · 힌트 (감춰 둠)`,
+  ].join('\n');
+}
+
+/* 문제 번호를 위에서부터 1, 2, 3 … 으로 다시 매깁니다 (지우고 넣다 보면 어긋나므로) */
+function _nbQuizRenumber(){
+  let no = 0;
+  (NB_CELLS || []).forEach((c, i) => {
+    if(!_nbIsQuizCell(c)) return;
+    no++;
+    c.source = String(c.source).replace(/^# 문제 \d+ —/, `# 문제 ${no} —`);
+    const md = NB_CELLS[i - 1];
+    if(md && md.type === 'markdown') md.source = String(md.source).replace(/^\*\*문제 \d+\.\*\*/, `**문제 ${no}.**`);
+  });
+}
+
+/* 퀴즈 칸 하나를 사람이 읽을 수 있는 꼴로 되돌려 읽습니다 (고치기용) */
+function _nbQuizRead(cellId){
+  const i = findCellIdx(cellId); if(i < 0) return null;
+  const code = NB_CELLS[i];
+  const m = String(code.source || '').match(/확인\(답,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/);
+  if(!m) return null;
+  const md = (i > 0 && NB_CELLS[i - 1].type === 'markdown'
+              && /^\*\*문제 \d+\.\*\*/.test(String(NB_CELLS[i - 1].source || ''))) ? NB_CELLS[i - 1] : null;
+  let ask = '', choices = [];
+  if(md){
+    const lines = String(md.source).split('\n');
+    const head = lines[0].match(/^\*\*문제 \d+\.\*\*\s*(.*)$/);
+    if(head) ask = head[1];
+    choices = lines.filter(l => new RegExp('^[' + NB_QUIZ_NUM + ']\\s').test(l)).map(l => l.slice(1).trim());
+  }
+  return {codeId: code.id, mdId: md ? md.id : null, ask, choices,
+          ans: _nbUnB64(m[1]), why: _nbUnB64(m[2]), tip: _nbUnB64(m[3])};
+}
+
+function nbQuizModal(editCellId){
+  const cur = editCellId ? _nbQuizRead(editCellId) : null;
+  const e = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const ta = (id, rows, ph, val) =>
+    `<textarea id="${id}" rows="${rows}" placeholder="${e(ph)}" style="width:100%;font:inherit;font-size:14px;padding:7px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--text);resize:vertical">${e(val)}</textarea>`;
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-ov" onclick="closeModal()">
+      <div class="section" style="max-width:620px;width:94vw;max-height:88vh;overflow:auto;cursor:default" onclick="event.stopPropagation()">
+        <div class="sec-title">🧠 ${cur ? '퀴즈 문제 고치기' : '복습 퀴즈 문제 넣기'}</div>
+        <input type="hidden" id="qz-edit" value="${e(editCellId || '')}">
+        <div class="field"><label>문제</label>${ta('qz-ask', 2, '예: 다음 속성 가운데 범주형인 것은?', cur && cur.ask)}</div>
+        <div class="field"><label>보기 — 한 줄에 하나씩 (비워 두면 주관식)</label>${ta('qz-ch', 3, '부리 길이(mm)\n체질량(g)\n서식지', cur ? cur.choices.join('\n') : '')}</div>
+        <div class="field"><label>정답 — 객관식이면 번호(3), 주관식이면 낱말. 여러 개면 <code>|</code> 로 나눕니다</label>
+          <input id="qz-ans" value="${e(cur && cur.ans)}" placeholder="3   또는   shape|df.shape"></div>
+        <div class="field"><label>맞았을 때 보여 줄 풀이</label>${ta('qz-why', 2, '왜 그 답인지 한두 줄로', cur && cur.why)}</div>
+        <div class="field"><label>틀렸을 때 보여 줄 힌트 (답은 알려 주지 않습니다)</label>${ta('qz-tip', 2, '어디를 다시 보면 되는지', cur && cur.tip)}</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.6;margin-top:2px">
+          주관식은 띄어쓰기 · 대소문자 · 따옴표 · 괄호를 무시하고 견줍니다.<br>
+          정답 · 풀이 · 힌트는 셀에 글자 그대로 적지 않고 감춰 둡니다 (완전한 잠금은 아닙니다).
+        </div>
+        <div style="text-align:right;margin-top:10px">
+          <button class="btn-sm" onclick="closeModal()">취소</button>
+          <button class="btn-sm btn-primary" data-action="nb-quiz-save">${cur ? '고치기' : '넣기'}</button>
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => document.getElementById('qz-ask')?.focus(), 60);
+}
+
+function nbQuizSave(){
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const ask = val('qz-ask'), ans = val('qz-ans');
+  if(!ask){ toast('문제를 적어 주세요', 'err'); return; }
+  if(!ans){ toast('정답을 적어 주세요', 'err'); return; }
+  const choices = val('qz-ch').split('\n').map(s => s.trim()).filter(Boolean);
+  if(choices.length > NB_QUIZ_NUM.length){ toast(`보기는 ${NB_QUIZ_NUM.length}개까지입니다`, 'err'); return; }
+  if(choices.length && !/^\d+(\|\d+)*$/.test(ans)){ toast('객관식 정답은 보기 번호(숫자)로 적어 주세요', 'err'); return; }
+  if(choices.length && ans.split('|').some(n => +n < 1 || +n > choices.length)){
+    toast(`정답 번호는 1 ~ ${choices.length} 사이여야 합니다`, 'err'); return;
+  }
+  const why = val('qz-why'), tip = val('qz-tip');
+  const editId = val('qz-edit');
+
+  if(editId){
+    const cur = _nbQuizRead(editId);
+    if(!cur){ toast('그 퀴즈 칸을 찾지 못했습니다', 'err'); return; }
+    const i = findCellIdx(cur.codeId);
+    NB_CELLS[i].source = _nbQuizCode(1, choices, ans, why, tip);
+    if(cur.mdId) NB_CELLS[findCellIdx(cur.mdId)].source = _nbQuizMd(1, ask, choices);
+  } else {
+    const selIdx = NB_SELECTED ? findCellIdx(NB_SELECTED) : -1;
+    let pos = selIdx >= 0 ? selIdx + 1 : NB_CELLS.length;
+    const key = 'q' + Date.now().toString(36);
+    const add = [];
+    if(!NB_CELLS.some(c => c.id === NB_QUIZ_SETUP_ID)){
+      add.push({id: NB_QUIZ_SETUP_ID, type: 'code', source: NB_QUIZ_SETUP});
+    }
+    add.push({id: key + '-q', type: 'markdown', source: _nbQuizMd(1, ask, choices)});
+    add.push({id: key + '-a', type: 'code', source: _nbQuizCode(1, choices, ans, why, tip)});
+    NB_CELLS.splice(pos, 0, ...add);
+    NB_SELECTED = key + '-a';
+  }
+  _nbQuizRenumber();
+  closeModal();
+  destroyAllCMs();
+  render();
+  scheduleNBSave();
+  toast(editId ? '문제를 고쳤습니다' : '문제를 넣었습니다', 'ok');
+}
+
+document.addEventListener('click', e => {
+  const open = e.target.closest?.('[data-action="nb-insert-quiz"]');
+  if(open){ if(typeof closeNbMenu === 'function') closeNbMenu(); nbQuizModal(null); return; }
+  const edit = e.target.closest?.('[data-action="nb-quiz-edit"]');
+  if(edit){ nbQuizModal(edit.dataset.cellid); return; }
+  const save = e.target.closest?.('[data-action="nb-quiz-save"]');
+  if(save){ nbQuizSave(); }
+});

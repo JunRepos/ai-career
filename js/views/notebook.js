@@ -145,6 +145,7 @@ function vNbMenubar(isTeacher, isStudent){
     {id: 'insert', label: '삽입', items: [
       {label: '➕  코드 셀', action: 'nb-insert-code'},
       {label: '📝  텍스트 셀', action: 'nb-insert-text'},
+      ...(isStudent ? [] : [{label: '🧠  복습 퀴즈 문제', action: 'nb-insert-quiz'}]),
     ]},
     {id: 'runtime', label: '런타임', items: [
       {label: '▶▶  모두 실행', action: 'nb-run-all'},
@@ -254,6 +255,8 @@ function vNbCell(cell, idx){
   // 셀 호버 툴바 (오른쪽 위) — 코드 셀의 ▶ 는 셀 왼쪽 [ ] 자리에 늘 보이게 따로 둔다
   const hoverTb = `<div class="cb-cell-actions">
     ${isMd ? `<button class="cb-act-btn" data-action="nb-md-edit-btn" data-cellid="${cell.id}" title="편집">✏️</button>` : ''}
+    ${!isMd && String(cell.source || '').includes('확인(답,')
+      ? `<button class="cb-act-btn" data-action="nb-quiz-edit" data-cellid="${cell.id}" title="퀴즈 문제 고치기">🧠</button>` : ''}
     <button class="cb-act-btn" data-action="nb-move-up" data-cellid="${cell.id}" title="셀 위로 이동">↑</button>
     <button class="cb-act-btn" data-action="nb-move-down" data-cellid="${cell.id}" title="셀 아래로 이동">↓</button>
     <button class="cb-act-btn" data-action="nb-copy" data-cellid="${cell.id}" title="셀 복제">⧉</button>
