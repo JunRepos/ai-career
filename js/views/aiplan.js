@@ -134,7 +134,7 @@ function _apRow(cid, r, today){
     r.date === today ? '<span class="ap-tag now">오늘</span>' : '',
   ].join('');
   return `<div class="ap-row ${cls} ${r.mark ? 'asmt' : ''}">
-    <span class="ap-no">${r.no}</span><span class="ap-date">${date}</span><span class="ap-per">${r.period}교시</span>
+    <span class="ap-no">${r.no}<i>회</i></span><span class="ap-date">${date}</span><span class="ap-per">${r.period}교시</span>
     <input class="ap-in" data-ap-key="${esc(r.key)}" data-ap-cid="${esc(cid)}" value="${esc(apText(cid, r))}" placeholder="진도 내용">
     <span class="ap-tags">${tags}</span></div>`;
 }
