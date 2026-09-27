@@ -222,3 +222,35 @@ function _a1ExportCSV(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+
+/* ═══ ✅ 1차 수행평가 채점 검토 — 점수 고치기 · 검토 완료 · 메모 (2026-09-27) ═══ */
+async function _a1GradeSave(snum, patch){
+  const cid = TC_CLS?.id;
+  if(!cid || !IS_TC) return;
+  await db.ref(`aiactivity/submissions/${cid}/assess1grade/${snum}`).update({ ...patch, at: new Date().toISOString() });
+}
+
+document.addEventListener('click', async e => {
+  const b = e.target.closest?.('[data-action="a1-g-score"]');
+  if(b){
+    const g = _a1G(b.dataset.snum);
+    const s = { ...(g.s || {}) };
+    s[b.dataset.idx] = parseInt(b.dataset.val, 10);
+    await _a1GradeSave(b.dataset.snum, { s });
+    return;
+  }
+  const d = e.target.closest?.('[data-action="a1-g-done"]');
+  if(d){
+    const g = _a1G(d.dataset.snum);
+    await _a1GradeSave(d.dataset.snum, { done: !g.done });
+    toast(g.done ? '검토 표시를 지웠습니다' : '검토 완료로 표시했습니다', 'ok');
+  }
+});
+
+document.addEventListener('change', async e => {
+  const t = e.target.closest?.('#a1-g-note');
+  if(!t) return;
+  await _a1GradeSave(t.dataset.snum, { note: t.value.trim() });
+  toast('메모를 저장했습니다', 'ok');
+});

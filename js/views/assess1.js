@@ -350,9 +350,11 @@ function a1TcStart(cid){
     if(VIEW === 'teacher' && TC_TAB === 'assess1') render();
   });
   A1_TC_WATCH = { ref, fn };
+  a1GradeStart(cid);
 }
 function a1TcStop(){
   if(A1_TC_WATCH){ A1_TC_WATCH.ref.off('value', A1_TC_WATCH.fn); A1_TC_WATCH = null; }
+  a1GradeStop();
   A1_TC_FOR = null;
 }
 
@@ -403,7 +405,8 @@ function vTcAssess1(){
       <td>${esc(st.number)}</td><td>${esc(st.name)}</td>${cells}
       <td>${s.chip ? `<span class="a1-chip ${s.chip}">${s.label}</span>` : `<span class="a1-dim">${s.label}</span>`}</td>
       <td class="n">${doc?.submitted ? _a1Time(doc.submitted.at) : ''}</td>
-      <td>${doc ? `<button class="btn-xs" data-action="a1-tc-view" data-snum="${esc(st.number)}">답안 →</button>` : ''}</td>
+      <td class="n">${_a1ListScore(st.number)}</td>
+      <td>${doc ? `<button class="btn-xs" data-action="a1-tc-view" data-snum="${esc(st.number)}">답안 · 채점 →</button>` : ''}</td>
     </tr>`;
   }).join('');
 
@@ -423,7 +426,7 @@ function vTcAssess1(){
     <div class="ml-sub-explain">문항 칸의 숫자는 <b>제출본</b>의 글자 수입니다. 괄호 안 회색은 저장만 되고 제출하지 않은 글자 수입니다. 이 화면은 학생이 저장·제출할 때마다 바로 바뀝니다.</div>
     ${sts.length === 0 ? emptyBox('👥', '먼저 학생을 등록하세요.')
       : `<div style="overflow-x:auto"><table class="tbl aia-tc-table a1-tc-table">
-          <thead><tr><th>학번</th><th>이름</th>${A1.items.map(it => `<th>${esc(it.no)}번</th>`).join('')}<th>상태</th><th>제출 시각</th><th></th></tr></thead>
+          <thead><tr><th>학번</th><th>이름</th>${A1.items.map(it => `<th>${esc(it.no)}번</th>`).join('')}<th>상태</th><th>제출 시각</th><th>채점</th><th></th></tr></thead>
           <tbody>${rows}</tbody></table></div>`}`;
 }
 
@@ -450,12 +453,109 @@ function _a1TcStudent(){
   if(!doc) return head + emptyBox('📭', '저장한 답안이 없습니다.');
   if(!doc.submitted){
     return head + `<div class="a1-notice">제출하지 않았습니다. 아래는 저장만 된 내용입니다 (마지막 저장 ${_a1Time(doc.updatedAt)}).</div>`
-      + _a1AnswerBlocks(doc.answers);
+      + _a1AnswerBlocks(doc.answers) + _a1GradePanel(snum);
   }
   const changed = s.key === 'changed';
   return head
     + `<div class="ml-sub-explain">제출본 · ${_a1Time(doc.submitted.at)}</div>`
     + (changed ? `<div class="a1-notice">⚠ 제출 뒤 고친 내용이 있습니다 (마지막 저장 ${_a1Time(doc.updatedAt)}, 미제출).
         <details style="margin-top:6px"><summary>저장만 된 최신 내용 보기</summary>${_a1AnswerBlocks(doc.answers)}</details></div>` : '')
-    + _a1AnswerBlocks(doc.submitted.answers);
+    + _a1AnswerBlocks(doc.submitted.answers)
+    + _a1GradePanel(snum);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ✅ 1차 수행평가 채점 검토 (2026-09-27) — **선생님 화면에서만** 보입니다.
+   학생 화면은 이 자료를 읽지 않으므로 점수가 학생에게 나가지 않습니다.
+   DB : aiactivity/submissions/{반}/assess1grade/{학번}   (규칙이 열린 자리가 submissions 아래뿐)
+        { ai:{1..4 처음 매긴 점수}, why: 채점 사유(한 덩어리), check: 선생님이 정하실 것, s:{1..4 고친 점수}, note, done, at }
+   채점 기준(영역 이름 · 결격 사유 · 점수 뜻)은 A1.scale — 학생에게 보인 판과 같은 글입니다.
+   ═══════════════════════════════════════════════════════════════ */
+let A1_GRADE = null;          // {학번: 위 모양} · null 이면 아직 못 읽음
+let A1_G_WATCH = null;
+
+function _a1GradeRef(cid, snum){ return db.ref(`aiactivity/submissions/${cid}/assess1grade${snum ? '/' + snum : ''}`); }
+
+function a1GradeStart(cid){
+  a1GradeStop();
+  const ref = _a1GradeRef(cid);
+  const fn = s => {
+    A1_GRADE = s.val() || {};
+    if(VIEW === 'teacher' && TC_TAB === 'assess1' && TC_CLS?.id === cid) render();
+  };
+  ref.on('value', fn, () => { A1_GRADE = {}; });
+  A1_G_WATCH = { ref, fn };
+}
+function a1GradeStop(){
+  if(A1_G_WATCH){ A1_G_WATCH.ref.off('value', A1_G_WATCH.fn); A1_G_WATCH = null; }
+  A1_GRADE = null;
+}
+
+function _a1G(snum){ return (A1_GRADE || {})[snum] || {}; }
+function _a1Pick(g, i){                     // 선생님이 고친 값이 있으면 그것, 없으면 처음 매긴 값
+  const s = (g.s || {})[i], ai = (g.ai || {})[i];
+  return s == null ? (ai == null ? null : ai) : s;
+}
+function _a1Total(g){
+  const n = (A1.scale || []).length;
+  let sum = 0, got = 0;
+  for(let i = 1; i <= n; i++){ const v = _a1Pick(g, i); if(v != null){ sum += v; got++; } }
+  return got === n && n ? sum : null;
+}
+/* 목록의 채점 칸 — 합계와 검토 표시 */
+function _a1ListScore(snum){
+  const g = _a1G(snum);
+  const t = _a1Total(g);
+  if(t == null) return '<span class="a1-dim">–</span>';
+  return `${g.done ? '✔ ' : ''}<b>${t}</b>`;
+}
+
+/* 학생 한 명의 채점 칸 — 답안 아래에 붙습니다 */
+function _a1GradePanel(snum){
+  if(typeof A1.scale === 'undefined' || !A1.scale) return '';
+  if(A1_GRADE === null) return '<div class="ml-sub-explain">⏳ 채점을 불러오는 중…</div>';
+  const g = _a1G(snum);
+  const total = _a1Total(g);
+  const blocks = (A1.scale || []).map((sc, k) => {
+    const i = k + 1;
+    const ai = (g.ai || {})[i];
+    const cur = _a1Pick(g, i);
+    const fixed = (g.s || {})[i] != null && (g.s || {})[i] !== ai;
+    const btns = (sc.levels || []).map(([v, lab]) =>
+      `<button class="btn-xs${cur === v ? ' btn-primary' : ''}" title="${esc(String(lab))}"
+        data-action="a1-g-score" data-snum="${esc(snum)}" data-idx="${i}" data-val="${v}">${v}</button>`).join('');
+    return `<div style="border:1px solid var(--border2);border-radius:9px;padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+        <b style="font-size:15px">${esc(sc.no)} ${esc(sc.name)}</b>
+        <span class="a1-dim">${esc(sc.where || '')}</span>
+        <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+          ${ai != null ? `<span class="a1-dim" style="margin-right:6px">처음 매긴 점수 ${ai}점${fixed ? ' → 고침' : ''}</span>` : ''}
+          ${btns}
+        </span>
+      </div>
+      <div class="a1-crit" style="margin-top:8px">
+        <div class="ct">📌 결격 사유 <span>— 1가지면 4점 · 2가지 이상이면 3점</span></div>
+        ${(sc.defects || []).map(d => `<div class="cl"><span class="mk">·</span><span>${_a1Md(d)}</span></div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  return `<div class="section" style="margin-top:14px">
+    <div class="sec-title">✅ 채점 — <span style="font-weight:400">학생 화면에는 나오지 않습니다</span></div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+      <div style="font-size:22px;font-weight:800">${total == null ? '–' : total}<span style="font-size:14px;font-weight:400"> / ${A1.total}점</span></div>
+      <button class="btn-sm${g.done ? ' btn-primary' : ''}" data-action="a1-g-done" data-snum="${esc(snum)}">
+        ${g.done ? '✔ 검토 완료' : '검토 완료로 표시'}</button>
+      <span class="a1-dim">${g.at ? '마지막 고침 ' + _a1Time(g.at) : ''}</span>
+    </div>
+    ${g.why ? `<div style="font-size:14px;line-height:1.7;background:var(--surface2,#f6f6f6);border-radius:8px;padding:9px 12px;margin-bottom:10px;white-space:pre-wrap"><b>채점 사유</b>
+${esc(g.why)}</div>` : ''}
+    ${g.check ? `<div class="a1-notice" style="margin-bottom:10px;white-space:pre-wrap"><b>선생님이 정하실 것</b>
+${esc(g.check)}</div>` : ''}
+    ${blocks}
+    <div class="field"><label>선생님 메모 (채점 근거 · 다시 볼 것)</label>
+      <textarea id="a1-g-note" data-snum="${esc(snum)}" rows="2"
+        style="width:100%;font:inherit;font-size:14px;padding:7px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--text)"
+        placeholder="적어 두면 다음에 열 때 그대로 보입니다">${esc(g.note || '')}</textarea></div>
+  </div>`;
 }
