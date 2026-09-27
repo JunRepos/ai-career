@@ -1,4 +1,4 @@
-﻿종,섬,부리 길이(mm),부리 깊이(mm),날개 길이(mm),체질량(g),성별
+﻿종,서식지,부리 길이(mm),부리 깊이(mm),날개 길이(mm),체질량(g),성별
 Adelie,Torgersen,39.1,18.7,181,3750,MALE
 Adelie,Torgersen,39.5,17.4,186,3800,FEMALE
 Adelie,Torgersen,40.3,18,195,3250,FEMALE
