@@ -1153,14 +1153,17 @@ function _nbUnB64(s){
 }
 const _nbIsQuizCell = c => c && c.type === 'code' && String(c.source || '').includes(NB_QUIZ_MARK);
 const NB_QUIZ_NUM = '①②③④⑤⑥⑦⑧';
+const NB_QUIZ_TAIL = '아래 셀의 `답 =` 뒤를 고쳐 쓰고 ▶ 실행하세요 — ';
 
 function _nbQuizMd(no, ask, choices){
-  const lines = [`**문제 ${no}.** ${ask}`];
-  if(choices.length){ lines.push(''); choices.forEach((c, i) => lines.push(`${NB_QUIZ_NUM[i] || '·'} ${c}`)); }
-  lines.push('', '아래 셀의 `답 =` 뒤를 고쳐 쓰고 ▶ 실행하세요 — '
-    + (choices.length ? '번호를 숫자로 씁니다.' : '따옴표 안에 낱말로 씁니다.'));
+  const askLines = String(ask || '').split('\n').map(x => x.trim()).filter(Boolean);
+  const lines = [`**문제 ${no}.** ${askLines[0] || ''}`];
+  askLines.slice(1).forEach(l => lines.push('', l));            // marked 는 줄바꿈 하나를 무시하므로 빈 줄로 나눈다
+  if(choices.length) lines.push('', choices.map((c, i) => `${NB_QUIZ_NUM[i] || '·'} ${c}`).join('<br>'));
+  lines.push('', NB_QUIZ_TAIL + (choices.length ? '번호를 숫자로 씁니다.' : '따옴표 안에 낱말로 씁니다.'));
   return lines.join('\n');
 }
+
 function _nbQuizCode(no, choices, ans, why, tip){
   return [
     `# 문제 ${no} — 답을 고쳐 쓰고 ▶ 실행하세요 (몇 번이든 다시 해도 됩니다)`,
@@ -1190,15 +1193,39 @@ function _nbQuizRead(cellId){
   if(!m) return null;
   const md = (i > 0 && NB_CELLS[i - 1].type === 'markdown'
               && /^\*\*문제 \d+\.\*\*/.test(String(NB_CELLS[i - 1].source || ''))) ? NB_CELLS[i - 1] : null;
-  let ask = '', choices = [];
+  let ask = [], choices = [];
   if(md){
-    const lines = String(md.source).split('\n');
-    const head = lines[0].match(/^\*\*문제 \d+\.\*\*\s*(.*)$/);
-    if(head) ask = head[1];
-    choices = lines.filter(l => new RegExp('^[' + NB_QUIZ_NUM + ']\\s').test(l)).map(l => l.slice(1).trim());
+    const isChoice = new RegExp('^[' + NB_QUIZ_NUM + ']\\s');
+    String(md.source).split('\n').map(x => x.trim()).filter(Boolean).forEach((l, k) => {
+      if(k === 0){ ask.push(l.replace(/^\*\*문제 \d+\.\*\*\s*/, '')); return; }
+      if(l.startsWith(NB_QUIZ_TAIL.slice(0, 8))) return;                       // 마지막 안내 줄
+      if(isChoice.test(l)) choices = l.split('<br>').map(c => c.trim().slice(1).trim()).filter(Boolean);
+      else ask.push(l);
+    });
   }
-  return {codeId: code.id, mdId: md ? md.id : null, ask, choices,
+  return {codeId: code.id, mdId: md ? md.id : null, ask: ask.join('\n'), choices,
           ans: _nbUnB64(m[1]), why: _nbUnB64(m[2]), tip: _nbUnB64(m[3])};
+}
+
+/* 보기에 손수 붙인 번호를 뗍니다 — 「1. name」 「1) name」 「(1) name」 「① name」 「- name」 */
+function _nbQuizStripNo(s){
+  return String(s).replace(/^\s*(?:[([]?\s*\d+\s*[)\].:,]|[①②③④⑤⑥⑦⑧][.)]?|[-*•])\s*/, '').trim();
+}
+/* 정답을 「(1)」 「1)」 「①」 「1번」 으로 적어도 「1」 로 읽습니다 */
+function _nbQuizAnsNo(s){
+  return String(s).split('|').map(x => {
+    const t = x.trim();
+    const k = NB_QUIZ_NUM.indexOf(t.replace(/[.)]$/, ''));
+    if(k >= 0) return String(k + 1);
+    const m = t.match(/\d+/);
+    return m ? m[0] : t;
+  }).join('|');
+}
+function _qzErr(msg){
+  const box = document.getElementById('qz-err');
+  if(box){ box.textContent = '⚠ ' + msg; box.style.display = 'block'; box.scrollIntoView({block: 'nearest'}); }
+  else if(typeof toast === 'function') toast(msg, 'err');
+  return false;
 }
 
 function nbQuizModal(editCellId){
@@ -1222,9 +1249,10 @@ function nbQuizModal(editCellId){
           주관식은 띄어쓰기 · 대소문자 · 따옴표 · 괄호를 무시하고 견줍니다.<br>
           정답 · 풀이 · 힌트는 셀에 글자 그대로 적지 않고 감춰 둡니다 (완전한 잠금은 아닙니다).
         </div>
+        <div id="qz-err" style="display:none;margin-top:8px;padding:7px 10px;border-radius:7px;font-size:13px;background:var(--danger);color:#fff"></div>
         <div style="text-align:right;margin-top:10px">
           <button class="btn-sm" onclick="closeModal()">취소</button>
-          <button class="btn-sm btn-primary" data-action="nb-quiz-save">${cur ? '고치기' : '넣기'}</button>
+          <button class="btn-sm btn-primary" onclick="nbQuizSave()">${cur ? '고치기' : '넣기'}</button>
         </div>
       </div>
     </div>`;
@@ -1233,27 +1261,28 @@ function nbQuizModal(editCellId){
 
 function nbQuizSave(){
   const val = id => (document.getElementById(id)?.value || '').trim();
-  const ask = val('qz-ask'), ans = val('qz-ans');
-  if(!ask){ toast('문제를 적어 주세요', 'err'); return; }
-  if(!ans){ toast('정답을 적어 주세요', 'err'); return; }
-  const choices = val('qz-ch').split('\n').map(s => s.trim()).filter(Boolean);
-  if(choices.length > NB_QUIZ_NUM.length){ toast(`보기는 ${NB_QUIZ_NUM.length}개까지입니다`, 'err'); return; }
-  if(choices.length && !/^\d+(\|\d+)*$/.test(ans)){ toast('객관식 정답은 보기 번호(숫자)로 적어 주세요', 'err'); return; }
-  if(choices.length && ans.split('|').some(n => +n < 1 || +n > choices.length)){
-    toast(`정답 번호는 1 ~ ${choices.length} 사이여야 합니다`, 'err'); return;
+  const ask = val('qz-ask');
+  let ans = val('qz-ans');
+  if(!ask) return _qzErr('문제를 적어 주세요.');
+  if(!ans) return _qzErr('정답을 적어 주세요.');
+  const choices = val('qz-ch').split('\n').map(_nbQuizStripNo).filter(Boolean);
+  if(choices.length > NB_QUIZ_NUM.length) return _qzErr(`보기는 ${NB_QUIZ_NUM.length}개까지 넣을 수 있습니다.`);
+  if(choices.length){
+    ans = _nbQuizAnsNo(ans);
+    if(!/^\d+(\|\d+)*$/.test(ans)) return _qzErr('보기를 적었으니 정답은 보기 번호로 적어 주세요. 예: 1');
+    if(ans.split('|').some(n => +n < 1 || +n > choices.length))
+      return _qzErr(`정답 번호는 1 부터 ${choices.length} 사이여야 합니다.`);
   }
-  const why = val('qz-why'), tip = val('qz-tip');
-  const editId = val('qz-edit');
+  const why = val('qz-why'), tip = val('qz-tip'), editId = val('qz-edit');
 
   if(editId){
     const cur = _nbQuizRead(editId);
-    if(!cur){ toast('그 퀴즈 칸을 찾지 못했습니다', 'err'); return; }
-    const i = findCellIdx(cur.codeId);
-    NB_CELLS[i].source = _nbQuizCode(1, choices, ans, why, tip);
+    if(!cur) return _qzErr('그 퀴즈 칸을 찾지 못했습니다. 창을 닫고 다시 눌러 보세요.');
+    NB_CELLS[findCellIdx(cur.codeId)].source = _nbQuizCode(1, choices, ans, why, tip);
     if(cur.mdId) NB_CELLS[findCellIdx(cur.mdId)].source = _nbQuizMd(1, ask, choices);
   } else {
     const selIdx = NB_SELECTED ? findCellIdx(NB_SELECTED) : -1;
-    let pos = selIdx >= 0 ? selIdx + 1 : NB_CELLS.length;
+    const pos = selIdx >= 0 ? selIdx + 1 : NB_CELLS.length;
     const key = 'q' + Date.now().toString(36);
     const add = [];
     if(!NB_CELLS.some(c => c.id === NB_QUIZ_SETUP_ID)){
@@ -1269,7 +1298,8 @@ function nbQuizSave(){
   destroyAllCMs();
   render();
   scheduleNBSave();
-  toast(editId ? '문제를 고쳤습니다' : '문제를 넣었습니다', 'ok');
+  if(typeof toast === 'function') toast(editId ? '문제를 고쳤습니다' : '문제를 넣었습니다', 'ok');
+  return true;
 }
 
 document.addEventListener('click', e => {
@@ -1277,6 +1307,4 @@ document.addEventListener('click', e => {
   if(open){ if(typeof closeNbMenu === 'function') closeNbMenu(); nbQuizModal(null); return; }
   const edit = e.target.closest?.('[data-action="nb-quiz-edit"]');
   if(edit){ nbQuizModal(edit.dataset.cellid); return; }
-  const save = e.target.closest?.('[data-action="nb-quiz-save"]');
-  if(save){ nbQuizSave(); }
 });
