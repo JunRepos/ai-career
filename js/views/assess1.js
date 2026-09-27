@@ -430,39 +430,57 @@ function vTcAssess1(){
           <tbody>${rows}</tbody></table></div>`}`;
 }
 
-function _a1AnswerBlocks(ans){
+function _a1AnswerBlocks(ans, after){
   return A1.items.map(it => `<div class="a1-q">
       ${_a1ItemHead(it)}
       <div class="a1-qb">${it.fields.map(f => {
         const v = String((ans || {})[f.id] || '').trim();
         const body = !v ? '(비어 있음)' : (f.paste && /^https?:\/\/\S+$/.test(v) ? `<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v)}</a>` : esc(v));
         return `${f.label ? `<div class="a1-flabel">${esc(f.label)}</div>` : ''}<div class="a1-ans ${v ? '' : 'empty'}">${body}</div>`;
-      }).join('')}</div></div>`).join('');
+      }).join('')}</div></div>` + (after ? after(it) : '')).join('');
 }
 
 function _a1TcStudent(){
   const snum = A1_TC_SNUM;
+  const list = _a1TcList();
+  const at = list.indexOf(snum);
   const st = STUDENTS.find(s => s.number === snum);
   const doc = (A1_ALL || {})[snum];
   const s = _a1State(doc);
+  const g = _a1G(snum);
+  const total = _a1Total(g);
+  const nav = `<div style="display:flex;gap:4px;margin-left:auto;align-items:center">
+    <span class="a1-dim">${at < 0 ? '' : (at + 1) + ' / ' + list.length}</span>
+    <button class="btn-sm" data-action="a1-tc-step" data-d="-1" ${at <= 0 ? 'disabled' : ''}>← 앞 학생</button>
+    <button class="btn-sm" data-action="a1-tc-step" data-d="1" ${at < 0 || at >= list.length - 1 ? 'disabled' : ''}>다음 학생 →</button>
+  </div>`;
   const head = `<div class="aia-tcs-header">
     <button class="btn-sm" data-action="a1-tc-back">← 목록</button>
     <div class="aia-tcs-info"><span class="aia-tcs-snum">${esc(snum)}</span><span class="aia-tcs-name">${esc(st?.name || doc?.name || '')}</span>
       ${s.chip ? `<span class="a1-chip ${s.chip}">${s.label}</span>` : `<span class="a1-dim">${s.label}</span>`}</div>
+    ${nav}
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 4px">
+    <div style="font-size:22px;font-weight:800">${total == null ? '–' : total}<span style="font-size:14px;font-weight:400"> / ${A1.total}점</span></div>
+    ${_a1StateBtn(snum, g)}
   </div>`;
-  if(!doc) return head + emptyBox('📭', '저장한 답안이 없습니다.');
+  if(!doc) return head + emptyBox('📭', '저장한 답안이 없습니다.') + _a1GradeTail(snum, g);
+  const why = _a1SplitWhy(g.why);
+  const after = it => _a1AreaBox(snum, g, it, why);
   if(!doc.submitted){
     return head + `<div class="a1-notice">제출하지 않았습니다. 아래는 저장만 된 내용입니다 (마지막 저장 ${_a1Time(doc.updatedAt)}).</div>`
-      + _a1AnswerBlocks(doc.answers) + _a1GradePanel(snum);
+      + _a1GradeTop(g, why) + _a1AnswerBlocks(doc.answers, after) + _a1GradeTail(snum, g);
   }
   const changed = s.key === 'changed';
   return head
     + `<div class="ml-sub-explain">제출본 · ${_a1Time(doc.submitted.at)}</div>`
     + (changed ? `<div class="a1-notice">⚠ 제출 뒤 고친 내용이 있습니다 (마지막 저장 ${_a1Time(doc.updatedAt)}, 미제출).
         <details style="margin-top:6px"><summary>저장만 된 최신 내용 보기</summary>${_a1AnswerBlocks(doc.answers)}</details></div>` : '')
-    + _a1AnswerBlocks(doc.submitted.answers)
-    + _a1GradePanel(snum);
+    + _a1GradeTop(g, why)
+    + _a1AnswerBlocks(doc.submitted.answers, after)
+    + _a1GradeTail(snum, g);
 }
+
 
 /* ═══════════════════════════════════════════════════════════════
    ✅ 1차 수행평가 채점 검토 (2026-09-27) — **선생님 화면에서만** 보입니다.
@@ -502,60 +520,104 @@ function _a1Total(g){
   for(let i = 1; i <= n; i++){ const v = _a1Pick(g, i); if(v != null){ sum += v; got++; } }
   return got === n && n ? sum : null;
 }
-/* 목록의 채점 칸 — 합계와 검토 표시 */
+/* ── 채점 칸 — 영역마다 그 문항 바로 밑에 붙습니다 (2026-09-27 선생님) ── */
+
+/* 목록에서 이어 볼 학생 차례 (학번 순) */
+function _a1TcList(){
+  return [...STUDENTS].sort((a, b) => String(a.number).localeCompare(String(b.number))).map(x => x.number);
+}
+
+/* 채점 사유를 「① 4점 —」 같은 표시로 갈라 영역마다 나눕니다 */
+function _a1SplitWhy(why){
+  const out = { top: '' };
+  const txt = String(why || '').trim();
+  if(!txt) return out;
+  const marks = ['①', '②', '③', '④'];
+  const re = /([①②③④])\s*\d점\s*[—-]/g;
+  const hits = [];
+  let m;
+  while((m = re.exec(txt))) hits.push({ i: m.index, k: marks.indexOf(m[1]) + 1 });
+  if(!hits.length){ out.top = txt; return out; }
+  out.top = txt.slice(0, hits[0].i).trim();
+  hits.forEach((h, n) => {
+    const end = n + 1 < hits.length ? hits[n + 1].i : txt.length;
+    out[h.k] = (out[h.k] ? out[h.k] + '\n' : '') + txt.slice(h.i, end).trim();
+  });
+  return out;
+}
+
+/* 검토 상태 — 없음(미검토) · wip(검토중 · 노랑) · done(확정 · 초록) */
+function _a1StateOf(g){ return g.state || (g.done ? 'done' : ''); }
+const A1_STATE_TXT = { '': '미검토', wip: '검토중', done: '검토 · 확정 완료' };
+const A1_STATE_COLOR = { '': 'var(--text3)', wip: '#d97706', done: 'var(--ok,#16a34a)' };
+function _a1StateBtn(snum, g){
+  const v = _a1StateOf(g);
+  const bg = v === 'done' ? 'var(--ok,#16a34a)' : v === 'wip' ? '#d97706' : 'transparent';
+  const fg = v ? '#fff' : 'var(--text2)';
+  return `<button class="btn-sm" data-action="a1-g-state" data-snum="${esc(snum)}"
+    style="background:${bg};color:${fg};border:1px solid ${v ? bg : 'var(--border2)'}"
+    title="누를 때마다 미검토 → 검토중 → 확정 완료 로 바뀝니다">
+    ${v === 'done' ? '✔ ' : v === 'wip' ? '◐ ' : '○ '}${A1_STATE_TXT[v]}</button>`;
+}
+
+/* 목록 칸 — 합계와 상태 색 */
 function _a1ListScore(snum){
   const g = _a1G(snum);
   const t = _a1Total(g);
-  if(t == null) return '<span class="a1-dim">–</span>';
-  return `${g.done ? '✔ ' : ''}<b>${t}</b>`;
+  const v = _a1StateOf(g);
+  const dot = `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;background:${A1_STATE_COLOR[v]};${v ? '' : 'border:1px solid var(--border2);background:transparent'}"
+    title="${A1_STATE_TXT[v]}"></span>`;
+  return t == null ? `${dot}<span class="a1-dim">–</span>` : `${dot}<b>${t}</b>`;
 }
 
-/* 학생 한 명의 채점 칸 — 답안 아래에 붙습니다 */
-function _a1GradePanel(snum){
-  if(typeof A1.scale === 'undefined' || !A1.scale) return '';
+/* 영역과 관계없는 채점 사유 (백지 · 전체에 대한 말) */
+function _a1GradeTop(g, why){
   if(A1_GRADE === null) return '<div class="ml-sub-explain">⏳ 채점을 불러오는 중…</div>';
-  const g = _a1G(snum);
-  const total = _a1Total(g);
-  const blocks = (A1.scale || []).map((sc, k) => {
-    const i = k + 1;
-    const ai = (g.ai || {})[i];
-    const cur = _a1Pick(g, i);
-    const fixed = (g.s || {})[i] != null && (g.s || {})[i] !== ai;
-    const btns = (sc.levels || []).map(([v, lab]) =>
-      `<button class="btn-xs${cur === v ? ' btn-primary' : ''}" title="${esc(String(lab))}"
-        data-action="a1-g-score" data-snum="${esc(snum)}" data-idx="${i}" data-val="${v}">${v}</button>`).join('');
-    return `<div style="border:1px solid var(--border2);border-radius:9px;padding:10px 12px;margin-bottom:8px">
-      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
-        <b style="font-size:15px">${esc(sc.no)} ${esc(sc.name)}</b>
-        <span class="a1-dim">${esc(sc.where || '')}</span>
-        <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
-          ${ai != null ? `<span class="a1-dim" style="margin-right:6px">처음 매긴 점수 ${ai}점${fixed ? ' → 고침' : ''}</span>` : ''}
-          ${btns}
-        </span>
-      </div>
-      <div class="a1-crit" style="margin-top:8px">
-        <div class="ct">📌 결격 사유 <span>— 1가지면 4점 · 2가지 이상이면 3점</span></div>
-        ${(sc.defects || []).map(d => `<div class="cl"><span class="mk">·</span><span>${_a1Md(d)}</span></div>`).join('')}
-      </div>
-    </div>`;
-  }).join('');
+  const bits = [];
+  if(why.top) bits.push(`<div style="white-space:pre-wrap"><b>채점 사유</b>\n${esc(why.top)}</div>`);
+  if(g.check) bits.push(`<div style="white-space:pre-wrap;margin-top:6px"><b>선생님이 정하실 것</b>\n${esc(g.check)}</div>`);
+  return bits.length ? `<div class="a1-notice" style="margin-bottom:10px">${bits.join('')}</div>` : '';
+}
 
-  return `<div class="section" style="margin-top:14px">
-    <div class="sec-title">✅ 채점 — <span style="font-weight:400">학생 화면에는 나오지 않습니다</span></div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
-      <div style="font-size:22px;font-weight:800">${total == null ? '–' : total}<span style="font-size:14px;font-weight:400"> / ${A1.total}점</span></div>
-      <button class="btn-sm${g.done ? ' btn-primary' : ''}" data-action="a1-g-done" data-snum="${esc(snum)}">
-        ${g.done ? '✔ 검토 완료' : '검토 완료로 표시'}</button>
-      <span class="a1-dim">${g.at ? '마지막 고침 ' + _a1Time(g.at) : ''}</span>
+/* 문항 뒤에 붙는 영역 채점 — 그 영역의 마지막 문항에만 붙입니다 */
+function _a1AreaBox(snum, g, it, why){
+  if(A1_GRADE === null) return '';
+  const area = it.crit && it.crit.area;
+  if(!area) return '';
+  const last = [...A1.items].reverse().find(x => x.crit && x.crit.area === area);
+  if(!last || last.no !== it.no) return '';           // 영역의 마지막 문항에만
+  const k = (A1.scale || []).findIndex(x => x.no === area);
+  if(k < 0) return '';
+  const sc = A1.scale[k], i = k + 1;
+  const ai = (g.ai || {})[i], cur = _a1Pick(g, i);
+  const fixed = (g.s || {})[i] != null && (g.s || {})[i] !== ai;
+  const btns = (sc.levels || []).map(([v, lab]) =>
+    `<button class="btn-xs${cur === v ? ' btn-primary' : ''}" title="${esc(String(lab))}"
+      data-action="a1-g-score" data-snum="${esc(snum)}" data-idx="${i}" data-val="${v}">${v}</button>`).join('');
+  return `<div style="border:2px solid var(--border2);border-radius:10px;padding:10px 12px;margin:-2px 0 14px;background:var(--surface2,#fafafa)">
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap">
+      <b style="font-size:15px">✅ ${esc(sc.no)} ${esc(sc.name)}</b>
+      <span class="a1-dim">${esc(sc.where || '')}</span>
+      <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
+        ${ai != null ? `<span class="a1-dim" style="margin-right:6px">처음 ${ai}점${fixed ? ' → 고침' : ''}</span>` : ''}
+        ${btns}
+      </span>
     </div>
-    ${g.why ? `<div style="font-size:14px;line-height:1.7;background:var(--surface2,#f6f6f6);border-radius:8px;padding:9px 12px;margin-bottom:10px;white-space:pre-wrap"><b>채점 사유</b>
-${esc(g.why)}</div>` : ''}
-    ${g.check ? `<div class="a1-notice" style="margin-bottom:10px;white-space:pre-wrap"><b>선생님이 정하실 것</b>
-${esc(g.check)}</div>` : ''}
-    ${blocks}
-    <div class="field"><label>선생님 메모 (채점 근거 · 다시 볼 것)</label>
-      <textarea id="a1-g-note" data-snum="${esc(snum)}" rows="2"
-        style="width:100%;font:inherit;font-size:14px;padding:7px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--text)"
-        placeholder="적어 두면 다음에 열 때 그대로 보입니다">${esc(g.note || '')}</textarea></div>
+    <div class="a1-crit" style="margin-top:8px">
+      <div class="ct">📌 결격 사유 <span>— 1가지면 4점 · 2가지 이상이면 3점</span></div>
+      ${(sc.defects || []).map(d => `<div class="cl"><span class="mk">·</span><span>${_a1Md(d)}</span></div>`).join('')}
+    </div>
+    ${why[i] ? `<div style="margin-top:8px;font-size:13.5px;line-height:1.65;white-space:pre-wrap;background:var(--surface);border-radius:7px;padding:8px 10px">
+      <b>채점 사유</b> — ${esc(why[i])}</div>` : ''}
   </div>`;
+}
+
+/* 맨 아래 — 선생님 메모 */
+function _a1GradeTail(snum, g){
+  if(A1_GRADE === null) return '';
+  return `<div class="field" style="margin-top:6px"><label>선생님 메모 (채점 근거 · 다시 볼 것)</label>
+    <textarea id="a1-g-note" data-snum="${esc(snum)}" rows="2"
+      style="width:100%;font:inherit;font-size:14px;padding:7px 9px;border-radius:7px;border:1px solid var(--border2);background:var(--surface);color:var(--text)"
+      placeholder="적어 두면 다음에 열 때 그대로 보입니다">${esc(g.note || '')}</textarea>
+    <div class="a1-dim" style="margin-top:4px">${g.at ? '마지막 고침 ' + _a1Time(g.at) : ''}</div></div>`;
 }

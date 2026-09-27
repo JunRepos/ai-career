@@ -240,11 +240,23 @@ document.addEventListener('click', async e => {
     await _a1GradeSave(b.dataset.snum, { s });
     return;
   }
-  const d = e.target.closest?.('[data-action="a1-g-done"]');
-  if(d){
-    const g = _a1G(d.dataset.snum);
-    await _a1GradeSave(d.dataset.snum, { done: !g.done });
-    toast(g.done ? '검토 표시를 지웠습니다' : '검토 완료로 표시했습니다', 'ok');
+  const st = e.target.closest?.('[data-action="a1-g-state"]');
+  if(st){
+    const g = _a1G(st.dataset.snum);
+    const now = _a1StateOf(g);
+    const next = now === '' ? 'wip' : now === 'wip' ? 'done' : '';
+    await _a1GradeSave(st.dataset.snum, { state: next, done: next === 'done' });
+    toast(next ? A1_STATE_TXT[next] + ' 로 표시했습니다' : '미검토로 되돌렸습니다', 'ok');
+    return;
+  }
+  const mv = e.target.closest?.('[data-action="a1-tc-step"]');
+  if(mv){
+    const list = _a1TcList();
+    const at = list.indexOf(A1_TC_SNUM) + parseInt(mv.dataset.d, 10);
+    if(at < 0 || at >= list.length) return;
+    A1_TC_SNUM = list[at];
+    render();
+    window.scrollTo({ top: 0 });
   }
 });
 
