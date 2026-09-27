@@ -551,11 +551,11 @@ function _a1WhyOf(g, why, i){
   const mine = (g.w || {})[i];
   return { text: mine == null ? (why[i] || '') : mine, fixed: mine != null && mine !== (why[i] || '') };
 }
-function _a1WhyBox(snum, idx, cur, fixed, label){
+function _a1WhyBox(snum, idx, cur, fixed, label, orig){
   return `<div style="margin-top:8px">
     <div style="display:flex;align-items:baseline;gap:6px;font-size:12.5px;color:var(--text3)">
       <b style="color:var(--text2)">${esc(label)}</b>
-      <span>— 눌러서 고칠 수 있습니다</span>
+      <span>${fixed ? '<b style="color:var(--ok,#16a34a)">— 고침</b>' : '— 눌러서 고칠 수 있습니다'}</span>
       ${fixed ? `<button class="btn-xs" style="margin-left:auto" data-action="a1-w-reset" data-snum="${esc(snum)}" data-idx="${esc(String(idx))}">↺ 처음 글로</button>` : ''}
     </div>
     <textarea data-a1-why="1" data-snum="${esc(snum)}" data-idx="${esc(String(idx))}" rows="2"
@@ -563,6 +563,8 @@ function _a1WhyBox(snum, idx, cur, fixed, label){
              border:1px solid ${fixed ? 'var(--ok,#16a34a)' : 'var(--border2)'};background:var(--surface);color:var(--text);
              field-sizing:content;min-height:2.6em;resize:vertical"
       placeholder="감점한 까닭을 적습니다">${esc(cur)}</textarea>
+    ${fixed ? `<div style="margin-top:4px;font-size:12.5px;color:var(--text3);line-height:1.6;white-space:pre-wrap">
+      <b>처음 적은 사유</b> — ${orig ? esc(orig) : '(없었음)'}</div>` : ''}
   </div>`;
 }
 
@@ -595,7 +597,7 @@ function _a1GradeTop(snum, g, why){
   if(A1_GRADE === null) return '<div class="ml-sub-explain">⏳ 채점을 불러오는 중…</div>';
   const w = _a1WhyOf(g, why, 'top');
   const bits = [];
-  if(w.text || why.top) bits.push(_a1WhyBox(snum, 'top', w.text, w.fixed, '채점 사유 (영역을 가리지 않은 것)'));
+  if(w.text || why.top) bits.push(_a1WhyBox(snum, 'top', w.text, w.fixed, '채점 사유 (영역을 가리지 않은 것)', why.top || ''));
   if(g.check) bits.push(`<div style="white-space:pre-wrap;margin-top:8px"><b>선생님이 정하실 것</b>\n${esc(g.check)}</div>`);
   return bits.length ? `<div class="a1-notice" style="margin-bottom:10px">${bits.join('')}</div>` : '';
 }
@@ -620,7 +622,10 @@ function _a1AreaBox(snum, g, it, why){
       <b style="font-size:15px">✅ ${esc(sc.no)} ${esc(sc.name)}</b>
       <span class="a1-dim">${esc(sc.where || '')}</span>
       <span style="margin-left:auto;display:flex;gap:4px;align-items:center">
-        ${ai != null ? `<span class="a1-dim" style="margin-right:6px">처음 ${ai}점${fixed ? ' → 고침' : ''}</span>` : ''}
+        ${ai == null ? '' : fixed
+          ? `<span style="margin-right:6px;font-size:12.5px"><span class="a1-dim" style="text-decoration:line-through">처음 ${ai}점</span>
+             <b style="color:var(--ok,#16a34a)">→ ${(g.s || {})[i]}점으로 고침</b></span>`
+          : `<span class="a1-dim" style="margin-right:6px;font-size:12.5px">처음 매긴 점수 ${ai}점</span>`}
         ${btns}
       </span>
     </div>
@@ -628,7 +633,7 @@ function _a1AreaBox(snum, g, it, why){
       <div class="ct">📌 결격 사유 <span>— 1가지면 4점 · 2가지 이상이면 3점</span></div>
       ${(sc.defects || []).map(d => `<div class="cl"><span class="mk">·</span><span>${_a1Md(d)}</span></div>`).join('')}
     </div>
-    ${(() => { const w = _a1WhyOf(g, why, i); return _a1WhyBox(snum, i, w.text, w.fixed, '채점 사유'); })()}
+    ${(() => { const w = _a1WhyOf(g, why, i); return _a1WhyBox(snum, i, w.text, w.fixed, '채점 사유', why[i] || ''); })()}
   </div>`;
 }
 
