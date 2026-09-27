@@ -5395,3 +5395,105 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
   .ap-tags{grid-column:1 / -1;justify-content:flex-start}
   .ap-off{grid-column:4 / 5}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   대학 가이드북 (views/guide.js) — 평가요소·체크리스트 읽기 화면
+   ═══════════════════════════════════════════════════════════════ */
+.gd-head{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:16px 18px;margin-bottom:14px}
+.gd-univ-name{font-size:19px;font-weight:800;color:var(--text)}
+.gd-title{font-size:14px;color:var(--text2);margin-top:2px}
+.gd-src{font-size:12px;color:var(--text3);margin-top:6px}
+.gd-src a{color:var(--accent);text-decoration:none;font-weight:600}
+.gd-note{margin-top:10px;background:var(--warn-bg);border:1px solid var(--warn-bd);color:var(--warn-txt);
+  border-radius:var(--r-sm);padding:9px 11px;font-size:12.5px;line-height:1.55}
+.gd-univs,.gd-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.gd-univ,.gd-pill,.gd-tab{border:1px solid var(--border2);background:var(--surface);color:var(--text2);
+  border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;cursor:pointer}
+.gd-univ.on,.gd-pill.on,.gd-tab.on{background:var(--accent);border-color:var(--accent);color:var(--accent-txt)}
+.gd-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.gd-sec-t{font-size:15px;font-weight:800;color:var(--text);margin:18px 0 10px}
+.gd-sec-t:first-child{margin-top:0}
+.gd-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}
+.gd-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:13px 14px}
+.gd-card-top{display:flex;align-items:baseline;justify-content:space-between}
+.gd-card-name{font-size:15px;font-weight:800;color:var(--text)}
+.gd-card-pct{font-size:17px;font-weight:800;color:var(--accent)}
+.gd-bar{height:6px;background:var(--surface2);border-radius:99px;margin:8px 0 6px;overflow:hidden}
+.gd-bar i{display:block;height:100%;background:var(--accent);border-radius:99px}
+.gd-card-group{font-size:11.5px;color:var(--text3);font-weight:700}
+.gd-list{margin:8px 0 0;padding-left:16px;font-size:13px;color:var(--text2);line-height:1.7}
+.gd-areas{margin-top:9px;padding-top:8px;border-top:1px dashed var(--border2);
+  font-size:11.5px;color:var(--text3)}
+.gd-scale{margin-top:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:9px 12px;font-size:12.5px;color:var(--text2)}
+.gd-scale b{color:var(--text);margin:0 1px}
+.gd-scale span{display:block;color:var(--text3);margin-top:3px;font-size:12px}
+.gd-iv-intro,.gd-guide-txt{font-size:13px;color:var(--text2);line-height:1.65;margin-bottom:12px}
+.gd-guide-txt b{color:var(--text)}
+.gd-iv-desc{font-size:12.5px;color:var(--text2);line-height:1.6;margin-top:6px}
+/* 자가 점검 */
+.gd-sums{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px}
+.gd-sum{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:9px 11px;display:flex;justify-content:space-between;align-items:baseline}
+.gd-sum b{font-size:13px;color:var(--text)}
+.gd-sum span{font-size:13px;font-weight:800;color:var(--text3)}
+.gd-sum.full{border-color:var(--ok-bd);background:var(--ok-bg)}
+.gd-sum.full span{color:var(--ok-txt)}
+.gd-sum.none{border-color:var(--danger-bd);background:var(--danger-bg)}
+.gd-sum.none span{color:var(--danger-txt)}
+.gd-chk-group{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);
+  padding:12px 14px;margin-bottom:10px}
+.gd-chk-head{font-size:14px;font-weight:800;color:var(--text);margin-bottom:6px}
+.gd-chk-head span{font-size:11.5px;font-weight:600;color:var(--text3);margin-left:6px}
+.gd-chk{display:flex;gap:9px;align-items:flex-start;padding:8px 0;font-size:13.5px;color:var(--text2);
+  line-height:1.55;cursor:pointer;border-top:1px solid var(--border)}
+.gd-chk input{position:absolute;opacity:0;width:0;height:0}
+.gd-chk-box{flex:0 0 18px;height:18px;margin-top:1px;border:2px solid var(--border2);border-radius:5px;
+  position:relative;background:var(--surface)}
+.gd-chk.on{color:var(--text)}
+.gd-chk.on .gd-chk-box{background:var(--accent);border-color:var(--accent)}
+.gd-chk.on .gd-chk-box::after{content:'';position:absolute;left:5px;top:1px;width:5px;height:10px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+/* 아코디언 */
+.gd-acc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);margin-bottom:8px;
+  overflow:hidden}
+.gd-acc-head{width:100%;display:flex;gap:10px;justify-content:space-between;align-items:flex-start;
+  background:none;border:none;padding:12px 14px;text-align:left;font-size:13.5px;font-weight:700;
+  color:var(--text);cursor:pointer;line-height:1.5}
+.gd-acc-n{flex:0 0 auto;font-size:12px;font-weight:800;color:var(--text3)}
+.gd-acc-body{display:none;padding:0 14px 13px;font-size:13px;color:var(--text2);line-height:1.75}
+.gd-acc.on .gd-acc-body{display:block}
+.gd-acc.on .gd-acc-head{color:var(--accent)}
+.gd-qna-title{font-weight:800;color:var(--text);margin-bottom:4px;font-size:13px}
+/* 학년별 */
+.gd-plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.gd-plan-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:14px}
+.gd-plan-t{font-size:14.5px;font-weight:800;color:var(--accent);margin-bottom:6px}
+.gd-plan-card p{font-size:13px;color:var(--text2);line-height:1.7}
+/* 과목 TOP10 */
+.gd-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r-md);background:var(--surface)}
+.gd-table{width:100%;border-collapse:collapse;font-size:13px}
+.gd-table th{text-align:left;padding:10px 12px;font-size:12px;color:var(--text3);font-weight:700;
+  border-bottom:1px solid var(--border);white-space:nowrap}
+.gd-table td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--text2)}
+.gd-table tr:last-child td{border-bottom:none}
+.gd-rank{font-weight:800;color:var(--text3);width:38px}
+.gd-pct{font-weight:700;color:var(--text);white-space:nowrap}
+.gd-sub-g{display:block;font-size:11px;color:var(--text3);margin-top:1px}
+@media (max-width:760px){
+  .gd-cards,.gd-plan,.gd-sums{grid-template-columns:1fr}
+  .gd-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .gd-tab{white-space:nowrap}
+  .gd-chk{font-size:15px}
+}
+/* 평가 사례 — 학생부 발췌와 대학의 평가 의견 */
+.gd-case-head{font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px}
+.gd-case-head span{font-size:12.5px;font-weight:600;color:var(--text3);margin-left:6px}
+.gd-recs{display:grid;gap:8px}
+.gd-rec{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:11px 13px}
+.gd-rec-w{font-size:12px;font-weight:800;color:var(--accent);margin-bottom:4px}
+.gd-rec p,.gd-op p{font-size:13px;color:var(--text2);line-height:1.7}
+.gd-op{background:var(--info-bg);border:1px solid var(--info-bd);border-radius:var(--r-md);
+  padding:12px 14px;margin-bottom:8px}
+.gd-op-t{font-size:13px;font-weight:800;color:var(--info-txt);margin-bottom:4px}

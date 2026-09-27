@@ -52,6 +52,10 @@ function _stNavGroups(){
     if(!isInfo && aiaOpenFor(SEL_CLS).length){
       groups.push({ items:[{key:'aia', ico:'📋', label:'학습지'}] });
     }
+    // 대학 가이드북 — 진로반. 대학이 낸 학생부종합전형 가이드북에서 평가요소·체크리스트를 봅니다
+    if((SEL_CLS?.type) === 'career' && typeof GUIDES !== 'undefined' && GUIDES.length){
+      groups.push({ items:[{key:'guide', ico:'📘', label:'대학 가이드북'}] });
+    }
     // 수업자료 — 선생님이 '이번 시간'으로 연 자료가 있을 때만. 같이 보는 중이면 초록 점
     // (단원에서 열어보는 자료는 여기 말고 단원 안에서 들어갑니다)
     if((SLIDE_DECK?.images || []).length){
@@ -123,7 +127,8 @@ function _stNormalizeTab(){
 
 // 본문 탭 내용
 function _stTabBody(){
-  if     (ST_TAB === 'slides')    return vStSlides();
+  if     (ST_TAB === 'guide')     return vStGuide();
+  else if(ST_TAB === 'slides')    return vStSlides();
   else if(ST_TAB === 'portfolio') return vStPortfolio();
   else if(ST_TAB === 'dashboard') return vStDashboard();
   else if(ST_TAB === 'notice')  return vStNotice();
