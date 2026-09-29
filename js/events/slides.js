@@ -142,6 +142,21 @@ document.addEventListener('click', async e => {
   }
 
   // 선생님: 자료 하나 삭제
+  // 선생님: 수업자료 이름 바꾸기 — 그림과 학생 메모는 자료 id 로 이어져 있어 이름만 바뀝니다
+  if(act === 'sl-rename' && TC_CLS){
+    const id = el.dataset.id;
+    const now = deckById(id)?.title || '';
+    const typed = prompt('수업자료 이름을 적으세요.', now);
+    if(typed === null) return;
+    const next = typed.replace(/\s+/g, ' ').trim().slice(0, 80);
+    if(!next){ toast('이름을 비워 둘 수는 없습니다', 'err'); return; }
+    if(next === now){ render(); return; }
+    el.disabled = true;
+    await renameDeck(TC_CLS.id, id, next);
+    toast(`이름을 「${next}」 로 바꿨습니다`, 'ok');
+    render(); return;
+  }
+
   if(act === 'sl-delete' && TC_CLS){
     const id = el.dataset.id;
     const d = deckById(id);

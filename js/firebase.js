@@ -1074,6 +1074,15 @@ async function saveDeck(cid, deck){
 }
 
 // 수업자료 하나 삭제 — 그림 파일·메모까지 같이 정리
+/* 수업자료 이름 바꾸기 — 그림 · 학생 메모 · 자료 id 는 그대로이고 title 만 바뀝니다 */
+async function renameDeck(cid, deckId, title){
+  const path = deckId === LEGACY_DECK_ID ? `slides/${cid}/deck` : `slides/${cid}/decks/${deckId}`;
+  await db.ref(`${path}/title`).set(title);
+  const d = deckById(deckId);
+  if(d) d.title = title;
+  if(SLIDE_DECK?.id === deckId) SLIDE_DECK.title = title;
+}
+
 async function deleteDeck(cid, deckId){
   const deck = deckById(deckId);
   if(deck?.images) for(const im of deck.images){

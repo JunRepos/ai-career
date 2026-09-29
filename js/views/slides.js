@@ -190,6 +190,7 @@ function _vTcDeckList(){
         <div class="deck-meta">${n}장${games ? ` · 실습 ${games}개` : ''}${d.updatedAt ? ` · ${fmtDt(d.updatedAt)}` : ''}</div>
         <div class="deck-btns">
           <button class="btn-xs" data-action="sl-open" data-id="${esc(d.id)}">열어보기</button>
+          <button class="btn-xs" data-action="sl-rename" data-id="${esc(d.id)}">이름 바꾸기</button>
           ${isOpen
             ? `<button class="btn-xs btn-danger" data-action="sl-unpick">이번 시간에서 내리기</button>`
             : `<button class="btn-xs btn-pick" data-action="sl-pick" data-id="${esc(d.id)}">이번 시간에 열기</button>`}
