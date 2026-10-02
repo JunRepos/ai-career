@@ -111,7 +111,7 @@ function drawerNavHtml(){
       ? `<div class="drawer-label">${g.dot ? '<span class="drawer-dot"></span>' : ''}${esc(g.label)}</div>`
       : '<div class="drawer-gap"></div>';
     const items = g.items.map(it =>
-      `<button class="drawer-item${activeKey === it.key ? ' active' : ''}" onclick="${setter}('${it.key}');closeDrawer()"><span class="ico">${it.ico}</span><span class="drawer-text">${esc(it.label)}</span></button>`
+      `<button class="drawer-item${activeKey === it.key ? ' active' : ''}" onclick="${setter}('${it.key}');closeDrawer()"><span class="ico">${navIco(it.key, it.ico)}</span><span class="drawer-text">${esc(it.label)}</span></button>`
     ).join('');
     return head + items;
   }).join('');
@@ -151,7 +151,7 @@ function mobileTabsHtml(){
 
   const btns = items.map(it => `
     <button class="mtab${cur === it.key ? ' active' : ''}" onclick="${setter}('${it.key}')">
-      <span class="mtab-ico">${it.ico}</span><span class="mtab-label">${esc(it.label)}</span>
+      <span class="mtab-ico">${navIco(it.key, it.ico)}</span><span class="mtab-label">${esc(it.label)}</span>
     </button>`).join('');
 
   return `<nav class="mobile-tabs">${btns}

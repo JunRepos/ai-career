@@ -5316,3 +5316,180 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .gd-op{background:var(--info-bg);border:1px solid var(--info-bd);border-radius:var(--r-md);
   padding:12px 14px;margin-bottom:8px}
 .gd-op-t{font-size:13px;font-weight:800;color:var(--info-txt);margin-bottom:4px}
+
+/* ═══════════════════════════════════════════════════════════════
+   또렷한 대비 레이어 (2026-10-02) — 시안 B
+
+   위쪽 레이어(원본 · Padlet 톤)는 그대로 두고 여기서만 덮어씁니다.
+   되돌리려면 이 블록만 지우면 됩니다.
+
+   바뀌는 것
+     · 흰 바탕 + 검정 글씨, 경계는 가는 선 하나로
+     · 사이드바를 밝게 (지금은 검은 사이드바라 화면이 둘로 쪼개져 보임)
+     · 모서리를 거의 각지게 · 그림자 없음
+     · 강조색은 검정 하나, 신호색(주황)은 '이번 시간' 같은 데만
+     · 메뉴 아이콘은 이모지 대신 선 그림 (js/nav-icons.js)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 팔레트 ── */
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface2:#FAFAFA;
+  --border:#E4E4E4; --border2:#D4D4D4;
+  --text:#0A0A0A; --text2:#525252; --text3:#737373;
+  --accent:#0A0A0A; --accent-h:#333333; --accent-lt:#F5F5F5; --accent-txt:#FFFFFF;
+  --signal:#C23A00; --signal-bg:#FFF2EC; --signal-bd:#FFD3BF; --signal-txt:#FFFFFF;
+  --rule:#0A0A0A;                       /* 굵게 긋는 선 (상단바 · 표 머리) */
+  --pl-yellow:#C23A00; --pl-solid:#0A0A0A;
+  --side-bg:#FFFFFF; --side-text:#525252; --side-text-strong:#0A0A0A;
+  --side-label:#A3A3A3; --side-active-bg:transparent; --side-active-text:#0A0A0A;
+  --side-sub:#737373;
+  --r-sm:2px; --r-md:2px; --r-lg:2px;
+  --sh:none;
+}
+[data-theme="dark"]{
+  --bg:#0A0A0A; --surface:#0A0A0A; --surface2:#151515;
+  --border:#2B2B2B; --border2:#3B3B3B;
+  --text:#FAFAFA; --text2:#A8A8A8; --text3:#8A8A8A;
+  --accent:#FAFAFA; --accent-h:#D4D4D4; --accent-lt:#1C1C1C; --accent-txt:#0A0A0A;
+  --signal:#FF6B2C; --signal-bg:#2A1409; --signal-bd:#5C2E12; --signal-txt:#1A0A03;
+  --rule:#FAFAFA;
+  --pl-yellow:#FF6B2C; --pl-solid:#FAFAFA;
+  --side-bg:#0A0A0A; --side-text:#A8A8A8; --side-text-strong:#FAFAFA;
+  --side-label:#6E6E6E; --side-active-bg:transparent; --side-active-text:#FAFAFA;
+  --side-sub:#8A8A8A;
+  --sh:none;
+}
+[data-theme="dark"] body{background:var(--bg)}
+
+/* ── 사이드바 ── */
+.drawer{background:var(--side-bg);border-right:1px solid var(--rule);box-shadow:none}
+.drawer-brand{border-bottom:1px solid var(--border)}
+.brand-mark{border-radius:3px}
+.drawer-switch select{border-radius:2px;background:var(--surface);color:var(--text);
+  border:1px solid var(--border2)}
+.drawer-label{color:var(--side-label);letter-spacing:.12em;font-weight:700}
+
+.drawer-item{color:var(--side-text);border-radius:0;font-weight:500}
+.drawer-item:hover{background:var(--surface2);color:var(--side-text-strong)}
+.drawer-item.active,
+[data-theme="dark"] .drawer-item.active{background:transparent;color:var(--side-active-text);font-weight:800}
+.drawer-item.active::before,
+[data-theme="dark"] .drawer-item.active::before{content:'';position:absolute;left:0;top:6px;bottom:6px;
+  width:3px;background:var(--rule);border-radius:0}
+.drawer-foot{border-top:1px solid var(--border)}
+.drawer-foot-btn{border-radius:2px;border:1px solid var(--border2);background:transparent;
+  color:var(--side-text);font-weight:600}
+.drawer-foot-btn:hover{background:var(--surface2);color:var(--side-text-strong)}
+
+/* 메뉴 아이콘 — 이모지 대신 선 그림 (js/nav-icons.js) */
+.drawer-item .ico{display:flex;align-items:center;justify-content:center;opacity:1}
+.drawer-item .ico-svg{width:17px;height:17px;display:block}
+.drawer-item.active .ico-svg{stroke-width:2.1}
+.mtab-ico{display:flex;align-items:center;justify-content:center}
+.mtab-ico .ico-svg{width:20px;height:20px;display:block}
+.mtab.active .ico-svg{stroke-width:2.1}
+
+/* ── 상단바 ── */
+.topbar{background:var(--bg);border-bottom:1px solid var(--rule)}
+.topbar-title{font-weight:800;letter-spacing:-.04em}
+.topbar-menu{border-radius:2px;background:transparent;border:1px solid var(--border2);color:var(--text)}
+.topbar-menu:hover{background:var(--surface2)}
+
+/* ── 단추 ── */
+.btn,.btn-sm,.btn-xs{border-radius:2px;background:transparent;border:1px solid var(--border2);
+  color:var(--text2);font-weight:600}
+.btn:hover,.btn-sm:hover,.btn-xs:hover{background:var(--surface2);border-color:var(--rule);color:var(--text)}
+.btn-p{background:var(--accent);color:var(--accent-txt);border:1px solid var(--accent);
+  border-radius:2px;font-weight:700;box-shadow:none}
+.btn-p:hover{background:var(--accent-h);border-color:var(--accent-h);box-shadow:none}
+.btn.danger,.btn-sm.danger,.drawer-foot-btn.danger{color:var(--signal);border-color:var(--signal-bd)}
+.btn.danger:hover,.btn-sm.danger:hover,.drawer-foot-btn.danger:hover{background:var(--signal-bg);
+  border-color:var(--signal);color:var(--signal)}
+
+/* ── 입력칸 ── */
+input,select,textarea{border-radius:2px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--rule);outline-offset:-1px;border-color:var(--rule)}
+
+/* ── 카드 · 상자 — 떠 있지 않고 선으로만 ── */
+.card,.stat-card,.class-card,.dash-notice,.dash-qna,.dash-unit,.dash-score,.dash-cta,
+.sl-livebar,.cls-chip{border-radius:2px;box-shadow:none}
+.class-card:hover,.dash-unit:hover{box-shadow:none;transform:none;border-color:var(--rule)}
+.dash-notice:hover,.dash-qna:hover,.dash-score:hover,.dash-cta:hover,.sl-livebar:hover{
+  box-shadow:none;border-color:var(--rule);background:var(--surface2)}
+.toast{border-radius:2px;box-shadow:none;border:1px solid var(--rule);font-weight:600}
+
+/* ── 신호색은 '지금 일어나는 일' 에만 ── */
+.sl-live{color:var(--signal)}
+.sl-live i{background:var(--signal)}
+.sl-livebar-go{color:var(--signal)}
+.drawer-dot{background:var(--signal)}
+.enter-dot{border-radius:0}
+
+/* ── 진입 화면 — 큰 제목만 명조로 ── */
+.enter-title{font-family:'Noto Serif KR',serif;font-weight:700;letter-spacing:-.045em;
+  font-size:40px;line-height:1.2}
+.enter-sub{color:var(--text2)}
+.enter-back{font-weight:700}
+.enter-back:hover{color:var(--signal)}
+
+/* 좁은 화면에서는 조금 줄입니다 */
+@media (max-width:640px){
+  .enter-title{font-size:30px}
+}
+
+/* ── 모바일 하단 탭바 ── */
+.mobile-tabs{background:var(--bg);border-top:1px solid var(--rule)}
+.mtab{color:var(--text3);font-weight:600}
+.mtab.active{color:var(--text);font-weight:800}
+/* 모서리 — 둥글던 상자를 각지게 (알약 뱃지와 동그라미 점은 그대로) */
+.a1-area,.a1-cc,.a1-choice,
+button,.a1-cm-x,.a1-cond,.a1-gate-box,.a1-in,.a1-seg,.a1-stagebar,.a1-topic,.aia-card,.aia-fill-chip,.aia-row,.aia-submit-chip,.aic-chal-card,.ap-cls,.ap-err,.ap-pastbtn,.ap-wh,
+em,.asmt-a-input,.asmt-b-input,.asmt-cat-card,.asmt-desc-info,.asmt-done-card,.asmt-done-summary,.asmt-eq-blanks,.asmt-eq-expected,.asmt-etc,.asmt-example-row,.asmt-explain-info,.asmt-impl-code,.asmt-impl-stdin,.asmt-mk,.asmt-mod-changed,.asmt-mod-stdin-area,.asmt-mod-task,.asmt-msg-bubble,.asmt-part-pg,.asmt-psum,.asmt-q-card,.asmt-sc-reason,.asmt-stage-chip,.asmt-stage-warn,.asmt-stdin,.asmt-step,.asmt-tc,.asmt-tc-help,.asmt-tcs-ans-rubric,.asmt-tcs-cmp,
+pre,.asmt-tcs-code-explain,.asmt-tcs-code-pre,.asmt-tcs-comment-area,.asmt-tcs-reason,.asmt-tcs-score-opt,.asmt-test-summary,.asmt-trace-input,.asmt-turn-chip,.at-btn,.at-chip-late,.at-chip-none,.auth-card,.auth-icon,.brand-mark,.btn-icon,.btn-xs,.cls-thumb,.cr-explain-input,.cr-type-chip,.dash-game,.dash-game-ico,.dash-unit-roman,.deck-card,.drawer-foot-btn,.drawer-item,.drawer-switch,
+select,.dt-axis-sel,.dt-ck,.dt-howto,.dt-leaf,.dt-legend-feat,.dt-mini-svg,.dt-mix-badge,.dt-q,.dt-svg,.dt-tree-text,.lr-compare-card,.lr-compare-note,.lr-confirm-item,.lr-eq-label,.lr-learn-stat,.lr-mse-conclude,.lr-num-input,.lr-seg,.lr-svg,.ml-cls-chip,.ml-cls-chip-cnt,.ml-cls-input,.ml-cls-row,.ml-draw-verdict,.ml-gb-card,.ml-group,.ml-group-add,.ml-intro,.ml-label-card,.ml-perfect,.ml-pick-card,.ml-pool,.ml-pool-card,.ml-pt,.ml-purity,.ml-reveal-card,.ml-rl-open-big,.ml-stat-chip,.ml-step,.ml-subtab,.ml-tc-ds,.ml-tc-flow-card,.ml-test-card,.ml-test-img,.ml-tm-output,.ml-verdict,.ml-wrong-item,.ml2-kbtn,.ml2-knn-result,.mla-derive-hint,.mla-radio,.mla-score-in,
+input,.mla-sit-card,.mla-tc-toggle,.mlp-acc-bar,.mlp-anim-empty,.mlp-auto-note,.mlp-ax-sel,.mlp-choice,.mlp-dossier-tag,.mlp-mm-chip,.mlp-msg-bd,.mlp-pal-item,.mlp-palette,.mlp-pick-card,.mlpw,.oj-err-line,.pf-st,.pf-stat,.pv-next-game,.qb-desc,.qb-text,.quiz-bug-code,.quiz-mcq-choice,.quiz-type-card,.rep-q-input,.row-icon,.sc-reason-area,.sc-stu-card,.sc-stu-card-max,.sc-stu-comment,.sc-stu-summary,.sc-tc-head,.sc-tc-help,.sc-tc-placeholder,.sc-tc-tab,.sc-tc-table-wrap,.sl-img,.sl-thumb,.subj-card,.ws-bk-card,.ws-table,
+tr,[data-theme="dark"] .btn-p,[data-theme="dark"] .dash-cta,[data-theme="dark"],
+.dash-notice,[data-theme="dark"] .dash-qna,[data-theme="dark"] .row-icon,[data-theme="dark"],
+button{border-radius:2px}
+
+/* 진입 화면 — 떠오르는 효과 대신 선이 진해지는 것으로 */
+.subj-card{border-radius:2px}
+.subj-card::after{border-radius:2px}
+.subj-card:hover{transform:none;border-color:var(--rule);background:var(--surface2)}
+.subj-card:hover .subj-go{transform:none;color:var(--text)}
+.subj-meta{border-radius:0;font-weight:800;letter-spacing:.02em}
+.cls-thumb{border-radius:2px}
+.cls-card:hover .cls-thumb{transform:none;filter:brightness(1.04)}
+
+/* 동그라미·알약으로 남겨야 하는 것 되돌리기 */
+.subj-dots .sd,.dot-icon .sd,.sl-live i,.drawer-dot,.enter-dot{border-radius:50%}
+.enter-dot{border-radius:0}
+
+/* ── 강조색이 검정(다크에서는 흰색)이 되면서 생기는 「같은 색 글씨」 막기 ──
+   배경에 var(--accent) 를 쓰는 자리는 글씨를 반대색으로 고정합니다. */
+.btn-p:hover,.side-item.active,.unit-return-bar:hover,.at-rbtn.sel,.oj-btn-submit,
+.cur-day-chip.sel,.asmt-phase-btn.on.prep,.asmt-mod-changed,.asmt-tcs-score-opt.on,
+.asmt-part-tab.on,.auth-submit:hover,.pw-start:hover,.gd-chk.on .gd-chk-box{
+  color:var(--accent-txt)}
+
+/* ── 「이번 시간」 — 신호색을 꽉 채운 네모로 ── */
+.sl-live{background:var(--signal);color:var(--signal-txt);border-radius:0;
+  font-weight:800;letter-spacing:.02em;padding:5px 10px}
+.sl-live i{background:var(--signal-txt)}
+
+/* ── 예전 보라(인디고)와 그라데이션이 직접 박혀 있던 자리 ──
+   차트·도식 안의 색(회귀 직선 · 결정트리 기준선 등)은 값을 구분해야 해서 그대로 둡니다. */
+.drawer-item.active{box-shadow:none}
+.dash-notice:hover{box-shadow:none}
+
+/* 보라 그라데이션 띠 → 꽉 찬 한 가지 색 */
+.ml-group.on,.ml-subtab.on,.sc-stu-summary,.aia-sec-title,.sc-tc-tab.on,.a1-cm-f button.on{
+  background:var(--accent);color:var(--accent-txt);border-color:var(--accent);box-shadow:none}
+
+/* 왼쪽 세로선 · 테두리 · 입력칸 */
+.aia-do-intro,.ml-intro{border-left-color:var(--rule)}
+.sc-expand-btn:hover,.aia-card.click:hover,.ml-cand-card:hover,
+.ml-cand-card.picked,.ml-tm-input.dragover,.dt-acc.model{border-color:var(--rule)}
+.ml-chip-add:hover{border-color:var(--rule);color:var(--text)}
+.ml-chip-input:focus,.ml-rl-desc-edit:focus,.lr-num-input:focus,.a1-in:focus,.a1-area:focus{
+  border-color:var(--rule);box-shadow:none}
