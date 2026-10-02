@@ -88,7 +88,6 @@ function _tcNavGroups(isInfo){
     groups.push({ label: '콘텐츠', items: [
       {key:'unit',     ico:'📚', label:'단원 구성'},
       {key:'notebook', ico:'📓', label:'노트북'},
-      {key:'mission',  ico:'🎮', label:'미션'},
       {key:'oj',       ico:'💻', label:'OJ'},
       {key:'coderead', ico:'🧩', label:'퀴즈'},
       {key:'aicode',   ico:'💬', label:'AI 코딩'},
@@ -111,9 +110,9 @@ function _tcNavGroups(isInfo){
 
 // 본문을 넓게(IDE/표형) 쓰는 선생님 탭
 function _tcWideTab(){
-  return ['notebook','mission','oj','coderead','curriculum','asmt','scores','mlassess','aicode','assess1','aiplan'].includes(TC_TAB);
+  return ['notebook','oj','coderead','curriculum','asmt','scores','mlassess','aicode','assess1','aiplan'].includes(TC_TAB);
 }
-function _tcAutoCollapse(){ return TC_TAB === 'notebook' || TC_TAB === 'mission'; }
+function _tcAutoCollapse(){ return TC_TAB === 'notebook'; }
 function toggleTcNav(){ TC_NAV_COLLAPSED = !TC_NAV_COLLAPSED; render(); }
 
 // 선생님 본문 탭 내용
@@ -128,7 +127,6 @@ function _tcTabBody(){
   else if(TC_TAB === 'students')   return vTcStudents();
   else if(TC_TAB === 'oj')         return vTcOJ();
   else if(TC_TAB === 'notebook')   return vTcNotebook();
-  else if(TC_TAB === 'mission')    return vTcMission();
   else if(TC_TAB === 'coderead')   return vTcCodeRead();
   else if(TC_TAB === 'aicode')     return vTcAiCode();
   else if(TC_TAB === 'aia')        return vTcAiActivity();
@@ -162,12 +160,6 @@ function setTC(t){
     loadAllNotes(TC_CLS.id).then(render);
   }
   if(t === 'portfolio') TC_PF_SNUM = null;   // 탭 다시 누르면 명단부터
-  if(t === 'mission'){
-    // 미션 탭 진입 시 그리드 목록으로 — 편집/플레이 모드 잔재 정리
-    MISSION_VIEW = 'list';
-    MISSION_EDITING = null;
-    SEL_MISSION = null;
-  }
   if(t === 'attend' && TC_CLS){
     loadAttendance(TC_CLS.id, AT_DATE).then(render);
   } else if(t === 'curriculum'){

@@ -20,7 +20,7 @@ function _ucReadForm(){
   if(g('uc-nbid')) UC_DRAFT.nbId = g('uc-nbid').value;
 }
 
-// 앱연결 항목 열기 — 단원에서 기능(노트북/미션/OJ/퀴즈/AI코딩/과제) 진입
+// 앱연결 항목 열기 — 단원에서 기능(노트북/OJ/퀴즈/AI코딩/과제) 진입
 async function openUnitApp(refType, refId, unitKey, section){
   const whole = refId === '*';   // 전체 목록 통째로 연결
   if(refType === 'notebook'){
@@ -28,17 +28,6 @@ async function openUnitApp(refType, refId, unitKey, section){
     UNIT_RETURN = { unitKey, section };
     if(whole){ SEL_NOTEBOOK = null; render(); }   // 노트북 목록
     else await openNotebook(refId);               // 내부에서 render
-  } else if(refType === 'mission'){
-    ST_TAB = 'mission';
-    UNIT_RETURN = { unitKey, section };
-    if(whole){
-      MISSION_VIEW = 'list'; SEL_MISSION = null; MISSION_PROGRESS_ALL = null;
-      render();
-      if(SEL_CLS && ST_USER) loadAllMissionProgress(SEL_CLS.id, ST_USER.number).then(p => {
-        MISSION_PROGRESS_ALL = p;
-        if(ST_TAB === 'mission' && MISSION_VIEW === 'list') render();
-      });
-    } else await openMission(refId);              // 내부에서 render
   } else if(refType === 'quiz'){
     ST_TAB = 'practice'; ST_PRACTICE_SUB = 'quiz';
     UNIT_RETURN = { unitKey, section };

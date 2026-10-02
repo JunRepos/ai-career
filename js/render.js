@@ -36,7 +36,7 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape') closeDrawer()
 
 // ── 본문 너비 결정 ──
 // 화면/탭에 따라 .wrap 컨테이너 너비 조정
-//   full(1600px): 노트북 / 미션 / OJ 풀이 (IDE 느낌)
+//   full(1600px): 노트북 / OJ 풀이 (IDE 느낌)
 //   wide(1280px): OJ 목록 / 진도 계획 (테이블·분할 뷰)
 //   기본(840px) : 공지/수업/게시판/출결/학생관리/로그인 등 텍스트·폼 위주
 // 로그인 후 드로어 셸을 쓰는 화면들 — .wrap 을 전체 폭(app-mode)으로
@@ -203,11 +203,6 @@ function afterRender(){
     requestAnimationFrame(() => {
       if(document.querySelector('.cb-wrap')) initNotebookCMs();
     });
-  }
-
-  // 미션 게임 초기화/정리
-  if(typeof afterRenderMission === 'function'){
-    afterRenderMission();
   }
 
   // AI 코딩 — 채팅 스크롤·포커스·진입 타이머

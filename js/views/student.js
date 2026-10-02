@@ -30,7 +30,7 @@ function _stNavGroups(){
 
   if(isSubjectCls(SEL_CLS)){
     // 교과반(인공지능 기초·진로·정보): 수업을 단원별(Ⅰ~Ⅳ)로 분리한 '수업' 그룹.
-    //   정보반은 노트북·미션·OJ·퀴즈·AI코딩·기계학습·AI학습지가 각 단원 '실습'의
+    //   정보반은 노트북·OJ·퀴즈·AI코딩·기계학습·AI학습지가 각 단원 '실습'의
     //   앱연결로만 노출됨(글로벌 실습·AI 탐구 그룹 없앰).
     const units = assignUnits();
     groups.push({ label:'학급', items:[
@@ -137,7 +137,6 @@ function _stTabBody(){
   else if(ST_TAB === 'attend')  return vStAttend();
   else if(ST_TAB.indexOf('unit-') === 0) return vStUnit(ST_TAB.slice(5));
   else if(ST_TAB === 'notebook')return vStNotebook();
-  else if(ST_TAB === 'mission') return vStMission();
   else if(ST_TAB === 'practice')return vStPractice();
   else if(ST_TAB === 'aicode')  return vStAiCode();
   else if(ST_TAB === 'aia')     return vStAiActivity();
@@ -162,7 +161,7 @@ function vStUnitGame(){
 
 // 본문을 넓게(IDE형) 쓰는 탭 — 좁은 탭은 가운데 정렬로 가독성 유지
 function _stWideTab(){
-  if(ST_TAB === 'notebook' || ST_TAB === 'mission') return true;
+  if(ST_TAB === 'notebook') return true;
   if(ST_TAB === 'practice' && ST_PRACTICE_SUB === 'oj') return true;
   if(ST_TAB === 'practice' && ST_PRACTICE_SUB === 'quiz' && CR_VIEW === 'solve') return true;
   if(ST_TAB === 'asmt' && ASMT_MODE === 'guide' && AG_STAGE === 2) return true;
@@ -173,7 +172,7 @@ function _stWideTab(){
 
 // 사이드바 자동 접힘 탭 (전체화면 IDE) — 사용자 토글보다 우선
 function _stAutoCollapse(){
-  return ST_TAB === 'notebook' || ST_TAB === 'mission';
+  return ST_TAB === 'notebook';
 }
 
 function toggleStNav(){
@@ -383,16 +382,6 @@ function setST(t){
   } else if(t === 'myscore' && SEL_CLS && ST_USER){
     // 📊 내 점수 — 공개 토글 + 사유 공개 + 내 점수 로드 (내부에서 render)
     _loadMyScores();
-  } else if(t === 'mission' && SEL_CLS && ST_USER){
-    // 미션 그리드 카드의 진행률 표시용 — 한 번에 로드
-    MISSION_VIEW = 'list';
-    SEL_MISSION = null;
-    MISSION_PROGRESS_ALL = null;
-    render(); // 일단 빈 진행률로 렌더
-    loadAllMissionProgress(SEL_CLS.id, ST_USER.number).then(prog => {
-      MISSION_PROGRESS_ALL = prog;
-      if(ST_TAB === 'mission' && MISSION_VIEW === 'list') render();
-    });
   } else {
     render();
   }

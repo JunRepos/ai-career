@@ -292,75 +292,12 @@ document.addEventListener('click', async e => {
     return;
   }
 
-  // 학생: 책 검색
-  if(act === 'aia-book-search'){
-    await _aiaBookSearch(el.dataset.fid);
-    return;
-  }
-
-  // 학생: 검색 결과에서 후보 고르기 — 고르는 순간 절판 여부를 한 번 더 확인합니다
-  if(act === 'aia-book-pick'){
-    const fid = el.dataset.fid, i = +el.dataset.i;
-    const S = AIA_BOOK[fid];
-    if(!S || !S.results || !S.results[i]) return;
-    S.pick = i;
-    const b = S.results[i];
-
-    // 카카오 status 는 비어 있는 경우가 잦아 알라딘으로 교차확인합니다 (실패해도 그냥 넘어갑니다)
-    if(!b._checked){
-      S.checking = true; render();
-      const al = await bookAladinStatus(b.isbn);
-      if(al){
-        if(al.status && /절판|품절/.test(al.status)) b.status = al.status;
-        if(!b.price && al.price) b.price = al.price;
-      }
-      b._checked = true;
-      S.checking = false;
-    }
-    render();
-    return;
-  }
-
-  // 학생: 이 책으로 정하기 — 여기서 처음으로 답안에 들어갑니다
-  if(act === 'aia-book-confirm'){
-    const fid = el.dataset.fid;
-    const S = AIA_BOOK[fid];
-    const b = S && S.results && S.results[S.pick];
-    if(!b) return;
-    if(bookVerdict(b).blocked){ toast('이 책은 신청 조건에 맞지 않아요.', 'err'); return; }
-    AIA_ANSWERS[fid] = {
-      title: b.title || '', author: b.author || '', publisher: b.publisher || '',
-      year: b.year || '', price: Number(b.price) || 0, isbn: b.isbn || '',
-      cover: b.cover || '',
-    };
-    delete AIA_BOOK[fid];
-    _aiaQueueSave();
-    render();
-    toast('책을 정했어요 📚', 'ok');
-    return;
-  }
-
-  // 학생: 다시 고르기
-  if(act === 'aia-book-reset'){
-    const fid = el.dataset.fid;
-    delete AIA_ANSWERS[fid];
-    AIA_BOOK[fid] = {};
-    _aiaQueueSave();
-    render();
-    return;
-  }
-
   // 선생님: CSV 내보내기
   if(act === 'aia-export-csv'){
     _aiaExportCSV();
     return;
   }
 
-  // 선생님: 사서 선생님께 넘길 도서 신청 목록
-  if(act === 'aia-export-books'){
-    _aiaExportBookList();
-    return;
-  }
 });
 
 // 학생: 입력 (debounce 자동 저장)
@@ -477,44 +414,6 @@ document.addEventListener('input', e => {
   _aiaQueueSave();
 });
 
-/* ── 책 검색 ──
-   검색 상태는 AIA_BOOK 에만 둡니다. 답안에는 [이 책으로 정하기] 를 눌러야 들어갑니다. */
-async function _aiaBookSearch(fid){
-  if(!fid) return;
-  const S = AIA_BOOK[fid] || (AIA_BOOK[fid] = {});
-  const q = (S.q || '').trim();
-  if(!q){ toast('검색할 책 제목을 적어주세요.', 'err'); return; }
-
-  S.loading = true; S.err = ''; S.pick = null; S.results = []; S.searched = false;
-  render();
-  try {
-    S.results = await bookSearch(q);
-  } catch(err){
-    console.error(err);
-    S.err = err.message || '검색에 실패했어요. 잠시 뒤 다시 해보세요.';
-  }
-  S.loading = false;
-  S.searched = true;
-  render();
-}
-
-// 학생: 책 검색어 입력 (화면을 다시 그리지 않아 커서가 튀지 않습니다)
-document.addEventListener('input', e => {
-  const el = e.target.closest('[data-action="aia-book-q"]');
-  if(!el) return;
-  const fid = el.dataset.fid;
-  if(!fid) return;
-  (AIA_BOOK[fid] || (AIA_BOOK[fid] = {})).q = el.value;
-});
-
-// 학생: 검색창에서 엔터
-document.addEventListener('keydown', e => {
-  const el = e.target.closest('[data-action="aia-book-q"]');
-  if(!el || e.key !== 'Enter') return;
-  e.preventDefault();
-  _aiaBookSearch(el.dataset.fid);
-});
-
 // 자동 저장 예약 (1.5초 후) — 입력 중에는 저장하지 않음
 function _aiaQueueSave(){
   if(AIA_SAVE_TIMER) clearTimeout(AIA_SAVE_TIMER);
@@ -558,45 +457,6 @@ function _aiaDownloadCSV(rows, filename){
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/* ── 사서 선생님께 넘길 도서 신청 목록 ──
-   · 도서관에 이미 있는 책은 뺍니다 (사지 않고 빌려 읽으므로)
-   · 같은 책을 여러 명이 골랐으면 한 줄로 합치고 신청 인원을 적습니다
-   · 2만원이 넘는 책은 빼지 않고 표시만 합니다 — 살지 말지는 선생님이 정합니다 */
-function _aiaExportBookList(){
-  if(!TC_CLS || !AIA_SEL) return;
-  const act = AIA_SEL;
-  const bookQs = (act.questions || []).filter(q => q.type === 'book');
-  if(!bookQs.length){ toast('이 학습지에는 책 고르기 문항이 없어요.', 'err'); return; }
-
-  const byBook = new Map();
-  let ownedCount = 0;
-  for(const st of STUDENTS){
-    const ans = AIA_ALL_SUBS[st.number]?.answers || {};
-    for(const q of bookQs){
-      const b = ans[q.id];
-      if(!b || !b.title) continue;
-      const f = bookFlags(b);
-      if(f.inLibrary){ ownedCount++; continue; }        // 도서관에 있는 책은 신청하지 않습니다
-      const key = (b.isbn || '').trim() || b.title.trim();
-      const hit = byBook.get(key);
-      if(hit) hit.who.push(st.number + ' ' + st.name);
-      else byBook.set(key, { b, who: [st.number + ' ' + st.name] });
-    }
-  }
-  if(!byBook.size){ toast('신청할 책이 아직 없어요.', 'err'); return; }
-
-  const rows = [['도서명', '저자', '출판사', '출판년도', '정가', '신청 인원', '2만원 초과', '신청 학생', 'ISBN']];
-  const list = [...byBook.values()].sort((x, y) => x.b.title.localeCompare(y.b.title, 'ko'));
-  for(const { b, who } of list){
-    rows.push([b.title || '', b.author || '', b.publisher || '', b.year || '',
-               b.price ? Number(b.price) : '', who.length,
-               bookFlags(b).overCap ? '초과' : '', who.join(', '), b.isbn || '']);
-  }
-
-  _aiaDownloadCSV(rows, `도서신청목록_${TC_CLS.id}_${new Date().toISOString().slice(0,10)}.csv`);
-  toast(`도서 ${list.length}종 내려받았어요${ownedCount ? ` (도서관 소장 ${ownedCount}건 제외)` : ''}`, 'ok');
-}
-
 // CSV 내보내기
 function _aiaExportCSV(){
   if(!TC_CLS || !AIA_SEL) return;
@@ -609,7 +469,7 @@ function _aiaExportCSV(){
   const answerQs = (act.questions || []).filter(x => x.type !== 'note');
   const header = ['학번', '이름'];
   for(const q of answerQs){
-    if(q.type === 'book') header.push('도서명', '저자', '출판사', '출판년도', '정가', '도서관 소장', '2만원 초과', 'ISBN');
+    if(q.type === 'book') header.push('도서명', '저자', '출판사', '출판년도', '정가', 'ISBN');
     else header.push(labels[q.id] || q.id);
   }
   header.push('제출시각', '마지막수정');
@@ -621,12 +481,8 @@ function _aiaExportCSV(){
     for(const q of answerQs){
       if(q.type === 'book'){
         const b = ans[q.id] || {};
-        const f = bookFlags(b);
         row.push(b.title || '', b.author || '', b.publisher || '', b.year || '',
-                 b.price ? Number(b.price) : '',
-                 f.inLibrary ? '있음 (' + f.inLibrary + ')' : '',
-                 f.overCap ? '초과' : '',
-                 b.isbn || '');
+                 b.price ? Number(b.price) : '', b.isbn || '');
         continue;
       }
       row.push(aiaAnswerText(q, ans[q.id], ans));

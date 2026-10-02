@@ -26,7 +26,7 @@ let FORCE_PW    = false; // 최초 로그인 비밀번호 변경 필요
 let ST_TAB = 'dashboard'; // 학생 대시보드 현재 탭
 let TC_TAB = 'notice'; // 선생님 대시보드 현재 탭
 let TC_PF_SNUM = null; // 🗂️ 포트폴리오에서 보고 있는 학생 학번 (null=명단)
-let ST_NAV_COLLAPSED = false; // 학생 좌측 사이드바 접힘(사용자 토글) — 노트북/미션은 자동 접힘
+let ST_NAV_COLLAPSED = false; // 학생 좌측 사이드바 접힘(사용자 토글) — 노트북은 자동 접힘
 let TC_NAV_COLLAPSED = false; // 선생님 좌측 사이드바 접힘(사용자 토글)
 let ST_PRACTICE_SUB = 'oj';   // 통합 '문제풀이' 탭 하위: 'oj' | 'quiz'
 let ST_ME_SUB       = 'status'; // 통합 '나' 탭 하위: 'status'(현황) | 'score'(점수)
@@ -91,15 +91,6 @@ let NB_SHOW_PROGRESS   = false; // 학생 진도 패널 표시 여부
 let NB_COLLAPSED_OUTPUTS = {}; // { [cellId]: true } — 출력 접힘 상태
 let NB_SIDEBAR_OPEN    = true; // 좌측 사이드바(목차) 열림 여부
 let NB_OPEN_MENU       = null; // 현재 열린 메뉴바 메뉴 id ('file'|'edit'|...|null)
-
-// 미션(게임 실습) 관련
-let MISSIONS           = [];    // 현재 반의 미션 목록
-let SEL_MISSION        = null;  // 선택된 미션
-let MISSION_STEP_IDX   = 0;     // 현재 진행 중인 단계 인덱스
-let MISSION_STEP_PASS  = {};    // { [stepId]: {passed:true, code:"..."} } — 통과 상태
-let MISSION_EDITING    = null;  // 선생님: 편집 중인 미션 (null=신규 또는 수정대상)
-let MISSION_VIEW       = 'list'; // 'list' | 'play' | 'edit'
-let MISSION_PROGRESS_ALL = null;   // 학생 그리드 카드용: { [missionId]: stepPass } 미리 로드
 
 // 진도 계획
 let CURRICULUM = null; // {startDate, endDate, classDays, topics, sessions, updatedAt}
@@ -323,7 +314,6 @@ let AIA_SEL         = null;     // 선택된 활동 객체 (학생: 풀이 중 /
 let AIA_ANSWERS     = {};       // 학생: 작성 중 답안 { [fieldId]: value }
 let AIA_SUB         = null;     // 학생: 본인 제출 캐시 { answers, updatedAt }
 let AIA_SAVE_TIMER  = null;     // 학생: 자동 저장 debounce
-let AIA_BOOK        = {};       // 학생: 책 고르기 문항의 검색 상태 { [문항id]: {q, loading, err, results, pick, checking, searched} }
 let AIA_SAVING      = false;    // 저장 중 표시
 /* 🖥️ 수업자료 슬라이드 — 선생님 화면을 학생과 같이 보기
    차시마다 자료를 하나씩 올려두고(SLIDE_DECKS), 그중 '이번 시간에 볼 것'

@@ -217,7 +217,7 @@ function currentTitle(){
 function contentWidthClass(){
   if(VIEW === 'oj-solve') return 'full';   // 분할 패널 — 전체 폭
   const key = IS_TC ? TC_TAB : ST_TAB;
-  if(key === 'notebook' || key === 'mission') return 'full';
+  if(key === 'notebook') return 'full';
   const wide = IS_TC ? (typeof _tcWideTab === 'function' && _tcWideTab())
                      : (VIEW === 'student' && typeof _stWideTab === 'function' && _stWideTab());
   return wide ? 'wide' : '';

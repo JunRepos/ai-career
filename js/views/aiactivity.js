@@ -182,17 +182,12 @@ function _aiaQuestion(q, no){
   </div>`;
 }
 
-/* 이 학습지에 책 고르기 문항이 있는지 */
-function _aiaHasBookQ(act){
-  return (act?.questions || []).some(q => q.type === 'book');
-}
-
 /* 고른 책을 보여주는 카드 — 왼쪽 표지, 오른쪽 정보.
    후보를 눌렀을 때와 확정한 뒤 모두 같은 모양이라 함수 하나로 씁니다. */
 function _aiaBookCard(b, done){
   const rows = [
     ['저자', b.author], ['출판사', b.publisher],
-    ['출판년도', b.year], ['정가', bookPrice(b.price)], ['ISBN', b.isbn],
+    ['출판년도', b.year], ['정가', _bkPrice(b.price)], ['ISBN', b.isbn],
   ].filter(([, v]) => (v || '').toString().trim())
    .map(([k, v]) => `<div class="ws-bk-row">
       <span class="ws-bk-k">${esc(k)}</span><span class="ws-bk-v">${esc(v)}</span>
@@ -214,68 +209,30 @@ function _aiaBookCard(b, done){
   </div>`;
 }
 
-/* ── 책 고르기 문항 ──
-   검색 상태는 AIA_BOOK[문항id] 에 둡니다 (답안이 아니라 화면 상태라서).
-   고른 책만 AIA_ANSWERS 에 { title, author, publisher, year, price, isbn } 로 들어갑니다. */
+/* 정가 표시 · 신청서 한 줄 — 내려둔 book-picker.js 에 있던 것을 그대로 옮겨 둡니다 */
+function _bkPrice(n){
+  const v = Number(n) || 0;
+  return v ? v.toLocaleString('ko-KR') + '원' : '정가 미확인';
+}
+
+function _bkLine(b){
+  if(!b || !b.title) return '';
+  return [b.title, b.author || '저자 미확인', b.publisher || '출판사 미확인',
+          b.year || '출판년도 미확인', _bkPrice(b.price)].join(' / ');
+}
+
+/* ── 책 고르기 문항 (2026-10-02 내려둠) ──
+   검색 · 도서관 소장 대조 · 신청 조건 판정은 걷어냈습니다.
+   이미 고른 책만 그대로 보여 줍니다. 고른 내역은 따로 파일로 뽑아 두었습니다. */
 function _aiaBookQuestion(q, head){
   const picked = AIA_ANSWERS[q.id];
-  const S = AIA_BOOK[q.id] || {};
-
-  // 이미 고른 책이 있으면 그것만 보여줍니다
   if(picked && picked.title){
-    // 도서관 대출·예산 안내는 정한 뒤에도 계속 보여야 합니다
-    const after = bookVerdict(picked).notes
-      .filter(n => n.kind === 'warn')
-      .map(n => `<div class="ws-bk-note warn">${esc(n.text)}</div>`).join('');
     return `<div class="ws-block">${head}
       ${_aiaBookCard(picked, true)}
-      ${after}
-      <button class="btn-sm ws-bk-reset" data-action="aia-book-reset" data-fid="${esc(q.id)}">다시 고르기</button>
     </div>`;
   }
-
-  const cards = (S.results || []).map((b, i) => {
-    const on = S.pick === i;
-    const cover = b.cover
-      ? `<img src="${esc(b.cover)}" alt=""/>`
-      : `<span class="ws-bk-noimg">📖</span>`;
-    return `<button class="ws-bk-card${on ? ' on' : ''}" data-action="aia-book-pick" data-fid="${esc(q.id)}" data-i="${i}">
-      <span class="ws-bk-cov">${cover}</span>
-      <span class="ws-bk-t">${esc(b.title)}</span>
-      <span class="ws-bk-a">${esc(b.author || '')}</span>
-      <span class="ws-bk-a">${esc(b.publisher || '')} · ${esc(b.year || '')}</span>
-      <span class="ws-bk-p">${esc(bookPrice(b.price))}</span>
-    </button>`;
-  }).join('');
-
-  // 고른 후보의 판정 — 통과해야 [이 책으로 정하기] 가 나옵니다
-  let verdict = '';
-  if(S.pick != null && S.results && S.results[S.pick]){
-    const b = S.results[S.pick];
-    const v = bookVerdict(b);
-    const notes = v.notes.map(n => `<div class="ws-bk-note ${esc(n.kind)}">${esc(n.text)}</div>`).join('');
-    verdict = `<div class="ws-bk-verdict">
-      ${_aiaBookCard(b, false)}
-      ${S.checking ? '<div class="ws-bk-note warn">절판 여부를 확인하는 중이에요…</div>' : notes}
-      ${(!v.blocked && !S.checking)
-        ? `<button class="btn-p btn-sm" data-action="aia-book-confirm" data-fid="${esc(q.id)}">이 책으로 정하기</button>`
-        : ''}
-    </div>`;
-  }
-
   return `<div class="ws-block">${head}
-    <div class="ws-bk">
-      <div class="ws-bk-search">
-        <input class="ws-bk-q" type="search" data-action="aia-book-q" data-fid="${esc(q.id)}"
-          value="${esc(S.q || '')}" placeholder="책 제목이나 저자를 검색하세요" enterkeyhint="search"/>
-        <button class="btn-p btn-sm" data-action="aia-book-search" data-fid="${esc(q.id)}"
-          ${S.loading ? 'disabled' : ''}>${S.loading ? '검색 중…' : '검색'}</button>
-      </div>
-      ${S.err ? `<div class="ws-bk-note bad">${esc(S.err)}</div>` : ''}
-      ${cards ? `<div class="ws-bk-grid">${cards}</div>` : ''}
-      ${(!cards && !S.loading && S.searched) ? '<div class="ws-bk-empty">검색 결과가 없어요. 제목을 조금 바꿔서 다시 검색해 보세요.</div>' : ''}
-      ${verdict}
-    </div>
+    <div class="ws-bk-note warn">책 고르기는 끝났습니다. 선생님께 말씀해 주세요.</div>
   </div>`;
 }
 
@@ -294,7 +251,7 @@ function _tableLabels(q, answers){
 
 /* 답안을 사람이 읽는 글로 — 선생님 화면·CSV·세특 복사에서 공용 */
 function aiaAnswerText(q, v, answers){
-  if(q.type === 'book') return (v && v.title) ? bookLine(v) : '';
+  if(q.type === 'book') return (v && v.title) ? _bkLine(v) : '';
   if(q.type === 'check') return Array.isArray(v) ? v.join(', ') : (v || '');
   if(q.type === 'table'){
     if(!v || typeof v !== 'object') return '';
@@ -383,7 +340,7 @@ function _vTcAiaEditor(){
   const qs = (d.questions || []).map((q, i) => {
     const t = q.type || 'text';
     // 유형 고르기 — 글/안내/체크박스/표
-    const typeBtns = [['text','글'],['note','안내'],['check','체크박스'],['table','표'],['book','책 고르기']].map(([k, l]) =>
+    const typeBtns = [['text','글'],['note','안내'],['check','체크박스'],['table','표']].map(([k, l]) =>
       `<button class="btn-xs${t === k ? ' btn-p' : ''}" data-action="qb-type" data-i="${i}" data-t="${k}">${l}</button>`
     ).join('');
 
@@ -401,8 +358,6 @@ function _vTcAiaEditor(){
           <select data-action="qb-cols" data-i="${i}">
             ${[1,2,3,4].map(c => `<option value="${c}"${(q.cols || 2) === c ? ' selected' : ''}>${c}칸</option>`).join('')}
           </select></label>`;
-    } else if(t === 'book'){
-      extra = `<span class="qb-hint">학생이 학습지 안에서 책을 검색해 고릅니다 (신청 조건 자동 확인)</span>`;
     } else if(t === 'table'){
       extra = `<label class="qb-rows">빈 줄
           <select data-action="qb-extra" data-i="${i}">
@@ -529,8 +484,7 @@ function _vTcAiaStudentList(){
     <button class="btn-sm" data-action="aia-tc-back">← 학습지 목록</button>
     <div class="aia-tc-head-title">${esc(act.title)}</div>
     <button class="btn-sm" data-action="aia-export-csv">답안 CSV</button>
-    ${_aiaHasBookQ(act) ? '<button class="btn-sm" data-action="aia-export-books">도서 신청 목록</button>' : ''}
-  </div>
+      </div>
   <div class="asmt-stat-grid">
     <div class="stat-card"><div class="stat-num">${STUDENTS.length}</div><div class="stat-label">전체 학생</div></div>
     <div class="stat-card"><div class="stat-num" style="color:#3b82f6">${writtenCount}</div><div class="stat-label">작성 중·작성함</div></div>

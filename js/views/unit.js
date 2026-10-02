@@ -22,7 +22,6 @@ function _ucFiles(it){
 // 앱 연결 종류 메타 (이모지 / 라벨 / 대상 목록 전역)
 const UC_APP_META = {
   notebook: { ico: '📓', label: '노트북',     list: () => NOTEBOOKS },
-  mission:  { ico: '🎮', label: '미션',       list: () => MISSIONS },
   oj:       { ico: '💻', label: 'OJ 문제',    list: () => OJ_PROBLEMS },
   quiz:     { ico: '🧩', label: '퀴즈',       list: () => CR_READINGS },
   aicode:   { ico: '💬', label: 'AI 코딩',    list: () => null },
@@ -31,7 +30,7 @@ const UC_APP_META = {
   assign:   { ico: '📝', label: '과제',       list: () => ASSIGNMENTS },
 };
 // '전체 목록 통째로 연결'(refId='*') 지원 종류 — 목록 화면이 있는 기능
-const UC_APP_SCOPE_ALL = ['notebook', 'mission', 'oj', 'quiz'];
+const UC_APP_SCOPE_ALL = ['notebook', 'oj', 'quiz'];
 // 특정 항목 없이 그 기능 전체를 여는 종류 (목록/항목 개념 없음)
 const UC_APP_FEATURE = ['aicode', 'ml', 'aia'];
 
@@ -258,7 +257,7 @@ function _ucForm(){
   }
   const d = UC_DRAFT || { type: 'file', title: '', desc: '', url: '', body: '' };
   const editing = UC_EDIT !== 'new';
-  // '앱연결'(노트북·OJ·미션 등)은 정보 교과 전용 기능이라 이 앱에서는 빼둡니다.
+  // '앱연결'(노트북·OJ 등)은 정보 교과 전용 기능이라 이 앱에서는 빼둡니다.
   // 코드는 그대로 남아 있어 필요하면 아래 목록에 ['app','앱연결'] 을 다시 넣으면 됩니다.
   /* 학습 활동 칸에서는 게임·학습지를 앞에 둡니다 — 거기서 주로 쓰는 것이라. */
   const types = UC_TC_SEC === 'practice'
@@ -325,7 +324,7 @@ function _ucForm(){
   } else if(d.type === 'text'){
     typeFields = `<div class="field"><label>본문 (마크다운 지원)</label><textarea id="uc-body" style="min-height:150px" placeholder="설명/안내를 적으세요.&#10;&#10;## 활동&#10;1. KOSIS 접속&#10;2. ...">${esc(d.body || '')}</textarea></div>`;
   } else {
-    // app — 기존 노트북/미션/OJ/퀴즈/AI코딩/과제 중 골라 연결
+    // app — 기존 노트북/OJ/퀴즈/AI코딩/과제 중 골라 연결
     const refType = d.refType || 'notebook';
     const refBtns = Object.entries(UC_APP_META).map(([k, m]) =>
       `<button class="btn-xs ${refType === k ? 'btn-p' : ''}" data-action="uc-reftype" data-reftype="${k}">${m.ico} ${m.label}</button>`
@@ -337,7 +336,7 @@ function _ucForm(){
                  :                         "선생님 'AI 학습지' 탭에서 노출을 켜둬야 함";
       picker = `<div class="box-info" style="font-size:12px">학생이 클릭하면 ${UC_APP_META[refType].label} 메뉴가 열립니다. (${note})</div>`;
     } else {
-      // 노트북·미션·OJ·퀴즈는 '전체 목록 통째로' 옵션 제공 → 항목을 일일이 추가 안 해도 됨
+      // 노트북·OJ·퀴즈는 '전체 목록 통째로' 옵션 제공 → 항목을 일일이 추가 안 해도 됨
       const supportsAll = UC_APP_SCOPE_ALL.includes(refType);
       const arr = UC_APP_META[refType].list() || [];
       const allOpt = supportsAll ? `<option value="*" ${d.refId === '*' ? 'selected' : ''}>📋 전체 목록 (이 메뉴 통째로 연결)</option>` : '';

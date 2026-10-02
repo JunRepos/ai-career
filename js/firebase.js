@@ -224,48 +224,6 @@ async function loadAllNotebookProgress(cid, nbId){
   return s.exists() ? s.val() : {};
 }
 
-// ── 미션 (게임 실습) ──
-async function loadMissions(cid){
-  const s = await db.ref(`missions/${cid}`).get();
-  if(!s.exists()){ MISSIONS = []; return; }
-  MISSIONS = Object.entries(s.val()).map(([id, v]) => ({id, ...v}))
-    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
-}
-
-async function saveMission(cid, missionId, data){
-  await db.ref(`missions/${cid}/${missionId}`).set(data);
-}
-
-async function deleteMission(cid, missionId){
-  await db.ref(`missions/${cid}/${missionId}`).remove();
-  await db.ref(`missionProgress/${cid}/${missionId}`).remove().catch(() => {});
-}
-
-async function loadMissionProgress(cid, mid, studentNum){
-  const s = await db.ref(`missionProgress/${cid}/${mid}/${studentNum}`).get();
-  return s.exists() ? s.val() : null;
-}
-
-// 학생의 모든 미션 진도를 한 번에 로드 — 그리드 카드의 진행률 바에 사용.
-// 결과: { [missionId]: { [stepId]: {passed, ...} } } (없으면 빈 객체)
-async function loadAllMissionProgress(cid, studentNum){
-  if(!cid || !studentNum) return {};
-  const result = {};
-  for(const m of MISSIONS){
-    try {
-      const prog = await loadMissionProgress(cid, m.id, studentNum);
-      result[m.id] = prog?.stepPass || {};
-    } catch(_e){ result[m.id] = {}; }
-  }
-  return result;
-}
-
-async function saveMissionProgress(cid, mid, studentNum, stepPass){
-  await db.ref(`missionProgress/${cid}/${mid}/${studentNum}`).set({
-    stepPass, updatedAt: new Date().toISOString()
-  });
-}
-
 // ── 진도 계획 (선생님 전용, 전역 하나) ──
 async function loadCurriculum(){
   const s = await db.ref('curriculum/plan').get();
@@ -830,7 +788,6 @@ async function loadAllClassData(cid){
     loadStudents(cid),
     loadOJProblems(cid),
     loadNotebooks(cid),
-    loadMissions(cid),
     loadCodeReadings(cid),
     loadAsmtActive(cid),
     loadAsmtGuideActive(cid),

@@ -480,13 +480,6 @@ document.addEventListener('click', async e => {
     return;
   }
 
-  /* ── 강화학습 — 미션 탭으로 이동 ── */
-  if(act === 'ml-go-mission'){
-    ST_TAB = 'mission';
-    setST('mission');
-    return;
-  }
-
   /* ── 강화학습 — 선생님 설명 저장 ── */
   if(act === 'ml-rl-save-desc'){
     if(!TC_CLS) return;
