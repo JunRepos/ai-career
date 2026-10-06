@@ -396,6 +396,36 @@ function destroyAllCMs(){
   if(_nbMdCM){ try { _nbMdCM.toTextArea(); } catch(e){} _nbMdCM = null; }
 }
 
+/* ── 「함수 모음」 단추 ──
+   고른 코드 셀의 커서 자리에 주석 한 줄 + 코드를 넣습니다.
+   쓰던 줄 한가운데면 줄을 바꿔서 넣습니다. */
+function nbInsertSnippet(gi, ii){
+  const text = typeof nbSnippetText === 'function' ? nbSnippetText(gi, ii) : '';
+  if(!text) return;
+
+  // 넣을 셀 — 고른 셀이 코드 셀이면 거기, 아니면 마지막 코드 셀
+  let cm = _nbCMs[NB_SELECTED];
+  if(!cm){
+    const codes = (NB_CELLS || []).filter(c => c.type !== 'markdown');
+    const last = codes[codes.length - 1];
+    if(last && _nbCMs[last.id]){
+      NB_SELECTED = last.id;
+      cm = _nbCMs[last.id];
+      highlightSelected();
+    }
+  }
+  if(!cm){ toast('코드 셀을 먼저 누른 뒤에 눌러 주세요', 'err'); return; }
+
+  // 앞에 쓴 것이 있으면 한 줄 띄워서 — 블록끼리 붙지 않게
+  const cur = cm.getCursor();
+  const upto = cm.getRange({line: 0, ch: 0}, cur);
+  let head = '';
+  if(upto.trim()) head = upto.endsWith('\n\n') ? '' : (upto.endsWith('\n') ? '\n' : '\n\n');
+  const tail = (cm.getLine(cur.line) || '').slice(cur.ch).trim() ? '\n' : '';
+  cm.replaceSelection(head + text + tail, 'end');
+  cm.focus();
+}
+
 function initNotebookCMs(){
   if(typeof CodeMirror === 'undefined') return;
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -811,6 +841,18 @@ document.addEventListener('click', async e => {
     const id = act.menuid;
     NB_OPEN_MENU = (NB_OPEN_MENU === id) ? null : id;
     refreshMenubar();
+    return;
+  }
+  /* 「함수 모음」 — 펼치기 · 접기 */
+  if(act.action === 'nb-toggle-palette'){
+    closeNbMenu();
+    nbSetPaletteOpen(!NB_PALETTE_OPEN);
+    destroyAllCMs(); render();
+    return;
+  }
+  /* 「함수 모음」 — 단추를 눌러 코드 넣기 */
+  if(act.action === 'nb-snip'){
+    nbInsertSnippet(Number(act.g), Number(act.i));
     return;
   }
   if(act.action === 'nb-toggle-sidebar'){

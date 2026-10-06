@@ -5493,3 +5493,37 @@ button{border-radius:2px}
 .ml-chip-add:hover{border-color:var(--rule);color:var(--text)}
 .ml-chip-input:focus,.ml-rl-desc-edit:focus,.lr-num-input:focus,.a1-in:focus,.a1-area:focus{
   border-color:var(--rule);box-shadow:none}
+
+/* ═══════════════════════════════════════════════════════════════
+   노트북 「함수 모음」 (2026-10-06) — js/nb-snippets.js
+
+   메뉴바 바로 아래 한 줄. 누르면 고른 코드 셀에 주석과 함께 들어갑니다.
+   노트북 안쪽은 Colab 흉내라 --cb-* 색을 씁니다.
+═══════════════════════════════════════════════════════════════ */
+.cb-palette{display:flex;flex-wrap:wrap;align-items:center;gap:7px 14px;
+  padding:7px 12px;background:var(--cb-bg-2);border-bottom:1px solid var(--cb-border)}
+
+.cb-pal-toggle{flex:none;font-family:inherit;font-size:11.5px;font-weight:700;
+  color:var(--cb-text-2);background:transparent;border:1px solid var(--cb-border);
+  border-radius:2px;padding:4px 9px;cursor:pointer;white-space:nowrap}
+.cb-pal-toggle:hover{background:var(--cb-hover);color:var(--cb-text)}
+
+.cb-pal-body{display:flex;flex-wrap:wrap;align-items:center;gap:7px 14px;min-width:0}
+.cb-pal-group{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.cb-pal-label{font-size:10.5px;font-weight:700;color:var(--cb-text-3);
+  letter-spacing:.04em;white-space:nowrap;margin-right:1px}
+
+.cb-pal-chip{font-family:'Consolas','D2Coding',monospace;font-size:11.5px;font-weight:600;
+  color:var(--cb-text);background:var(--cb-bg);border:1px solid var(--cb-border);
+  border-radius:2px;padding:4px 8px;cursor:pointer;white-space:nowrap;
+  transition:background .12s,border-color .12s}
+.cb-pal-chip:hover{background:var(--cb-hover);border-color:var(--cb-text-3)}
+.cb-pal-chip:active{background:var(--cb-border)}
+
+.cb-pal-hint{font-size:11px;color:var(--cb-text-3);white-space:nowrap}
+
+/* 좁은 화면 — 힌트는 접고 단추만 */
+@media (max-width:760px){
+  .cb-pal-hint{display:none}
+  .cb-palette{padding:6px 8px;gap:6px 10px}
+}

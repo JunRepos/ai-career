@@ -117,6 +117,7 @@ function vNotebookDetail(isTeacher){
     <div class="cb-wrap">
       ${toolbar}
       ${menubar}
+      ${vNbPalette()}
       <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}">
         ${sidebar}
         <div class="cb-main">
@@ -125,6 +126,26 @@ function vNotebookDetail(isTeacher){
         </div>
       </div>
     </div>`;
+}
+
+/* ── 「함수 모음」 (js/nb-snippets.js) ──
+   지금까지 배운 함수를 단추로 늘어놓습니다. 누르면 고른 코드 셀의
+   커서 자리에 주석과 함께 들어갑니다. */
+function vNbPalette(){
+  if(typeof NB_SNIPPETS === 'undefined') return '';
+  const open = NB_PALETTE_OPEN;
+  const groups = NB_SNIPPETS.map((g, gi) => `
+    <span class="cb-pal-group">
+      <span class="cb-pal-label">${esc(g.group)}</span>
+      ${g.items.map((it, ii) => `<button class="cb-pal-chip" data-action="nb-snip"
+        data-g="${gi}" data-i="${ii}" title="${esc(it.note)}">${esc(it.label)}</button>`).join('')}
+    </span>`).join('');
+  return `<div class="cb-palette">
+    <button class="cb-pal-toggle" data-action="nb-toggle-palette"
+      title="${open ? '접기' : '펼치기'}">${open ? '\u25be' : '\u25b8'} 함수 모음</button>
+    ${open ? `<span class="cb-pal-body">${groups}</span>
+      <span class="cb-pal-hint">누르면 고른 코드 셀에 주석과 함께 들어갑니다</span>` : ''}
+  </div>`;
 }
 
 // ── 메뉴바 (Colab 스타일: 파일/편집/보기/삽입/런타임/도움말) ──
