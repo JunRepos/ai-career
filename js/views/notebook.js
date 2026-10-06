@@ -139,7 +139,9 @@ function vNbSnipPanel(){
       <div class="cb-snip-group">
         <div class="cb-snip-label">${esc(g.group)}</div>
         ${g.items.map((it, ii) => `<button class="cb-snip-item" data-action="nb-snip"
-          data-g="${gi}" data-i="${ii}" title="${esc(it.note)}">${esc(it.label)}</button>`).join('')}
+          data-g="${gi}" data-i="${ii}" title="${esc(nbSnippetTip(it))}"
+          ><span class="cb-snip-code">${esc(it.label)}</span
+          ><span class="cb-snip-desc">${esc(it.note)}</span></button>`).join('')}
       </div>`).join('')}
   </div>`;
 }

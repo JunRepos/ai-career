@@ -6,53 +6,64 @@
    **고른 코드 셀의 커서 자리에 주석과 함께** 들어갑니다. 그 뒤에 고쳐 쓰면 됩니다.
 
      [pd.read_csv()] 을 누르면
-       # csv 파일을 읽어 표로 만들고 df 에 저장한다
+       # csv 파일을 읽어 표로 만든다
        df = pd.read_csv("penguins_ko.csv")
+
+   **열 이름 자리는 "속성명" 으로 둡니다** — 어느 데이터에 쓸지 모르므로
+   학생이 그 자리를 자기 데이터의 열 이름으로 바꿔 쓰게 합니다.
 
    단추를 더하거나 고치려면 아래 표만 손보면 됩니다.
      label — 단추에 보이는 글자. **코드에 쓰는 모양 그대로** 적습니다.
-     note  — 함께 들어갈 주석 한 줄. 무엇을 하는지만 적습니다.
-     code  — 들어갈 코드. 열 이름은 펭귄 데이터의 실제 이름을 씁니다.
+     note  — 한 줄 설명. 사이드바에 작은 글씨로 보이고, 그대로 주석이 됩니다.
+             한 줄에 들어가게 20자 안팎으로 짧게 씁니다.
+     tip   — (없어도 됨) 마우스를 올렸을 때 나오는 덧붙임. 자주 틀리는 것을 적습니다.
+     code  — 들어갈 코드.
 ═══════════════════════════════════════ */
 
 const NB_SNIPPETS = [
   { group: '준비', items: [
     { label: 'import',
-      note: '표를 다루는 pandas 와 그래프를 그리는 seaborn 을 불러온다',
+      note: 'pandas 와 seaborn 을 불러온다',
+      tip: 'pd 는 표를 다루고, sns 는 그래프를 그립니다',
       code: 'import pandas as pd\nimport seaborn as sns' },
     { label: '!wget',
-      note: '인터넷에서 펭귄 데이터 파일을 내려받는다',
+      note: '인터넷에서 파일을 내려받는다',
       code: '!wget "https://junrepos.github.io/ai-career/data/penguins_ko.csv"' },
   ]},
 
   { group: '표 만들기', items: [
     { label: 'pd.read_csv()',
-      note: 'csv 파일을 읽어 표로 만들고 df 에 저장한다',
+      note: 'csv 파일을 읽어 표로 만든다',
+      tip: '읽은 결과를 df 에 저장해야 다음 줄에서 쓸 수 있습니다',
       code: 'df = pd.read_csv("penguins_ko.csv")' },
   ]},
 
   { group: '살펴보기', items: [
     { label: 'df.head()',
-      note: '처음 5행을 보여 준다 — 괄호 안 숫자를 바꾸면 그만큼 나온다',
+      note: '처음 몇 행을 보여 준다',
+      tip: '괄호 안 숫자를 바꾸면 그만큼 나옵니다',
       code: 'df.head(5)' },
     { label: 'df.info()',
-      note: '열 이름, 값이 있는 칸의 개수, 자료형을 한눈에 보여 준다',
+      note: '열 이름과 자료형을 보여 준다',
+      tip: '값이 있는 칸의 개수도 함께 나와 빈칸을 가늠할 수 있습니다',
       code: 'df.info()' },
     { label: 'df.describe()',
-      note: '수치형 열의 개수 · 평균 · 최솟값 · 최댓값 등을 보여 준다',
+      note: '평균 · 최솟값 · 최댓값을 보여 준다',
       code: 'df.describe()' },
     { label: 'df.shape',
-      note: '(행 수, 열 수) 를 보여 준다 — shape 뒤에는 괄호를 붙이지 않는다',
+      note: '행 수와 열 수를 보여 준다',
+      tip: 'shape 뒤에는 괄호를 붙이지 않습니다',
       code: 'print(df.shape)' },
-    { label: 'df["열"]',
-      note: '열 하나를 고른다 — 열 이름은 큰따옴표 안에 그대로 쓴다',
-      code: 'df["부리 길이(mm)"]' },
+    { label: 'df["속성명"]',
+      note: '열 하나를 고른다',
+      tip: '열 이름은 큰따옴표 안에 띄어쓰기까지 그대로 씁니다',
+      code: 'df["속성명"]' },
     { label: '.unique()',
-      note: '그 열에 어떤 값들이 들어 있는지 한 번씩 보여 준다',
-      code: 'df["성별"].unique()' },
+      note: '어떤 값들이 있는지 보여 준다',
+      code: 'df["속성명"].unique()' },
     { label: '.value_counts()',
-      note: '그 열의 값마다 몇 개씩 있는지 센다',
-      code: 'df["종"].value_counts()' },
+      note: '값마다 몇 개인지 센다',
+      code: 'df["속성명"].value_counts()' },
   ]},
 
   { group: '전처리', items: [
@@ -60,34 +71,38 @@ const NB_SNIPPETS = [
       note: '열마다 빈칸이 몇 개인지 센다',
       code: 'df.isnull().sum()' },
     { label: '.dropna()',
-      note: '빈칸이 있는 행을 뺀 결과를 df 에 다시 저장한다',
+      note: '빈칸이 있는 행을 지운다',
+      tip: '앞에 df = 를 붙여야 지운 결과가 df 에 저장됩니다',
       code: 'df = df.dropna()' },
   ]},
 
   { group: '그래프', items: [
     { label: 'sns.scatterplot()',
-      note: '산점도 — x 와 y 에 열 이름, hue 에 색을 나눌 열을 쓴다',
-      code: 'sns.scatterplot(data=df, x="부리 길이(mm)", y="부리 깊이(mm)", hue="종")' },
+      note: '산점도 — 두 속성의 관계를 본다',
+      tip: 'hue 에 넣은 열의 값마다 색이 달라집니다',
+      code: 'sns.scatterplot(data=df, x="속성명", y="속성명", hue="속성명")' },
     { label: 'sns.boxplot()',
-      note: '상자그림 — 경계 밖의 값을 점으로 보여 준다',
-      code: 'sns.boxplot(data=df, x="체질량(g)")' },
+      note: '상자그림 — 이상치를 본다',
+      tip: 'x 만 쓰면 전체, x 와 y 를 함께 쓰면 집단별로 나뉩니다',
+      code: 'sns.boxplot(data=df, x="속성명")' },
     { label: 'sns.countplot()',
-      note: '값마다 몇 개인지 막대로 보여 준다',
-      code: 'sns.countplot(data=df, x="종")' },
+      note: '막대그래프 — 값마다 개수를 본다',
+      code: 'sns.countplot(data=df, x="속성명")' },
   ]},
 
   { group: '상관계수', items: [
     { label: 'df.corr()',
-      note: '수치형 열끼리 상관계수를 구한다',
+      note: '열끼리 상관계수를 구한다',
+      tip: 'numeric_only=True 는 수치형 열끼리만 계산하라는 뜻입니다',
       code: 'df.corr(numeric_only=True)' },
     { label: 'sns.heatmap()',
-      note: '상관계수 표를 색의 진하기로 칠해 보여 준다',
+      note: '상관계수를 색으로 칠해 보여 준다',
       code: 'sns.heatmap(df.corr(numeric_only=True), annot=True)' },
   ]},
 
   { group: '출력', items: [
     { label: 'print()',
-      note: '괄호 안의 것을 화면에 보여 준다',
+      note: '괄호 안의 것을 보여 준다',
       code: 'print("여기에 보여 줄 것을 쓴다")' },
   ]},
 ];
@@ -97,4 +112,9 @@ function nbSnippetText(gi, ii){
   const it = NB_SNIPPETS[gi] && NB_SNIPPETS[gi].items[ii];
   if(!it) return '';
   return '# ' + it.note + '\n' + it.code;
+}
+
+/* 마우스를 올렸을 때 나오는 글 — 설명 + (있으면) 덧붙임 */
+function nbSnippetTip(it){
+  return it.tip ? it.note + '\n' + it.tip : it.note;
 }
