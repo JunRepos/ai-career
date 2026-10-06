@@ -843,13 +843,6 @@ document.addEventListener('click', async e => {
     refreshMenubar();
     return;
   }
-  /* 「함수 모음」 — 펼치기 · 접기 */
-  if(act.action === 'nb-toggle-palette'){
-    closeNbMenu();
-    nbSetPaletteOpen(!NB_PALETTE_OPEN);
-    destroyAllCMs(); render();
-    return;
-  }
   /* 「함수 모음」 — 단추를 눌러 코드 넣기 */
   if(act.action === 'nb-snip'){
     nbInsertSnippet(Number(act.g), Number(act.i));

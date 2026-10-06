@@ -117,7 +117,6 @@ function vNotebookDetail(isTeacher){
     <div class="cb-wrap">
       ${toolbar}
       ${menubar}
-      ${vNbPalette()}
       <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}">
         ${sidebar}
         <div class="cb-main">
@@ -128,23 +127,20 @@ function vNotebookDetail(isTeacher){
     </div>`;
 }
 
-/* ── 「함수 모음」 (js/nb-snippets.js) ──
-   지금까지 배운 함수를 단추로 늘어놓습니다. 누르면 고른 코드 셀의
-   커서 자리에 주석과 함께 들어갑니다. */
-function vNbPalette(){
+/* ── 사이드바 「🧩 함수」 탭 ──
+   지금까지 배운 함수를 세로로 늘어놓습니다. 누르면 고른 코드 셀의
+   커서 자리에 주석과 함께 들어갑니다 (nbInsertSnippet).
+   사이드바는 sticky 라 셀 옆에 붙어 있어 오르내릴 일이 없습니다. */
+function vNbSnipPanel(){
   if(typeof NB_SNIPPETS === 'undefined') return '';
-  const open = NB_PALETTE_OPEN;
-  const groups = NB_SNIPPETS.map((g, gi) => `
-    <span class="cb-pal-group">
-      <span class="cb-pal-label">${esc(g.group)}</span>
-      ${g.items.map((it, ii) => `<button class="cb-pal-chip" data-action="nb-snip"
-        data-g="${gi}" data-i="${ii}" title="${esc(it.note)}">${esc(it.label)}</button>`).join('')}
-    </span>`).join('');
-  return `<div class="cb-palette">
-    <button class="cb-pal-toggle" data-action="nb-toggle-palette"
-      title="${open ? '접기' : '펼치기'}">${open ? '\u25be' : '\u25b8'} 함수 모음</button>
-    ${open ? `<span class="cb-pal-body">${groups}</span>
-      <span class="cb-pal-hint">누르면 고른 코드 셀에 주석과 함께 들어갑니다</span>` : ''}
+  return `<div class="cb-snip">
+    <div class="cb-snip-hint">누르면 <b>고른 코드 셀</b>에 주석과 함께 들어갑니다</div>
+    ${NB_SNIPPETS.map((g, gi) => `
+      <div class="cb-snip-group">
+        <div class="cb-snip-label">${esc(g.group)}</div>
+        ${g.items.map((it, ii) => `<button class="cb-snip-item" data-action="nb-snip"
+          data-g="${gi}" data-i="${ii}" title="${esc(it.note)}">${esc(it.label)}</button>`).join('')}
+      </div>`).join('')}
   </div>`;
 }
 
@@ -199,12 +195,14 @@ function vNbMenubar(isTeacher, isStudent){
 
 // ── 좌측 사이드바 (마크다운 헤더 자동 목차) ──
 function vNbSidebar(){
+  const T = [['snip', '🧩 함수'], ['toc', '📋 목차'], ['files', '📁 파일']];
   const tabs = `<div class="cb-side-tabs">
-    <button class="${NB_SIDE_TAB === 'toc' ? 'on' : ''}" data-action="nb-side-tab" data-tab="toc">📋 목차</button>
-    <button class="${NB_SIDE_TAB === 'files' ? 'on' : ''}" data-action="nb-side-tab" data-tab="files">📁 파일</button>
+    ${T.map(([k, label]) => `<button class="${NB_SIDE_TAB === k ? 'on' : ''}"
+      data-action="nb-side-tab" data-tab="${k}">${label}</button>`).join('')}
   </div>`;
   if(NB_SIDE_TAB === 'files') return `<aside class="cb-sidebar">${tabs}${vNbFilesPanel()}</aside>`;
-  return _vNbSidebarToc().replace('<aside class="cb-sidebar">', '<aside class="cb-sidebar">' + tabs);
+  if(NB_SIDE_TAB === 'toc') return _vNbSidebarToc().replace('<aside class="cb-sidebar">', '<aside class="cb-sidebar">' + tabs);
+  return `<aside class="cb-sidebar">${tabs}${vNbSnipPanel()}</aside>`;
 }
 
 function _vNbSidebarToc(){
@@ -227,7 +225,6 @@ function _vNbSidebarToc(){
 
   return `<aside class="cb-sidebar">
     <div class="cb-sidebar-section">
-      <div class="cb-sidebar-title">📋 목차</div>
       <div class="cb-toc">${tocHtml}</div>
     </div>
     <div class="cb-sidebar-section">

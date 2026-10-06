@@ -5495,35 +5495,40 @@ button{border-radius:2px}
   border-color:var(--rule);box-shadow:none}
 
 /* ═══════════════════════════════════════════════════════════════
-   노트북 「함수 모음」 (2026-10-06) — js/nb-snippets.js
+   노트북 사이드바 — 「🧩 함수」 탭 · 촘촘해진 목차 (2026-10-06)
 
-   메뉴바 바로 아래 한 줄. 누르면 고른 코드 셀에 주석과 함께 들어갑니다.
-   노트북 안쪽은 Colab 흉내라 --cb-* 색을 씁니다.
+   함수 단추를 맨 위 가로줄에서 사이드바로 옮겼습니다.
+   사이드바는 sticky 라 셀 옆에 붙어 있어 쓰다가 위로 올라갈 일이 없습니다.
 ═══════════════════════════════════════════════════════════════ */
-.cb-palette{display:flex;flex-wrap:wrap;align-items:center;gap:7px 14px;
-  padding:7px 12px;background:var(--cb-bg-2);border-bottom:1px solid var(--cb-border)}
 
-.cb-pal-toggle{flex:none;font-family:inherit;font-size:11.5px;font-weight:700;
-  color:var(--cb-text-2);background:transparent;border:1px solid var(--cb-border);
-  border-radius:2px;padding:4px 9px;cursor:pointer;white-space:nowrap}
-.cb-pal-toggle:hover{background:var(--cb-hover);color:var(--cb-text)}
+/* ── 탭 셋이 240px 안에 들어가도록 ── */
+.cb-side-tabs{gap:3px;margin:0 0 10px}
+.cb-side-tabs button{padding:6px 2px;font-size:11.5px;border-radius:2px;white-space:nowrap}
 
-.cb-pal-body{display:flex;flex-wrap:wrap;align-items:center;gap:7px 14px;min-width:0}
-.cb-pal-group{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
-.cb-pal-label{font-size:10.5px;font-weight:700;color:var(--cb-text-3);
-  letter-spacing:.04em;white-space:nowrap;margin-right:1px}
+/* ── 함수 판 ── */
+.cb-snip{display:flex;flex-direction:column;gap:12px}
+.cb-snip-hint{font-size:11px;line-height:1.55;color:var(--cb-text-2);
+  background:var(--cb-bg);border:1px solid var(--cb-border);border-radius:2px;padding:7px 8px}
+.cb-snip-hint b{color:var(--cb-text)}
 
-.cb-pal-chip{font-family:'Consolas','D2Coding',monospace;font-size:11.5px;font-weight:600;
+.cb-snip-group{display:flex;flex-direction:column;gap:3px}
+.cb-snip-label{font-size:10.5px;font-weight:700;color:var(--cb-text-3);
+  letter-spacing:.06em;padding:0 2px 2px}
+
+.cb-snip-item{display:block;width:100%;text-align:left;
+  font-family:'Consolas','D2Coding',monospace;font-size:11.5px;font-weight:600;
   color:var(--cb-text);background:var(--cb-bg);border:1px solid var(--cb-border);
-  border-radius:2px;padding:4px 8px;cursor:pointer;white-space:nowrap;
+  border-radius:2px;padding:5px 8px;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   transition:background .12s,border-color .12s}
-.cb-pal-chip:hover{background:var(--cb-hover);border-color:var(--cb-text-3)}
-.cb-pal-chip:active{background:var(--cb-border)}
+.cb-snip-item:hover{background:var(--cb-hover);border-color:var(--cb-text-3)}
+.cb-snip-item:active{background:var(--cb-border)}
 
-.cb-pal-hint{font-size:11px;color:var(--cb-text-3);white-space:nowrap}
-
-/* 좁은 화면 — 힌트는 접고 단추만 */
-@media (max-width:760px){
-  .cb-pal-hint{display:none}
-  .cb-palette{padding:6px 8px;gap:6px 10px}
-}
+/* ── 목차 — 더 촘촘하게 (탭에 이미 「목차」 라고 적혀 있어 제목 줄은 뺐습니다) ── */
+.cb-sidebar-section{margin-bottom:12px}
+.cb-toc-item{padding:3px 7px;font-size:12px;line-height:1.4;border-radius:2px}
+.cb-toc-lv1{font-size:12.5px}
+.cb-toc-lv2{padding-left:15px}
+.cb-toc-lv3{padding-left:25px;font-size:11.5px}
+.cb-toc-lv4{padding-left:35px;font-size:11px}
+.cb-stat-row{padding:2px 7px;border-radius:2px}

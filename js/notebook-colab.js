@@ -13,7 +13,7 @@
 let NB_RUNTIME   = '';      // 워커가 알려 주는 상태 글 ('' 이면 준비됨)
 let NB_RT_READY  = false;   // 한 번이라도 준비가 끝났는지
 let NB_RUNNING   = null;    // 실행 중인 셀 id
-let NB_SIDE_TAB  = 'toc';   // 사이드바 탭 'toc' | 'files'
+let NB_SIDE_TAB  = 'snip';  // 사이드바 탭 'snip'(함수) | 'toc' | 'files'
 let NB_FILES     = null;    // [{p, d, s}] — null 이면 아직 안 읽음
 let _nbQueue     = Promise.resolve();
 let _nbGen       = 0;       // 중지할 때마다 올림 — 줄 서 있던 셀은 건너뜀
@@ -257,7 +257,8 @@ document.addEventListener('click', async e => {
     return;
   }
   if(act === 'nb-side-tab'){
-    NB_SIDE_TAB = el.dataset.tab === 'files' ? 'files' : 'toc';
+    const t = el.dataset.tab;
+    NB_SIDE_TAB = (t === 'files' || t === 'toc') ? t : 'snip';
     if(NB_SIDE_TAB === 'files') NB_FILES = NB_FILES || null;
     const side = document.querySelector('.cb-sidebar');
     if(side){ side.outerHTML = vNbSidebar(); }

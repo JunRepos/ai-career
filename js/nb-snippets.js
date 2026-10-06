@@ -2,7 +2,7 @@
    nb-snippets.js — 노트북 「함수 모음」 (2026-10-06)
 
    빈칸 채우기에서 백지로 넘어가는 중간 단계입니다.
-   노트북 위쪽에 지금까지 배운 함수가 단추로 놓여 있고, 누르면
+   사이드바 「🧩 함수」 탭에 지금까지 배운 함수가 놓여 있고, 누르면
    **고른 코드 셀의 커서 자리에 주석과 함께** 들어갑니다. 그 뒤에 고쳐 쓰면 됩니다.
 
      [pd.read_csv()] 을 누르면
@@ -91,16 +91,6 @@ const NB_SNIPPETS = [
       code: 'print("여기에 보여 줄 것을 쓴다")' },
   ]},
 ];
-
-/* 펼침 여부는 브라우저에 기억해 둡니다 (기본값 — 펼침) */
-let NB_PALETTE_OPEN = (() => {
-  try { return localStorage.getItem('nbPalette') !== 'off'; } catch (e) { return true; }
-})();
-
-function nbSetPaletteOpen(on){
-  NB_PALETTE_OPEN = !!on;
-  try { localStorage.setItem('nbPalette', NB_PALETTE_OPEN ? 'on' : 'off'); } catch (e) {}
-}
 
 /* 단추 하나가 넣을 글 — 주석 한 줄 + 코드 */
 function nbSnippetText(gi, ii){
