@@ -5733,3 +5733,111 @@ button{border-radius:2px}
 [data-theme="dark"] .mla-dossier.mine .mla-dossier-tag{color:#FDBA74}
 [data-theme="dark"] .mlp-ok,[data-theme="dark"] .dt-tag.yes,
 [data-theme="dark"] .ml-verdict.ok{color:#6EE7B7}
+
+/* ═══════════════════════════════════════════════════════════════
+   🧪 모델 실험실 (2026-10-07)
+
+   코드를 치는 대신 **고르고 눌러서** 실험합니다. 조작 칸 하나하나가
+   수행평가 채점 요소 하나씩입니다 — 속성 고르기 · 알고리즘 고르기 ·
+   결과 읽기 · 왜 그런지 쓰기.
+═══════════════════════════════════════════════════════════════ */
+.lab-intro{padding:18px 20px}
+.lab-ask{font-size:19px;font-weight:800;line-height:1.4;color:var(--text)}
+.lab-sub{margin-top:8px;font-size:13.5px;color:var(--text2);line-height:1.6}
+
+.lab-panel{padding:6px 20px 18px}
+.lab-step{display:flex;align-items:center;gap:9px;margin:20px 0 12px;
+  font-size:15px;font-weight:800;color:var(--text)}
+.lab-step i{font-style:normal;font-size:11.5px;font-weight:800;letter-spacing:.02em;
+  background:var(--accent);color:var(--accent-txt);padding:3px 8px}
+.lab-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:9px;flex-wrap:wrap}
+.lab-lb{flex:none;width:68px;padding-top:7px;font-size:12.5px;font-weight:700;color:var(--text2)}
+.lab-opts{display:flex;gap:7px;flex-wrap:wrap;flex:1;min-width:0}
+.lab-chip{padding:7px 13px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border2);color:var(--text2);border-radius:2px}
+.lab-chip:hover{border-color:var(--rule);color:var(--text)}
+.lab-chip.on{background:var(--accent);border-color:var(--accent);color:var(--accent-txt)}
+.lab-chip.sm{padding:6px 11px;font-size:12.5px;min-width:40px}
+.lab-note{font-size:12.5px;color:var(--text2);line-height:1.6}
+.lab-runrow{align-items:center;margin-top:14px}
+.lab-run{padding:11px 26px;font-size:15px;font-weight:800;font-family:inherit;cursor:pointer;
+  background:var(--accent);color:var(--accent-txt);border:1px solid var(--accent);border-radius:2px}
+.lab-run:hover{background:var(--accent-h);border-color:var(--accent-h)}
+.lab-run:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── 결과 ── */
+.lab-res{padding:6px 20px 20px}
+.lab-res.stale{opacity:.55}
+.lab-stale{margin:12px 0;padding:9px 12px;font-size:13px;font-weight:700;
+  background:var(--signal-bg);border:1px solid var(--signal-bd);color:var(--signal)}
+.lab-h{margin:22px 0 10px;font-size:14px;font-weight:800;color:var(--text);
+  display:flex;align-items:baseline;gap:9px}
+.lab-scores{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.lab-score{flex:1;min-width:150px;padding:14px 16px;border:1px solid var(--border)}
+.lab-score span{display:block;font-size:12px;font-weight:700;color:var(--text2)}
+.lab-score b{display:block;margin-top:4px;font-size:30px;font-weight:800;
+  font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.lab-score i{display:block;margin-top:2px;font-style:normal;font-size:12px;color:var(--text2)}
+.lab-score.big{border-color:var(--rule);border-width:2px}
+.lab-flag{display:inline-block;padding:7px 12px;font-size:13px;font-weight:700}
+.lab-flag.ok{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.lab-flag.warn{background:var(--signal-bg);color:var(--signal);border:1px solid var(--signal-bd)}
+
+/* 혼동 행렬 */
+.lab-cmt{border-collapse:collapse;margin-top:4px}
+.lab-cmt th,.lab-cmt td{border:1px solid var(--border2);padding:9px 14px;
+  font-size:14px;text-align:center;font-variant-numeric:tabular-nums}
+.lab-cmt th{background:var(--surface2);font-size:12.5px;font-weight:800;color:var(--text2)}
+.lab-cm-corner{font-size:11.5px !important;white-space:nowrap}
+.lab-cm{cursor:pointer;font-weight:700}
+.lab-cm:hover{background:var(--accent-lt)}
+.lab-cm.diag{background:var(--surface2);font-weight:800}
+.lab-cm.miss{color:var(--signal);font-weight:800}
+.lab-cm.sel{outline:2px solid var(--rule);outline-offset:-2px}
+.lab-cm-sum{color:var(--text3);font-weight:700}
+.lab-cm-say{margin-top:9px;font-size:13.5px;color:var(--text2);line-height:1.6}
+.lab-metr{border-collapse:collapse}
+.lab-metr th,.lab-metr td{border:1px solid var(--border2);padding:7px 14px;
+  font-size:13.5px;text-align:center;font-variant-numeric:tabular-nums}
+.lab-metr th{background:var(--surface2);font-size:12.5px;font-weight:800;color:var(--text2)}
+
+/* 새 데이터 예측 */
+.lab-new{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.lab-new-f{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700;color:var(--text2)}
+.lab-new-f input{width:118px;padding:7px 9px;font-size:14px;font-family:inherit;
+  border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:2px}
+.lab-new-f i{font-style:normal;font-size:11px;color:var(--text3);font-weight:600}
+.lab-new-out{margin-top:12px;padding:11px 14px;font-size:16px;
+  background:var(--surface2);border:1px solid var(--border)}
+
+/* 코드 보기 */
+.lab-codebtn{background:none;border:none;padding:0;cursor:pointer;font-family:inherit;
+  font-size:14px;font-weight:800;color:var(--text)}
+.lab-code{margin-top:4px;padding:14px 16px;overflow-x:auto;
+  background:var(--surface2);border:1px solid var(--border);
+  font-family:'Consolas','D2Coding',monospace;font-size:12.5px;line-height:1.65;color:var(--text)}
+
+.lab-keep{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px}
+
+/* 실험 기록 */
+.lab-logsec{padding:6px 20px 20px}
+.lab-log{width:100%;border-collapse:collapse}
+.lab-log th,.lab-log td{border:1px solid var(--border);padding:7px 10px;
+  font-size:12.5px;text-align:left}
+.lab-log th{background:var(--surface2);font-weight:800;color:var(--text2);font-size:11.5px}
+.lab-log-te{text-align:center;font-variant-numeric:tabular-nums}
+.lab-log-why{width:100%;min-width:140px;padding:5px 7px;font-size:12.5px;font-family:inherit;
+  border:1px solid var(--border2);background:var(--surface);color:var(--text);border-radius:2px}
+
+@media (max-width:640px){
+  .lab-lb{width:100%;padding-top:0}
+  .lab-score b{font-size:25px}
+  .lab-cmt th,.lab-cmt td{padding:7px 9px;font-size:13px}
+  .lab-log th:nth-child(2),.lab-log td:nth-child(2){display:none}
+}
+.lab-why{margin:9px 0 0 18px;padding:0;font-size:13.5px;line-height:1.9;color:var(--text2)}
+.lab-why li{margin:0}
+.lab-why b{color:var(--text)}
+.lab-why i{font-style:normal;font-size:12px;color:var(--text3)}
+/* 전역 label 규칙이 글자를 대문자로 바꿔서 「부리 길이(MM)」 이 되고 있었습니다 */
+.lab-new-f{font-size:12px;letter-spacing:0;text-transform:none;color:var(--text2)}
