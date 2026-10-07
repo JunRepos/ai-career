@@ -80,6 +80,9 @@ function _tcNavGroups(isInfo){
     if(aiaListFor(TC_CLS).length) items.push({key:'aia', ico:'📋', label:'학습지'});
     // Colab 노트북(.ipynb)을 올려 학생이 사이트에서 실행 — 단원 항목 '노트북'으로 학생에게 엽니다
     if(TC_CLS?.type === 'ai') items.push({key:'notebook', ico:'📓', label:'노트북'});
+    // 🧪 모델 실험실이 여기 들어 있습니다 — 「기계학습 체험 탭」 을 열고 닫는 자리이기도 합니다.
+    // 정보반은 아래 isInfo 가지에만 있어서 인공지능 기초 반에서는 못 들어갔습니다 (2026-10-07 고침).
+    if(TC_CLS?.type === 'ai') items.push({key:'ml', ico:'🤖', label:'기계학습'});
     if(items.length) groups.push({ label: '콘텐츠', items });
   }
   if(TC_CLS?.type === 'ai') groups.push({ label: '계획', items: [{key:'aiplan', ico:'📅', label:'진도 계획'}] });

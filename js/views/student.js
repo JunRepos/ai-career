@@ -46,6 +46,10 @@ function _stNavGroups(){
     if((SEL_CLS?.type) === 'ai' && NOTEBOOKS.length){
       groups.push({ items:[{key:'notebook', ico:'📓', label:'파이썬 실습'}] });
     }
+    // 🤖 기계학습 체험(🧪 모델 실험실) — 선생님이 열었을 때만 (2026-10-07)
+    if((SEL_CLS?.type) === 'ai' && ML_ACTIVE[cid]){
+      groups.push({ items:[{key:'ml', ico:'🤖', label:'기계학습'}] });
+    }
     // 진로는 학습지로만 운영 — '수업' 메뉴를 쓰지 않습니다.
     // 다시 쓰려면 위 else 자리에 assign 항목을 넣으면 됩니다.
     // 학습지 — 선생님이 '학생에게 보내기' 한 것이 있을 때만
@@ -373,7 +377,8 @@ function setST(t){
     }).catch(() => { MLA_LOADING = false; render(); });
   } else if(t === 'ml' && SEL_CLS && ST_USER){
     // 🤖 기계학습 체험 — active 확인 + 상태 초기화
-    ML_TAB = 'supervised';
+    //   인공지능 기초 반은 🧪 모델 실험실부터 엽니다 (정보반은 지금까지대로 지도학습부터)
+    ML_TAB = (SEL_CLS.type === 'ai') ? 'lab' : 'supervised';
     ML_SUP_PHASE = 'pick'; ML_SUP_DATASET = null; ML_SUP_TRAIN_DATA = null; ML_SUP_TEST_DATA = null;
     ML_SUP_TRAINED = false; ML_SUP_TEST_IDX = 0; ML_SUP_TEST_RESULTS = []; ML_SUP_LAST_RESULT = null;
     ML_UN_PHASE = 'pick'; ML_UN_DATASET = null; ML_UN_DATA = null; ML_UN_KMEANS = null; ML_UN_REVEAL = false;
