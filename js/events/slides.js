@@ -12,6 +12,7 @@ document.addEventListener('click', async e => {
     const d = act === 'sl-next' ? 1 : -1;
     if(IS_TC && TC_CLS){
       const p = _clampPage((SLIDE_LIVE?.page || 0) + d);
+      if(typeof slWarmNeighbors === 'function') slWarmNeighbors(p);
       await setLive(TC_CLS.id, { page: p });
       _presentSync();
       presenterSync();
@@ -20,6 +21,7 @@ document.addEventListener('click', async e => {
       const base = (SLIDE_FOLLOW && SLIDE_LIVE?.on) ? (SLIDE_LIVE.page || 0) : SLIDE_MYPAGE;
       SLIDE_MYPAGE = _clampPage(base + d);
       SLIDE_FOLLOW = false;          // 혼자 보기로 전환
+      if(typeof slWarmNeighbors === 'function') slWarmNeighbors(SLIDE_MYPAGE);
       render();
     }
     return;

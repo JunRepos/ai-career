@@ -106,6 +106,99 @@ const NB_SNIPPETS = [
       note: '괄호 안의 것을 보여 준다',
       code: 'print("여기에 보여 줄 것을 쓴다")' },
   ]},
+
+  { group: '기계학습 준비', items: [
+    { label: 'X = df[[ ]]',
+      note: '특징 — 예측에 쓸 속성들',
+      tip: '대괄호를 두 번 씁니다. 속성 이름을 쉼표로 이어 적습니다',
+      code: 'X = df[["속성명", "속성명", "속성명"]]' },
+    { label: 'y = df[ ]',
+      note: '타깃 — 예측할 속성 하나',
+      tip: '대괄호를 한 번만 씁니다',
+      code: 'y = df["속성명"]' },
+    { label: 'train_test_split()',
+      note: '훈련 · 테스트 데이터로 나눈다',
+      tip: 'test_size=0.3 은 테스트를 30% 로 하라는 뜻입니다',
+      code: 'from sklearn.model_selection import train_test_split\n'
+          + 'X_train, X_test, y_train, y_test = train_test_split(\n'
+          + '    X, y, test_size=0.3, stratify=y, random_state=42)\n'
+          + 'print(X_train.shape, X_test.shape)' },
+  ]},
+
+  { group: '모델 만들기', items: [
+    { label: 'DecisionTreeClassifier()',
+      note: '결정트리 분류 모델을 만든다',
+      tip: 'random_state=42 를 쓰면 돌릴 때마다 같은 트리가 나옵니다',
+      code: 'from sklearn.tree import DecisionTreeClassifier\n'
+          + 'dt = DecisionTreeClassifier(random_state=42)' },
+    { label: 'KNeighborsClassifier()',
+      note: 'kNN 분류 모델을 만든다',
+      tip: 'n_neighbors 가 k 입니다 — 가까운 이웃을 몇 개 볼지 정합니다',
+      code: 'from sklearn.neighbors import KNeighborsClassifier\n'
+          + 'knn = KNeighborsClassifier(n_neighbors=5)' },
+    { label: 'LinearRegression()',
+      note: '선형 회귀 모델을 만든다',
+      tip: '수치를 예측할 때 씁니다',
+      code: 'from sklearn.linear_model import LinearRegression\n'
+          + 'model = LinearRegression()' },
+    { label: '.fit()',
+      note: '훈련 데이터로 학습시킨다',
+      tip: '모델 이름(dt · knn · model)을 자기가 만든 것으로 바꿉니다',
+      code: 'dt.fit(X_train, y_train)' },
+  ]},
+
+  { group: '예측 · 점수', items: [
+    { label: '.score()',
+      note: '점수를 구한다',
+      tip: '분류는 정확도, 회귀는 결정계수가 나옵니다',
+      code: 'print(dt.score(X_train, y_train))\nprint(dt.score(X_test, y_test))' },
+    { label: '.predict()',
+      note: '테스트 데이터의 결과를 예측한다',
+      code: 'dt_pred = dt.predict(X_test)\nprint(dt_pred[:10])' },
+    { label: '새 데이터 예측',
+      note: '값을 직접 넣어 예측한다',
+      tip: 'X 와 열 이름·차례가 같아야 합니다',
+      code: 'new = pd.DataFrame([[0, 0, 0]], columns=X.columns)\nprint(dt.predict(new))' },
+  ]},
+
+  { group: '분류 모델 평가', items: [
+    { label: 'confusion_matrix()',
+      note: '혼동 행렬 — 무엇을 무엇으로 예측했나',
+      tip: '행은 실젯값, 열은 예측값입니다. classes_ 의 차례로 놓입니다',
+      code: 'from sklearn.metrics import confusion_matrix\n'
+          + 'print(dt.classes_)\nprint(confusion_matrix(y_test, dt_pred))' },
+    { label: 'classification_report()',
+      note: '정밀도 · 재현율을 한 번에 본다',
+      code: 'from sklearn.metrics import classification_report\n'
+          + 'print(classification_report(y_test, dt_pred))' },
+    { label: 'plot_tree()',
+      note: '결정트리를 그림으로 본다',
+      tip: 'max_depth 를 2 쯤으로 두면 위쪽만 크게 보입니다',
+      code: 'import matplotlib.pyplot as plt\n'
+          + 'from sklearn.tree import plot_tree\n'
+          + 'plt.figure(figsize=(16, 8))\n'
+          + 'plot_tree(dt, feature_names=X.columns, max_depth=2, filled=True)\n'
+          + 'plt.show()' },
+  ]},
+
+  { group: '회귀 모델 평가', items: [
+    { label: '.coef_ · .intercept_',
+      note: '회귀계수와 절편을 본다',
+      tip: '예측값 = 회귀계수 × 독립 변수 + 절편',
+      code: 'print(model.coef_, model.intercept_)' },
+    { label: 'mean_absolute_error()',
+      note: '평균절대오차 — 평균 얼마나 틀렸나',
+      tip: '단위가 타깃과 같습니다. 작을수록 좋습니다',
+      code: 'from sklearn.metrics import mean_absolute_error\n'
+          + 'print(mean_absolute_error(y_test, predictions))' },
+    { label: 'plt.scatter() · plt.plot()',
+      note: '실젯값과 예측한 선을 함께 그린다',
+      tip: 'scatter 는 점, plot 은 선입니다',
+      code: 'import matplotlib.pyplot as plt\n'
+          + 'plt.scatter(X_test, y_test, color="blue")\n'
+          + 'plt.plot(X_test, predictions, color="red")\n'
+          + 'plt.show()' },
+  ]},
 ];
 
 /* 단추 하나가 넣을 글 — 주석 한 줄 + 코드 */

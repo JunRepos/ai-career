@@ -215,6 +215,11 @@ function afterRender(){
     afterRenderMl();
   }
 
+  // 🖥️ 수업자료 — 자료를 열 때 모든 장을 한 번에 받아 둡니다 (js/slide-preload.js)
+  if(typeof slEnsurePreload === 'function'){
+    slEnsurePreload();
+  }
+
   // 비주얼 OJ — 첫 렌더링 시 시각화 위젯에 첫 공개 TC 입력 그림 (output 없이)
   const visualCanvas = document.getElementById('oj-visual-canvas');
   if(visualCanvas && OJ_SEL_PROB?.visualType && typeof renderVisualWidget === 'function'){

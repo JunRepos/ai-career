@@ -5554,3 +5554,182 @@ button{border-radius:2px}
 .cb-toolbar,.cb-menubar{position:static}
 .cb-body{align-items:flex-start}
 .cb-sidebar{top:84px;max-height:calc(100vh - 104px)}
+
+/* ═══════════════════════════════════════════════════════════════
+   수업자료를 펼치는 중 — 책 펼치기 (2026-10-07)
+
+   왜 넣었나
+     장을 넘길 때마다 그 장의 PNG 를 그때 받아 와서 끊겼습니다.
+     이제 자료를 열 때 모든 장을 한 번에 받고(js/slide-preload.js),
+     받는 동안 이 화면을 띄웁니다. 다 받으면 책이 활짝 펴지면서 사라집니다.
+
+   DOM 은 #root 밖(body 바로 아래)에 있습니다 — render() 가 #root 를
+   통째로 갈아 끼우기 때문에 안에 두면 글자가 바뀔 때마다 사라집니다.
+═══════════════════════════════════════════════════════════════ */
+.sl-loader{
+  position:fixed; inset:0; z-index:9000;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+  background:var(--bg);
+  opacity:0; transition:opacity .22s ease;
+}
+.sl-loader.on{opacity:1}
+.sl-loader.done{opacity:0; pointer-events:none}
+
+/* ── 책 ── */
+.sl-book{
+  position:relative; width:150px; height:112px; margin-bottom:30px;
+  perspective:900px;
+}
+.sl-book-back,.sl-book-cover,.sl-book-page{
+  position:absolute; top:0; left:50%; width:50%; height:100%;
+  border:1.5px solid var(--text); background:var(--surface);
+  transform-origin:left center; backface-visibility:hidden;
+}
+/* 오른쪽에 펼쳐진 면 — 글줄 흉내 */
+.sl-book-back{
+  background:
+    linear-gradient(var(--border),var(--border)) 14% 30%/58% 1.5px no-repeat,
+    linear-gradient(var(--border),var(--border)) 14% 45%/70% 1.5px no-repeat,
+    linear-gradient(var(--border),var(--border)) 14% 60%/44% 1.5px no-repeat,
+    var(--surface);
+}
+/* 왼쪽 등 — 펼쳤을 때 반대쪽 면 */
+.sl-book::before{
+  content:''; position:absolute; top:0; right:50%; width:50%; height:100%;
+  border:1.5px solid var(--text); background:
+    linear-gradient(var(--border),var(--border)) 28% 36%/58% 1.5px no-repeat,
+    linear-gradient(var(--border),var(--border)) 16% 51%/70% 1.5px no-repeat,
+    var(--surface);
+  opacity:0; animation:sl-left-in .5s ease .28s forwards;
+}
+@keyframes sl-left-in{to{opacity:1}}
+
+/* 넘어가는 속지 세 장 — 시간차를 두고 되풀이 */
+.sl-book-page{animation:sl-flip 1.65s cubic-bezier(.45,.05,.3,1) infinite}
+.sl-book-page.p1{animation-delay:.30s}
+.sl-book-page.p2{animation-delay:.72s}
+.sl-book-page.p3{animation-delay:1.14s}
+@keyframes sl-flip{
+  0%   {transform:rotateY(0deg);   opacity:1}
+  55%  {opacity:1}
+  100% {transform:rotateY(-168deg); opacity:0}
+}
+
+/* 표지 — 처음 한 번만 열립니다 */
+.sl-book-cover{
+  background:var(--text); border-color:var(--text);
+  animation:sl-open .62s cubic-bezier(.4,.1,.25,1) forwards;
+}
+@keyframes sl-open{
+  0%   {transform:rotateY(0deg)}
+  100% {transform:rotateY(-172deg)}
+}
+/* 다 받으면 책이 활짝 — 속지 넘김을 멈추고 커집니다 */
+.sl-loader.done .sl-book-page{animation:none; opacity:0}
+.sl-loader.done .sl-book{transform:scale(1.14); transition:transform .45s cubic-bezier(.2,.9,.3,1)}
+
+/* ── 글과 막대 ── */
+.sl-loader-title{
+  font-size:17px; font-weight:800; color:var(--text);
+  max-width:min(560px,88vw); text-align:center; line-height:1.4;
+}
+.sl-loader-bar{
+  width:min(300px,70vw); height:4px; margin-top:16px;
+  background:var(--border); overflow:hidden;
+}
+.sl-loader-bar i{
+  display:block; height:100%; width:0; background:var(--text);
+  transition:width .2s ease;
+}
+.sl-loader-sub{
+  margin-top:10px; font-size:13px; color:var(--text2);
+  font-variant-numeric:tabular-nums;
+}
+
+/* 애니메이션을 줄여 달라고 설정한 기기에서는 책을 돌리지 않습니다 */
+@media (prefers-reduced-motion:reduce){
+  .sl-book-page,.sl-book-cover,.sl-book::before{animation:none}
+  .sl-book-cover{transform:rotateY(-172deg)}
+  .sl-book::before{opacity:1}
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   안 보이는 글씨 고치기 (2026-10-07)
+
+   왜 생겼나
+     「또렷한 대비 레이어」(2026-10-02)에서 팔레트를 바꿨습니다.
+       --pl-solid  밝은 색 → **검정**(어두운 화면에서는 흰색)
+       --accent    보라   → **검정**(어두운 화면에서는 흰색)
+     그런데 그 배경 위에 글자색을 #1B1B1D · #fff 로 **직접 박아 둔 자리**가
+     그대로 남아 검정 위 검정 · 흰 위 흰이 되었습니다.
+
+   고치는 법
+     글자색을 **var(--accent-txt)** 로 바꿉니다.
+     이 변수는 밝은 화면에서 흰색, 어두운 화면에서 검정이라 두 화면 모두 맞습니다.
+
+   찾는 법 — python tools/css-contrast.py   (명도 대비를 재서 알려 줍니다)
+═══════════════════════════════════════════════════════════════ */
+
+/* ── 밝은 화면에서 검정 위 검정이던 것 ── */
+.deck-badge,
+.sl-rejoin,
+.pf-item.done .pf-no{color:var(--accent-txt)}
+.sl-rejoin:hover{color:var(--accent-txt)}
+
+/* 「이번 시간에 열기」 — 뒤에 오는 .btn 규칙이 배경을 지워 버려서
+   글씨만 남아 있었습니다. 주 단추(.btn-p) 와 같은 꽉 찬 모양으로 되돌립니다. */
+.btn-pick{background:var(--accent);color:var(--accent-txt);
+  border:1px solid var(--accent);font-weight:800}
+.btn-pick:hover{background:var(--accent-h);border-color:var(--accent-h);
+  color:var(--accent-txt);filter:none}
+
+/* ── 어두운 화면에서 흰 위 흰이던 것 ──
+   배경이 var(--accent) 인데 글씨를 #fff 로 박아 둔 자리들입니다. */
+.hbadge,
+.tab.active,
+.toast-info,
+.asmt-step-num,
+.auth-submit,
+.pw-start,
+.p8-start,
+.sc-expand-btn.on,
+.quiz-mcq-choice:hover .quiz-mcq-letter{color:var(--accent-txt)}
+
+/* ── 기계학습 — 고른 분류 칩의 개수 배지 (흰 위 흰) ── */
+.ml-cls-chip-cnt{background:var(--accent-lt);color:var(--text)}
+.ml-cls-chip.on .ml-cls-chip-cnt{background:var(--accent);color:var(--accent-txt)}
+
+/* ── 평가 — 제출 시각 (어두운 화면에서 회색 위 회색) ── */
+.asmt-done-time{background:var(--surface2);color:var(--text2)}
+
+/* ── 주황·초록 배지에 흰 글씨 — 2.2 : 1 이라 읽기 힘들었습니다 ──
+   같은 계열에서 한 단계 진한 색으로 바꿔 4.5 : 1 을 넘깁니다. */
+.a1-chip-warn,
+.aia-fill-chip.low,
+.aia-submit-chip.pending,
+.at-btn.sel-지각,
+.sc-stu-card-total.tier-mid{background:#B45309}
+.ml-judge-ok.on{background:#15803D!important}
+
+/* ── 평가 화면 — 같은 「흰 위 흰」 자리 네 곳 ── */
+.asmt-stage-chip.on,
+.asmt-part-head .asmt-pt,
+.asmt-msg-user .asmt-msg-bubble,
+.asmt-example-row:hover .asmt-example-num{color:var(--accent-txt)}
+
+/* ── 사이드바 — 고른 칸의 개수 배지 ── */
+.side-item.active .side-badge{background:var(--accent-lt);color:var(--accent)}
+
+/* ── 노트북 실행 단추 — 어두운 화면에서 연한 파랑 위 흰 글씨 ── */
+[data-theme="dark"] .cb-run-btn:hover{color:#15202B}
+
+/* ── 기계학습 — 옅은 색 위의 글자를 한 단계 진하게 (2.5~3.0 → 3.5 이상) ── */
+.ml-active-info.none{color:#B45309}
+[data-theme="dark"] .ml-active-info.none{color:#FBBF24}
+.mla-dossier-tag,.mlp-dossier-tag{color:#1F7A4D}
+.mla-dossier.mine .mla-dossier-tag{color:#9A4A06}
+.mlp-ok,.dt-tag.yes,.ml-verdict.ok{color:#15803D}
+[data-theme="dark"] .mla-dossier-tag,[data-theme="dark"] .mlp-dossier-tag{color:#6EE7B7}
+[data-theme="dark"] .mla-dossier.mine .mla-dossier-tag{color:#FDBA74}
+[data-theme="dark"] .mlp-ok,[data-theme="dark"] .dt-tag.yes,
+[data-theme="dark"] .ml-verdict.ok{color:#6EE7B7}

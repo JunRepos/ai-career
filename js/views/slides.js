@@ -81,7 +81,7 @@ function vStSlides(){
     <div class="sl-split">
       <div class="sl-left">
         <div class="sl-stage">
-          <img class="sl-img" src="${esc(im.url)}" alt="${page + 1}번째 슬라이드"
+          <img class="sl-img" decoding="sync" fetchpriority="high" src="${esc(im.url)}" alt="${page + 1}번째 슬라이드"
                data-action="sl-zoom" data-url="${esc(im.url)}"/>
         </div>
         <div class="sl-dots">${dots}</div>
@@ -244,7 +244,7 @@ function _vTcDeckDetail(){
           <button class="btn-p" data-action="sl-pick" data-id="${esc(deck.id)}">이번 시간에 열기</button>
         </div>
       </div>
-      <div class="sl-stage tc"><img class="sl-img" src="${esc((imgs.find(im=>!_isGame(im))||imgs[0]).url)}" alt=""/></div>
+      <div class="sl-stage tc"><img class="sl-img" decoding="sync" src="${esc((imgs.find(im=>!_isGame(im))||imgs[0]).url)}" alt=""/></div>
       <div class="sl-thumbs">${thumbs}</div>
     </div>`;
   }
@@ -280,7 +280,7 @@ function _vTcDeckDetail(){
 
     ${_isGame(imgs[page])
       ? `<div class="sl-stage tc game">${gameTeacherBoard(imgs[page].gameId)}</div>`
-      : `<div class="sl-stage tc"><img class="sl-img" src="${esc(imgs[page].url)}" alt=""/></div>`}
+      : `<div class="sl-stage tc"><img class="sl-img" decoding="sync" fetchpriority="high" src="${esc(imgs[page].url)}" alt=""/></div>`}
     <div class="sl-nav">
       <button class="sl-btn" data-action="sl-prev" ${page === 0 ? 'disabled' : ''}>← 이전</button>
       <span class="sl-page">${page + 1} / ${imgs.length}</span>
@@ -355,7 +355,7 @@ function openPresent(){
   const host = document.getElementById('modal-root');
   host.innerHTML = `
     <div class="pv" id="pv">
-      <img class="pv-img" id="pv-img" src="" alt=""/>
+      <img class="pv-img" id="pv-img" decoding="sync" fetchpriority="high" src="" alt=""/>
       <div class="pv-game" id="pv-game"></div>
       <div class="pv-black" id="pv-black"></div>
       <div class="pv-bar" id="pv-bar">
