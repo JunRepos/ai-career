@@ -14,9 +14,6 @@ const ML_GROUPS = {
   project: { label: '🧩 문제 해결', tabs: [
     { t: 'project', label: '🧩 AI 프로젝트 매니저' },
   ] },
-  lab: { label: '🧪 모델 실험실', tabs: [
-    { t: 'lab', label: '🧪 모델 실험실' },
-  ] },
   type:  { label: '기계학습 유형', tabs: [
     { t: 'supervised',   label: '📚 지도학습' },
     { t: 'unsupervised', label: '🔍 비지도학습' },
@@ -49,8 +46,7 @@ function vStMl(){
   ).join('')}</div>`;
 
   let body = '';
-  if     (ML_TAB === 'lab')          body = _vStMlLab();
-  else if(ML_TAB === 'project')      body = _vStMlProject();
+  if     (ML_TAB === 'project')      body = _vStMlProject();
   else if(ML_TAB === 'supervised')   body = _vStMlSupervised();
   else if(ML_TAB === 'linreg')       body = _vStMlLinreg();
   else if(ML_TAB === 'logistic')     body = _vStMlLogistic();
