@@ -89,6 +89,7 @@ function vNotebookDetail(isTeacher){
     ${vNbRuntimeChip()}
     ${saveInd}
     <div class="cb-toolbar-actions">
+      <button class="cb-tb-btn" data-action="nb-upload-open" title="내 컴퓨터의 파일을 노트북(/content)에 올리기 — 파일을 노트북 위로 끌어다 놓아도 됩니다">📤 파일 올리기</button>
       ${progressBtn}
     </div>
   </div>
@@ -106,6 +107,7 @@ function vNotebookDetail(isTeacher){
 
   // 맨 아래 셀 추가 버튼
   const addEndRow = `<div class="cb-add-row cb-add-row-end">
+    <button class="cb-add-btn" data-action="nb-add-cell" data-type="block" data-pos="${NB_CELLS.length}">+ 🧩 블록</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="code" data-pos="${NB_CELLS.length}">+ 코드</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="markdown" data-pos="${NB_CELLS.length}">+ 텍스트</button>
   </div>`;
@@ -146,10 +148,123 @@ function vNbSnipPanel(){
   </div>`;
 }
 
+/* ── 🧩 블록 셀 ──
+   블록의 얼굴은 파이썬 그대로이고, 바꿀 자리만 드롭다운입니다.
+   아래 칸에 그 블록들이 만든 파이썬을 그대로 보여 줍니다 (읽기 전용).
+   블록 정의는 js/nb-blocks.js 에 있습니다. */
+const NB_BLK_CAT = {prep:'--nbk-prep', look:'--nbk-look', clean:'--nbk-clean',
+                    plot:'--nbk-plot', ml:'--nbk-ml'};
+
+function vNbBlockCell(cell, hoverTb){
+  const selected = NB_SELECTED === cell.id ? ' cb-selected' : '';
+  const result = NB_CELL_OUTPUTS[cell.id];
+  const busy = !!(result?.running || result?.queued);
+  const execLabel = busy ? '[*]' : (result?.execCount ? `[${result.execCount}]` : '[ ]');
+  const file = nbCellDataFile(cell, NB_CELLS);
+
+  const stack = cell.blocks.length
+    ? cell.blocks.map((b, bi) => vNbBlock(cell.id, b, bi, file)).join('')
+    : `<div class="nbk-empty">왼쪽 <b>🧩 블록</b> 서랍에서 끌어다 놓으세요.<br>눌러서 넣어도 됩니다.</div>`;
+
+  const code = cell.source || '# 블록이 없습니다';
+  const codePane = NB_BLK_CODE ? `<div class="nbk-code-head">이 블록들이 만드는 파이썬</div>
+      <pre class="nbk-code">${esc(code)}</pre>` : '';
+
+  return `<div class="cb-cell cb-cell-code cb-cell-blk${selected}" data-cellid="${cell.id}">
+    ${hoverTb}
+    <div class="cb-code-wrap">
+      <div class="cb-exec-prompt${busy ? ' cb-running' : ''}">
+        <button class="cb-run-btn" data-action="nb-run-cell" data-cellid="${cell.id}" title="셀 실행 (Ctrl+Enter)" aria-label="셀 실행">▶</button>
+        <span class="cb-exec-count">${execLabel}</span>
+      </div>
+      <div class="cb-code-main">
+        <div class="nbk-bar">
+          <span class="nbk-tag">🧩 블록 셀</span>
+          <span class="nbk-sp"></span>
+          <button class="nbk-mini" data-action="nb-blk-say" aria-pressed="${NB_BLK_SAY}">설명</button>
+          <button class="nbk-mini" data-action="nb-blk-code" aria-pressed="${NB_BLK_CODE}">&lt;/&gt; 코드 칸</button>
+        </div>
+        <div class="nbk-stack" data-blkstack="${cell.id}">${stack}</div>
+        ${codePane}
+      </div>
+    </div>
+    ${result ? vNbOutput(result, cell.id) : ''}
+  </div>`;
+}
+
+function vNbBlock(cellId, b, bi, file){
+  const d = NB_BLOCK_DEFS[b.k];
+  if(!d) return '';
+  // 파이썬 **한 줄씩** 그립니다. 드롭다운은 그 줄 안에 끼워 넣어
+  // 「열 이름은 따옴표 안에 쓴다」 가 눈에 그대로 보이게 합니다.
+  const lines = d.tpl.split('\n').map(line => {
+    const parts = line.split(/(\{\w+\})/).map(part => {
+      const m = part.match(/^\{(\w+)\}$/);
+      if(!m) return part ? `<span class="nbk-code-in">${esc(part)}</span>` : '';
+      const slot = d.slots[m[1]];
+      const at = `data-action="nb-blk-slot" data-cellid="${cellId}" data-bi="${bi}"
+        data-slot="${m[1]}" aria-label="${esc(d.name)}"`;
+      // 미리 셀 수 없는 값(행 번호 · 찾을 값)은 적는 칸으로 둡니다 — 교과서 81쪽처럼
+      if(slot.kind) return `<input class="nbk-in" type="${slot.kind === 'num' ? 'number' : 'text'}"
+        value="${esc(b.a[m[1]] ?? '')}" size="${slot.kind === 'num' ? 5 : 7}" ${at}>`;
+      const opts = nbSlotOptions(slot, file);
+      return `<select class="nbk-sel" ${at}>${
+        opts.map(v => `<option${v === b.a[m[1]] ? ' selected' : ''}>${esc(v)}</option>`).join('')
+      }</select>`;
+    }).join('');
+    return `<div class="nbk-line">${parts}</div>`;
+  }).join('');
+  const say = NB_BLK_SAY && d.say
+    ? `<div class="nbk-say">${esc(d.say)}${d.src ? ` <i class="nbk-src">${esc(d.src)}</i>` : ''}</div>`
+    : '';
+  return `<div class="nbk-blk" draggable="true" data-cellid="${cellId}" data-bi="${bi}"
+      style="--nbk-cat:var(${NB_BLK_CAT[d.cat]})">
+    <span class="nbk-grip" aria-hidden="true">⠿</span>
+    <div class="nbk-body">${lines}${say}</div>
+    <button class="nbk-x" data-action="nb-blk-del" data-cellid="${cellId}" data-bi="${bi}"
+      title="블록 지우기" aria-label="블록 지우기">✕</button>
+  </div>`;
+}
+
+/* ── 사이드바 「🧩 블록」 탭 — 블록 서랍 ── */
+function vNbBlockPanel(){
+  if(typeof NB_BLOCK_GROUPS === 'undefined') return '';
+  return `<div class="cb-snip nbk-drawer">
+    <div class="cb-snip-hint">블록을 <b>끌어다 놓거나</b> 눌러서 <b>고른 블록 셀</b>에 넣습니다</div>
+    ${NB_BLOCK_GROUPS.map(([g, keys]) => `
+      <div class="cb-snip-group">
+        <div class="cb-snip-label">${esc(g)}</div>
+        ${keys.map(k => `<button class="nbk-pal" draggable="true" data-action="nb-blk-add"
+          data-k="${k}" style="--nbk-cat:var(${NB_BLK_CAT[NB_BLOCK_DEFS[k].cat]})"
+          >${esc(NB_BLOCK_DEFS[k].name)}</button>`).join('')}
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ── 사이드바 「🧩 함수」 탭 ──
+   지금까지 배운 함수를 세로로 늘어놓습니다. 누르면 고른 코드 셀의
+   커서 자리에 주석과 함께 들어갑니다 (nbInsertSnippet).
+   사이드바는 sticky 라 셀 옆에 붙어 있어 오르내릴 일이 없습니다. */
+function vNbSnipPanel(){
+  if(typeof NB_SNIPPETS === 'undefined') return '';
+  return `<div class="cb-snip">
+    <div class="cb-snip-hint">누르면 <b>고른 코드 셀</b>에 주석과 함께 들어갑니다</div>
+    ${NB_SNIPPETS.map((g, gi) => `
+      <div class="cb-snip-group">
+        <div class="cb-snip-label">${esc(g.group)}</div>
+        ${g.items.map((it, ii) => `<button class="cb-snip-item" data-action="nb-snip"
+          data-g="${gi}" data-i="${ii}" title="${esc(nbSnippetTip(it))}"
+          ><span class="cb-snip-code">${esc(it.label)}</span
+          ><span class="cb-snip-desc">${esc(it.note)}</span></button>`).join('')}
+      </div>`).join('')}
+  </div>`;
+}
+
 // ── 메뉴바 (Colab 스타일: 파일/편집/보기/삽입/런타임/도움말) ──
 function vNbMenubar(isTeacher, isStudent){
   const menus = [
     {id: 'file', label: '파일', items: [
+      {label: '📤  파일 올리기', action: 'nb-upload-open'},
       {label: '⬇️  ipynb 로 다운로드', action: 'nb-download-ipynb', shortcut: 'Ctrl+S'},
       {label: '🖨️  인쇄', action: 'nb-print', shortcut: 'Ctrl+P'},
     ]},
@@ -162,6 +277,7 @@ function vNbMenubar(isTeacher, isStudent){
       {label: '🌗  테마 전환', action: 'nb-toggle-theme'},
     ]},
     {id: 'insert', label: '삽입', items: [
+      {label: '🧩  블록 셀', action: 'nb-insert-block'},
       {label: '➕  코드 셀', action: 'nb-insert-code'},
       {label: '📝  텍스트 셀', action: 'nb-insert-text'},
       ...(isStudent ? [] : [{label: '🧠  복습 퀴즈 문제', action: 'nb-insert-quiz'}]),
@@ -197,11 +313,12 @@ function vNbMenubar(isTeacher, isStudent){
 
 // ── 좌측 사이드바 (마크다운 헤더 자동 목차) ──
 function vNbSidebar(){
-  const T = [['snip', '🧩 함수'], ['toc', '📋 목차'], ['files', '📁 파일']];
+  const T = [['blk', '🧩 블록'], ['snip', 'ƒ 함수'], ['toc', '📋 목차'], ['files', '📁 파일']];
   const tabs = `<div class="cb-side-tabs">
     ${T.map(([k, label]) => `<button class="${NB_SIDE_TAB === k ? 'on' : ''}"
       data-action="nb-side-tab" data-tab="${k}">${label}</button>`).join('')}
   </div>`;
+  if(NB_SIDE_TAB === 'blk') return `<aside class="cb-sidebar">${tabs}${vNbBlockPanel()}</aside>`;
   if(NB_SIDE_TAB === 'files') return `<aside class="cb-sidebar">${tabs}${vNbFilesPanel()}</aside>`;
   if(NB_SIDE_TAB === 'toc') return _vNbSidebarToc().replace('<aside class="cb-sidebar">', '<aside class="cb-sidebar">' + tabs);
   return `<aside class="cb-sidebar">${tabs}${vNbSnipPanel()}</aside>`;
@@ -268,6 +385,7 @@ function vNbCell(cell, idx){
 
   // 셀 사이 + 버튼
   const addRow = `<div class="cb-add-row">
+    <button class="cb-add-btn" data-action="nb-add-cell" data-type="block" data-pos="${idx}">+ 🧩 블록</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="code" data-pos="${idx}">+ 코드</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="markdown" data-pos="${idx}">+ 텍스트</button>
   </div>`;
@@ -299,6 +417,10 @@ function vNbCell(cell, idx){
       ${body}
     </div>`;
   }
+
+  // 🧩 블록 셀 — cell.blocks 가 있으면 글상자 대신 블록을 쌓아 보여 줍니다.
+  //   실행 · 저장 · 내려받기는 cell.source(블록이 만든 파이썬)를 그대로 씁니다.
+  if(cell.blocks) return addRow + vNbBlockCell(cell, hoverTb);
 
   // 코드 셀
   const result = NB_CELL_OUTPUTS[cell.id];

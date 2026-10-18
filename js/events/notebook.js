@@ -37,11 +37,11 @@ function scheduleNBSave(){
     _nbSaveTimer = setTimeout(async () => {
       setNBSaveStatus('saving');
       try {
-        const sanitized = (NB_CELLS || []).map(c => ({
-          id: c.id || '',
-          type: c.type || 'code',
-          source: c.source || ''
-        }));
+        const sanitized = (NB_CELLS || []).map(c => {
+          const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
+          if(Array.isArray(c.blocks)) o.blocks = c.blocks;   // 🧩 블록 셀
+          return o;
+        });
         await db.ref(`notebooks/${TC_CLS.id}/${SEL_NOTEBOOK.id}`).update({cells: sanitized});
         // 메모리 캐시도 동기화
         SEL_NOTEBOOK.cells = sanitized;
@@ -88,7 +88,7 @@ function setNBSaveStatus(state){
 }
 
 // 워커 코드 변경 시 이 버전을 올려 브라우저 캐시 무효화 (GitHub Pages 캐시 우회)
-const NB_WORKER_VER = '20260911-colab-2';
+const NB_WORKER_VER = '20260922-upload';
 
 function getNBWorker(){
   if(!_nbWorker){
@@ -259,7 +259,9 @@ function parseIpynb(jsonText){
 
     const type = c.cell_type === 'code' ? 'code' : 'markdown';
     const id = c.metadata?.id || `cell-${idx}-${Math.random().toString(36).slice(2,8)}`;
-    return {id, type, source};
+    // 🧩 블록 셀 — metadata.blocks 가 있으면 블록까지 되살립니다
+    const blocks = Array.isArray(c.metadata?.blocks) ? c.metadata.blocks : null;
+    return blocks ? {id, type, source, blocks} : {id, type, source};
   });
 }
 
@@ -290,30 +292,40 @@ function _mergeNotebookCells(origCells, savedCells){
   for(const oc of orig){
     if(oc.id && savedById.has(oc.id)){
       const sc = savedById.get(oc.id);
-      result.push({
+      const merged = {
         id: oc.id,
         type: sc.type || oc.type || oc.cell_type || 'code',
         source: sc.source != null ? sc.source : (oc.source || '')
-      });
+      };
+      // 🧩 블록 셀 — 학생이 쌓은 블록을 먼저, 없으면 선생님 원본의 블록을
+      // ⚠ 빈 배열 [] 도 「블록 셀인데 아직 비어 있다」 는 뜻입니다 — 참/거짓으로 보면 안 됩니다
+      const bl = Array.isArray(sc.blocks) ? sc.blocks
+               : (Array.isArray(oc.blocks) ? oc.blocks : null);
+      if(bl !== null) merged.blocks = bl;
+      result.push(merged);
       usedIds.add(oc.id);
     } else {
       // 선생님이 새로 추가한 셀 — 학생 진도에 없음 → 원본 그대로
-      result.push({
+      const fresh = {
         id: oc.id,
         type: oc.type || oc.cell_type || 'code',
         source: oc.source || ''
-      });
+      };
+      if(Array.isArray(oc.blocks)) fresh.blocks = oc.blocks;   // 🧩 블록 셀
+      result.push(fresh);
     }
   }
 
   // 2) 학생만 가지고 있는 셀 (학생이 추가했거나 선생님이 삭제한 셀) → 끝에 보존
   for(const sc of saved){
     if(!sc.id || !usedIds.has(sc.id)){
-      result.push({
+      const own = {
         id: sc.id || `cell-orphan-${Math.random().toString(36).slice(2,8)}`,
         type: sc.type || 'code',
         source: sc.source || ''
-      });
+      };
+      if(Array.isArray(sc.blocks)) own.blocks = sc.blocks;     // 🧩 블록 셀
+      result.push(own);
     }
   }
 
@@ -348,11 +360,16 @@ async function openNotebook(nbId){
     sourceCells = nb.cells || [];
   }
 
-  NB_CELLS = sourceCells.map((c, idx) => ({
-    id: c.id || `cell-${idx}-${Math.random().toString(36).slice(2,8)}`,
-    type: c.type || c.cell_type || 'code',
-    source: c.source || ''
-  }));
+  NB_CELLS = sourceCells.map((c, idx) => {
+    const o = {
+      id: c.id || `cell-${idx}-${Math.random().toString(36).slice(2,8)}`,
+      type: c.type || c.cell_type || 'code',
+      source: c.source || ''
+    };
+    // 🧩 블록 셀 — 빈 배열 [] 도 「블록 셀인데 아직 비어 있다」 는 뜻입니다
+    if(Array.isArray(c.blocks)) o.blocks = c.blocks;
+    return o;
+  });
   NB_CELL_OUTPUTS = {};
   NB_EXEC_COUNT = 0;
   NB_SELECTED = NB_CELLS[0]?.id || null;
@@ -563,11 +580,14 @@ async function runAll(){
 
 // ── 셀 추가/삭제/이동/복제 ──
 function addCell(pos, type, focus){
+  // 🧩 블록 셀도 cell_type 은 code 입니다 — blocks 가 있다는 것만 다릅니다.
+  const isBlk = type === 'block';
   const newCell = {
     id: 'c-' + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    type,
-    source: type === 'markdown' ? '' : ''
+    type: isBlk ? 'code' : type,
+    source: ''
   };
+  if(isBlk){ newCell.blocks = []; type = 'code'; }
   NB_CELLS.splice(pos, 0, newCell);
   NB_SELECTED = newCell.id;
   if(type === 'markdown') NB_EDITING_MD = newCell.id;
@@ -861,6 +881,12 @@ document.addEventListener('click', async e => {
     destroyAllCMs(); render();
     return;
   }
+  if(act.action === 'nb-insert-block'){
+    closeNbMenu();
+    const i = NB_SELECTED ? findCellIdx(NB_SELECTED) : -1;
+    addCell(i >= 0 ? i + 1 : NB_CELLS.length, 'block', false);
+    return;
+  }
   if(act.action === 'nb-insert-code'){
     closeNbMenu();
     // 선택된 셀 다음에 삽입 (없으면 맨 아래)
@@ -926,6 +952,14 @@ document.addEventListener('click', async e => {
     }
     return;
   }
+
+  /* ── 🧩 블록 셀 ──
+     블록을 고칠 때마다 cell.source 를 다시 만들어 넣습니다.
+     그래야 실행 · 저장 · ipynb 내려받기가 지금 코드 그대로 돕니다. */
+  if(act.action === 'nb-blk-add'){ nbBlkAdd(act.k); return; }
+  if(act.action === 'nb-blk-del'){ nbBlkEdit(act.cellid, bs => bs.splice(+act.bi, 1)); return; }
+  if(act.action === 'nb-blk-say'){ NB_BLK_SAY = !NB_BLK_SAY; render(); return; }
+  if(act.action === 'nb-blk-code'){ NB_BLK_CODE = !NB_BLK_CODE; render(); return; }
 
   // 셀 추가
   if(act.action === 'nb-add-cell'){ addCell(parseInt(act.pos), act.type, true); return; }
@@ -1088,7 +1122,7 @@ function downloadIpynb(){
         const outputs = result ? nbIpynbOutputs(result) : [];
         return {
           cell_type: 'code', source: sourceArr,
-          metadata: {id: c.id},
+          metadata: c.blocks ? {id: c.id, blocks: c.blocks} : {id: c.id},
           execution_count: result?.execCount || null,
           outputs
         };
@@ -1343,3 +1377,97 @@ document.addEventListener('click', e => {
   const edit = e.target.closest?.('[data-action="nb-quiz-edit"]');
   if(edit){ nbQuizModal(edit.dataset.cellid); return; }
 });
+
+
+/* ═══ 🧩 블록 셀 ═══════════════════════════════════════════
+   cell.blocks 를 고치고 cell.source 를 다시 만듭니다.
+   source 가 실행 · 저장 · 내려받기가 쓰는 값이라 다른 코드는 손대지 않아도 됩니다. */
+function nbBlkCell(cellId){
+  return NB_CELLS.find(c => c.id === cellId && c.blocks);
+}
+function nbBlkEdit(cellId, fn){
+  const cell = nbBlkCell(cellId);
+  if(!cell) return;
+  fn(cell.blocks);
+  nbRefitBlocks(cell.blocks, nbCellDataFile(cell, NB_CELLS));
+  cell.source = nbBlockCode(cell.blocks);
+  NB_SELECTED = cell.id;
+  render();
+  scheduleNBSave();
+}
+/* 서랍에서 누른 블록 — 고른 블록 셀 끝에 붙입니다. 없으면 알려 줍니다. */
+function nbBlkAdd(k, cellId, at){
+  const cell = nbBlkCell(cellId || NB_SELECTED) || NB_CELLS.find(c => c.blocks);
+  if(!cell){ toast('먼저 「+ 🧩 블록」 으로 블록 셀을 만들어 주세요', 'err'); return; }
+  const b = nbMakeBlock(k, nbCellDataFile(cell, NB_CELLS));
+  if(!b) return;
+  nbBlkEdit(cell.id, bs => { if(at == null) bs.push(b); else bs.splice(at, 0, b); });
+}
+
+/* 드롭다운을 바꾸면 그 자리만 바꿉니다 */
+document.addEventListener('change', e => {
+  const s = e.target.closest('[data-action="nb-blk-slot"]');
+  if(!s) return;
+  nbBlkEdit(s.dataset.cellid, bs => {
+    const b = bs[+s.dataset.bi];
+    if(b) b.a[s.dataset.slot] = s.value;
+  });
+});
+
+/* 끌어다 놓기 — 서랍에서 새로 넣기 · 셀 안에서 자리 옮기기 */
+let _nbkDrag = null;
+document.addEventListener('dragstart', e => {
+  const pal = e.target.closest('[data-action="nb-blk-add"]');
+  const blk = e.target.closest('.nbk-blk');
+  if(pal) _nbkDrag = {kind: 'new', k: pal.dataset.k};
+  else if(blk){ _nbkDrag = {kind: 'move', cellid: blk.dataset.cellid, bi: +blk.dataset.bi};
+                blk.classList.add('nbk-dragging'); }
+  else return;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', 'nbk'); } catch(err){}
+});
+document.addEventListener('dragend', () => {
+  _nbkDrag = null;
+  document.querySelectorAll('.nbk-dragging').forEach(el => el.classList.remove('nbk-dragging'));
+  document.querySelectorAll('.nbk-over').forEach(el => el.classList.remove('nbk-over'));
+});
+document.addEventListener('dragover', e => {
+  if(!_nbkDrag) return;
+  const stack = e.target.closest('[data-blkstack]');
+  if(!stack) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  stack.classList.add('nbk-over');
+});
+document.addEventListener('dragleave', e => {
+  const stack = e.target.closest('[data-blkstack]');
+  if(stack && !stack.contains(e.relatedTarget)) stack.classList.remove('nbk-over');
+});
+document.addEventListener('drop', e => {
+  if(!_nbkDrag) return;
+  const stack = e.target.closest('[data-blkstack]');
+  if(!stack) return;
+  e.preventDefault();
+  stack.classList.remove('nbk-over');
+  const cellId = stack.dataset.blkstack;
+  const at = _nbkIndexAt(stack, e.clientY);
+  if(_nbkDrag.kind === 'new'){
+    nbBlkAdd(_nbkDrag.k, cellId, at);
+  } else if(_nbkDrag.cellid === cellId){
+    const from = _nbkDrag.bi;
+    nbBlkEdit(cellId, bs => {
+      const [b] = bs.splice(from, 1);
+      bs.splice(at > from ? at - 1 : at, 0, b);
+    });
+  }
+  _nbkDrag = null;
+});
+/* 놓을 자리 — 블록 가운데보다 위면 그 앞 */
+function _nbkIndexAt(stack, y){
+  const rows = [...stack.querySelectorAll('.nbk-blk')];
+  for(let i = 0; i < rows.length; i++){
+    const r = rows[i].getBoundingClientRect();
+    if(y < r.top + r.height / 2) return i;
+  }
+  return rows.length;
+}

@@ -202,12 +202,12 @@ async function loadNotebookProgress(cid, nbId, studentNum){
 }
 
 async function saveNotebookProgress(cid, nbId, studentNum, cells){
-  // cells 배열을 그대로 저장 (source/type/id만 포함)
-  const sanitized = (cells || []).map(c => ({
-    id: c.id || '',
-    type: c.type || 'code',
-    source: c.source || ''
-  }));
+  // cells 배열을 그대로 저장 (source/type/id, 🧩 블록 셀이면 blocks 까지)
+  const sanitized = (cells || []).map(c => {
+    const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
+    if(Array.isArray(c.blocks)) o.blocks = c.blocks;   // 없으면 블록 셀이 코드 셀로 바뀝니다
+    return o;
+  });
   await db.ref(`notebookProgress/${cid}/${nbId}/${studentNum}`).set({
     cells: sanitized,
     updatedAt: new Date().toISOString()
