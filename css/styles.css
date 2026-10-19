@@ -6776,6 +6776,15 @@ button{border-radius:2px}
   border-radius:2px;word-break:keep-all}
 .nbk-pal:hover{background:var(--cb-hover);border-color:var(--nbk-cat)}
 .nbk-pal:active{cursor:grabbing}
+/* 서랍 블록에 파이썬을 같이 보여 줍니다 (2026-10-19) */
+.nbk-pal-name{display:block}
+.nbk-pal-code{display:block;margin-top:3px;font-family:var(--cb-mono,ui-monospace,Consolas,monospace);
+  font-size:10.5px;font-weight:500;line-height:1.45;white-space:pre-wrap;word-break:break-all;
+  color:var(--cb-text-2)}
+.nbk-pal:hover .nbk-pal-code{color:var(--cb-text)}
+/* 블록이 들어간 셀을 잠깐 밝혀 줍니다 — 화면 밖에 들어가면 안 먹은 줄 압니다 */
+.cb-cell-blk.nbk-landed{outline:2px solid var(--cb-accent);outline-offset:-2px;
+  transition:outline-color .7s ease}
 .nbk-drawer .cb-snip-group{display:flex;flex-direction:column;gap:4px}
 
 /* 미리 셀 수 없는 값은 적는 칸으로 (행 번호 · 찾을 값) */

@@ -226,6 +226,17 @@ function vNbBlock(cellId, b, bi, file){
   </div>`;
 }
 
+/* 서랍의 블록에 보여 줄 파이썬 — {자리}는 기본값으로 채웁니다 */
+function nbPalCode(k){
+  const d = NB_BLOCK_DEFS[k];
+  return d.tpl.replace(/\{(\w+)\}/g, (m, key) => {
+    const slot = d.slots && d.slots[key];
+    if(!slot) return m;
+    const v = nbSlotDefault(slot, NB_DATA_DEFAULT);
+    return (v === undefined || v === null || v === '') ? '…' : String(v);
+  });
+}
+
 /* ── 사이드바 「🧩 블록」 탭 — 블록 서랍 ── */
 function vNbBlockPanel(){
   if(typeof NB_BLOCK_GROUPS === 'undefined') return '';
@@ -236,7 +247,8 @@ function vNbBlockPanel(){
         <div class="cb-snip-label">${esc(g)}</div>
         ${keys.map(k => `<button class="nbk-pal" draggable="true" data-action="nb-blk-add"
           data-k="${k}" style="--nbk-cat:var(${NB_BLK_CAT[NB_BLOCK_DEFS[k].cat]})"
-          >${esc(NB_BLOCK_DEFS[k].name)}</button>`).join('')}
+          ><span class="nbk-pal-name">${esc(NB_BLOCK_DEFS[k].name)}</span
+          ><span class="nbk-pal-code">${esc(nbPalCode(k))}</span></button>`).join('')}
       </div>`).join('')}
   </div>`;
 }

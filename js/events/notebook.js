@@ -1397,11 +1397,27 @@ function nbBlkEdit(cellId, fn){
 }
 /* 서랍에서 누른 블록 — 고른 블록 셀 끝에 붙입니다. 없으면 알려 줍니다. */
 function nbBlkAdd(k, cellId, at){
-  const cell = nbBlkCell(cellId || NB_SELECTED) || NB_CELLS.find(c => c.blocks);
-  if(!cell){ toast('먼저 「+ 🧩 블록」 으로 블록 셀을 만들어 주세요', 'err'); return; }
+  // 끌어다 놓으면 놓은 셀, 누르면 **고른 블록 셀**에 넣습니다.
+  // 고른 셀이 없는데 멋대로 첫 블록 셀에 넣으면 화면 밖에 들어가 「안 먹는다」 가 됩니다
+  // (2026-10-19 선생님). 그래서 어디에 넣을지 분명할 때만 넣습니다.
+  const cell = nbBlkCell(cellId || NB_SELECTED);
+  if(!cell){
+    const any = NB_CELLS.some(c => c.blocks);
+    toast(any ? '블록을 넣을 🧩 블록 셀을 먼저 누르세요'
+              : '먼저 「+ 🧩 블록」 으로 블록 셀을 만들어 주세요', 'err');
+    return;
+  }
   const b = nbMakeBlock(k, nbCellDataFile(cell, NB_CELLS));
   if(!b) return;
   nbBlkEdit(cell.id, bs => { if(at == null) bs.push(b); else bs.splice(at, 0, b); });
+  // 들어간 자리를 보여 줍니다 — 화면 밖이면 아무 일도 안 일어난 것처럼 보입니다
+  const el = document.querySelector(`.cb-cell-blk[data-cellid="${cell.id}"]`);
+  if(el){
+    const r = el.getBoundingClientRect();
+    if(r.top < 0 || r.bottom > innerHeight) el.scrollIntoView({block: 'center', behavior: 'smooth'});
+    el.classList.add('nbk-landed');
+    setTimeout(() => el.classList.remove('nbk-landed'), 700);
+  }
 }
 
 /* 드롭다운을 바꾸면 그 자리만 바꿉니다 */
@@ -1431,21 +1447,29 @@ document.addEventListener('dragend', () => {
   document.querySelectorAll('.nbk-dragging').forEach(el => el.classList.remove('nbk-dragging'));
   document.querySelectorAll('.nbk-over').forEach(el => el.classList.remove('nbk-over'));
 });
+/* 블록 셀 어디에 놓아도 그 셀의 블록 칸으로 보냅니다 — 칸을 정확히 맞출 필요가 없게 */
+function _nbkStackAt(target){
+  const el = target instanceof Element ? target : null;
+  if(!el) return null;
+  return el.closest('[data-blkstack]')
+      || el.closest('.cb-cell-blk')?.querySelector('[data-blkstack]')
+      || null;
+}
 document.addEventListener('dragover', e => {
   if(!_nbkDrag) return;
-  const stack = e.target.closest('[data-blkstack]');
+  const stack = _nbkStackAt(e.target);
   if(!stack) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   stack.classList.add('nbk-over');
 });
 document.addEventListener('dragleave', e => {
-  const stack = e.target.closest('[data-blkstack]');
+  const stack = _nbkStackAt(e.target);
   if(stack && !stack.contains(e.relatedTarget)) stack.classList.remove('nbk-over');
 });
 document.addEventListener('drop', e => {
   if(!_nbkDrag) return;
-  const stack = e.target.closest('[data-blkstack]');
+  const stack = _nbkStackAt(e.target);
   if(!stack) return;
   e.preventDefault();
   stack.classList.remove('nbk-over');
