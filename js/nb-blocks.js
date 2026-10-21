@@ -148,16 +148,20 @@ const NB_BLOCK_DEFS = {
     cat: 'ml', name: '특징과 타깃 정하기',
     slots: { a: { opt: 'num', def: 0 }, b: { opt: 'num', def: 1 },
              c: { opt: 'num', def: 2 }, t: { opt: 'cols', def: 0 } },
-    tpl: 'X = df[["{a}", "{b}", "{c}"]]\ny = df["{t}"]',
+    // print 가 없으면 셀을 돌려도 아무것도 안 나옵니다 — 노트북 8의 「확인」 은
+    // (333, 3) 과 (333,) 가 나온다고 적혀 있습니다 (2026-10-21 고침)
+    tpl: 'X = df[["{a}", "{b}", "{c}"]]\ny = df["{t}"]\nprint(X.shape, y.shape)',
     say: '타깃은 예측하려는 속성이고, 특징은 타깃을 예측하려고 사용하는 속성입니다.',
     src: '교과서 106쪽',
   },
   split: {
     cat: 'ml', name: '훈련 · 테스트로 나누기',
     slots: { r: { opt: ['0.2', '0.3', '0.4'], def: '0.3' } },
+    // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
     tpl: 'from sklearn.model_selection import train_test_split\n' +
          'X_train, X_test, y_train, y_test = train_test_split(\n' +
-         '    X, y, test_size={r}, stratify=y, random_state=42)',
+         '    X, y, test_size={r}, stratify=y, random_state=42)\n' +
+         'print(X_train.shape, X_test.shape)',
     say: '훈련 데이터와 테스트 데이터로 나누기. random_state 는 무작위성을 제어하기 위한 시드(seed)값입니다.',
     src: '교과서 100 · 111쪽',
   },
