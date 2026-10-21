@@ -205,7 +205,13 @@ async function saveNotebookProgress(cid, nbId, studentNum, cells){
   // cells 배열을 그대로 저장 (source/type/id, 🧩 블록 셀이면 blocks 까지)
   const sanitized = (cells || []).map(c => {
     const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
-    if(Array.isArray(c.blocks)) o.blocks = c.blocks;   // 없으면 블록 셀이 코드 셀로 바뀝니다
+    // ⚠ Firebase 는 **빈 배열을 통째로 지웁니다.** 아직 블록을 안 놓은 🧩 셀은
+    //   blocks:[] 라서 키가 사라지고, 다시 열면 그냥 코드 셀이 됩니다.
+    //   그래서 blk:true 를 따로 적어 둡니다 (nbBlocksOf 가 읽을 때 되살립니다).
+    if(Array.isArray(c.blocks)){
+      o.blk = true;
+      if(c.blocks.length) o.blocks = c.blocks;
+    }
     return o;
   });
   await db.ref(`notebookProgress/${cid}/${nbId}/${studentNum}`).set({

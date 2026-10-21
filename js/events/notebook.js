@@ -39,7 +39,10 @@ function scheduleNBSave(){
       try {
         const sanitized = (NB_CELLS || []).map(c => {
           const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
-          if(Array.isArray(c.blocks)) o.blocks = c.blocks;   // 🧩 블록 셀
+          if(Array.isArray(c.blocks)){        // 🧩 블록 셀 — blk 는 nbBlocksOf 주석을 보세요
+            o.blk = true;
+            if(c.blocks.length) o.blocks = c.blocks;
+          }
           return o;
         });
         await db.ref(`notebooks/${TC_CLS.id}/${SEL_NOTEBOOK.id}`).update({cells: sanitized});
@@ -260,9 +263,23 @@ function parseIpynb(jsonText){
     const type = c.cell_type === 'code' ? 'code' : 'markdown';
     const id = c.metadata?.id || `cell-${idx}-${Math.random().toString(36).slice(2,8)}`;
     // 🧩 블록 셀 — metadata.blocks 가 있으면 블록까지 되살립니다
-    const blocks = Array.isArray(c.metadata?.blocks) ? c.metadata.blocks : null;
+    const blocks = nbBlocksOf(c);
     return blocks ? {id, type, source, blocks} : {id, type, source};
   });
+}
+
+/* 🧩 블록 셀인지 가려내고, 쌓인 블록을 돌려줍니다. 블록 셀이 아니면 null.
+
+   ⚠ **Firebase 는 빈 배열을 통째로 지웁니다.** 아직 블록을 안 놓은 셀은 blocks:[] 라서
+   DB 를 거치고 나면 키가 사라지고, 학생에게는 끌어다 놓을 자리가 없는 **빈 코드 셀**로
+   보였습니다 (2026-10-21 확인 — 노트북 8의 실습 1~5 가 전부 이랬습니다).
+   그래서 저장할 때 blk:true 를 따로 적고, 읽을 때 여기서 되살립니다.
+   빈 배열도 「블록 셀인데 아직 비어 있다」 는 뜻이므로 참/거짓으로 보면 안 됩니다. */
+function nbBlocksOf(c){
+  if(!c) return null;
+  if(Array.isArray(c.blocks)) return c.blocks;
+  if(Array.isArray(c.metadata?.blocks)) return c.metadata.blocks;
+  return (c.blk || c.metadata?.blk) ? [] : null;
 }
 
 // 셀 배열의 총 바이트 수 추정 (업로드 경고용)
@@ -299,8 +316,7 @@ function _mergeNotebookCells(origCells, savedCells){
       };
       // 🧩 블록 셀 — 학생이 쌓은 블록을 먼저, 없으면 선생님 원본의 블록을
       // ⚠ 빈 배열 [] 도 「블록 셀인데 아직 비어 있다」 는 뜻입니다 — 참/거짓으로 보면 안 됩니다
-      const bl = Array.isArray(sc.blocks) ? sc.blocks
-               : (Array.isArray(oc.blocks) ? oc.blocks : null);
+      const bl = nbBlocksOf(sc) !== null ? nbBlocksOf(sc) : nbBlocksOf(oc);
       if(bl !== null) merged.blocks = bl;
       result.push(merged);
       usedIds.add(oc.id);
@@ -311,7 +327,8 @@ function _mergeNotebookCells(origCells, savedCells){
         type: oc.type || oc.cell_type || 'code',
         source: oc.source || ''
       };
-      if(Array.isArray(oc.blocks)) fresh.blocks = oc.blocks;   // 🧩 블록 셀
+      const fb = nbBlocksOf(oc);
+      if(fb !== null) fresh.blocks = fb;              // 🧩 블록 셀
       result.push(fresh);
     }
   }
@@ -324,7 +341,8 @@ function _mergeNotebookCells(origCells, savedCells){
         type: sc.type || 'code',
         source: sc.source || ''
       };
-      if(Array.isArray(sc.blocks)) own.blocks = sc.blocks;     // 🧩 블록 셀
+      const ob = nbBlocksOf(sc);
+      if(ob !== null) own.blocks = ob;                // 🧩 블록 셀
       result.push(own);
     }
   }
@@ -367,7 +385,8 @@ async function openNotebook(nbId){
       source: c.source || ''
     };
     // 🧩 블록 셀 — 빈 배열 [] 도 「블록 셀인데 아직 비어 있다」 는 뜻입니다
-    if(Array.isArray(c.blocks)) o.blocks = c.blocks;
+    const bl = nbBlocksOf(c);
+    if(bl !== null) o.blocks = bl;
     return o;
   });
   NB_CELL_OUTPUTS = {};
@@ -648,11 +667,16 @@ async function resetToOriginal(){
   try {
     await deleteNotebookProgress(SEL_CLS.id, SEL_NOTEBOOK.id, ST_USER.number);
   } catch(e){ console.warn(e); }
-  NB_CELLS = (SEL_NOTEBOOK.cells || []).map((c, idx) => ({
-    id: c.id || `cell-${idx}-${Math.random().toString(36).slice(2,8)}`,
-    type: c.type || c.cell_type || 'code',
-    source: c.source || ''
-  }));
+  NB_CELLS = (SEL_NOTEBOOK.cells || []).map((c, idx) => {
+    const o = {
+      id: c.id || `cell-${idx}-${Math.random().toString(36).slice(2,8)}`,
+      type: c.type || c.cell_type || 'code',
+      source: c.source || ''
+    };
+    const bl = nbBlocksOf(c);        // 진도를 지워도 🧩 블록 셀은 블록 셀로 남아야 합니다
+    if(bl !== null) o.blocks = bl;
+    return o;
+  });
   NB_CELL_OUTPUTS = {};
   NB_SELECTED = NB_CELLS[0]?.id || null;
   NB_EDITING_MD = null;
