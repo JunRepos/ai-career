@@ -205,8 +205,14 @@ function vNbBlock(cellId, b, bi, file){
       const at = `data-action="nb-blk-slot" data-cellid="${cellId}" data-bi="${bi}"
         data-slot="${m[1]}" aria-label="${esc(d.name)}"`;
       // 미리 셀 수 없는 값(행 번호 · 찾을 값)은 적는 칸으로 둡니다 — 교과서 81쪽처럼
-      if(slot.kind) return `<input class="nbk-in" type="${slot.kind === 'num' ? 'number' : 'text'}"
-        value="${esc(b.a[m[1]] ?? '')}" size="${slot.kind === 'num' ? 5 : 7}" ${at}>`;
+      if(slot.kind){
+        const v = b.a[m[1]];
+        // 아직 안 적은 자리는 빨갛게 — 무엇을 해야 하는지 바로 보이게
+        const ask = slot.ask && (v === '' || v == null) ? ' nbk-in-ask' : '';
+        return `<input class="nbk-in${ask}" type="${slot.kind === 'num' ? 'number' : 'text'}"
+          value="${esc(v ?? '')}" size="${slot.kind === 'num' ? 5 : 11}"
+          placeholder="${slot.ask ? '함수 이름' : ''}" ${at}>`;
+      }
       const opts = nbSlotOptions(slot, file);
       const cur = b.a[m[1]];
       // ask 자리는 **학생이 고르기 전까지** 비어 있습니다 — 끌어 놓자마자 답이 되면 안 됩니다

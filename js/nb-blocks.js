@@ -72,44 +72,48 @@ const NB_BLOCK_DEFS = {
   /* ── 살펴보기 ── */
   head: {
     cat: 'look', name: '처음 몇 행 보기',
-    slots: { n: { opt: ['3', '5', '10'], def: '5' } },
-    tpl: 'df.head({n})',
+    slots: { f: { kind: 'text', def: '', ans: 'head', ask: 1 }, n: { opt: ['3', '5', '10'], def: '5' } },
+    tpl: 'df.{f}({n})',
     say: '처음 5행 보기', src: '교과서 79쪽',
   },
   shape: {
     cat: 'look', name: '행과 열 수 보기',
-    tpl: 'print(df.shape)',
+    slots: { f: { kind: 'text', def: '', ans: 'shape', ask: 1 } },
+    tpl: 'print(df.{f})',
     say: '(행 수, 열 수) 입니다.',
     src: '교과서 95쪽',
   },
   info: {
     cat: 'look', name: '열 이름과 자료형 보기',
-    tpl: 'df.info()',
+    slots: { f: { kind: 'text', def: '', ans: 'info', ask: 1 } },
+    tpl: 'df.{f}()',
     say: '열마다 값의 개수와 자료형', src: '교과서 79쪽',
   },
   vc: {
     cat: 'look', name: '값마다 개수 세기',
-    slots: { c: { opt: 'cols', def: 0 } },
-    tpl: 'df["{c}"].value_counts()',
+    slots: { c: { opt: 'cols', def: 0 }, f: { kind: 'text', def: '', ans: 'value_counts', ask: 1 } },
+    tpl: 'df["{c}"].{f}()',
     say: '값마다 개수 세기 (도수분포)', src: '교과서 87쪽',
   },
 
   /* ── 전처리 ── */
   isnull: {
     cat: 'clean', name: '열마다 결측치 세기',
-    tpl: 'df.isnull().sum()',
+    slots: { f: { kind: 'text', def: '', ans: 'isnull', ask: 1 } },
+    tpl: 'df.{f}().sum()',
     say: '열마다 결측치 세기', src: '교과서 80쪽',
   },
   dropna: {
     cat: 'clean', name: '결측치가 있는 행 삭제',
-    tpl: 'df = df.dropna()',
+    slots: { f: { kind: 'text', def: '', ans: 'dropna', ask: 1 } },
+    tpl: 'df = df.{f}()',
     say: '결측치가 있는 행 삭제하기. df = 로 다시 저장해야 df 가 바뀝니다.',
     src: '교과서 80쪽',
   },
   uniq: {
     cat: 'clean', name: '값의 종류 보기 (이상치 찾기)',
-    slots: { c: { opt: 'cols', def: 1 } },
-    tpl: 'df["{c}"].unique()',
+    slots: { c: { opt: 'cols', def: 1 }, f: { kind: 'text', def: '', ans: 'unique', ask: 1 } },
+    tpl: 'df["{c}"].{f}()',
     say: 'unique() 함수로 속성별로 중복되지 않는 고유한 값의 종류를 출력하여 이상치가 있는지 확인합니다.',
     src: '교과서 81쪽',
   },
@@ -122,8 +126,8 @@ const NB_BLOCK_DEFS = {
   },
   droprow: {
     cat: 'clean', name: '행 번호로 행 삭제 (이상치)',
-    slots: { n: { kind: 'num', def: '336' } },
-    tpl: 'df = df.drop({n}, axis=0)',
+    slots: { f: { kind: 'text', def: '', ans: 'drop', ask: 1 }, n: { kind: 'num', def: '336' } },
+    tpl: 'df = df.{f}({n}, axis=0)',
     say: '확인한 인덱스에 해당하는 행을 데이터 프레임에서 삭제합니다. ' +
          '괄호 안 숫자가 삭제할 행의 인덱스입니다.',
     src: '교과서 81쪽',
