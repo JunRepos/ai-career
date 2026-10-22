@@ -208,8 +208,14 @@ function vNbBlock(cellId, b, bi, file){
       if(slot.kind) return `<input class="nbk-in" type="${slot.kind === 'num' ? 'number' : 'text'}"
         value="${esc(b.a[m[1]] ?? '')}" size="${slot.kind === 'num' ? 5 : 7}" ${at}>`;
       const opts = nbSlotOptions(slot, file);
-      return `<select class="nbk-sel" ${at}>${
-        opts.map(v => `<option${v === b.a[m[1]] ? ' selected' : ''}>${esc(v)}</option>`).join('')
+      const cur = b.a[m[1]];
+      // ask 자리는 **학생이 고르기 전까지** 비어 있습니다 — 끌어 놓자마자 답이 되면 안 됩니다
+      const blank = slot.ask
+        ? `<option value=""${(cur === '' || cur == null) ? ' selected' : ''}>고르세요</option>`
+        : '';
+      const unset = slot.ask && (cur === '' || cur == null) ? ' nbk-sel-ask' : '';
+      return `<select class="nbk-sel${unset}" ${at}>${blank}${
+        opts.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('')
       }</select>`;
     }).join('');
     return `<div class="nbk-line">${parts}</div>`;

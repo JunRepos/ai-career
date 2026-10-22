@@ -146,8 +146,11 @@ const NB_BLOCK_DEFS = {
   /* ── 기계학습 ── */
   xy: {
     cat: 'ml', name: '특징과 타깃 정하기',
-    slots: { a: { opt: 'num', def: 0 }, b: { opt: 'num', def: 1 },
-             c: { opt: 'num', def: 2 }, t: { opt: 'cols', def: 0 } },
+    // ask:1 — 끌어다 놓았을 때 **고르지 않은 채**로 나옵니다.
+    // 기본값이 곧 정답이면 끌어 놓는 순간 답이 완성됩니다 (2026-10-22 선생님).
+    // def 는 검산용 정답으로 그대로 둡니다 (verify/nb_house.py 가 씁니다).
+    slots: { a: { opt: 'num', def: 0, ask: 1 }, b: { opt: 'num', def: 1, ask: 1 },
+             c: { opt: 'num', def: 2, ask: 1 }, t: { opt: 'cols', def: 0, ask: 1 } },
     // print 가 없으면 셀을 돌려도 아무것도 안 나옵니다 — 노트북 8의 「확인」 은
     // (333, 3) 과 (333,) 가 나온다고 적혀 있습니다 (2026-10-21 고침)
     tpl: 'X = df[["{a}", "{b}", "{c}"]]\ny = df["{t}"]\nprint(X.shape, y.shape)',
@@ -265,6 +268,7 @@ function nbSlotOptions(slot, file){
   return slot.opt;
 }
 function nbSlotDefault(slot, file){
+  if(slot.ask) return '';            // 학생이 고를 자리 — 비워 둡니다
   if(slot.kind) return slot.def;
   const opts = nbSlotOptions(slot, file);
   if(typeof slot.def === 'number') return opts[Math.min(slot.def, opts.length - 1)];
@@ -295,7 +299,10 @@ function nbBlockCode(blocks){
   return (blocks || []).map(b => {
     const d = NB_BLOCK_DEFS[b.k];
     if(!d) return '';
-    return d.tpl.replace(/\{(\w+)\}/g, (_, s) => (b.a && b.a[s] != null) ? b.a[s] : '');
+    return d.tpl.replace(/\{(\w+)\}/g, (_, s) => {
+      const v = b.a ? b.a[s] : null;
+      return (v === undefined || v === null || v === '') ? '___' : v;   // 아직 안 고른 자리
+    });
   }).filter(Boolean).join('\n');
 }
 
@@ -308,6 +315,7 @@ function nbRefitBlocks(blocks, file){
       if(slot.kind) continue;
       if(slot.opt !== 'cols' && slot.opt !== 'num') continue;
       const opts = nbSlotOptions(slot, file);
+      if(slot.ask && (b.a[s] === '' || b.a[s] == null)) return;   // 아직 안 고른 자리
       if(!opts.includes(b.a[s])) b.a[s] = nbSlotDefault(slot, file);
     }
   });
