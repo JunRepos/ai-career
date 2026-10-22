@@ -76,6 +76,12 @@ const NB_BLOCK_DEFS = {
     tpl: 'df.head({n})',
     say: '처음 5행 보기', src: '교과서 79쪽',
   },
+  shape: {
+    cat: 'look', name: '행과 열 수 보기',
+    tpl: 'print(df.shape)',
+    say: '(행 수, 열 수) 입니다.',
+    src: '교과서 95쪽',
+  },
   info: {
     cat: 'look', name: '열 이름과 자료형 보기',
     tpl: 'df.info()',
@@ -243,7 +249,7 @@ const NB_BLOCK_DEFS = {
 
 const NB_BLOCK_GROUPS = [
   ['준비',     ['imp', 'load']],
-  ['살펴보기', ['head', 'info', 'vc']],
+  ['살펴보기', ['shape', 'head', 'info', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
   ['그래프',   ['scat', 'box', 'corr']],
   ['기계학습', ['xy', 'split', 'dt', 'knn', 'fit', 'score', 'scoret', 'cm', 'report', 'tree']],
