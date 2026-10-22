@@ -199,16 +199,22 @@ const NB_BLOCK_DEFS = {
   },
   fit: {
     cat: 'ml', name: '학습시키기',
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
-    tpl: '{m}.fit(X_train, y_train)',
-    say: '기계학습 모델을 학습시키기', src: '교과서 100쪽',
+    // d — 학습에 **어느 데이터**를 쓸지. 테스트 데이터로 학습하면 틀립니다.
+    //     수행평가 ② 「정확하게 학습」 이 이 선택입니다 (2026-10-22 선생님).
+    slots: { m: { opt: ['dt', 'knn'], def: 'dt' },
+             d: { opt: ['train', 'test'], def: '', ans: 'train', ask: 1 } },
+    tpl: '{m}.fit(X_{d}, y_{d})',
+    say: '모델을 학습시키기. 학습에는 훈련 데이터를 씁니다.', src: '교과서 100쪽',
   },
   score: {
-    cat: 'ml', name: '정확도 재기 — 훈련 데이터',
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
-    tpl: 'print({m}.score(X_train, y_train))',
-    say: '정확도는 전체 데이터 중 예측값과 실젯값이 같은 데이터 개수의 비율입니다. ' +
-         '훈련 데이터로 학습한 모델이 그 훈련 데이터를 얼마나 맞히는지 봅니다.',
+    cat: 'ml', name: '분류 정확도 재기',
+    // d — **어느 데이터로 잴지**. 모델의 성능은 테스트 데이터로 봅니다.
+    //     수행평가 ③ 「정확하게 평가」 가 이 선택입니다 (2026-10-22 선생님).
+    slots: { m: { opt: ['dt', 'knn'], def: 'dt' },
+             d: { opt: ['train', 'test'], def: '', ans: 'test', ask: 1 } },
+    tpl: 'print({m}.score(X_{d}, y_{d}))',
+    say: '분류 정확도는 전체 데이터 중 예측값과 실젯값이 같은 데이터 개수의 비율입니다. ' +
+         '모델의 성능은 학습에 쓰지 않은 테스트 데이터로 봅니다.',
     src: '교과서 108 · 112쪽',
   },
   scoret: {
@@ -256,7 +262,7 @@ const NB_BLOCK_GROUPS = [
   ['살펴보기', ['shape', 'head', 'info', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
   ['그래프',   ['scat', 'box', 'corr']],
-  ['기계학습', ['xy', 'split', 'dt', 'knn', 'fit', 'score', 'scoret', 'cm', 'report', 'tree']],
+  ['기계학습', ['xy', 'split', 'dt', 'knn', 'fit', 'score', 'cm', 'report', 'tree']],
 ];
 
 /* ── 블록 하나 만들기 — 드롭다운은 기본값으로 ── */
