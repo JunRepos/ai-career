@@ -898,11 +898,18 @@ document.addEventListener('click', async e => {
     destroyAllCMs(); render();
     return;
   }
-  /* ── 오른쪽 「📖 가이드북」 칸 (2026-10-23 선생님) ── */
+  /* ── 「📖 가이드북」 팝업 (2026-10-23 선생님) ── */
   if(act.action === 'nb-toggle-guide'){
     closeNbMenu();
     NB_GUIDE_OPEN = !NB_GUIDE_OPEN;
     if(!NB_GUIDE_OPEN) NB_GUIDE_ANCHOR = '';
+    destroyAllCMs(); render();
+    return;
+  }
+  if(act.action === 'nb-guide-back'){
+    // 팝업 바깥(어두운 바탕)을 눌렀을 때만 닫습니다 — 안쪽을 누른 것은 그냥 둡니다
+    if(t.closest('.cb-guide')) return;
+    NB_GUIDE_OPEN = false; NB_GUIDE_ANCHOR = '';
     destroyAllCMs(); render();
     return;
   }
@@ -915,7 +922,8 @@ document.addEventListener('click', async e => {
     NB_GUIDE_ANCHOR = anchor;
     const f = document.getElementById('cb-guide-f');
     if(NB_GUIDE_OPEN && f && f.contentWindow){
-      f.contentWindow.postMessage({guideGo: anchor}, '*');
+      // 막 연 직후라면 가이드북이 아직 안 떠서 신호를 놓칩니다 — 몇 번 더 보냅니다
+      nbGuideTell(anchor);
     } else {
       NB_GUIDE_OPEN = true;
       destroyAllCMs(); render();
@@ -1128,6 +1136,13 @@ document.addEventListener('keydown', e => {
   // 메뉴 닫기: Esc (메뉴가 열려 있을 때)
   if(e.key === 'Escape' && NB_OPEN_MENU){
     closeNbMenu();
+    return;
+  }
+  // 가이드북 팝업 닫기: Esc (2026-10-23)
+  if(e.key === 'Escape' && NB_GUIDE_OPEN){
+    e.preventDefault();
+    NB_GUIDE_OPEN = false; NB_GUIDE_ANCHOR = '';
+    destroyAllCMs(); render();
     return;
   }
 });
@@ -1542,4 +1557,17 @@ function _nbkIndexAt(stack, y){
     if(y < r.top + r.height / 2) return i;
   }
   return rows.length;
+}
+
+/* ── 가이드북 팝업에 「이 자리를 펴라」고 알립니다 (2026-10-23) ──
+   팝업을 막 연 직후에는 iframe 이 아직 안 떠서 한 번 보낸 신호를 놓칩니다.
+   가이드북 쪽이 받으면 scrollIntoView 하므로, 몇 번 더 보내도 같은 자리입니다. */
+function nbGuideTell(anchor, tries){
+  const f = document.getElementById('cb-guide-f');
+  if(!f || !f.contentWindow || !NB_GUIDE_OPEN) return;
+  f.contentWindow.postMessage({guideGo: anchor}, '*');
+  const n = (tries || 0) + 1;
+  if(n < 5) setTimeout(() => {
+    if(NB_GUIDE_ANCHOR === anchor) nbGuideTell(anchor, n);
+  }, [160, 380, 700, 1200][n - 1]);
 }

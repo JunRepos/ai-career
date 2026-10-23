@@ -6800,19 +6800,21 @@ button{border-radius:2px}
 .nbk-sel.nbk-sel-ask{border-color:#C8102E;background:#FFF4F4;color:#C8102E;font-weight:700}
 .nbk-in.nbk-in-ask{border-color:#C8102E;background:#FFF4F4;color:#C8102E;font-weight:700}
 
-/* ── 📖 오른쪽 가이드북 칸 (2026-10-23 선생님) ──
-   블록에서 함수 이름을 학생이 직접 적게 바꾼 뒤로, 실습 중에 옆에 펴 놓고 봅니다.
-   화면이 좁으면(1100px 미만) 셀 아래로 내려가 가로로 꽉 채웁니다. */
-.cb-guide{flex:0 0 400px;width:400px;border-left:1px solid var(--cb-border);background:var(--cb-bg-2);
-  display:flex;flex-direction:column;position:sticky;top:88px;align-self:flex-start;
-  height:calc(100vh - 100px);min-height:380px}
-.cb-guide-bar{display:flex;align-items:center;gap:6px;padding:7px 8px 7px 11px;
+/* ── 📖 가이드북 팝업 (2026-10-23 선생님) ──
+   블록에서 함수 이름을 학생이 직접 적게 바꾼 뒤로, 실습 중에 찾아봅니다.
+   옆 칸으로 뒀더니 셀이 좁아져 못 쓴다고 하셔서 가운데 팝업으로 바꿨습니다. */
+.cb-guide-back{position:fixed;inset:0;z-index:4000;background:rgba(20,22,21,.46);
+  display:flex;align-items:center;justify-content:center;padding:26px}
+.cb-guide{width:min(980px,94vw);height:min(880px,90vh);background:var(--cb-bg-1);
+  border:1px solid var(--cb-border);border-radius:12px;overflow:hidden;
+  box-shadow:0 18px 56px rgba(0,0,0,.34);display:flex;flex-direction:column}
+.cb-guide-bar{display:flex;align-items:center;gap:7px;padding:9px 10px 9px 14px;
   border-bottom:1px solid var(--cb-border);background:var(--cb-bg-2);flex-shrink:0}
-.cb-guide-t{font-size:12.5px;font-weight:700;color:var(--cb-text-2);flex:1;
+.cb-guide-t{font-size:14px;font-weight:700;color:var(--cb-text-1);flex:1;
   font-family:'Pretendard',-apple-system,sans-serif}
 .cb-guide-new,.cb-guide-x{border:1px solid var(--cb-border);background:var(--cb-bg-1);
-  color:var(--cb-text-2);border-radius:5px;cursor:pointer;font-size:12px;line-height:1;
-  padding:4px 7px;text-decoration:none}
+  color:var(--cb-text-2);border-radius:6px;cursor:pointer;font-size:12.5px;line-height:1;
+  padding:6px 9px;text-decoration:none;font-family:'Pretendard',-apple-system,sans-serif}
 .cb-guide-new:hover,.cb-guide-x:hover{background:var(--cb-bg-3)}
 .cb-guide-f{flex:1;width:100%;border:0;background:#fff}
 .cb-tb-btn.cb-tb-on{background:#00703C;border-color:#00703C;color:#fff}
@@ -6824,8 +6826,7 @@ button{border-radius:2px}
   color:var(--cb-text-3);border-radius:5px;cursor:pointer;font-size:11px;font-weight:700;padding:0}
 .nbk-pal-q:hover{background:#00703C;border-color:#00703C;color:#fff}
 
-@media (max-width:1100px){
-  .cb-body.cb-has-guide{flex-wrap:wrap}
-  .cb-guide{flex:1 1 100%;width:auto;border-left:0;border-top:1px solid var(--cb-border);
-    position:static;height:70vh}
+@media (max-width:760px){
+  .cb-guide-back{padding:0}
+  .cb-guide{width:100vw;height:100vh;border-radius:0;border:0}
 }

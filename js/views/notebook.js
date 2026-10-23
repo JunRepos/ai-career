@@ -121,14 +121,14 @@ function vNotebookDetail(isTeacher){
     <div class="cb-wrap">
       ${toolbar}
       ${menubar}
-      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}${NB_GUIDE_OPEN ? ' cb-has-guide' : ''}">
+      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}">
         ${sidebar}
         <div class="cb-main">
           <div class="cb-cells" id="cb-cells">${cellsHtml || ''}</div>
           ${addEndRow}
         </div>
-        ${vNbGuidePanel()}
       </div>
+      ${vNbGuidePanel()}
     </div>`;
 }
 
@@ -253,24 +253,28 @@ function nbPalCode(k){
 }
 
 /* ── 사이드바 「🧩 블록」 탭 — 블록 서랍 ── */
-/* ── 오른쪽 「📖 가이드북」 칸 (2026-10-23 선생님) ──
+/* ── 「📖 가이드북」 팝업 (2026-10-23 선생님) ──
    블록에서 함수 이름을 학생이 직접 적게 바꾼 뒤로, 실습 중에 가이드북을
-   옆에 펴 놓고 찾아볼 수 있어야 합니다. guide/index.html 을 iframe 으로
-   띄우고, 블록의 「?」 를 누르면 그 함수 자리로 내려갑니다.
+   찾아볼 수 있어야 합니다. guide/index.html 을 iframe 으로 띄우고,
+   블록의 「?」 를 누르면 그 함수 자리로 내려갑니다.
+   옆 칸으로 뒀더니 셀이 좁아져 못 쓴다고 하셔서 **화면 가운데 팝업**으로 바꿨습니다.
+   바깥을 누르거나 Esc 로 닫습니다.
    iframe 을 다시 그리면 보던 자리를 잃으므로, 자리 이동은 **다시 그리지 않고**
    postMessage 로 알립니다 (events/notebook.js 의 nb-guide-go). */
 function vNbGuidePanel(){
   if(!NB_GUIDE_OPEN) return '';
   const src = 'guide/index.html?panel=1' + (NB_GUIDE_ANCHOR ? '#' + NB_GUIDE_ANCHOR : '');
-  return `<aside class="cb-guide" id="cb-guide">
-    <div class="cb-guide-bar">
-      <span class="cb-guide-t">📖 파이썬 가이드북</span>
-      <a class="cb-guide-new" href="guide/index.html" target="_blank" rel="noopener"
-         title="새 창에서 크게 보기">↗</a>
-      <button class="cb-guide-x" data-action="nb-toggle-guide" title="닫기">✕</button>
+  return `<div class="cb-guide-back" data-action="nb-guide-back">
+    <div class="cb-guide" id="cb-guide" role="dialog" aria-label="파이썬 가이드북">
+      <div class="cb-guide-bar">
+        <span class="cb-guide-t">📖 파이썬 가이드북</span>
+        <a class="cb-guide-new" href="guide/index.html" target="_blank" rel="noopener"
+           title="새 창에서 크게 보기">↗ 새 창</a>
+        <button class="cb-guide-x" data-action="nb-toggle-guide" title="닫기 (Esc)">✕</button>
+      </div>
+      <iframe class="cb-guide-f" id="cb-guide-f" src="${src}" title="파이썬 가이드북"></iframe>
     </div>
-    <iframe class="cb-guide-f" id="cb-guide-f" src="${src}" title="파이썬 가이드북"></iframe>
-  </aside>`;
+  </div>`;
 }
 
 function vNbBlockPanel(){
