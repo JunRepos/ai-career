@@ -57,11 +57,13 @@ const NB_BLOCK_DEFS = {
 
   /* ── 준비 ── */
   imp: {
+    guide: 'c_setup',   // 준비 — 라이브러리 가져오기
     cat: 'prep', name: '판다스 · 시본 가져오기',
     tpl: 'import pandas as pd\nimport seaborn as sns',
     say: 'pandas 는 데이터 프레임(표)을 다루는 라이브러리, seaborn 은 그래프를 그리는 라이브러리입니다.',
   },
   load: {
+    guide: 'c_load',   // 데이터 불러오기
     cat: 'prep', name: '데이터 불러오기',
     slots: { f: { opt: NB_DATA_FILES, def: NB_DATA_DEFAULT } },
     tpl: '!wget "' + NB_DATA_URL + '{f}"\ndf = pd.read_csv("{f}")',
@@ -71,12 +73,14 @@ const NB_BLOCK_DEFS = {
 
   /* ── 살펴보기 ── */
   head: {
+    guide: 'c_head',   // 처음 몇 행 보기
     cat: 'look', name: '처음 몇 행 보기',
     slots: { f: { kind: 'text', def: '', ans: 'head', ask: 1 }, n: { opt: ['3', '5', '10'], def: '5' } },
     tpl: 'df.{f}({n})',
     say: '처음 5행 보기', src: '교과서 79쪽',
   },
   shape: {
+    guide: 'c_shape',   // 행과 열 수
     cat: 'look', name: '행과 열 수 보기',
     slots: { f: { kind: 'text', def: '', ans: 'shape', ask: 1 } },
     tpl: 'print(df.{f})',
@@ -84,12 +88,14 @@ const NB_BLOCK_DEFS = {
     src: '교과서 95쪽',
   },
   info: {
+    guide: 'c_info',   // 열 이름과 자료형
     cat: 'look', name: '열 이름과 자료형 보기',
     slots: { f: { kind: 'text', def: '', ans: 'info', ask: 1 } },
     tpl: 'df.{f}()',
     say: '열마다 값의 개수와 자료형', src: '교과서 79쪽',
   },
   vc: {
+    guide: 'c_vc',   // 값마다 개수 세기
     cat: 'look', name: '값마다 개수 세기',
     slots: { c: { opt: 'cols', def: 0 }, f: { kind: 'text', def: '', ans: 'value_counts', ask: 1 } },
     tpl: 'df["{c}"].{f}()',
@@ -98,12 +104,14 @@ const NB_BLOCK_DEFS = {
 
   /* ── 전처리 ── */
   isnull: {
+    guide: 'c_isnull',   // 결측치 세기
     cat: 'clean', name: '열마다 결측치 세기',
     slots: { f: { kind: 'text', def: '', ans: 'isnull', ask: 1 } },
     tpl: 'df.{f}().sum()',
     say: '열마다 결측치 세기', src: '교과서 80쪽',
   },
   dropna: {
+    guide: 'c_dropna',   // 결측치 행 삭제
     cat: 'clean', name: '결측치가 있는 행 삭제',
     slots: { f: { kind: 'text', def: '', ans: 'dropna', ask: 1 } },
     tpl: 'df = df.{f}()',
@@ -111,6 +119,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 80쪽',
   },
   uniq: {
+    guide: 'c_unique',   // 값의 종류 보기
     cat: 'clean', name: '값의 종류 보기 (이상치 찾기)',
     slots: { c: { opt: 'cols', def: 1 }, f: { kind: 'text', def: '', ans: 'unique', ask: 1 } },
     tpl: 'df["{c}"].{f}()',
@@ -118,6 +127,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 81쪽',
   },
   findrow: {
+    guide: 'c_findbad',   // 그 값을 가진 행 찾기
     cat: 'clean', name: '그 값을 가진 행 찾기',
     slots: { c: { opt: 'cols', def: 1 }, v: { kind: 'text', def: '.' } },
     tpl: 'df[df["{c}"] == "{v}"]',
@@ -125,6 +135,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 81쪽',
   },
   droprow: {
+    guide: 'c_drop',   // 행 번호로 삭제
     cat: 'clean', name: '행 번호로 행 삭제 (이상치)',
     slots: { f: { kind: 'text', def: '', ans: 'drop', ask: 1 }, n: { kind: 'num', def: '336' } },
     tpl: 'df = df.{f}({n}, axis=0)',
@@ -135,6 +146,7 @@ const NB_BLOCK_DEFS = {
 
   /* ── 그래프 ── */
   scat: {
+    guide: 'c_scatter',   // 산점도
     cat: 'plot', name: '산점도',
     slots: { x: { opt: 'num', def: 0 }, y: { opt: 'num', def: 2 }, h: { opt: 'cols', def: 0 } },
     tpl: 'sns.scatterplot(data=df, x="{x}", y="{y}", hue="{h}")',
@@ -142,12 +154,14 @@ const NB_BLOCK_DEFS = {
     src: '교과서 82쪽',
   },
   box: {
+    guide: 'c_box',   // 상자그림
     cat: 'plot', name: '상자그림',
     slots: { c: { opt: 'num', def: 3 } },
     tpl: 'sns.boxplot(data=df, x="{c}")',
     say: '상자그림 — 값이 퍼진 모양과 범위를 벗어난 값', src: '교과서 81쪽',
   },
   corr: {
+    guide: 'c_corr',   // 상관계수
     cat: 'plot', name: '상관계수',
     tpl: 'df.corr(numeric_only=True)',
     say: '상관계수 — 두 속성의 상관 정도를 수치로 나타낸 값', src: '교과서 77 · 83쪽',
@@ -155,6 +169,7 @@ const NB_BLOCK_DEFS = {
 
   /* ── 기계학습 ── */
   xy: {
+    guide: 'c_xy',   // 특징과 타깃
     cat: 'ml', name: '특징과 타깃 정하기',
     // ask:1 — 끌어다 놓았을 때 **고르지 않은 채**로 나옵니다.
     // 기본값이 곧 정답이면 끌어 놓는 순간 답이 완성됩니다 (2026-10-22 선생님).
@@ -168,6 +183,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 106쪽',
   },
   split: {
+    guide: 'c_split',   // 훈련 · 테스트 나누기
     cat: 'ml', name: '훈련 · 테스트로 나누기',
     slots: { r: { opt: ['0.2', '0.3', '0.4'], def: '0.3' } },
     // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
@@ -179,6 +195,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 100 · 111쪽',
   },
   dt: {
+    guide: 'c_dt',   // 결정트리
     cat: 'ml', name: '결정트리 모델 만들기',
     slots: { d: { opt: ['None', '1', '2', '3', '4', '5'], def: 'None' } },
     tpl: 'from sklearn.tree import DecisionTreeClassifier\n' +
@@ -189,6 +206,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 107쪽',
   },
   knn: {
+    guide: 'c_knn',   // k-최근접 이웃
     cat: 'ml', name: 'kNN 모델 만들기',
     slots: { k: { opt: ['1', '3', '5', '7', '9'], def: '5' } },
     tpl: 'from sklearn.neighbors import KNeighborsClassifier\n' +
@@ -198,6 +216,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 107쪽',
   },
   fit: {
+    guide: 'c_dt',   // 학습 — 결정트리 자리에 함께 있습니다
     cat: 'ml', name: '학습시키기',
     // d — 학습에 **어느 데이터**를 쓸지. 테스트 데이터로 학습하면 틀립니다.
     //     수행평가 ② 「정확하게 학습」 이 이 선택입니다 (2026-10-22 선생님).
@@ -207,6 +226,7 @@ const NB_BLOCK_DEFS = {
     say: '모델을 학습시키기. 학습에는 훈련 데이터를 씁니다.', src: '교과서 100쪽',
   },
   score: {
+    guide: 'c_dtscore',   // 분류 정확도
     cat: 'ml', name: '분류 정확도 재기',
     // d — **어느 데이터로 잴지**. 모델의 성능은 테스트 데이터로 봅니다.
     //     수행평가 ③ 「정확하게 평가」 가 이 선택입니다 (2026-10-22 선생님).
@@ -218,6 +238,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 108 · 112쪽',
   },
   scoret: {
+    guide: 'c_dtscore',   // 분류 정확도
     cat: 'ml', name: '정확도 재기 — 테스트 데이터',
     slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
     tpl: 'print({m}.score(X_test, y_test))',
@@ -226,6 +247,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 95 · 112쪽',
   },
   cm: {
+    guide: 'c_cm',   // 혼동 행렬
     cat: 'ml', name: '혼동 행렬',
     slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
     tpl: 'from sklearn.metrics import confusion_matrix\n' +
@@ -235,6 +257,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 108 · 115쪽',
   },
   report: {
+    guide: 'c_metrics',   // 정밀도 · 재현율
     cat: 'ml', name: '정밀도 · 재현율 표',
     slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
     tpl: 'from sklearn.metrics import classification_report\n' +
@@ -244,6 +267,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 115쪽',
   },
   tree: {
+    guide: 'c_tree',   // 트리 그리기
     cat: 'ml', name: '결정트리 그림 그리기',
     slots: { d: { opt: ['1', '2', '3'], def: '2' } },
     tpl: 'import matplotlib.pyplot as plt\n' +

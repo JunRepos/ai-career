@@ -90,6 +90,8 @@ function vNotebookDetail(isTeacher){
     ${saveInd}
     <div class="cb-toolbar-actions">
       <button class="cb-tb-btn" data-action="nb-upload-open" title="내 컴퓨터의 파일을 노트북(/content)에 올리기 — 파일을 노트북 위로 끌어다 놓아도 됩니다">📤 파일 올리기</button>
+      <button class="cb-tb-btn${NB_GUIDE_OPEN ? ' cb-tb-on' : ''}" data-action="nb-toggle-guide"
+        aria-pressed="${NB_GUIDE_OPEN}" title="가이드북을 오른쪽에 펴 놓고 보기">📖 가이드북</button>
       ${progressBtn}
     </div>
   </div>
@@ -119,12 +121,13 @@ function vNotebookDetail(isTeacher){
     <div class="cb-wrap">
       ${toolbar}
       ${menubar}
-      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}">
+      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}${NB_GUIDE_OPEN ? ' cb-has-guide' : ''}">
         ${sidebar}
         <div class="cb-main">
           <div class="cb-cells" id="cb-cells">${cellsHtml || ''}</div>
           ${addEndRow}
         </div>
+        ${vNbGuidePanel()}
       </div>
     </div>`;
 }
@@ -250,6 +253,26 @@ function nbPalCode(k){
 }
 
 /* ── 사이드바 「🧩 블록」 탭 — 블록 서랍 ── */
+/* ── 오른쪽 「📖 가이드북」 칸 (2026-10-23 선생님) ──
+   블록에서 함수 이름을 학생이 직접 적게 바꾼 뒤로, 실습 중에 가이드북을
+   옆에 펴 놓고 찾아볼 수 있어야 합니다. guide/index.html 을 iframe 으로
+   띄우고, 블록의 「?」 를 누르면 그 함수 자리로 내려갑니다.
+   iframe 을 다시 그리면 보던 자리를 잃으므로, 자리 이동은 **다시 그리지 않고**
+   postMessage 로 알립니다 (events/notebook.js 의 nb-guide-go). */
+function vNbGuidePanel(){
+  if(!NB_GUIDE_OPEN) return '';
+  const src = 'guide/index.html?panel=1' + (NB_GUIDE_ANCHOR ? '#' + NB_GUIDE_ANCHOR : '');
+  return `<aside class="cb-guide" id="cb-guide">
+    <div class="cb-guide-bar">
+      <span class="cb-guide-t">📖 파이썬 가이드북</span>
+      <a class="cb-guide-new" href="guide/index.html" target="_blank" rel="noopener"
+         title="새 창에서 크게 보기">↗</a>
+      <button class="cb-guide-x" data-action="nb-toggle-guide" title="닫기">✕</button>
+    </div>
+    <iframe class="cb-guide-f" id="cb-guide-f" src="${src}" title="파이썬 가이드북"></iframe>
+  </aside>`;
+}
+
 function vNbBlockPanel(){
   if(typeof NB_BLOCK_GROUPS === 'undefined') return '';
   return `<div class="cb-snip nbk-drawer">
@@ -257,10 +280,12 @@ function vNbBlockPanel(){
     ${NB_BLOCK_GROUPS.map(([g, keys]) => `
       <div class="cb-snip-group">
         <div class="cb-snip-label">${esc(g)}</div>
-        ${keys.map(k => `<button class="nbk-pal" draggable="true" data-action="nb-blk-add"
+        ${keys.map(k => `<div class="nbk-pal-row"><button class="nbk-pal" draggable="true" data-action="nb-blk-add"
           data-k="${k}" style="--nbk-cat:var(${NB_BLK_CAT[NB_BLOCK_DEFS[k].cat]})"
           ><span class="nbk-pal-name">${esc(NB_BLOCK_DEFS[k].name)}</span
-          ><span class="nbk-pal-code">${esc(nbPalCode(k))}</span></button>`).join('')}
+          ><span class="nbk-pal-code">${esc(nbPalCode(k))}</span></button>${
+          NB_BLOCK_DEFS[k].guide ? `<button class="nbk-pal-q" data-action="nb-guide-go"
+            data-anchor="${NB_BLOCK_DEFS[k].guide}" title="가이드북에서 보기">?</button>` : ''}</div>`).join('')}
       </div>`).join('')}
   </div>`;
 }

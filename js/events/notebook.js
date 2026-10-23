@@ -898,6 +898,30 @@ document.addEventListener('click', async e => {
     destroyAllCMs(); render();
     return;
   }
+  /* ── 오른쪽 「📖 가이드북」 칸 (2026-10-23 선생님) ── */
+  if(act.action === 'nb-toggle-guide'){
+    closeNbMenu();
+    NB_GUIDE_OPEN = !NB_GUIDE_OPEN;
+    if(!NB_GUIDE_OPEN) NB_GUIDE_ANCHOR = '';
+    destroyAllCMs(); render();
+    return;
+  }
+  if(act.action === 'nb-guide-go'){
+    // 블록 옆 「?」 — 가이드북의 그 함수 자리를 폅니다.
+    // 이미 열려 있으면 **다시 그리지 않습니다.** 다시 그리면 iframe 이 처음부터
+    // 되읽혀 느리고, 학생이 보던 자리를 잃습니다. 창에 자리만 일러 줍니다.
+    const anchor = act.anchor || '';
+    if(!anchor) return;
+    NB_GUIDE_ANCHOR = anchor;
+    const f = document.getElementById('cb-guide-f');
+    if(NB_GUIDE_OPEN && f && f.contentWindow){
+      f.contentWindow.postMessage({guideGo: anchor}, '*');
+    } else {
+      NB_GUIDE_OPEN = true;
+      destroyAllCMs(); render();
+    }
+    return;
+  }
   if(act.action === 'nb-toggle-theme'){
     closeNbMenu();
     if(typeof toggleTheme === 'function') toggleTheme();

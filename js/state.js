@@ -91,6 +91,8 @@ let NB_SHOW_PROGRESS   = false; // 학생 진도 패널 표시 여부
 let NB_COLLAPSED_OUTPUTS = {}; // { [cellId]: true } — 출력 접힘 상태
 let NB_SIDEBAR_OPEN    = true; // 좌측 사이드바(목차) 열림 여부
 let NB_OPEN_MENU       = null; // 현재 열린 메뉴바 메뉴 id ('file'|'edit'|...|null)
+let NB_GUIDE_OPEN      = false; // 오른쪽 가이드북 칸 열림 여부 (2026-10-23)
+let NB_GUIDE_ANCHOR    = '';    // 가이드북에서 펴 보일 자리 (nb-blocks.js 의 guide)
 
 // 진도 계획
 let CURRICULUM = null; // {startDate, endDate, classDays, topics, sessions, updatedAt}
