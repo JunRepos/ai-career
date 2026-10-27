@@ -423,7 +423,9 @@ function vNbSidebar(){
     ${T.map(([k, label]) => `<button class="${NB_SIDE_TAB === k ? 'on' : ''}"
       data-action="nb-side-tab" data-tab="${k}">${label}</button>`).join('')}
   </div>`;
-  if(NB_SIDE_TAB === 'blk') return `<aside class="cb-sidebar">${tabs}${vNbBlockPanel()}</aside>`;
+  // 🧩 블록 서랍은 파이썬을 같이 보여 줘서 240px 로는 줄바꿈이 너무 잦습니다
+  //   (2026-10-27 선생님). 이 탭일 때만 넓힙니다.
+  if(NB_SIDE_TAB === 'blk') return `<aside class="cb-sidebar cb-sidebar-wide">${tabs}${vNbBlockPanel()}</aside>`;
   if(NB_SIDE_TAB === 'files') return `<aside class="cb-sidebar">${tabs}${vNbFilesPanel()}</aside>`;
   if(NB_SIDE_TAB === 'toc') return _vNbSidebarToc().replace('<aside class="cb-sidebar">', '<aside class="cb-sidebar">' + tabs);
   return `<aside class="cb-sidebar">${tabs}${vNbSnipPanel()}</aside>`;
