@@ -800,6 +800,19 @@ document.addEventListener('click', async e => {
   if(!el) return;
   const act = el.dataset;
 
+  // 🔒 평가용 노트북 열고 닫기 (선생님) — js/nb-open.js
+  if(act.action === 'nb-toggle-open'){
+    const cid = TC_CLS?.id;
+    if(!cid) return;
+    const nb = NOTEBOOKS.find(n => n.id === act.nid);
+    const on = !nbIsOpen(cid, act.nid);
+    if(on && !confirm(`「${nb ? nb.title : act.nid}」 을 학생에게 **보여 줍니다.**
+괜찮습니까?`)) return;
+    try { await nbSetOpen(cid, act.nid, on); }
+    catch(err){ alert('바꾸지 못했습니다 — ' + (err.message || err)); return; }
+    render();
+    return;
+  }
   // 노트북 열기
   if(act.action === 'open-notebook'){ await openNotebook(act.nid); return; }
   // 노트북 목록으로

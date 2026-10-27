@@ -25,20 +25,32 @@ function vTcNotebook(){
   // 선생님도 미리보기 가능
   if(SEL_NOTEBOOK) return vNotebookDetail(true);
 
-  const list = !NOTEBOOKS.length ? emptyBox('📓','등록된 노트북이 없습니다.') : NOTEBOOKS.map(nb => `
+  const list = !NOTEBOOKS.length ? emptyBox('📓','등록된 노트북이 없습니다.') : NOTEBOOKS.map(nb => {
+    // 🔒 평가용 — 선생님이 열어야 학생에게 보입니다 (js/nb-open.js)
+    const open = nb.locked && nbIsOpen(TC_CLS?.id, nb.id);
+    const lockChip = !nb.locked ? '' :
+      `<span class="chip ${open ? 'chip-red' : ''}" style="margin-left:6px">${open ? '🔓 열림' : '🔒 닫힘'}</span>`;
+    const lockBtn = !nb.locked ? '' :
+      `<button class="btn-xs ${open ? 'btn-danger' : 'btn-p'}" data-action="nb-toggle-open"
+         data-nid="${nb.id}" title="${open ? '학생에게서 숨깁니다' : '학생에게 보여 줍니다'}"
+        >${open ? '닫기' : '열기'}</button>`;
+    return `
     <div class="list-row">
-      <div class="row-icon" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">📓</div>
+      <div class="row-icon" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">${nb.locked ? '📝' : '📓'}</div>
       <div class="row-info" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">
-        <div class="row-title">${esc(nb.title)}</div>
-        <div class="row-meta">${nb.cells?.length || 0}개 셀 · ${fmtDt(nb.createdAt)}</div>
+        <div class="row-title">${esc(nb.title)}${lockChip}</div>
+        <div class="row-meta">${nb.cells?.length || 0}개 셀 · ${fmtDt(nb.createdAt)}${
+          nb.locked ? (open ? ' · <b>지금 학생에게 보입니다</b>' : ' · 학생에게 안 보입니다') : ''}</div>
       </div>
       <div class="row-right">
+        ${lockBtn}
         <button class="btn-xs" data-action="notebook-move-up" data-nid="${nb.id}" title="위로">▲</button>
         <button class="btn-xs" data-action="notebook-move-down" data-nid="${nb.id}" title="아래로">▼</button>
         <button class="btn-xs" data-action="rename-notebook" data-nid="${nb.id}" data-ntitle="${esc(nb.title)}" title="노트북 이름 바꾸기">이름 변경</button>
         <button class="btn-xs btn-danger" data-action="del-notebook" data-nid="${nb.id}" data-ntitle="${esc(nb.title)}">삭제</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   return form + `<div class="sec-title" style="margin-top:4px">등록된 노트북</div>` + list;
 }
@@ -46,8 +58,10 @@ function vTcNotebook(){
 // ── 학생: 노트북 목록/상세 ──
 function vStNotebook(){
   if(SEL_NOTEBOOK) return vNotebookDetail(false);
-  if(!NOTEBOOKS.length) return emptyBox('📓','선생님이 올린 노트북이 없습니다.');
-  return NOTEBOOKS.map(nb => `
+  // 🔒 평가용 노트북은 선생님이 열어야 보입니다 (js/nb-open.js)
+  const shown = NOTEBOOKS.filter(nb => nbVisibleToStudent(SEL_CLS?.id, nb));
+  if(!shown.length) return emptyBox('📓','선생님이 올린 노트북이 없습니다.');
+  return shown.map(nb => `
     <div class="list-row click" data-action="open-notebook" data-nid="${nb.id}">
       <div class="row-icon">📓</div>
       <div class="row-info">

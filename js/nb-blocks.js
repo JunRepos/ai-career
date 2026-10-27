@@ -182,6 +182,21 @@ const NB_BLOCK_DEFS = {
     say: '타깃은 예측하려는 속성이고, 특징은 타깃을 예측하려고 사용하는 속성입니다.',
     src: '교과서 106쪽',
   },
+  // 특징 개수가 셋으로 고정되지 않는 판 (2026-10-26 선생님 —
+  // 「저 안에 속성 "" 이거 지켜서 넣으라고 하면 되지 않을까」).
+  // 두 개만 쓰거나 네 개를 다 쓰는 문제에서는 위 xy 로는 만들 수 없습니다.
+  // 속성 이름은 **따옴표와 쉼표까지 학생이 그대로** 적습니다.
+  // ⚠ 위 xy 는 건드리지 않습니다 — 이미 학생이 푼 노트북이 그 칸 이름(a·b·c)을
+  //   저장해 두어서, 틀을 바꾸면 옛 노트북의 블록이 빈칸으로 보입니다.
+  xyn: {
+    guide: 'c_xy',   // 특징과 타깃
+    cat: 'ml', name: '특징을 직접 적고 타깃 정하기',
+    slots: { f: { kind: 'text', def: '', ans: '"무게(g)", "지름(mm)"', ask: 1 },
+             t: { opt: 'cols', def: 0, ask: 1 } },
+    tpl: 'X = df[[{f}]]\ny = df["{t}"]\nprint(X.shape, y.shape)',
+    say: '타깃은 예측하려는 속성이고, 특징은 타깃을 예측하려고 사용하는 속성입니다.',
+    src: '교과서 106쪽',
+  },
   split: {
     guide: 'c_split',   // 훈련 · 테스트 나누기
     cat: 'ml', name: '훈련 · 테스트로 나누기',
@@ -286,7 +301,7 @@ const NB_BLOCK_GROUPS = [
   ['살펴보기', ['shape', 'head', 'info', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
   ['그래프',   ['scat', 'box', 'corr']],
-  ['기계학습', ['xy', 'split', 'dt', 'knn', 'fit', 'score', 'cm', 'report', 'tree']],
+  ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'cm', 'report', 'tree']],
 ];
 
 /* ── 블록 하나 만들기 — 드롭다운은 기본값으로 ── */
