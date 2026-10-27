@@ -107,13 +107,16 @@ function vNotebookDetail(isTeacher){
   //  · 학생 모드 — 본인 진도 자동 저장
   //  · 선생님이 본인이 만든 원본을 편집 중 — 원본 노트북 자동 저장 (학생 진도 보기 모드 제외)
   const showSaveInd = isStudent || (isTeacher && !NB_VIEWING_STUDENT);
+
+  // 🧪 평가용 노트북 — 선생님은 시뮬레이션으로 시작합니다 (js/nb-open.js)
+  //   ⚠ 이 줄은 아래 indText 보다 **먼저** 와야 합니다. const 는 선언 전에 쓰면
+  //     ReferenceError 가 나서 노트북 화면이 통째로 안 뜹니다 (2026-10-27 고침).
+  const gated = isTeacher && TC_CLS && typeof nbIsGated === 'function'
+                && nbIsGated(TC_CLS.id, nb.id);
+
   const indText = (gated && NB_SIM) ? '🧪 시뮬레이션 — 저장 안 함' : '✓ 저장됨';
   const saveInd = showSaveInd ? `<div id="cb-save-ind" class="cb-save-ind" style="font-size:11px;color:var(--cb-text-3);margin-right:6px">${indText}</div>` : '';
   const progressBtn = isTeacher ? `<button class="cb-tb-btn" data-action="nb-show-progress" title="학생별 진도 보기">👥 학생 진도</button>` : '';
-
-  // 🧪 평가용 노트북 — 선생님은 시뮬레이션으로 시작합니다 (js/nb-open.js)
-  const gated = isTeacher && TC_CLS && typeof nbIsGated === 'function'
-                && nbIsGated(TC_CLS.id, nb.id);
   const simBtn = !gated ? '' : `<button class="cb-tb-btn${NB_SIM ? '' : ' cb-tb-on'}"
       data-action="nb-toggle-sim"
       title="${NB_SIM ? '지금은 원본이 바뀌지 않습니다' : '지금 한 것이 학생 노트북에 저장됩니다'}"
