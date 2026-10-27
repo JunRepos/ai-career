@@ -100,3 +100,99 @@ async function nbSetOpen(cid, nbId, on){
   NB_GATE[cid] = NB_GATE[cid] || {};
   NB_GATE[cid][nbId] = on ? 'open' : 'closed';
 }
+
+/* ═══════════════ 🔑 입장 비밀번호 ═══════════════
+   (2026-10-27 선생님 — 「토글이 켜져있어도 비밀번호로 들어갈 수 있게.
+   비밀번호는 선생님이 설정할 수 있게」)
+
+   문이 열려 있어도 **비밀번호를 맞혀야** 들어갑니다. 두 겹입니다.
+     문이 닫힘 → 목록에 아예 안 보임
+     문이 열림 + 비밀번호 있음 → 보이지만 비밀번호를 넣어야 들어감
+     문이 열림 + 비밀번호 없음 → 그냥 들어감
+
+   **비밀번호 자체는 어디에도 저장하지 않습니다.** 1차와 같은 PBKDF2-SHA256
+   (무작위 salt · 25만 번)으로 바꾼 해시만 둡니다. 레포·코드·DB 어디에도
+   원래 글자는 남지 않습니다.
+     aiactivity/submissions/{반}/nbPw/{노트북id} = {salt, iter, hash}
+
+   ⚠ 알아 둘 것 — DB 규칙이 열려 있어, 이 해시는 **마음먹으면 바꿔 끼울 수
+     있습니다.** 1차 때 해시를 코드에 둔 까닭이 그것입니다. 여기서는 선생님이
+     직접 정하실 수 있어야 해서 DB 에 둡니다. 「수업 전에 미리 들어가 보는 것」
+     을 막는 잠금이지, 작정한 사람을 막는 잠금이 아닙니다.
+     한 번 맞히면 그 **탭을 닫을 때까지만** 유지됩니다 (sessionStorage).
+═══════════════════════════════════════════════ */
+
+let NB_PW = {};        // { [반id]: { [노트북id]: {salt, iter, hash} } }
+let NB_PW_ERR = '';    // 학생 화면에 보일 말
+let NB_PW_BUSY = false;
+let NB_PW_ASK = null;  // 지금 비밀번호를 묻고 있는 노트북 id
+
+function _nbPwRef(cid){ return db.ref(`aiactivity/submissions/${cid}/nbPw`); }
+const _nbHex = b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('');
+
+async function loadNbPw(cid){
+  if(!cid) return;
+  try {
+    const s = await _nbPwRef(cid).get();
+    NB_PW[cid] = s.exists() ? (s.val() || {}) : {};
+  } catch(err){
+    console.warn('[평가 노트북] 비밀번호 로드 실패:', err.message || err);
+    if(!NB_PW[cid]) NB_PW[cid] = {};
+  }
+  return NB_PW[cid];
+}
+
+function nbHasPw(cid, nbId){ return !!(NB_PW[cid] && NB_PW[cid][nbId]); }
+
+/* 이 탭에서 이미 맞혔나 */
+function _nbPwKey(cid, nbId){
+  const g = (NB_PW[cid] || {})[nbId];
+  return 'nbpw:' + cid + ':' + nbId + ':' + (g ? String(g.hash).slice(0, 12) : '');
+}
+function nbPwPassed(cid, nbId){
+  try { return sessionStorage.getItem(_nbPwKey(cid, nbId)) === '1'; } catch(e){ return false; }
+}
+
+/* 지금 이 노트북을 열려면 비밀번호를 물어야 하나 */
+function nbNeedPw(cid, nbId){
+  if(IS_TC) return false;                       // 선생님은 묻지 않습니다
+  if(!nbIsGated(cid, nbId)) return false;
+  if(!nbHasPw(cid, nbId)) return false;
+  return !nbPwPassed(cid, nbId);
+}
+
+async function _nbDerive(pw, saltHex, iter){
+  const salt = Uint8Array.from(String(saltHex).match(/../g).map(h => parseInt(h, 16)));
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(pw),
+                                            'PBKDF2', false, ['deriveBits']);
+  return _nbHex(await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, key, 256));
+}
+
+/* 학생이 넣은 것을 맞혀 봅니다 */
+async function nbPwCheck(cid, nbId, pw){
+  const g = (NB_PW[cid] || {})[nbId];
+  if(!g) return true;
+  const got = await _nbDerive(pw, g.salt, g.iter);
+  if(got !== g.hash) return false;
+  try { sessionStorage.setItem(_nbPwKey(cid, nbId), '1'); } catch(e){}
+  return true;
+}
+
+/* 선생님이 정합니다. pw 가 비면 비밀번호를 없앱니다. */
+async function nbSetPw(cid, nbId, pw){
+  if(!pw){
+    await _nbPwRef(cid).child(nbId).remove();
+    if(NB_PW[cid]) delete NB_PW[cid][nbId];
+    return null;
+  }
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iter = 250000;
+  const saltHex = _nbHex(salt.buffer);
+  const hash = await _nbDerive(pw, saltHex, iter);
+  const rec = { salt: saltHex, iter, hash };
+  await _nbPwRef(cid).child(nbId).set(rec);    // 원래 글자는 보내지 않습니다
+  NB_PW[cid] = NB_PW[cid] || {};
+  NB_PW[cid][nbId] = rec;
+  return rec;
+}

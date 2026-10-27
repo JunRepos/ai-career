@@ -6830,3 +6830,14 @@ button{border-radius:2px}
   .cb-guide-back{padding:0}
   .cb-guide{width:100vw;height:100vh;border-radius:0;border:0}
 }
+
+/* 🔑 평가용 노트북 입장 비밀번호 (2026-10-27) */
+.nbpw{max-width:360px;margin:40px auto;padding:26px 22px;text-align:center;
+  border:1px solid var(--cb-border,#ddd);border-radius:14px;background:var(--cb-bg-1,#fff)}
+.nbpw-ic{font-size:38px;line-height:1}
+.nbpw-t{margin-top:10px;font-size:17px;font-weight:700}
+.nbpw-s{margin-top:6px;font-size:13px;color:var(--cb-text-3,#777)}
+.nbpw-in{display:block;width:100%;margin:16px 0 0;padding:11px 13px;font-size:16px;
+  text-align:center;letter-spacing:2px;border:1px solid var(--cb-border,#ccc);border-radius:9px}
+.nbpw-err{margin-top:9px;font-size:13px;color:#C8102E;font-weight:700}
+.nbpw-row{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:16px}

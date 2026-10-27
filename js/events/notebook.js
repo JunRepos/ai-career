@@ -358,6 +358,12 @@ function _mergeNotebookCells(origCells, savedCells){
 
 async function openNotebook(nbId){
   const nb = NOTEBOOKS.find(x => x.id === nbId); if(!nb) return;
+  // 🔑 문이 열려 있어도 비밀번호가 걸려 있으면 먼저 묻습니다 (js/nb-open.js)
+  if(typeof nbNeedPw === 'function' && SEL_CLS && nbNeedPw(SEL_CLS.id, nbId)){
+    NB_PW_ASK = nbId; NB_PW_ERR = ''; render();
+    setTimeout(() => document.getElementById('nb-pw-in')?.focus(), 0);
+    return;
+  }
   SEL_NOTEBOOK = nb;
 
   // 학생이면 저장된 진행 상황 시도
@@ -805,6 +811,48 @@ document.addEventListener('click', async e => {
   const el = t.closest?.('[data-action]');
   if(!el) return;
   const act = el.dataset;
+
+  // 🔑 학생이 비밀번호를 넣었을 때
+  if(act.action === 'nb-pw-go'){
+    if(NB_PW_BUSY) return;
+    const el = document.getElementById('nb-pw-in');
+    const pw = (el ? el.value : '').trim();
+    if(!pw){ NB_PW_ERR = '비밀번호를 입력하세요.'; render(); return; }
+    NB_PW_BUSY = true; NB_PW_ERR = ''; render();
+    let ok = false;
+    try { ok = await nbPwCheck(SEL_CLS.id, NB_PW_ASK, pw); }
+    catch(err){ NB_PW_ERR = '확인하지 못했습니다 — ' + (err.message || err); }
+    if(!ok) await new Promise(r => setTimeout(r, 800));   // 마구 넣어 보기 늦추기
+    NB_PW_BUSY = false;
+    if(ok){
+      const id = NB_PW_ASK; NB_PW_ASK = null;
+      await openNotebook(id);
+      return;
+    }
+    if(!NB_PW_ERR) NB_PW_ERR = '비밀번호가 맞지 않습니다.';
+    render();
+    setTimeout(() => document.getElementById('nb-pw-in')?.focus(), 0);
+    return;
+  }
+  if(act.action === 'nb-pw-cancel'){ NB_PW_ASK = null; NB_PW_ERR = ''; render(); return; }
+
+  // 🔑 선생님이 비밀번호를 정합니다
+  if(act.action === 'nb-set-pw'){
+    const cid = TC_CLS?.id; if(!cid) return;
+    const has = nbHasPw(cid, act.nid);
+    const pw = prompt(has
+      ? '새 비밀번호를 넣으세요. (비우고 확인하면 비밀번호를 없앱니다)'
+      : '학생이 들어올 때 넣을 비밀번호를 정하세요.');
+    if(pw === null) return;                       // 취소
+    const v = pw.trim();
+    if(v && v.length < 4){ alert('4자 이상으로 해 주세요.'); return; }
+    if(!v && !confirm('비밀번호를 없앱니다. 문이 열려 있으면 학생이 바로 들어옵니다.\n괜찮습니까?')) return;
+    try { await nbSetPw(cid, act.nid, v); }
+    catch(err){ alert('정하지 못했습니다 — ' + (err.message || err)); return; }
+    alert(v ? '비밀번호를 정했습니다. 수업 때 학생에게 알려 주세요.' : '비밀번호를 없앴습니다.');
+    render();
+    return;
+  }
 
   // 🧪 시뮬레이션 ↔ 원본 수정 (선생님) — js/nb-open.js
   if(act.action === 'nb-toggle-sim'){

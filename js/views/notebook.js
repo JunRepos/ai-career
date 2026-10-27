@@ -35,6 +35,12 @@ function vTcNotebook(){
       `<button class="btn-xs ${open ? 'btn-danger' : 'btn-p'}" data-action="nb-toggle-open"
          data-nid="${nb.id}" title="${open ? '학생에게서 숨깁니다' : '학생에게 보여 줍니다'}"
         >${open ? '닫기' : '열기'}</button>`;
+    // 🔑 입장 비밀번호 — 문이 열려 있어도 이걸 맞혀야 들어갑니다
+    const hasPw = gated && typeof nbHasPw === 'function' && nbHasPw(TC_CLS?.id, nb.id);
+    const pwBtn = !gated ? '' :
+      `<button class="btn-xs" data-action="nb-set-pw" data-nid="${nb.id}"
+         title="${hasPw ? '비밀번호를 바꾸거나 없앱니다' : '입장 비밀번호를 정합니다'}"
+        >🔑 ${hasPw ? '비밀번호 있음' : '비밀번호 없음'}</button>`;
     return `
     <div class="list-row">
       <div class="row-icon" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">${gated ? '📝' : '📓'}</div>
@@ -44,6 +50,7 @@ function vTcNotebook(){
           gated ? (open ? ' · <b>지금 학생에게 보입니다</b>' : ' · 학생에게 안 보입니다') : ''}</div>
       </div>
       <div class="row-right">
+        ${pwBtn}
         ${lockBtn}
         <button class="btn-xs" data-action="notebook-move-up" data-nid="${nb.id}" title="위로">▲</button>
         <button class="btn-xs" data-action="notebook-move-down" data-nid="${nb.id}" title="아래로">▼</button>
@@ -58,6 +65,23 @@ function vTcNotebook(){
 
 // ── 학생: 노트북 목록/상세 ──
 function vStNotebook(){
+  // 🔑 비밀번호를 묻는 중이면 그 화면만 보여 줍니다 (js/nb-open.js)
+  if(NB_PW_ASK){
+    const nb = NOTEBOOKS.find(x => x.id === NB_PW_ASK);
+    return `<div class="section"><div class="nbpw">
+      <div class="nbpw-ic">🔒</div>
+      <div class="nbpw-t">${esc(nb ? nb.title : '수행평가')}</div>
+      <div class="nbpw-s">선생님이 알려 준 입장 비밀번호를 입력하세요.</div>
+      <input type="password" id="nb-pw-in" class="nbpw-in" autocomplete="off"
+             maxlength="32" placeholder="비밀번호" ${NB_PW_BUSY ? 'disabled' : ''}/>
+      ${NB_PW_ERR ? `<div class="nbpw-err">${esc(NB_PW_ERR)}</div>` : ''}
+      <div class="nbpw-row">
+        <button class="btn-p" data-action="nb-pw-go" ${NB_PW_BUSY ? 'disabled' : ''}
+          >${NB_PW_BUSY ? '확인 중…' : '입장하기'}</button>
+        <button class="btn-xs" data-action="nb-pw-cancel">← 목록</button>
+      </div>
+    </div></div>`;
+  }
   if(SEL_NOTEBOOK) return vNotebookDetail(false);
   // 🔒 평가용 노트북은 선생님이 열어야 보입니다 (js/nb-open.js)
   const shown = NOTEBOOKS.filter(nb => nbVisibleToStudent(SEL_CLS?.id, nb));
