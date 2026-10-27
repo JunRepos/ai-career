@@ -809,8 +809,8 @@ async function loadAllClassData(cid){
     loadA1Open(cid)
   ]);
   a1WatchOpen(cid);   // 1차 수행평가 작성 범위 — 인공지능 기초 반만 (views/assess1.js)
-  await loadNbOpen(cid);   // 🔒 평가용 노트북이 지금 열려 있나 (js/nb-open.js)
-  nbWatchOpen(cid);        // 선생님이 열고 닫으면 학생 화면이 바로 따라옵니다
+  await loadNbGate(cid);   // 🔒 평가용 노트북이 지금 열려 있나 (js/nb-open.js)
+  nbWatchGate(cid);        // 선생님이 열고 닫으면 학생 화면이 바로 따라옵니다
 
   // 이번 시간에 열어둔 자료가 무엇인지 먼저 확인해야 메모를 제대로 찾습니다.
   try {

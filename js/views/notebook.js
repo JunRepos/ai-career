@@ -27,20 +27,21 @@ function vTcNotebook(){
 
   const list = !NOTEBOOKS.length ? emptyBox('📓','등록된 노트북이 없습니다.') : NOTEBOOKS.map(nb => {
     // 🔒 평가용 — 선생님이 열어야 학생에게 보입니다 (js/nb-open.js)
-    const open = nb.locked && nbIsOpen(TC_CLS?.id, nb.id);
-    const lockChip = !nb.locked ? '' :
+    const gated = nbIsGated(TC_CLS?.id, nb.id);
+    const open = gated && nbIsOpen(TC_CLS?.id, nb.id);
+    const lockChip = !gated ? '' :
       `<span class="chip ${open ? 'chip-red' : ''}" style="margin-left:6px">${open ? '🔓 열림' : '🔒 닫힘'}</span>`;
-    const lockBtn = !nb.locked ? '' :
+    const lockBtn = !gated ? '' :
       `<button class="btn-xs ${open ? 'btn-danger' : 'btn-p'}" data-action="nb-toggle-open"
          data-nid="${nb.id}" title="${open ? '학생에게서 숨깁니다' : '학생에게 보여 줍니다'}"
         >${open ? '닫기' : '열기'}</button>`;
     return `
     <div class="list-row">
-      <div class="row-icon" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">${nb.locked ? '📝' : '📓'}</div>
+      <div class="row-icon" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">${gated ? '📝' : '📓'}</div>
       <div class="row-info" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">
         <div class="row-title">${esc(nb.title)}${lockChip}</div>
         <div class="row-meta">${nb.cells?.length || 0}개 셀 · ${fmtDt(nb.createdAt)}${
-          nb.locked ? (open ? ' · <b>지금 학생에게 보입니다</b>' : ' · 학생에게 안 보입니다') : ''}</div>
+          gated ? (open ? ' · <b>지금 학생에게 보입니다</b>' : ' · 학생에게 안 보입니다') : ''}</div>
       </div>
       <div class="row-right">
         ${lockBtn}
@@ -82,8 +83,17 @@ function vNotebookDetail(isTeacher){
   //  · 학생 모드 — 본인 진도 자동 저장
   //  · 선생님이 본인이 만든 원본을 편집 중 — 원본 노트북 자동 저장 (학생 진도 보기 모드 제외)
   const showSaveInd = isStudent || (isTeacher && !NB_VIEWING_STUDENT);
-  const saveInd = showSaveInd ? `<div id="cb-save-ind" class="cb-save-ind" style="font-size:11px;color:var(--cb-text-3);margin-right:6px">✓ 저장됨</div>` : '';
+  const indText = (gated && NB_SIM) ? '🧪 시뮬레이션 — 저장 안 함' : '✓ 저장됨';
+  const saveInd = showSaveInd ? `<div id="cb-save-ind" class="cb-save-ind" style="font-size:11px;color:var(--cb-text-3);margin-right:6px">${indText}</div>` : '';
   const progressBtn = isTeacher ? `<button class="cb-tb-btn" data-action="nb-show-progress" title="학생별 진도 보기">👥 학생 진도</button>` : '';
+
+  // 🧪 평가용 노트북 — 선생님은 시뮬레이션으로 시작합니다 (js/nb-open.js)
+  const gated = isTeacher && TC_CLS && typeof nbIsGated === 'function'
+                && nbIsGated(TC_CLS.id, nb.id);
+  const simBtn = !gated ? '' : `<button class="cb-tb-btn${NB_SIM ? '' : ' cb-tb-on'}"
+      data-action="nb-toggle-sim"
+      title="${NB_SIM ? '지금은 원본이 바뀌지 않습니다' : '지금 한 것이 학생 노트북에 저장됩니다'}"
+    >${NB_SIM ? '🧪 시뮬레이션' : '✏️ 원본 수정 중'}</button>`;
 
   // 학생 진도 보는 중일 때 상단 배너
   const viewingBanner = NB_VIEWING_STUDENT ? (() => {
@@ -105,7 +115,8 @@ function vNotebookDetail(isTeacher){
     <div class="cb-toolbar-actions">
       <button class="cb-tb-btn" data-action="nb-upload-open" title="내 컴퓨터의 파일을 노트북(/content)에 올리기 — 파일을 노트북 위로 끌어다 놓아도 됩니다">📤 파일 올리기</button>
       <button class="cb-tb-btn${NB_GUIDE_OPEN ? ' cb-tb-on' : ''}" data-action="nb-toggle-guide"
-        aria-pressed="${NB_GUIDE_OPEN}" title="가이드북을 오른쪽에 펴 놓고 보기">📖 가이드북</button>
+        aria-pressed="${NB_GUIDE_OPEN}" title="가이드북을 펴 놓고 보기">📖 가이드북</button>
+      ${simBtn}
       ${progressBtn}
     </div>
   </div>

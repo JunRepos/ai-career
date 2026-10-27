@@ -28,6 +28,11 @@ function scheduleNBSave(){
   // 학생 진도 보는 중에는 저장 안 함 (다른 학생 데이터 보호)
   if(NB_VIEWING_STUDENT) return;
 
+  // 🧪 평가용 노트북을 선생님이 **시뮬레이션**으로 보는 중 — 원본을 건드리지 않습니다
+  //    (2026-10-27 선생님). 이게 없으면 선생님이 미리 풀어 본 답이 그대로 저장돼
+  //    학생이 답이 채워진 노트북을 받습니다. js/nb-open.js 의 nbInSim 을 보세요.
+  if(typeof nbInSim === 'function' && nbInSim()){ setNBSaveStatus('sim'); return; }
+
   // ── 선생님: 원본 노트북 자동 저장 ──
   //   학생이 다음에 열 때 셀 ID 매칭으로 머지되어 변경사항 반영
   //   학생 작성 내용은 보존 (openNotebook의 _mergeNotebookCells 가 처리)
@@ -84,6 +89,7 @@ function setNBSaveStatus(state){
     saving:  {text: '💾 저장 중...',         color: 'var(--cb-text-3)'},
     saved:   {text: '✓ 저장됨',              color: '#188038'},
     error:   {text: '⚠️ 저장 실패',          color: '#d93025'},
+    sim:     {text: '🧪 시뮬레이션 — 저장 안 함', color: '#9A6700'},
   };
   const {text, color} = map[state] || map.idle;
   el.textContent = text;
@@ -800,14 +806,27 @@ document.addEventListener('click', async e => {
   if(!el) return;
   const act = el.dataset;
 
+  // 🧪 시뮬레이션 ↔ 원본 수정 (선생님) — js/nb-open.js
+  if(act.action === 'nb-toggle-sim'){
+    if(NB_SIM){
+      if(!confirm('원본을 고치는 모드로 바꿉니다.\n'
+                + '여기서 한 것이 학생이 받는 노트북에 그대로 저장됩니다.\n괜찮습니까?')) return;
+      NB_SIM = false;
+    } else {
+      NB_SIM = true;
+      alert('시뮬레이션으로 돌아왔습니다. 지금부터 한 것은 원본에 저장되지 않습니다.\n'
+          + '화면을 되돌리려면 노트북을 닫았다 다시 여세요.');
+    }
+    render();
+    return;
+  }
   // 🔒 평가용 노트북 열고 닫기 (선생님) — js/nb-open.js
   if(act.action === 'nb-toggle-open'){
     const cid = TC_CLS?.id;
     if(!cid) return;
     const nb = NOTEBOOKS.find(n => n.id === act.nid);
     const on = !nbIsOpen(cid, act.nid);
-    if(on && !confirm(`「${nb ? nb.title : act.nid}」 을 학생에게 **보여 줍니다.**
-괜찮습니까?`)) return;
+    if(on && !confirm(`「${nb ? nb.title : act.nid}」 을 지금 학생에게 보여 줍니다.\n괜찮습니까?`)) return;
     try { await nbSetOpen(cid, act.nid, on); }
     catch(err){ alert('바꾸지 못했습니다 — ' + (err.message || err)); return; }
     render();
