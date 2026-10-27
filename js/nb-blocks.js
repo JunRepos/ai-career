@@ -48,9 +48,51 @@ const NB_DATASETS = {
     cols: ['이름', '분류', '용량(ml)', '가격(원)', '칼로리(kcal)', '당류(g)', '카페인(mg)'],
     num:  ['용량(ml)', '가격(원)', '칼로리(kcal)', '당류(g)', '카페인(mg)'],
   },
+  /* ── 2차 수행평가용 세 개 (2026-10-27) ──
+     학생이 **문제 상황을 고르고 그 상황의 데이터를 고릅니다.**
+     아래 NB_DATA_ASSESS 에 올려 두어, 평가용 노트북 바깥에서는
+     「데이터 불러오기」 드롭다운에 **보이지 않습니다.** */
+  'wildcam_ko.csv': {
+    cols: ['종', '카메라', '몸길이(cm)', '어깨높이(cm)', '꼬리 길이(cm)', '귀 길이(cm)'],
+    num:  ['몸길이(cm)', '어깨높이(cm)', '꼬리 길이(cm)', '귀 길이(cm)'],
+  },
+  'recycle_ko.csv': {
+    cols: ['재질', '수거지역', '무게(g)', '두께(mm)', '밀도(g/cm³)', '적외선 반사율(%)'],
+    num:  ['무게(g)', '두께(mm)', '밀도(g/cm³)', '적외선 반사율(%)'],
+  },
+  'firewatch_ko.csv': {
+    cols: ['판정', '관측소', '온도(℃)', '습도(%)', '미세먼지(㎍/㎥)', '일산화탄소(ppm)'],
+    num:  ['온도(℃)', '습도(%)', '미세먼지(㎍/㎥)', '일산화탄소(ppm)'],
+  },
 };
 const NB_DATA_FILES = Object.keys(NB_DATASETS);
 const NB_DATA_DEFAULT = 'penguins_ko.csv';
+
+/* 평가용 데이터 — **평가용 노트북 안에서만** 고를 수 있습니다 (2026-10-27 선생님
+   「수행평가 선생님 계정이나 test 계정해서만 실행해볼 수 있도록 해줘」).
+
+   평가용 노트북은 nbGate 가 달려 있고(js/nb-open.js), 문이 닫혀 있는 동안은
+   **선생님과 test 계정만** 그 노트북을 엽니다. 그래서 문이 닫힌 지금은
+   이 세 파일을 선생님과 test 계정만 고를 수 있고, 평가 당일 문을 열면
+   그 노트북 안의 학생도 고릅니다. **다른 차시에서는 이름조차 안 보입니다.**
+
+   ⚠ 가릴 수 없는 것 — CSV 자체는 사이트에 있어야 wget 으로 받힙니다.
+     주소를 아는 사람은 파일을 받을 수 있습니다. 데이터만으로는 답이 되지
+     않지만(어느 지표가 중요한지는 상황 글에도 안 적혀 있습니다) 알아 두십시오. */
+const NB_DATA_ASSESS = ['wildcam_ko.csv', 'recycle_ko.csv', 'firewatch_ko.csv'];
+
+function nbDataFilesNow(){
+  let gated = false;
+  try {
+    const nb = (typeof SEL_NOTEBOOK !== 'undefined') ? SEL_NOTEBOOK : null;
+    const cid = (typeof IS_TC !== 'undefined' && IS_TC)
+      ? ((typeof TC_CLS !== 'undefined' && TC_CLS) ? TC_CLS.id : null)
+      : ((typeof ST_USER !== 'undefined' && ST_USER) ? ST_USER.classId : null);
+    gated = !!(nb && cid && typeof nbIsGated === 'function' && nbIsGated(cid, nb.id));
+  } catch(err){ gated = false; }
+  return gated ? NB_DATA_FILES
+               : NB_DATA_FILES.filter(f => NB_DATA_ASSESS.indexOf(f) < 0);
+}
 const NB_DATA_URL = 'https://junrepos.github.io/ai-career/data/';
 
 const NB_BLOCK_DEFS = {
@@ -66,7 +108,10 @@ const NB_BLOCK_DEFS = {
   load: {
     guide: 'c_load',   // 데이터 불러오기
     cat: 'prep', name: '데이터 불러오기',
-    slots: { f: { opt: NB_DATA_FILES, def: NB_DATA_DEFAULT } },
+    // opt 'files' — 보기 목록을 **그릴 때마다** 구합니다 (nbDataFilesNow).
+    // ask 1 — 끌어다 놓으면 「고르세요」로 비어 있습니다. 수행평가에서 학생이
+    //          **상황에 맞는 데이터를 고르는 것**이 평가요소 ④ 입니다 (2026-10-27).
+    slots: { f: { opt: 'files', def: NB_DATA_DEFAULT, ask: 1 } },
     tpl: '!wget "' + NB_DATA_URL + '{f}"\ndf = pd.read_csv("{f}")',
     say: '파일을 읽어 데이터 프레임 만들기',
     src: '교과서 79쪽',
@@ -316,6 +361,7 @@ function nbMakeBlock(k, file){
 /* 드롭다운 하나의 보기 목록 — 'cols'/'num' 이면 그 데이터의 실제 열 이름 */
 function nbSlotOptions(slot, file){
   if(slot.kind) return null;          // 숫자 · 글 입력 칸 — 고를 목록이 없습니다
+  if(slot.opt === 'files') return nbDataFilesNow();
   if(slot.opt === 'cols' || slot.opt === 'num'){
     const ds = NB_DATASETS[file] || NB_DATASETS[NB_DATA_DEFAULT];
     return ds[slot.opt];
