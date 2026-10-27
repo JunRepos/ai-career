@@ -6841,3 +6841,11 @@ button{border-radius:2px}
   text-align:center;letter-spacing:2px;border:1px solid var(--cb-border,#ccc);border-radius:9px}
 .nbpw-err{margin-top:9px;font-size:13px;color:#C8102E;font-weight:700}
 .nbpw-row{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:16px}
+
+/* 📝 2차 수행평가 탭 (2026-10-27) */
+.a2-card{border:1px solid var(--border,#ddd);border-radius:12px;padding:16px 18px;background:var(--bg1,#fff)}
+.a2-row{display:flex;gap:14px;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--border,#e5e5e5)}
+.a2-row:last-of-type{border-bottom:0}
+.a2-k{flex:0 0 108px;font-size:13px;font-weight:700;color:var(--text2,#666)}
+.a2-v{flex:1;font-size:14px}
+.a2-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
