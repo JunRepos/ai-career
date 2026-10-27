@@ -44,6 +44,7 @@ function scheduleNBSave(){
       try {
         const sanitized = (NB_CELLS || []).map(c => {
           const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
+          if(nbNoImpOf(c)) o.noimp = true;    // 라이브러리를 맨 앞에서 선언해 둔 셀
           if(Array.isArray(c.blocks)){        // 🧩 블록 셀 — blk 는 nbBlocksOf 주석을 보세요
             o.blk = true;
             if(c.blocks.length) o.blocks = c.blocks;
@@ -270,7 +271,10 @@ function parseIpynb(jsonText){
     const id = c.metadata?.id || `cell-${idx}-${Math.random().toString(36).slice(2,8)}`;
     // 🧩 블록 셀 — metadata.blocks 가 있으면 블록까지 되살립니다
     const blocks = nbBlocksOf(c);
-    return blocks ? {id, type, source, blocks} : {id, type, source};
+    const noimp = nbNoImpOf(c);     // 라이브러리를 맨 앞에서 한 번에 선언해 둔 셀
+    const base = blocks ? {id, type, source, blocks} : {id, type, source};
+    if(noimp) base.noimp = true;
+    return base;
   });
 }
 
@@ -286,6 +290,13 @@ function nbBlocksOf(c){
   if(Array.isArray(c.blocks)) return c.blocks;
   if(Array.isArray(c.metadata?.blocks)) return c.metadata.blocks;
   return (c.blk || c.metadata?.blk) ? [] : null;
+}
+
+/* 라이브러리를 맨 앞 고정 셀에서 한 번에 선언해 둔 셀인가 (2026-10-27).
+   ipynb 로 받은 것은 metadata 안에, DB 로 받은 것은 셀에 바로 붙어 있습니다
+   — nbBlocksOf 와 같은 사정입니다. */
+function nbNoImpOf(c){
+  return !!(c && (c.noimp || c.metadata?.noimp));
 }
 
 // 셀 배열의 총 바이트 수 추정 (업로드 경고용)
@@ -399,6 +410,7 @@ async function openNotebook(nbId){
     // 🧩 블록 셀 — 빈 배열 [] 도 「블록 셀인데 아직 비어 있다」 는 뜻입니다
     const bl = nbBlocksOf(c);
     if(bl !== null) o.blocks = bl;
+    if(nbNoImpOf(c)) o.noimp = true;   // 라이브러리를 맨 앞에서 한 번에 선언해 둔 셀
     return o;
   });
   NB_CELL_OUTPUTS = {};
@@ -1533,7 +1545,9 @@ function nbBlkEdit(cellId, fn){
   if(!cell) return;
   fn(cell.blocks);
   nbRefitBlocks(cell.blocks, nbCellDataFile(cell, NB_CELLS));
-  cell.source = nbBlockCode(cell.blocks);
+  // noimp — 라이브러리를 맨 앞에서 한 번에 선언해 둔 노트북입니다 (수행평가).
+  //   그런 셀에서는 블록이 import 줄을 내지 않습니다 (js/nb-blocks.js).
+  cell.source = nbBlockCode(cell.blocks, nbNoImpOf(cell));
   NB_SELECTED = cell.id;
   render();
   scheduleNBSave();

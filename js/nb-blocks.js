@@ -59,7 +59,8 @@ const NB_BLOCK_DEFS = {
   imp: {
     guide: 'c_setup',   // 준비 — 라이브러리 가져오기
     cat: 'prep', name: '판다스 · 시본 가져오기',
-    tpl: 'import pandas as pd\nimport seaborn as sns',
+    imp: 'import pandas as pd\nimport seaborn as sns',
+    tpl: '',
     say: 'pandas 는 데이터 프레임(표)을 다루는 라이브러리, seaborn 은 그래프를 그리는 라이브러리입니다.',
   },
   load: {
@@ -202,8 +203,8 @@ const NB_BLOCK_DEFS = {
     cat: 'ml', name: '훈련 · 테스트로 나누기',
     slots: { r: { opt: ['0.2', '0.3', '0.4'], def: '0.3' } },
     // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
-    tpl: 'from sklearn.model_selection import train_test_split\n' +
-         'X_train, X_test, y_train, y_test = train_test_split(\n' +
+    imp: 'from sklearn.model_selection import train_test_split',
+    tpl:          'X_train, X_test, y_train, y_test = train_test_split(\n' +
          '    X, y, test_size={r}, stratify=y, random_state=42)\n' +
          'print(X_train.shape, X_test.shape)',
     say: '훈련 데이터와 테스트 데이터로 나누기. random_state 는 무작위성을 제어하기 위한 시드(seed)값입니다.',
@@ -213,8 +214,8 @@ const NB_BLOCK_DEFS = {
     guide: 'c_dt',   // 결정트리
     cat: 'ml', name: '결정트리 모델 만들기',
     slots: { d: { opt: ['None', '1', '2', '3', '4', '5'], def: 'None' } },
-    tpl: 'from sklearn.tree import DecisionTreeClassifier\n' +
-         'dt = DecisionTreeClassifier(max_depth={d}, random_state=42)',
+    imp: 'from sklearn.tree import DecisionTreeClassifier',
+    tpl:          'dt = DecisionTreeClassifier(max_depth={d}, random_state=42)',
     say: '결정트리는 트리 구조 기반의 알고리즘입니다. 트리의 루트 노드에서부터 각 분기마다 ' +
          '특징에 대한 분할 기준을 만들어 데이터를 분할합니다. 각 특징값을 기준으로 분할하므로 ' +
          '데이터 정규화가 필요 없습니다.',
@@ -224,8 +225,8 @@ const NB_BLOCK_DEFS = {
     guide: 'c_knn',   // k-최근접 이웃
     cat: 'ml', name: 'kNN 모델 만들기',
     slots: { k: { opt: ['1', '3', '5', '7', '9'], def: '5' } },
-    tpl: 'from sklearn.neighbors import KNeighborsClassifier\n' +
-         'knn = KNeighborsClassifier(n_neighbors={k})',
+    imp: 'from sklearn.neighbors import KNeighborsClassifier',
+    tpl:          'knn = KNeighborsClassifier(n_neighbors={k})',
     say: '예측 데이터에서 가장 가까운 k개의 데이터로 예측하는 방법입니다. 분류를 할 경우 ' +
          'k개의 가장 가까운 데이터 중 다수의 레이블이 예측 데이터의 클래스를 결정합니다.',
     src: '교과서 107쪽',
@@ -265,8 +266,8 @@ const NB_BLOCK_DEFS = {
     guide: 'c_cm',   // 혼동 행렬
     cat: 'ml', name: '혼동 행렬',
     slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
-    tpl: 'from sklearn.metrics import confusion_matrix\n' +
-         'print(confusion_matrix(y_test, {m}.predict(X_test)))',
+    imp: 'from sklearn.metrics import confusion_matrix',
+    tpl:          'print(confusion_matrix(y_test, {m}.predict(X_test)))',
     say: '혼동 행렬은 실제 클래스와 예측 클래스를 비교하여 모델이 각 클래스를 얼마나 ' +
          '정확하게 예측했는지 표시한 행렬입니다.',
     src: '교과서 108 · 115쪽',
@@ -275,8 +276,8 @@ const NB_BLOCK_DEFS = {
     guide: 'c_metrics',   // 정밀도 · 재현율
     cat: 'ml', name: '정밀도 · 재현율 표',
     slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
-    tpl: 'from sklearn.metrics import classification_report\n' +
-         'print(classification_report(y_test, {m}.predict(X_test)))',
+    imp: 'from sklearn.metrics import classification_report',
+    tpl:          'print(classification_report(y_test, {m}.predict(X_test)))',
     say: '정밀도는 모델이 참이라고 분류한 것 중에서 실제 참인 것의 비율이고, ' +
          '재현율은 실제 참인 것 중에서 모델이 참이라고 예측한 것의 비율입니다.',
     src: '교과서 115쪽',
@@ -285,9 +286,8 @@ const NB_BLOCK_DEFS = {
     guide: 'c_tree',   // 트리 그리기
     cat: 'ml', name: '결정트리 그림 그리기',
     slots: { d: { opt: ['1', '2', '3'], def: '2' } },
-    tpl: 'import matplotlib.pyplot as plt\n' +
-         'from sklearn.tree import plot_tree\n' +
-         'plt.figure(figsize=(20, 10))\n' +
+    imp: 'import matplotlib.pyplot as plt\nfrom sklearn.tree import plot_tree',
+    tpl:          'plt.figure(figsize=(20, 10))\n' +
          'plot_tree(dt, feature_names=X.columns, max_depth={d}, filled=True)\n' +
          'plt.show()',
     say: 'feature_names 는 각 노드에서 분류 결정에 사용된 특징 이름을 지정하고, ' +
@@ -350,11 +350,18 @@ function nbCellDataFile(cell, allCells){
 
 /* ── 블록 → 파이썬 ──
    이 결과가 cell.source 가 되고, 실행 · 저장 · 내려받기가 모두 이것을 씁니다. */
-function nbBlockCode(blocks){
+/* 블록 → 파이썬.
+   noImp 가 참이면 **import 줄을 뺍니다** — 노트북 맨 앞에서 한 번에 선언해 둔
+   경우입니다 (2026-10-27 선생님 · 수행평가 노트북). 표시가 없으면 지금까지와
+   똑같이 import 를 붙여 내보내므로 옛 노트북은 하나도 달라지지 않습니다. */
+function nbBlockCode(blocks, noImp){
   return (blocks || []).map(b => {
     const d = NB_BLOCK_DEFS[b.k];
     if(!d) return '';
-    return d.tpl.replace(/\{(\w+)\}/g, (_, s) => {
+    const NL = String.fromCharCode(10);
+    const body = (noImp || !d.imp) ? (d.tpl || '')
+               : (d.tpl ? d.imp + NL + d.tpl : d.imp);
+    return body.replace(/\{(\w+)\}/g, (_, s) => {
       const v = b.a ? b.a[s] : null;
       return (v === undefined || v === null || v === '') ? '___' : v;   // 아직 안 고른 자리
     });
