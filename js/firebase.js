@@ -225,6 +225,53 @@ async function deleteNotebookProgress(cid, nbId, studentNum){
   await db.ref(`notebookProgress/${cid}/${nbId}/${studentNum}`).remove();
 }
 
+/* ── 노트북을 다른 반에도 반영 (2026-10-28) ──
+   선생님의 편집은 보고 있는 반에만 저장됩니다. 한 반에서 노트북을 다 짜 놓고
+   이걸 눌러 같은 과목의 다른 반에 **셀을 그대로** 넣습니다.
+   · 자료 id 는 같게 둡니다 (CLAUDE.md 23). 그래서 학생 진도는 셀 id 로 이어집니다.
+   · 그 반에 노트북이 없으면 제목까지 함께 만듭니다.
+   · **학생 진도(notebookProgress)는 건드리지 않습니다.** 학생이 다음에 열 때
+     `_mergeNotebookCells` 가 새 셀을 끼워 넣고 쓴 것은 지킵니다. */
+async function copyNotebookToClasses(fromCid, nbId, cells, title){
+  const mates = CLASSES.filter(c => c.type === (CLASSES.find(x => x.id === fromCid) || {}).type)
+                       .map(c => c.id).filter(id => id !== fromCid);
+  const done = [];
+  for(const cid of mates){
+    const s = await db.ref(`notebooks/${cid}/${nbId}`).get();
+    const body = {cells: cells, updatedAt: new Date().toISOString()};
+    if(!s.exists()){
+      body.title = title || '제목 없음';
+      body.createdAt = new Date().toISOString();
+    }
+    await db.ref(`notebooks/${cid}/${nbId}`).update(body);
+    done.push(cid);
+  }
+  return done;
+}
+
+/* ── 블록의 이름 · 설명을 선생님이 고친 것 (2026-10-28) ──
+   `notebooks/{반}` 아래에 두면 loadNotebooks 가 **노트북 하나로 셉니다.**
+   그래서 nbGate · nbPw 와 같은 자리에 둡니다. */
+async function loadNbBlockText(cid){
+  const s = await db.ref(`aiactivity/submissions/${cid}/nbBlockText`).get();
+  NB_BLK_TEXT = s.exists() ? (s.val() || {}) : {};
+  return NB_BLK_TEXT;
+}
+async function saveNbBlockText(cid, k, val){
+  const ref = db.ref(`aiactivity/submissions/${cid}/nbBlockText/${k}`);
+  if(val === null) await ref.remove();
+  else await ref.update(val);
+}
+
+/* ── 텍스트 셀에 넣을 그림 (2026-10-28) ──
+   `teacherFiles/…` 는 **이미 열려 있는 자리**입니다 — storage.rules 를 고치지
+   않습니다 (informatics 와 공유하는 파일이라 건드리면 양쪽을 맞춰야 합니다). */
+async function uploadNbImage(cid, nbId, file){
+  const safe = (file.name || 'img').replace(/[^\w.\-가-힣]/g, '_').slice(-60);
+  const path = `teacherFiles/${cid}/nbimg-${nbId}-${Date.now().toString(36)}/${safe}`;
+  return await uploadFile(file, path);
+}
+
 // 노트북 전체 학생 진도 로드 (선생님용)
 async function loadAllNotebookProgress(cid, nbId){
   const s = await db.ref(`notebookProgress/${cid}/${nbId}`).get();

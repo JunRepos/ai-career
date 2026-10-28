@@ -98,6 +98,14 @@ function vStNotebook(){
 }
 
 // ── 노트북 상세 (Colab 스타일) ──
+/* ── 선생님이 노트북을 **짜는 중**인가 ──
+   실제 조건은 js/nb-open.js 의 nbCanAuthor() 한 곳에 있습니다. 여기서는 그 함수가
+   없을 수도 있다는 것만 챙깁니다 — tools/notebook-preview.html 처럼
+   nb-open.js 를 안 싣는 화면에서도 깨지지 않게 (2026-10-28). */
+function nbAuthoring(){
+  return typeof nbCanAuthor === 'function' && nbCanAuthor();
+}
+
 function vNotebookDetail(isTeacher){
   const nb = SEL_NOTEBOOK;
   if(!nb) return emptyBox('❌','노트북을 찾을 수 없습니다.');
@@ -122,6 +130,15 @@ function vNotebookDetail(isTeacher){
       title="${NB_SIM ? '지금은 원본이 바뀌지 않습니다' : '지금 한 것이 학생 노트북에 저장됩니다'}"
     >${NB_SIM ? '🧪 시뮬레이션' : '✏️ 원본 수정 중'}</button>`;
 
+  /* 📤 다른 반에도 반영 — 2026-10-28.
+     선생님의 편집은 `notebooks/{지금 보는 반}` **한 곳**에만 저장됩니다.
+     ai-2B 에서 다 고쳐 놓으면 ai-2D 는 옛 판 그대로 남는데 아무 표시도 없었습니다
+     (HANDOFF 「여러 반을 다루는 기능」 · CLAUDE.md 23). */
+  const syncBtn = nbAuthoring()
+    ? `<button class="cb-tb-btn" data-action="nb-sync-classes"
+         title="이 노트북의 셀을 같은 과목의 다른 반에도 그대로 넣습니다">📤 다른 반에도 반영</button>`
+    : '';
+
   // 학생 진도 보는 중일 때 상단 배너
   const viewingBanner = NB_VIEWING_STUDENT ? (() => {
     const st = STUDENTS.find(s => s.number === NB_VIEWING_STUDENT);
@@ -143,6 +160,7 @@ function vNotebookDetail(isTeacher){
       <button class="cb-tb-btn" data-action="nb-upload-open" title="내 컴퓨터의 파일을 노트북(/content)에 올리기 — 파일을 노트북 위로 끌어다 놓아도 됩니다">📤 파일 올리기</button>
       <button class="cb-tb-btn${NB_GUIDE_OPEN ? ' cb-tb-on' : ''}" data-action="nb-toggle-guide"
         aria-pressed="${NB_GUIDE_OPEN}" title="가이드북을 펴 놓고 보기">📖 가이드북</button>
+      ${syncBtn}
       ${simBtn}
       ${progressBtn}
     </div>
@@ -164,6 +182,8 @@ function vNotebookDetail(isTeacher){
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="block" data-pos="${NB_CELLS.length}">+ 🧩 블록</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="code" data-pos="${NB_CELLS.length}">+ 코드</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="markdown" data-pos="${NB_CELLS.length}">+ 텍스트</button>
+    ${nbAuthoring() ? `<button class="cb-add-btn" data-action="nb-insert-quiz"
+      data-pos="${NB_CELLS.length}">+ 🧠 퀴즈</button>` : ''}
   </div>`;
 
   // 좌측 사이드바 (목차)
@@ -238,6 +258,9 @@ function vNbBlockCell(cell, hoverTb){
           <span class="nbk-sp"></span>
           <button class="nbk-mini" data-action="nb-blk-say" aria-pressed="${NB_BLK_SAY}">설명</button>
           <button class="nbk-mini" data-action="nb-blk-code" aria-pressed="${NB_BLK_CODE}">&lt;/&gt; 코드 칸</button>
+          ${nbAuthoring() ? `<button class="nbk-mini" data-action="nb-blk-askui"
+            aria-pressed="${NB_BLK_ASKUI}"
+            title="칸마다 ✎ 를 붙입니다 — 눌러서 학생이 채울 빈칸을 정합니다">✎ 빈칸 정하기</button>` : ''}
         </div>
         <div class="nbk-stack" data-blkstack="${cell.id}">${stack}</div>
         ${codePane}
@@ -252,37 +275,66 @@ function vNbBlock(cellId, b, bi, file){
   if(!d) return '';
   // 파이썬 **한 줄씩** 그립니다. 드롭다운은 그 줄 안에 끼워 넣어
   // 「열 이름은 따옴표 안에 쓴다」 가 눈에 그대로 보이게 합니다.
+  // 같은 칸이 코드에 두 번 나오는 블록이 있습니다 (`score` 의 X_{d}, y_{d}).
+  //   드롭다운은 둘 다 그려야 하지만, **빈칸 토글은 첫 자리에만** 붙입니다.
+  const seenSlot = new Set();
   const lines = d.tpl.split('\n').map(line => {
     const parts = line.split(/(\{\w+\})/).map(part => {
       const m = part.match(/^\{(\w+)\}$/);
       if(!m) return part ? `<span class="nbk-code-in">${esc(part)}</span>` : '';
-      const slot = d.slots[m[1]];
+      const key = m[1];
+      const slot = d.slots[key];
       const at = `data-action="nb-blk-slot" data-cellid="${cellId}" data-bi="${bi}"
-        data-slot="${m[1]}" aria-label="${esc(d.name)}"`;
+        data-slot="${key}" aria-label="${esc(nbBlkName(b.k))}"`;
+      // 이 자리가 **학생이 채울 빈칸**인지 — 블록마다 다릅니다 (nbSlotAsk)
+      const ask = nbSlotAsk(d, b, key);
+      let html;
       // 미리 셀 수 없는 값(행 번호 · 찾을 값)은 적는 칸으로 둡니다 — 교과서 81쪽처럼
       if(slot.kind){
-        const v = b.a[m[1]];
+        const v = b.a[key];
         // 아직 안 적은 자리는 빨갛게 — 무엇을 해야 하는지 바로 보이게
-        const ask = slot.ask && (v === '' || v == null) ? ' nbk-in-ask' : '';
-        return `<input class="nbk-in${ask}" type="${slot.kind === 'num' ? 'number' : 'text'}"
+        const hot = ask && (v === '' || v == null) ? ' nbk-in-ask' : '';
+        html = `<input class="nbk-in${hot}" type="${slot.kind === 'num' ? 'number' : 'text'}"
           value="${esc(v ?? '')}" size="${slot.kind === 'num' ? 5 : 11}"
-          placeholder="${slot.ask ? '함수 이름' : ''}" ${at}>`;
+          placeholder="${ask ? esc(slot.ph || '함수 이름') : ''}" ${at}>`;
+      } else {
+        const opts = nbSlotOptions(slot, file);
+        const cur = b.a[key];
+        // 빈칸은 **학생이 고르기 전까지** 비어 있습니다 — 끌어 놓자마자 답이 되면 안 됩니다
+        const blank = ask
+          ? `<option value=""${(cur === '' || cur == null) ? ' selected' : ''}>고르세요</option>`
+          : '';
+        const unset = ask && (cur === '' || cur == null) ? ' nbk-sel-ask' : '';
+        html = `<select class="nbk-sel${unset}" ${at}>${blank}${
+          opts.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('')
+        }</select>`;
       }
-      const opts = nbSlotOptions(slot, file);
-      const cur = b.a[m[1]];
-      // ask 자리는 **학생이 고르기 전까지** 비어 있습니다 — 끌어 놓자마자 답이 되면 안 됩니다
-      const blank = slot.ask
-        ? `<option value=""${(cur === '' || cur == null) ? ' selected' : ''}>고르세요</option>`
-        : '';
-      const unset = slot.ask && (cur === '' || cur == null) ? ' nbk-sel-ask' : '';
-      return `<select class="nbk-sel${unset}" ${at}>${blank}${
-        opts.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('')
-      }</select>`;
+      // 선생님만 — 이 자리를 빈칸으로 둘지 채워 둘지 (2026-10-28)
+      const first = !seenSlot.has(key);
+      seenSlot.add(key);
+      // 「✎ 빈칸 정하기」 를 켰을 때만 — 늘 붙여 두면 파이썬이 지저분합니다
+      if(!first || !NB_BLK_ASKUI || !nbAuthoring()) return html;
+      return `<span class="nbk-slotwrap">${html}<button class="nbk-askb${ask ? ' on' : ''}"
+        data-action="nb-blk-ask" data-cellid="${cellId}" data-bi="${bi}" data-slot="${key}"
+        aria-pressed="${ask}" title="${ask ? '학생이 채우는 빈칸 — 눌러서 채워 둡니다'
+                                          : '채워 둔 자리 — 눌러서 빈칸으로 둡니다'}"
+        >${ask ? '✎' : '●'}</button></span>`;
     }).join('');
     return `<div class="nbk-line">${parts}</div>`;
   }).join('');
-  const say = NB_BLK_SAY && d.say
-    ? `<div class="nbk-say">${esc(d.say)}${d.src ? ` <i class="nbk-src">${esc(d.src)}</i>` : ''}</div>`
+  // 설명 — 선생님이 고친 글이 있으면 그것을 씁니다 (nbBlkSay).
+  //   고친 글에는 교과서 쪽을 달지 않습니다. 학생 화면에는 고쳤다는 표시가
+  //   하나도 나오지 않습니다 (CLAUDE.md 16).
+  const t = nbBlkSay(b.k);
+  const sayBtns = nbAuthoring()
+    ? `<button class="nbk-sayb" data-action="nb-blk-text" data-k="${b.k}"
+         title="이 블록의 설명을 고칩니다">✏️</button>${t.edited
+      ? `<button class="nbk-sayb" data-action="nb-blk-text-reset" data-k="${b.k}"
+           title="처음 글로 되돌립니다">↺</button>` : ''}`
+    : '';
+  const say = NB_BLK_SAY && (t.say || sayBtns)
+    ? `<div class="nbk-say">${esc(t.say)}${
+        t.src ? ` <i class="nbk-src">${esc(t.src)}</i>` : ''}${sayBtns}</div>`
     : '';
   return `<div class="nbk-blk" draggable="true" data-cellid="${cellId}" data-bi="${bi}"
       style="--nbk-cat:var(${NB_BLK_CAT[d.cat]})">
@@ -338,7 +390,7 @@ function vNbBlockPanel(){
         <div class="cb-snip-label">${esc(g)}</div>
         ${keys.map(k => `<div class="nbk-pal-row"><button class="nbk-pal" draggable="true" data-action="nb-blk-add"
           data-k="${k}" style="--nbk-cat:var(${NB_BLK_CAT[NB_BLOCK_DEFS[k].cat]})"
-          ><span class="nbk-pal-name">${esc(NB_BLOCK_DEFS[k].name)}</span
+          ><span class="nbk-pal-name">${esc(nbBlkName(k))}</span
           ><span class="nbk-pal-code">${esc(nbPalCode(k))}</span></button>${
           NB_BLOCK_DEFS[k].guide ? `<button class="nbk-pal-q" data-action="nb-guide-go"
             data-anchor="${NB_BLOCK_DEFS[k].guide}" title="가이드북에서 보기">?</button>` : ''}</div>`).join('')}
@@ -490,11 +542,13 @@ function vNbCell(cell, idx){
   const isMd = cell.type === 'markdown';
   const isEditingMd = isMd && NB_EDITING_MD === cell.id;
 
-  // 셀 사이 + 버튼
+  // 셀 사이 + 버튼 — 퀴즈는 선생님만 (삽입 메뉴 안에만 있어서 못 찾았습니다. 2026-10-28)
   const addRow = `<div class="cb-add-row">
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="block" data-pos="${idx}">+ 🧩 블록</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="code" data-pos="${idx}">+ 코드</button>
     <button class="cb-add-btn" data-action="nb-add-cell" data-type="markdown" data-pos="${idx}">+ 텍스트</button>
+    ${nbAuthoring() ? `<button class="cb-add-btn" data-action="nb-insert-quiz"
+      data-pos="${idx}">+ 🧠 퀴즈</button>` : ''}
   </div>`;
 
   // 셀 호버 툴바 (오른쪽 위) — 코드 셀의 ▶ 는 셀 왼쪽 [ ] 자리에 늘 보이게 따로 둔다
@@ -511,7 +565,23 @@ function vNbCell(cell, idx){
   let body = '';
   if(isMd){
     if(isEditingMd){
+      // 서식 단추 — 마크다운을 외우지 않아도 되게 (2026-10-28).
+      //   누르면 커서 자리에 넣습니다. 그림은 올려서 주소를 받아 넣습니다.
+      //   **선생님만** 봅니다 — 평가 때 학생 화면에 단추가 늘어나지 않게.
+      const fmt = !nbAuthoring() ? '' : [
+        ['제목',  'h2',    '## 제목'],
+        ['굵게',  'bold',  '**굵게**'],
+        ['목록',  'ul',    '- 목록'],
+        ['표',    'table', '표 넣기'],
+        ['✍️ 기입칸', 'fill', '학생이 적는 칸'],
+      ].map(([lab, kind, tip]) => `<button class="cb-md-fmt" data-action="nb-md-fmt"
+          data-cellid="${cell.id}" data-kind="${kind}" title="${esc(tip)}">${lab}</button>`).join('');
+      const imgBtn = nbAuthoring()
+        ? `<button class="cb-md-fmt" data-action="nb-md-img" data-cellid="${cell.id}"
+             title="그림을 올려 이 자리에 넣습니다 — 붙여넣기(Ctrl+V)와 끌어다 놓기도 됩니다">🖼 그림</button>`
+        : '';
       body = `<div class="cb-md-editor">
+        ${fmt || imgBtn ? `<div class="cb-md-tools">${fmt}${imgBtn}</div>` : ''}
         <textarea class="cb-md-area" data-cellid="${cell.id}" spellcheck="false">${esc(cell.source || '')}</textarea>
         <div style="font-size:11px;color:var(--text3);padding:4px 8px">💡 Shift+Enter 로 렌더링 완료 · Esc로 취소</div>
       </div>`;

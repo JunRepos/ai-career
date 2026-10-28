@@ -23,6 +23,22 @@ let _nbAwaitingInput = null; // {cellId, resolve} — 현재 대기 중인 입�
 // ── 자동 저장 (학생 진행 상황) ──
 let _nbSaveTimer = null;
 
+/* 셀을 DB 에 담을 꼴로 — 자동 저장과 「다른 반에도 반영」 이 **같은 함수**를 씁니다.
+   ⚠ Firebase 는 **빈 배열을 통째로 지웁니다.** 아직 블록을 안 놓은 🧩 셀은
+     blocks:[] 라서 키가 사라지고, 다시 열면 그냥 코드 셀이 됩니다. 그래서
+     blk:true 를 따로 적어 둡니다 (nbBlocksOf 가 읽을 때 되살립니다). */
+function nbCellsForSave(cells){
+  return (cells || []).map(c => {
+    const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
+    if(nbNoImpOf(c)) o.noimp = true;    // 라이브러리를 맨 앞에서 선언해 둔 셀
+    if(Array.isArray(c.blocks)){
+      o.blk = true;
+      if(c.blocks.length) o.blocks = c.blocks;
+    }
+    return o;
+  });
+}
+
 function scheduleNBSave(){
   if(!SEL_NOTEBOOK) return;
   // 학생 진도 보는 중에는 저장 안 함 (다른 학생 데이터 보호)
@@ -42,15 +58,7 @@ function scheduleNBSave(){
     _nbSaveTimer = setTimeout(async () => {
       setNBSaveStatus('saving');
       try {
-        const sanitized = (NB_CELLS || []).map(c => {
-          const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
-          if(nbNoImpOf(c)) o.noimp = true;    // 라이브러리를 맨 앞에서 선언해 둔 셀
-          if(Array.isArray(c.blocks)){        // 🧩 블록 셀 — blk 는 nbBlocksOf 주석을 보세요
-            o.blk = true;
-            if(c.blocks.length) o.blocks = c.blocks;
-          }
-          return o;
-        });
+        const sanitized = nbCellsForSave(NB_CELLS);
         await db.ref(`notebooks/${TC_CLS.id}/${SEL_NOTEBOOK.id}`).update({cells: sanitized});
         // 메모리 캐시도 동기화
         SEL_NOTEBOOK.cells = sanitized;
@@ -413,6 +421,13 @@ async function openNotebook(nbId){
     if(nbNoImpOf(c)) o.noimp = true;   // 라이브러리를 맨 앞에서 한 번에 선언해 둔 셀
     return o;
   });
+  // 블록의 이름 · 설명을 선생님이 고친 것 — 학생 화면에도 그 글이 보입니다 (2026-10-28).
+  //   못 읽어도 노트북은 열립니다. 그때는 정의에 적힌 처음 글이 보입니다.
+  try {
+    const cid = (IS_TC && TC_CLS) ? TC_CLS.id : (ST_USER ? ST_USER.classId : null);
+    if(cid) await loadNbBlockText(cid);
+  } catch(e){ console.warn('블록 설명 로드 실패:', e); NB_BLK_TEXT = {}; }
+
   NB_CELL_OUTPUTS = {};
   NB_EXEC_COUNT = 0;
   NB_SELECTED = NB_CELLS[0]?.id || null;
@@ -758,6 +773,126 @@ function cancelMdEdit(){
   NB_EDITING_MD = null;
   destroyAllCMs();
   render();
+}
+
+/* ═══ 텍스트 셀 — 서식 단추와 그림 (2026-10-28) ═══════════════
+   편집기는 CodeMirror 입니다. 커서 자리에 넣는 것은 replaceSelection 으로 합니다
+   (textarea 를 직접 고치면 CodeMirror 가 덮어씁니다). */
+function nbMdPut(text, selectBack){
+  if(!_nbMdCM){ toast('텍스트 셀을 편집하는 중일 때만 됩니다', 'err'); return false; }
+  _nbMdCM.replaceSelection(text, 'end');
+  // 글자를 감싸는 서식은 안쪽에 커서를 둡니다 — 바로 이어 적게
+  if(selectBack){
+    const c = _nbMdCM.getCursor();
+    _nbMdCM.setCursor({line: c.line, ch: Math.max(0, c.ch - selectBack)});
+  }
+  _nbMdCM.focus();
+  return true;
+}
+
+/* 편집기를 **방금 열었으면** 커서를 글 끝으로 보냅니다 —
+   안 그러면 넣은 것이 맨 앞에 들어가 원래 글을 아래로 밀어냅니다 (2026-10-28). */
+function nbMdToEnd(){
+  if(_nbMdCM) _nbMdCM.setCursor({line: _nbMdCM.lineCount(), ch: 0});
+}
+
+function nbMdFmt(cellId, kind){
+  const justOpened = NB_EDITING_MD !== cellId;
+  if(justOpened) startMdEdit(cellId);
+  // 편집기가 뜬 다음에 넣습니다 — render 가 CodeMirror 를 새로 만듭니다
+  setTimeout(() => {
+    if(justOpened) nbMdToEnd();
+    const sel = _nbMdCM ? _nbMdCM.getSelection() : '';
+    if(kind === 'h2')   return nbMdPut('\n## ' + (sel || '제목') + '\n');
+    if(kind === 'bold') return nbMdPut('**' + (sel || '굵게') + '**', sel ? 0 : 2);
+    if(kind === 'ul')   return nbMdPut('\n- ' + (sel || '') + '\n- \n');
+    if(kind === 'table')
+      return nbMdPut('\n| 머리 | 머리 |\n|---|---|\n| | |\n| | |\n');
+    // ✍️ 기입칸 — 학생이 적는 자리. 노트북 여러 곳에서 쓰는 꼴과 같게 둡니다
+    if(kind === 'fill')
+      return nbMdPut('\n✍️ **적어 보세요** — 더블클릭해서 적습니다.\n\n' +
+                     '| | |\n|---|---|\n| | |\n');
+  }, NB_EDITING_MD === cellId ? 0 : 80);
+}
+
+/* 그림 — 올려서 주소를 받아 `![](주소)` 로 넣습니다.
+   올리는 자리는 `teacherFiles/…` 로, **storage.rules 를 고치지 않습니다.** */
+async function nbMdUpload(cellId, file){
+  if(!nbAuthoring() || !TC_CLS || !SEL_NOTEBOOK) return;
+  if(!file || !/^image\//.test(file.type || '')){ toast('그림 파일만 됩니다', 'err'); return; }
+  if(file.size > MAX_FILE_SIZE){ toast('그림이 너무 큽니다 (50MB 넘음)', 'err'); return; }
+  if(NB_EDITING_MD !== cellId){
+    startMdEdit(cellId);
+    await new Promise(r => setTimeout(r, 90));
+    nbMdToEnd();
+  }
+  toast('그림을 올립니다…', 'ok');
+  try {
+    const url = await uploadNbImage(TC_CLS.id, SEL_NOTEBOOK.id, file);
+    nbMdPut('\n![](' + url + ')\n');
+    toast('그림을 넣었습니다 — Shift+Enter 로 확인하세요', 'ok');
+  } catch(err){
+    toast('그림을 올리지 못했습니다 — ' + (err.message || err), 'err');
+  }
+}
+
+async function nbMdPickImage(cellId){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.onchange = () => { if(inp.files && inp.files[0]) nbMdUpload(cellId, inp.files[0]); };
+  inp.click();
+}
+
+/* 붙여넣기 · 끌어다 놓기 — 편집 중인 텍스트 셀에만 */
+document.addEventListener('paste', e => {
+  if(!NB_EDITING_MD || !nbAuthoring()) return;
+  const items = (e.clipboardData && e.clipboardData.items) || [];
+  for(const it of items){
+    if(it.kind === 'file' && /^image\//.test(it.type)){
+      e.preventDefault();
+      nbMdUpload(NB_EDITING_MD, it.getAsFile());
+      return;
+    }
+  }
+});
+document.addEventListener('drop', e => {
+  if(!NB_EDITING_MD || !nbAuthoring()) return;
+  if(!e.target.closest || !e.target.closest('.cb-md-editor')) return;
+  const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if(f && /^image\//.test(f.type || '')){ e.preventDefault(); nbMdUpload(NB_EDITING_MD, f); }
+}, true);
+
+/* ═══ 다른 반에도 반영 (2026-10-28) ═══════════════════════════
+   선생님의 편집은 보고 있는 반에만 저장됩니다. 두 반을 같게 맞추는 손잡이입니다
+   (CLAUDE.md 23). 되돌릴 수 없으니 **먼저 확인받습니다** (CLAUDE.md 24). */
+async function nbSyncClasses(){
+  if(!nbAuthoring() || !TC_CLS || !SEL_NOTEBOOK) return;
+  const me = CLASSES.find(c => c.id === TC_CLS.id);
+  const mates = CLASSES.filter(c => c.type === (me || {}).type && c.id !== TC_CLS.id);
+  if(!mates.length){ toast('같은 과목의 다른 반이 없습니다', 'err'); return; }
+  // 그 반 학생이 이미 쓴 것이 있는지 먼저 세어 보여 줍니다
+  const lines = [];
+  for(const c of mates){
+    let n = 0;
+    try {
+      const p = await loadAllNotebookProgress(c.id, SEL_NOTEBOOK.id);
+      n = Object.keys(p || {}).filter(k => k !== 'test').length;
+    } catch(err){ n = -1; }
+    lines.push('· ' + c.label + (n > 0 ? ` — 학생 ${n}명이 이미 작성함` : ''));
+  }
+  if(!confirm('「' + SEL_NOTEBOOK.title + '」 의 셀 ' + (NB_CELLS || []).length
+      + '개를 아래 반에도 그대로 넣습니다.\n\n' + lines.join('\n')
+      + '\n\n학생이 쓴 내용은 지워지지 않습니다 — 다음에 열 때 셀 번호로 맞춰 끼워 넣습니다.\n'
+      + '진행할까요?')) return;
+  try {
+    const cells = nbCellsForSave(NB_CELLS);
+    const done = await copyNotebookToClasses(TC_CLS.id, SEL_NOTEBOOK.id, cells,
+                                             SEL_NOTEBOOK.title);
+    toast(done.join(' · ') + ' 에 반영했습니다', 'ok');
+  } catch(err){
+    toast('반영하지 못했습니다 — ' + (err.message || err), 'err');
+  }
 }
 
 // ── 이벤트 위임 ──
@@ -1108,6 +1243,76 @@ document.addEventListener('click', async e => {
   if(act.action === 'nb-blk-del'){ nbBlkEdit(act.cellid, bs => bs.splice(+act.bi, 1)); return; }
   if(act.action === 'nb-blk-say'){ NB_BLK_SAY = !NB_BLK_SAY; render(); return; }
   if(act.action === 'nb-blk-code'){ NB_BLK_CODE = !NB_BLK_CODE; render(); return; }
+  if(act.action === 'nb-blk-askui'){
+    if(!nbAuthoring()) return;
+    NB_BLK_ASKUI = !NB_BLK_ASKUI;
+    render();
+    if(NB_BLK_ASKUI) toast('칸 옆 ✎ 를 누르면 학생이 채울 빈칸이 됩니다', 'ok');
+    return;
+  }
+
+  /* ── 빈칸을 선생님이 정합니다 (2026-10-28) ──
+     이 자리를 「학생이 채움」 ↔ 「채워 둠」 으로 바꿉니다. 블록 하나에만 걸립니다.
+     켜면 값을 비우고, 끄면 정답(`ans`) 또는 기본값을 넣습니다. */
+  if(act.action === 'nb-blk-ask'){
+    if(!nbAuthoring()) return;
+    nbBlkEdit(act.cellid, bs => {
+      const b = bs[+act.bi];
+      const d = NB_BLOCK_DEFS[b && b.k];
+      if(!b || !d || !d.slots || !d.slots[act.slot]) return;
+      const slot = d.slots[act.slot];
+      const q = nbBlkAskList(d, b);
+      const at = q.indexOf(act.slot);
+      if(at >= 0){
+        q.splice(at, 1);
+        b.a[act.slot] = nbSlotFill(slot, nbCellDataFile(nbBlkCell(act.cellid), NB_CELLS));
+      } else {
+        q.push(act.slot);
+        b.a[act.slot] = '';
+      }
+      b.q = q;          // 여기서 굳습니다 — 이제 정의의 ask 를 안 봅니다
+    });
+    return;
+  }
+
+  /* ── 블록의 설명을 고칩니다 (2026-10-28) ── */
+  if(act.action === 'nb-blk-text'){
+    if(!nbAuthoring() || !TC_CLS) return;
+    const d = NB_BLOCK_DEFS[act.k];
+    if(!d) return;
+    const now = nbBlkSay(act.k);
+    const next = prompt('이 블록 아래에 보일 설명입니다.\n'
+      + '교과서 문장을 고치면 교과서 쪽 표시는 떼어 냅니다.\n'
+      + '비우고 확인을 누르면 처음 글로 돌아갑니다.', now.say || '');
+    if(next === null) return;
+    const val = next.trim();
+    try {
+      if(!val || val === d.say){ await saveNbBlockText(TC_CLS.id, act.k, null);
+                                 delete NB_BLK_TEXT[act.k]; }
+      else { await saveNbBlockText(TC_CLS.id, act.k, {say: val});
+             NB_BLK_TEXT[act.k] = Object.assign({}, NB_BLK_TEXT[act.k], {say: val}); }
+      render();
+      toast(val && val !== d.say ? '설명을 고쳤습니다' : '처음 글로 돌아갔습니다', 'ok');
+    } catch(err){ toast('설명을 저장하지 못했습니다 — ' + (err.message || err), 'err'); }
+    return;
+  }
+  if(act.action === 'nb-blk-text-reset'){
+    if(!nbAuthoring() || !TC_CLS) return;
+    try {
+      await saveNbBlockText(TC_CLS.id, act.k, null);
+      delete NB_BLK_TEXT[act.k];
+      render();
+      toast('처음 글로 돌아갔습니다', 'ok');
+    } catch(err){ toast('되돌리지 못했습니다 — ' + (err.message || err), 'err'); }
+    return;
+  }
+
+  /* ── 텍스트 셀 서식 단추 · 그림 (2026-10-28) ── */
+  if(act.action === 'nb-md-fmt'){ nbMdFmt(act.cellid, act.kind); return; }
+  if(act.action === 'nb-md-img'){ await nbMdPickImage(act.cellid); return; }
+
+  /* ── 다른 반에도 반영 (2026-10-28) ── */
+  if(act.action === 'nb-sync-classes'){ await nbSyncClasses(); return; }
 
   // 셀 추가
   if(act.action === 'nb-add-cell'){ addCell(parseInt(act.pos), act.type, true); return; }
@@ -1505,8 +1710,11 @@ function nbQuizSave(){
     NB_CELLS[findCellIdx(cur.codeId)].source = _nbQuizCode(1, choices, ans, why, tip);
     if(cur.mdId) NB_CELLS[findCellIdx(cur.mdId)].source = _nbQuizMd(1, ask, choices);
   } else {
+    // 셀 사이 「+ 🧠 퀴즈」 로 열었으면 **그 자리**에 넣습니다 (2026-10-28).
+    // 삽입 메뉴로 열었으면 지금까지처럼 고른 셀 다음입니다.
     const selIdx = NB_SELECTED ? findCellIdx(NB_SELECTED) : -1;
-    const pos = selIdx >= 0 ? selIdx + 1 : NB_CELLS.length;
+    const pos = (_nbQuizPos !== null) ? _nbQuizPos
+              : (selIdx >= 0 ? selIdx + 1 : NB_CELLS.length);
     const key = 'q' + Date.now().toString(36);
     const add = [];
     if(!NB_CELLS.some(c => c.id === NB_QUIZ_SETUP_ID)){
@@ -1516,6 +1724,7 @@ function nbQuizSave(){
     add.push({id: key + '-a', type: 'code', source: _nbQuizCode(1, choices, ans, why, tip)});
     NB_CELLS.splice(pos, 0, ...add);
     NB_SELECTED = key + '-a';
+    _nbQuizPos = null;
   }
   _nbQuizRenumber();
   closeModal();
@@ -1526,9 +1735,18 @@ function nbQuizSave(){
   return true;
 }
 
+/* 셀 사이 「+ 🧠 퀴즈」 가 알려 주는 넣을 자리. 메뉴로 열면 null 입니다. */
+let _nbQuizPos = null;
+
 document.addEventListener('click', e => {
   const open = e.target.closest?.('[data-action="nb-insert-quiz"]');
-  if(open){ if(typeof closeNbMenu === 'function') closeNbMenu(); nbQuizModal(null); return; }
+  if(open){
+    if(typeof closeNbMenu === 'function') closeNbMenu();
+    _nbQuizPos = (open.dataset.pos != null && open.dataset.pos !== '')
+                 ? parseInt(open.dataset.pos, 10) : null;
+    nbQuizModal(null);
+    return;
+  }
   const edit = e.target.closest?.('[data-action="nb-quiz-edit"]');
   if(edit){ nbQuizModal(edit.dataset.cellid); return; }
 });

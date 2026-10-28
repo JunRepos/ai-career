@@ -327,6 +327,21 @@ const NB_BLOCK_DEFS = {
          '재현율은 실제 참인 것 중에서 모델이 참이라고 예측한 것의 비율입니다.',
     src: '교과서 115쪽',
   },
+  /* 새로운 데이터로 예측 — 2026-10-28.
+     수행평가 ③ 의 4·5점은 「새로운 데이터의 결과를 예측함」 인데, 그 칸이 없어서
+     노트북만으로는 3점이 상한이었습니다 (tools/samples/assess2-rubric.md).
+     판은 교과서 109쪽 그대로입니다 — `print(knn.predict([[2,5]]))`.
+     값은 특징을 고른 순서대로 적어야 하므로 **적는 칸**으로 둡니다. */
+  pred: {
+    guide: 'c_dtscore',   // 성능 평가 — 예측이 같은 자리에 있습니다
+    cat: 'ml', name: '새로운 데이터로 예측하기',
+    slots: { m: { opt: ['dt', 'knn'], def: 'dt' },
+             v: { kind: 'text', def: '', ans: '2, 5', ask: 1, ph: '값, 값' } },
+    tpl: 'print({m}.predict([[{v}]]))',
+    say: 'model.predict(): 새로운 데이터에 대한 예측을 수행한다. ' +
+         '값은 특징을 고른 순서대로 적는다.',
+    src: '교과서 101 · 109쪽',
+  },
   tree: {
     guide: 'c_tree',   // 트리 그리기
     cat: 'ml', name: '결정트리 그림 그리기',
@@ -346,7 +361,8 @@ const NB_BLOCK_GROUPS = [
   ['살펴보기', ['shape', 'head', 'info', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
   ['그래프',   ['scat', 'box', 'corr']],
-  ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'cm', 'report', 'tree']],
+  ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'cm', 'report',
+                'pred', 'tree']],
 ];
 
 /* ── 블록 하나 만들기 — 드롭다운은 기본값으로 ── */
@@ -374,6 +390,60 @@ function nbSlotDefault(slot, file){
   const opts = nbSlotOptions(slot, file);
   if(typeof slot.def === 'number') return opts[Math.min(slot.def, opts.length - 1)];
   return opts.includes(slot.def) ? slot.def : opts[0];
+}
+
+/* ═══ 빈칸을 선생님이 정합니다 (2026-10-28) ═══════════════════
+   예전에는 빈칸 여부가 **블록 정의의 `ask`** 하나였습니다. 그래서 같은 블록이
+   모든 셀에서 똑같이 비어 있거나 똑같이 채워져 있었고, 「3절에서는 채워 두고
+   5절에서는 비우고」를 앱에서 할 수 없었습니다 (생성기의 show= 로만 됐습니다).
+
+   이제 **블록 하나하나**가 `q` 를 가집니다 — 그 블록에서 학생이 채울 자리 목록입니다.
+     cell.blocks = [{k:'score', a:{m:'dt', d:''}, q:['d']}]
+   `q` 가 없으면 지금까지와 똑같이 정의의 `ask` 를 씁니다. 그래서 **학생이 이미
+   저장해 둔 노트북은 하나도 달라지지 않습니다.** */
+function nbSlotAsk(d, b, key){
+  const slot = d && d.slots && d.slots[key];
+  if(!slot) return false;
+  if(b && Array.isArray(b.q)) return b.q.indexOf(key) >= 0;
+  return !!slot.ask;
+}
+
+/* 지금 이 블록의 빈칸 목록 — `q` 가 없으면 정의의 `ask` 에서 만들어 냅니다.
+   선생님이 토글을 처음 누르는 순간 이 값이 `q` 로 굳습니다. */
+function nbBlkAskList(d, b){
+  if(b && Array.isArray(b.q)) return b.q.slice();
+  return Object.keys((d && d.slots) || {}).filter(s => d.slots[s].ask);
+}
+
+/* 선생님이 「채워 둠」 으로 바꿀 때 넣을 값.
+   적는 칸은 `ans`(검산용 정답)를, 고르는 칸은 `def` 를 넣습니다. */
+function nbSlotFill(slot, file){
+  if(slot.ans) return slot.ans;
+  if(slot.kind) return slot.def;
+  const opts = nbSlotOptions(slot, file);
+  if(typeof slot.def === 'number') return opts[Math.min(slot.def, opts.length - 1)];
+  return opts.includes(slot.def) ? slot.def : opts[0];
+}
+
+/* ═══ 블록의 이름과 설명을 선생님이 고칩니다 (2026-10-28) ═══════
+   고친 글은 **반 DB** 에 있습니다 — `aiactivity/submissions/{반}/nbBlockText/{블록키}`.
+   (`notebooks/{반}` 아래에 두면 loadNotebooks 가 그걸 노트북 하나로 셉니다.)
+   정의의 글은 그대로 두므로 「↺ 처음 글로」 가 됩니다.
+
+   ⚠ 설명을 고치면 **교과서 쪽 표시(`src`)를 떼어 냅니다.** 교과서 문장이 아닌데
+     쪽을 달아 두면 학생이 거기서 찾습니다 (CLAUDE.md 5-1). 「고침」 같은 표시는
+     자료에 넣지 않습니다 (CLAUDE.md 16). */
+let NB_BLK_TEXT = {};
+
+function nbBlkName(k){
+  const t = NB_BLK_TEXT[k];
+  return (t && t.name) || (NB_BLOCK_DEFS[k] && NB_BLOCK_DEFS[k].name) || k;
+}
+function nbBlkSay(k){
+  const d = NB_BLOCK_DEFS[k] || {};
+  const t = NB_BLK_TEXT[k];
+  if(t && t.say) return {say: t.say, src: '', edited: true};
+  return {say: d.say || '', src: d.src || '', edited: false};
 }
 
 /* ── 이 셀이 쓰는 데이터 파일 ──
@@ -423,7 +493,9 @@ function nbRefitBlocks(blocks, file){
       if(slot.kind) continue;
       if(slot.opt !== 'cols' && slot.opt !== 'num') continue;
       const opts = nbSlotOptions(slot, file);
-      if(slot.ask && (b.a[s] === '' || b.a[s] == null)) return;   // 아직 안 고른 자리
+      // 아직 안 고른 빈칸은 그대로 둡니다. (예전에는 `return` 이라 **그 블록의 남은
+      //   칸까지 건너뛰었습니다** — 2026-10-28 고침)
+      if(nbSlotAsk(d, b, s) && (b.a[s] === '' || b.a[s] == null)) continue;
       if(!opts.includes(b.a[s])) b.a[s] = nbSlotDefault(slot, file);
     }
   });

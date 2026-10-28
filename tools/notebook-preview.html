@@ -21,8 +21,11 @@
 <div class="pv-top"><b>📓 노트북 미리보기</b>
   <button onclick="toggleTheme()">🌗 테마</button>
   <button onclick="localStorage.removeItem('nb-preview-progress');location.reload()">처음부터</button>
+  <button onclick="location.search = location.search.includes('tc=1') ? '' : '?tc=1'"
+    id="pv-who">학생/선생님 바꾸기</button>
 </div>
-<div class="pv-note">앱 로그인 없이 학생 화면 그대로 띄웁니다. 코드는 진짜로 실행되고, 저장만 이 브라우저(localStorage)에 흉내 냅니다.</div>
+<div class="pv-note">앱 로그인 없이 노트북 화면을 띄웁니다. 코드는 진짜로 실행되고, 저장만 이 브라우저(localStorage)에 흉내 냅니다.
+  <b id="pv-mode"></b> — <code>?tc=1</code> 을 붙이면 <b>선생님 화면</b>(빈칸 토글 · 설명 고치기 · 그림 · 퀴즈)이 나옵니다.</div>
 <div id="stage"></div>
 <div id="modal-root"></div>
 <div id="pv-toast"></div>
@@ -35,9 +38,28 @@
 <script src="js/state.js"></script>
 <script>
 /* ── 앱에서 쓰는 것들 흉내 ── */
-IS_TC = false;
-ST_USER = { number: '20101', name: '미리보기' };
+/* ?tc=1 이면 **선생님 화면**입니다 (2026-10-28) — 노트북을 짜는 손잡이가
+   학생에게 새지 않는지, 선생님에게는 제대로 보이는지 여기서 봅니다. */
+const PV_TC = new URLSearchParams(location.search).get('tc') === '1';
+IS_TC = PV_TC;
+ST_USER = PV_TC ? null : { number: '20101', name: '미리보기' };
 SEL_CLS = { id: 'ai-2B', label: '인공지능 기초 2B', type: 'ai' };
+TC_CLS = PV_TC ? SEL_CLS : null;
+STUDENTS = [];
+const CLASSES = [
+  { id: 'ai-2B', label: '인공지능 기초 2B', short: '2B', type: 'ai' },
+  { id: 'ai-2D', label: '인공지능 기초 2D', short: '2D', type: 'ai' },
+];
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
+/* 블록 설명 고치기 · 그림 · 다른 반 반영 — 저장은 흉내만 냅니다 */
+async function loadNbBlockText(){ NB_BLK_TEXT = {}; return NB_BLK_TEXT; }
+async function saveNbBlockText(){ }
+async function uploadNbImage(){ return 'data:image/svg+xml;utf8,'
+  + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="90">'
+    + '<rect width="240" height="90" fill="#00703C"/><text x="12" y="52" fill="#fff"'
+    + ' font-size="18">올린 그림 (흉내)</text></svg>'); }
+async function loadAllNotebookProgress(){ return {}; }
+async function copyNotebookToClasses(){ return ['ai-2D']; }
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtDt(s){ return s ? new Date(s).toLocaleString('ko-KR') : ''; }
 function genId(){ return Math.random().toString(36).slice(2, 10); }
@@ -49,7 +71,12 @@ function multiClassPicker(){ return ''; }
 const db = { ref: () => ({ update: async () => {}, set: async () => {}, get: async () => ({ exists: () => false, val: () => null }) }) };
 async function loadNotebookProgress(){ try { return JSON.parse(localStorage.getItem('nb-preview-progress') || 'null'); } catch(e){ return null; } }
 async function saveNotebookProgress(cid, nbId, snum, cells){ localStorage.setItem('nb-preview-progress', JSON.stringify({ cells, updatedAt: new Date().toISOString() })); }
-function render(){ document.getElementById('stage').innerHTML = SEL_NOTEBOOK ? vNotebookDetail(false) : emptyBox('📓', '노트북 없음'); initNotebookCMs(); }
+function render(){
+  document.getElementById('stage').innerHTML = SEL_NOTEBOOK ? vNotebookDetail(false) : emptyBox('📓', '노트북 없음');
+  initNotebookCMs();
+  const m = document.getElementById('pv-mode');
+  if(m) m.textContent = PV_TC ? '지금 선생님 화면' : '지금 학생 화면';
+}
 const MD = s => s;
 NOTEBOOKS = [{ id: 'demo', title: '데이터 분석 실습 — 산곡고 설문', createdAt: '2026-09-11', cells: [
   { id: 'c0', type: 'markdown', source: '# 데이터 분석 실습\n산곡고 1학년 설문 데이터로 **결측치·이상치**를 정리하고 **상관계수**를 구합니다.\n\n## step 1 데이터 불러오기' },
@@ -62,8 +89,17 @@ NOTEBOOKS = [{ id: 'demo', title: '데이터 분석 실습 — 산곡고 설문'
   { id: 'c7', type: 'code', source: 'import seaborn as sns\nsns.heatmap(df.corr(numeric_only=True), annot=True, fmt=".2f", cmap="coolwarm")\nplt.title("속성 사이의 상관계수")' },
   { id: 'c8', type: 'code', source: 'df.corr()' },
   { id: 'c9', type: 'code', source: 'for i in range(5):\n    print(i, "번째 줄")\nname = input("이름을 입력하세요: ")\nprint("반가워요,", name)' },
+  /* 🧩 블록 셀 — 빈칸 토글을 볼 자리입니다 (2026-10-28).
+     `load` 는 파일 칸이 빈칸, `score` 는 어느 데이터로 잴지가 빈칸입니다. */
+  { id: 'c10', type: 'markdown', source: '## step 4 🧩 블록 셀' },
+  { id: 'c11', type: 'code', blk: true, source: '',
+    blocks: [{ k: 'load', a: { f: '' } }, { k: 'shape', a: { f: '' } }] },
+  { id: 'c12', type: 'code', blk: true, source: '',
+    blocks: [{ k: 'score', a: { m: 'dt', d: '' } }, { k: 'pred', a: { m: 'dt', v: '' } }] },
 ] }];
 </script>
+<script src="js/nb-blocks.js"></script>
+<script src="js/nb-open.js"></script>
 <script src="js/nb-snippets.js"></script>
 <script src="js/views/notebook.js"></script>
 <script src="js/events/notebook.js"></script>

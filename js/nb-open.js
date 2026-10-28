@@ -59,6 +59,19 @@ function nbInSim(){
             && nbIsGated(TC_CLS.id, SEL_NOTEBOOK.id) && NB_SIM);
 }
 
+/* ── 지금 노트북을 **짜는 중**인가 (2026-10-28) ──
+   빈칸 토글 · 설명 고치기 · 그림 넣기처럼 **원본을 바꾸는 손잡이**는
+   이 셋이 모두 참일 때만 보여 줍니다.
+     · 선생님이고
+     · 🧪 시뮬레이션이 아니고 (저장되지 않는데 고친 줄 알면 안 됩니다)
+     · 학생 진도를 들여다보는 중이 아니다 (그건 읽기 전용입니다)
+   학생 화면에는 **어떤 경우에도** 나오지 않습니다. */
+function nbCanAuthor(){
+  if(typeof IS_TC === 'undefined' || !IS_TC) return false;
+  if(typeof NB_VIEWING_STUDENT !== 'undefined' && NB_VIEWING_STUDENT) return false;
+  return !nbInSim();
+}
+
 async function loadNbGate(cid){
   if(!cid) return;
   try {

@@ -17,6 +17,9 @@ let NB_RUNNING   = null;    // 실행 중인 셀 id
 let NB_SIDE_TAB  = 'blk';   // 사이드바 탭 'blk'(블록) | 'snip'(함수) | 'toc' | 'files'
 let NB_BLK_SAY   = true;    // 🧩 블록 셀 — 블록 아래 설명을 보일지
 let NB_BLK_CODE  = true;    // 🧩 블록 셀 — 블록이 만든 파이썬 칸을 보일지
+/* 🧩 블록 셀 — **빈칸을 정하는 손잡이**를 보일지 (선생님만 · 2026-10-28).
+   꺼 두는 것이 기본입니다. 켜 두면 작은 단추가 칸마다 붙어 파이썬이 지저분해집니다. */
+let NB_BLK_ASKUI = false;
 let NB_FILES     = null;    // [{p, d, s}] — null 이면 아직 안 읽음
 let _nbQueue     = Promise.resolve();
 let _nbGen       = 0;       // 중지할 때마다 올림 — 줄 서 있던 셀은 건너뜀

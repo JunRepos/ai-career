@@ -25,8 +25,27 @@
 | 배포 | https://junrepos.github.io/ai-career/ (GitHub Pages, `main` 브랜치) |
 | 스택 | 순수 vanilla JS (빌드 없음) + Firebase RTDB/Storage |
 
-`informatics` 레포(정보 교과 앱)에서 갈라져 나왔습니다. **정보 교과 코드(OJ·노트북·미션·퀴즈·AI코딩·기계학습·수행평가)는 하나도 지우지 않고 메뉴에서만 빼둔 상태입니다. 지우지 마세요.**
-`js/games/` 의 `flappybird` · `typehunter` · `lockerdrop` 도 같은 이유로 남아 있습니다 (`GAMES` 목록에는 없음).
+`informatics` 레포(정보 교과 앱)에서 갈라져 나왔습니다. 정보 교과 코드(OJ · 노트북 · 퀴즈 ·
+AI코딩 · 기계학습 · 수행평가)는 **메뉴에서만 빼 두고 코드는 남아 있습니다. 지우지 마세요.**
+
+> **안 쓰는 것 8개는 2026-10-18 에 지웠습니다** — `book-picker` · `library-holdings` ·
+> `mission-runner` · `events/mission` · `views/mission` · `games/flappybird` ·
+> `games/lockerdrop` · `games/typehunter`.
+> 배포된 `index.html` 이 더 이상 부르지 않는 것만 지웠습니다 (지우기 전에 확인함).
+> 되살리려면 `git show 8d14250:<파일>` 로 꺼냅니다.
+
+## 수업자료 이름 바꾸기 (2026-09-29 배포 9bd6c01)
+
+선생님 → 수업자료 카드에 **「이름 바꾸기」** 단추. 누르면 `prompt` 로 지금 이름이 뜨고, 고치면 바로 바뀝니다.
+
+| 어디 | 무엇 |
+|---|---|
+| `js/firebase.js` | `renameDeck(cid, deckId, title)` — `slides/{반}/decks/{id}/title` **만** 씁니다 (옛 자리 `slides/{반}/deck` 도 처리). 메모리의 `SLIDE_DECKS` · `SLIDE_DECK` 도 같이 고칩니다 |
+| `js/views/slides.js` | 카드 단추 — 열어보기 · **이름 바꾸기** · 이번 시간에 열기 · 삭제 |
+| `js/events/slides.js` | `sl-rename` — 빈 이름 막기 · 80자 제한 · 공백 정리 · 안 바뀌었으면 그냥 다시 그림 |
+
+**슬라이드 그림 · 학생 메모 · 자료 id 는 안 건드립니다.** 열어 둔(live) 자료를 바꿔도 닫히지 않습니다.
+노트북 이름 바꾸기(`rename-notebook`)와 같은 방식입니다.
 
 ## 반 구성
 
@@ -95,6 +114,104 @@ firebase deploy --only storage --project sindong-informatics
 - 단원에 건 수업자료는 **수업 때 쓴 필기가 그대로** 남은 채 열림 (혼자 보기 — 선생님을 안 따라감)
 - 단원에 건 학습지는 **'학생에게 보내기' 안 눌러도** 열림
 
+### 노트북 — Colab 을 사이트로 (인공지능 기초 · 2026-09-11)
+
+선생님이 Colab 에서 내려받은 **.ipynb** 를 **콘텐츠 › 📓 노트북**에 올리고, **단원 구성**에서 항목 종류 **노트북**으로 겁니다.
+학생은 단원에서 눌러 열고, 파이썬은 **학생 브라우저 안에서** 돕니다 (Pyodide). 서버 비용 · 로그인 없음.
+
+| 파일 | 하는 일 |
+|---|---|
+| `js/notebook-worker.js` | Pyodide **0.27.7** 워커 (Python 3.12 · pandas 2.2 · numpy 2.0 · scikit-learn 1.6 — Colab 과 같은 판) |
+| `js/notebook-boot.py` | 파이썬 쪽 — `!명령` · `%매직` · 표시 · 한글 글꼴 · `git clone` · `google.colab` 흉내 |
+| `js/notebook-colab.js` | 화면 쪽 — 출력 흐름 · 표 · ⏹ 중지 · 셀 줄 세우기 · 📁 파일 창 · 도움말 · ipynb 출력 포함 저장 |
+| `vendor/fonts/NanumGothic-*.ttf` (OFL) · `vendor/py/seaborn-0.13.2-py3-none-any.whl` | 학교망에서도 되게 사이트가 직접 줌 |
+
+- **`!git clone https://github.com/…`** — 공개 저장소를 **jsDelivr** 로 받습니다(목록 `data.jsdelivr.com`, 파일 `cdn.jsdelivr.net/gh`).
+  GitHub API 는 학교 IP 하나에 시간당 60번이라 쓰지 않고, 안 될 때만 씁니다.
+  ⚠ jsDelivr 는 가지(main) 내용을 **최대 12시간** 캐시합니다 — 저장소를 방금 고쳤으면 반영이 늦을 수 있습니다.
+- 되는 명령 — `ls pwd cat head tail wc mkdir rm cp mv touch wget curl unzip echo tree find grep du pip python git clone/pull`,
+  `%cd %pwd %pip %time %%writefile %%time %%bash`. 파이프(`|`)는 안 됩니다
+- **표시** — 마지막 줄 값(DataFrame 은 표), `display()`, 그림은 `plt.show()` 또는 셀 끝에 자동. 한글 글꼴 설정이 없어도 한글이 나옵니다
+  (글꼴 이름을 나눔바른고딕 등으로 적어도 나눔고딕으로 바꿔 그림)
+- **안 되는 것** — tensorflow · keras · torch · GPU · 구글 드라이브 · apt-get. 셀에서 쓰면 "Colab 에서 실행하세요" 도움말이 뜹니다
+- **교차 출처 격리는 계속 꺼 둡니다** (학교 PC 에서 페이지가 통째로 실패한 적 있음). 그래서
+  - `input()` 은 JSPI(최신 크롬·엣지·웨일)로 받습니다. 안 되는 브라우저에서는 알기 쉬운 오류가 납니다
+  - 실행 중 멈추기는 **⏹ 중지 = 런타임 새로 시작**뿐입니다 (변수 · /content 파일이 지워짐)
+- **셀 안 복습 퀴즈** (2026-09-27) — 출력의 HTML 은 걸러지고(`display(HTML(…))` 은 `<iframe sandbox="">`, 판다스 표는 `nbSanitize` 가 `input · button · select` 를 지움) **누르는 단추가 달린 퀴즈 위젯은 못 만듭니다.** 대신 「값을 쓰고 셀을 실행하면 채점」 방식.
+  · 선생님 화면 — 노트북 **삽입 › 🧠 복습 퀴즈 문제** 로 넣고, 퀴즈 칸의 **🧠** 로 고칩니다 (문제 번호는 넣거나 고칠 때 1부터 다시 매깁니다)
+  · 만들어 넣을 때 — 생성기 `verify/nb_quiz.py` · 보기 `verify/lesson13-quiz.py`
+  · ⚠ **준비 셀 글(`확인` 함수)은 두 곳에 같이 있습니다** — `js/events/notebook.js` 의 `NB_QUIZ_SETUP` 과 `verify/nb_quiz.py` 의 `SETUP`.
+    한 노트북에 앱으로 넣은 문제와 생성기로 넣은 문제가 섞일 수 있으니 **한쪽을 고치면 다른 쪽도 같이 고칩니다**
+  · 답 · 풀이 · 힌트는 base64 로 감춥니다 — 셀 글로는 안 보이지만 **완전한 잠금은 아닙니다**(복습 퀴즈용). 주관식은 띄어쓰기 · 대소문자 · 따옴표 · 괄호를 무시
+- **이름 바꾸기** — 콘텐츠 › 📓 노트북 목록의 **[이름 변경]** (2026-09-27). 칸과 학생 진도는 노트북 **id** 로 이어져 있어 이름만 바뀌고 학생이 저장한 것은 그대로입니다. `notebooks/{반}/{id}/title` 한 곳만 씁니다
+- 학생 코드는 `notebookProgress/{반}/{노트북id}/{학번}` 에 셀 글만 저장됩니다 (출력은 저장 안 함). 노트북은 `notebooks/{반}/{id}` — **여러 반에 한 번에 올리면 id 가 같습니다**
+
+#### 선생님이 노트북을 직접 짭니다 (2026-10-28)
+
+생성기(`verify/*-nb.py`)로만 되던 것을 **앱에서** 하도록 넷을 더했습니다.
+학생 화면에는 **하나도 안 보입니다** — 그릴 때 `nbCanAuthor()`(`js/nb-open.js`) 로 가립니다
+(선생님 · 🧪 시뮬레이션 아님 · 학생 진도 보기 아님).
+
+| 무엇 | 어디 · 어떻게 |
+|---|---|
+| **빈칸을 셀마다 다르게** | 블록 셀 머리의 **「✎ 빈칸 정하기」** 를 켜면 칸마다 단추가 붙습니다. 누르면 학생이 채울 빈칸 ↔ 채워 둠 |
+| **블록 설명 고치기** | 블록 아래 설명 끝의 **✏️**. 고친 글은 `aiactivity/submissions/{반}/nbBlockText/{블록키}`. **↺** 로 처음 글로 |
+| **그림 넣기** | 텍스트 셀 편집기의 **🖼 그림** · 붙여넣기(Ctrl+V) · 끌어다 놓기. Storage `teacherFiles/{반}/nbimg-…` |
+| **퀴즈를 셀 사이에서** | 셀 사이 ＋ 줄의 **`+ 🧠 퀴즈`** (예전엔 삽입 메뉴 안에만 있어 못 찾았습니다) |
+| **다른 반에도 반영** | 위 툴바의 **📤 다른 반에도 반영** |
+
+- ⚠ **빈칸은 블록 하나하나에 붙습니다** — `cell.blocks[i].q = ['d']`.
+  `q` 가 없으면 지금까지처럼 정의의 `ask` 를 씁니다. 그래서 **옛 노트북과 학생이
+  저장해 둔 것은 하나도 달라지지 않습니다.** 생성기의 `show=` 도 그대로입니다.
+- ⚠ **선생님 편집은 보고 있는 반에만 저장됩니다** (`notebooks/{지금 반}` 한 곳).
+  ai-2B 에서 고쳐 놓으면 ai-2D 는 옛 판 그대로 남는데 **아무 표시도 없습니다.**
+  그래서 📤 를 꼭 누릅니다 (CLAUDE.md 23).
+- ⚠ **블록 설명 덮어쓰기는 `notebooks/{반}` 아래에 두면 안 됩니다** —
+  `loadNotebooks` 가 그 자리의 자식을 **전부 노트북 하나로 셉니다.**
+- ⚠ 설명을 고치면 **교과서 쪽 표시를 떼어 냅니다.** 교과서 문장이 아닌데 쪽을 달면
+  학생이 거기서 찾습니다 (CLAUDE.md 5-1). 「고쳤다」 는 표시는 학생 화면에 안 냅니다 (16번).
+- `storage.rules` 는 **고치지 않았습니다** — `teacherFiles/…` 가 이미 열려 있습니다
+  (informatics 와 공유라 건드리면 양쪽을 맞춰야 합니다).
+- **새 블록 `pred`** — `print(dt.predict([[값, 값]]))`. 교과서 109쪽 판, 설명은 101쪽.
+  수행평가 ③ 의 4·5점이 「새로운 데이터의 결과를 예측함」 인데 그 칸이 없었습니다.
+- 확인 — `tools/notebook-preview.html` 에 **`?tc=1`** 을 붙이면 **선생님 화면**이 뜹니다
+  (로그인 없이 · 저장은 흉내). 블록 셀 두 개가 예시로 들어 있습니다.
+- 앱 없이 확인: `tools/notebook-preview.html` (학생 화면 그대로, 저장만 흉내) · `tools/notebook-engine-test.html` (엔진만 — 셀 17개 자동 실행)
+- `notebook-boot.py` · 워커를 고치면 `js/events/notebook.js` 의 **`NB_WORKER_VER`** 를 올리세요 (워커는 `?v=` 가 따로입니다)
+
+### 1차 수행평가 채점 검토 (2026-09-27)
+
+선생님 › 📝 1차 수행평가 › 학생의 **[답안 · 채점 →]** 을 누르면 답안 아래에 **채점 칸**이 붙습니다.
+- 영역 ①②③④ 의 채점 칸이 **그 영역의 마지막 문항 바로 밑**에 붙습니다 (2026-09-27 선생님 — 왔다 갔다 안 하게).
+  결격 사유(`A1.scale` — 학생에게 보인 판과 같은 글) · 처음 매긴 점수 · **5 · 4 · 3 · 2 단추** · 그 영역의 채점 사유
+- **채점 사유는 「① 4점 —」 같은 표시로 갈라** 영역마다 나눕니다 (`_a1SplitWhy`). 표시가 없는 글(백지 등)은 맨 위에 둡니다
+- **사유는 선생님이 바로 고칠 수 있습니다** — 내가 적은 `why` 는 그대로 두고 고친 글만 `w:{1..4|'top'}` 에 담습니다.
+  고치면 테두리가 초록이 되고 **[↺ 처음 글로]** 가 뜹니다 (`w` 에서 그 칸만 지웁니다)
+- **고친 것은 「무엇에서 무엇으로」 가 보입니다** (2026-09-27 선생님) — 점수는 ~~처음 5점~~ **→ 4점으로 고침**,
+  사유는 고친 글 밑에 **처음 적은 사유**가 작게 남습니다. 「고침」 이라고만 적지 않습니다
+- **← 앞 학생 / 다음 학생 →** — 목록에 나가지 않고 학번 순으로 이어서 채점 (`a1-tc-step`)
+- **검토 상태 세 단계** — 누를 때마다 미검토(○) → 검토중(◐ 노랑) → 확정 완료(✔ 초록). 목록에 색 점으로 보입니다
+  (`state` 에 `''|wip|done` · 옛 `done` 불리언도 읽습니다)
+- **선생님 메모**는 맨 아래
+- DB `aiactivity/submissions/{반}/assess1grade/{학번}` = `{ai:{1..4}, why, check, s:{1..4 고친 점수}, note, done, at, by}`
+  (`aiactivity/grading/…` 은 규칙이 막혀 401 — **열려 있는 자리는 `aiactivity/submissions` 아래뿐**입니다)
+- 처음 매긴 점수(`ai`)는 덮어쓰지 않습니다. 선생님이 고친 값은 `s` 에 따로 들어가 「처음 5점 → 고침」 으로 보입니다
+- **학생 화면은 이 자리를 읽지 않습니다.** 다만 DB 규칙이 열려 있어 주소를 아는 사람은 읽을 수 있습니다
+  (메모 `security-audit-2026-08-19` 의 알려진 문제 — 학생 답안도 같은 조건)
+- 9/22 에 매긴 46명 채점은 스크래치패드의 `seed_grading.py` 로 넣었습니다 (xlsx → DB · 다시 돌려도 `s`·`note`·`done` 은 안 지웁니다). **그 파일은 레포에 없습니다** — 학생 이름·점수가 들어 있어 스크래치패드에만 두고 세션이 끝나면 지웁니다
+
+### 1차 수행평가 (인공지능 기초)
+
+- `js/views/assess1.js` · `js/events/assess1.js` · 문항 글 `js/assess1-data.js`
+  - **`js/assess1-data.js` 는 손으로 고치지 않습니다.** `python verify/assess1-docs.py` 가 종이 평가지와 같은 글로 다시 씁니다
+  - 칸 id(`q1src` `q1` `q2` `q3name` `q3kind` `q3` `q4` `q5`)는 저장 위치라 바꾸지 않습니다
+- 저장 `aiactivity/submissions/{반}/assess1/{학번}` = `{ name, answers, updatedAt, submitted:{answers, at} }`
+  · 작성 범위 `aiactivity/submissions/{반}/assess1Open` = `closed | q13 | q45 | all` (규칙 재배포 없음)
+- 입력은 **칸 단위로** 저장합니다(`answers/q4` 만). 불러오기가 실패하면 입력을 받지 않습니다 — 앞 시간 답을 덮어쓰지 않게
+- 제출은 답 전체를 `submitted` 에 따로 남기고, **서버에서 다시 읽어 같을 때만** 학생에게 "제출 확인" 을 띄웁니다
+- 학생 화면은 작성 범위를 실시간 구독합니다(`a1WatchOpen`). 선생님 목록도 실시간(`a1TcStart`, 탭을 떠나면 `a1TcStop`)
+- 로그인 없이 화면만 보려면 `tools/assess1-preview.html` (가짜 저장소 · 저장 실패 흉내 · 샘플 답안)
+
 ### 실습 게임
 
 목록은 `js/games/games.js` 의 **GAMES** 한 곳에서 관리합니다. 게임을 더 만들면
@@ -108,10 +225,6 @@ firebase deploy --only storage --project sindong-informatics
 | `city-astar` | 🧭 도시 배달 — 지도를 보고 | 도시마다 **직선거리 h** 가 적힌 지도 · `f = g + h` 가 작은 곳부터 | `verify/cityastar.py` (판 설계 `cityastar-design.py`) |
 | `puzzle-astar` | 🧠 8퍼즐 A\* 탐색 | **교과서 37쪽 활동3** · 학생이 **g·h·f 를 직접 입력**해야 다음으로 | `verify/lesson6.py` |
 | `puzzle-8` | 🧩 8퍼즐 맞추기 | **학습지 앞면과 같은 판**(`_13/824/765` → `123/8_4/765`) · 맞추면 깊이 2 탐색 트리 | |
-| `rule-car` | 🚗 자율주행차 규칙 만들기 | 선생님 학습지 「새로운 상태공간을 위한 추론」 의 카드로 **IF-THEN 규칙(지식 베이스)** 을 만들어 주행 시험 6상황 통과 (조건은 AND 로 두 개까지) · 조건이 맞는 규칙은 모두 불리고 행동이 다르면 **충돌** · 「확인한다」 는 숨은 사실을 드러냄(연쇄) · 주행 시험은 **도로 장면**으로 상황 1~8 을 차례로 달림 — 틀리면 **쾅(사고)** 이나 **삐빅(실격)** (`rulecar-sim.js`) | `verify/rulecar.py` — 판 데이터·추론 엔진·장면 종류를 node 로 돌려 대조 · **모범 답은 검산기의 `REFERENCE` 에만** (게임 코드에는 없음) |
-
-**학생 홈 「🎮 실습 게임」 칸** — `games.js` 의 `HOME_GAMES`(반 종류별 id 목록)에 넣은 게임은 수업자료에 끼우지 않아도
-학생 홈(🏠)에 카드로 뜨고, 누르면 게임 화면(`ST_TAB='game'`)이 열립니다. 지금은 인공지능 기초 반(`type:'ai'`)에 `rule-car` 하나.
 
 브라우저로 `tools/game-preview.html` 을 열면 앱 없이 게임만 따로 확인됩니다
 (`?game=maze&start=1` 처럼 열면 시작한 화면부터).
@@ -123,7 +236,7 @@ firebase deploy --only storage --project sindong-informatics
 
 - 슬라이드 중간에 끼우기 — 수업자료 조작판의 `＋ 🌿 …` `＋ 🧩 …` 버튼 (지금 장 **다음**에 들어감)
 - 점수는 `slides/{반}/scores/{게임id}/{학번}` 에 **최고 기록만**. 저장 함수가 '클수록 좋음' 이라
-  적을수록 좋은 게임은 빼서 넣습니다 — 8퍼즐은 `1000 − 수` · 자율주행차 규칙은 `통과 수 × 100 − 규칙 수`
+  적을수록 좋은 게임은 빼서 넣습니다 — 8퍼즐은 `1000 − 수`
 
 > 「숨바꼭질」은 2026-08-27 에 **폐기**했습니다. 코드·CSS·DB 항목을 전부 걷어냈습니다.
 > 되살릴 일이 있으면 `.backup/hideseek-2026-08-27/` 에 있습니다.
@@ -147,10 +260,6 @@ firebase deploy --only storage --project sindong-informatics
     `gameView(id)` · `gameLoadRank(id)` · `gameLeaveAll()` · `gameTeacherBoard(id)`.
     `gameDef()` 가 모르는 id 를 물 주기로 떨어뜨리기 때문에, 잘못 불러도 화면이 안 비고
     **엉뚱한 게임이 조용히 뜹니다.**
-13. **게임 안의 `select` 는 전역 규칙에 덮입니다.** 전역 `select{width:100%}` 와 다크 테마의
-    `[data-theme="dark"] select{background:var(--bg)}` 가 클래스 하나짜리 규칙보다 앞서서,
-    글자만 어둡게 주면 **어두운 바탕에 어두운 글자**가 되어 안 보입니다.
-    `.rc-build select.rc-sel` 처럼 부모 클래스까지 붙여 우선순위를 높이세요. (2026-09-11 자율주행차 규칙 게임)
 
 ---
 
@@ -179,10 +288,11 @@ node   tools/deck-upload.mjs <PNG폴더> --title "6. 지능적 탐색" --classes
 
 | 어디에 | 무엇이 |
 |---|---|
-| 교과서 PDF | `D:/Google drive/신동고등학교/01_교과_인공지능/교과서 및 교사용 지도서/고_인공지능 기초(김현철)_교과서.pdf` |
-| 차시 노트 | `D:/Google drive/Obsidian Vault/01_Projects/수업/인공지능 기초/` |
-| 붙여넣은 그림 | `D:/Google drive/Obsidian Vault/04_Archive/99_media/` |
-| 새 차시 템플릿 | `D:/Google drive/Obsidian Vault/98_Templates/T_인공지능 차시.md` |
+| 교과서 PDF · 지도서 | `G:/내 드라이브/신동고등학교/01_교과_인공지능/교과서 및 교사용 지도서/` |
+| 평가계획서 | `G:/내 드라이브/신동고등학교/01_교과_인공지능/평가계획서/` — 최종본은 `…양식(최종본)신동고.hwpx` |
+| 차시 노트 | `G:/내 드라이브/ai-career-backup/Obsidian-01_Projects/수업/인공지능 기초/` — **2026-08-28 백업본. 지금 볼트에는 없습니다** |
+| 붙여넣은 그림 | `G:/내 드라이브/Obsidian Vault/04_Archive/99_media/` |
+| 새 차시 템플릿 | **없어졌습니다** (옛 경로 `98_Templates/T_인공지능 차시.md`) |
 
 > 📖 **교과서 쪽 = PDF 쪽 − 3** (PDF 31쪽 = 책 28쪽). `python + fitz` 로 읽고 **결과를 UTF-8 파일로
 > 저장한 뒤 읽습니다** — 콘솔로 바로 찍으면 한글이 깨집니다(cp949).
@@ -265,14 +375,14 @@ PPT 를 보고 **말로 고쳐도** 됩니다 — 그때는 고쳐 뽑은 뒤 �
 powershell -ExecutionPolicy Bypass -File tools/backup-claude.ps1
 ```
 
-`D:/Google drive/ai-career-backup/` 에 **깃허브에 없는 것만** 모읍니다. 여러 번 돌려도 됩니다(안 지웁니다).
+`G:/내 드라이브/ai-career-backup/` 에 **깃허브에 없는 것만** 모읍니다. 여러 번 돌려도 됩니다(안 지웁니다).
 
 | 담는 것 | 왜 |
 |---|---|
 | `~/.claude/projects` 등 | **클로드 코드 대화 기록·메모리.** 레포가 아니라 홈 폴더에 있습니다 |
 | `.claude/launch.json` | 미리보기 서버 설정 — `.gitignore` 에 걸려 레포에 없음 |
 | 손본 `*.pptx` | `tools/samples/*.pptx` 가 `.gitignore` 라 레포에 없음 |
-| `RESTORE.md` | 되살리는 법 |
+| `RESTORE.md` | 되살리는 법 — **백업 폴더에 스크립트가 써 줍니다**(레포 파일이 아닙니다) |
 
 - **레포만 clone 하면 하네스는 다 살아납니다** — `CLAUDE.md`·`docs/`·`tools/`·`verify/` 가 전부 git 에 있습니다
 - **대화 기록 되살리기는 보장이 안 됩니다.** 세션 폴더 이름이 **절대 경로를 인코딩**합니다
