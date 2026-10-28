@@ -25,7 +25,8 @@
     id="pv-who">학생/선생님 바꾸기</button>
 </div>
 <div class="pv-note">앱 로그인 없이 노트북 화면을 띄웁니다. 코드는 진짜로 실행되고, 저장만 이 브라우저(localStorage)에 흉내 냅니다.
-  <b id="pv-mode"></b> — <code>?tc=1</code> 을 붙이면 <b>선생님 화면</b>(빈칸 토글 · 설명 고치기 · 그림 · 퀴즈)이 나옵니다.</div>
+  <b id="pv-mode"></b> — <code>?tc=1</code> 을 붙이면 <b>선생님 화면</b>(빈칸 토글 · 설명 고치기 · 그림 · 퀴즈),
+  <code>?tc=1&amp;list=1</code> 이면 <b>노트북 목록</b>(여기서 「🧩 블록 고치기」로 들어갑니다)이 나옵니다.</div>
 <div id="stage"></div>
 <div id="modal-root"></div>
 <div id="pv-toast"></div>
@@ -40,7 +41,10 @@
 /* ── 앱에서 쓰는 것들 흉내 ── */
 /* ?tc=1 이면 **선생님 화면**입니다 (2026-10-28) — 노트북을 짜는 손잡이가
    학생에게 새지 않는지, 선생님에게는 제대로 보이는지 여기서 봅니다. */
-const PV_TC = new URLSearchParams(location.search).get('tc') === '1';
+const PV_Q = new URLSearchParams(location.search);
+const PV_TC = PV_Q.get('tc') === '1';
+/* ?list=1 — 선생님 **노트북 목록** 화면. 거기서 「🧩 블록 고치기」 로 들어갑니다 */
+const PV_LIST = PV_Q.get('list') === '1';
 IS_TC = PV_TC;
 ST_USER = PV_TC ? null : { number: '20101', name: '미리보기' };
 SEL_CLS = { id: 'ai-2B', label: '인공지능 기초 2B', type: 'ai' };
@@ -72,7 +76,9 @@ const db = { ref: () => ({ update: async () => {}, set: async () => {}, get: asy
 async function loadNotebookProgress(){ try { return JSON.parse(localStorage.getItem('nb-preview-progress') || 'null'); } catch(e){ return null; } }
 async function saveNotebookProgress(cid, nbId, snum, cells){ localStorage.setItem('nb-preview-progress', JSON.stringify({ cells, updatedAt: new Date().toISOString() })); }
 function render(){
-  document.getElementById('stage').innerHTML = SEL_NOTEBOOK ? vNotebookDetail(false) : emptyBox('📓', '노트북 없음');
+  document.getElementById('stage').innerHTML =
+    (PV_TC && PV_LIST) ? vTcNotebook()
+    : SEL_NOTEBOOK ? vNotebookDetail(false) : emptyBox('📓', '노트북 없음');
   initNotebookCMs();
   const m = document.getElementById('pv-mode');
   if(m) m.textContent = PV_TC ? '지금 선생님 화면' : '지금 학생 화면';
@@ -105,7 +111,7 @@ NOTEBOOKS = [{ id: 'demo', title: '데이터 분석 실습 — 산곡고 설문'
 <script src="js/events/notebook.js"></script>
 <script src="js/notebook-colab.js"></script>
 <script>
-openNotebook('demo');
+if(PV_TC && PV_LIST) render(); else openNotebook('demo');
 </script>
 </body>
 </html>

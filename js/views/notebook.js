@@ -7,8 +7,80 @@
    - 셀 사이: + 코드 / + 텍스트 추가 버튼
 ═══════════════════════════════════════ */
 
+/* ═══ 🧩 블록 고치기 페이지 (2026-10-28) ═══════════════════════
+   블록의 **이름과 설명**은 노트북 하나에 딸린 것이 아니라 그 블록을 쓴 **모든
+   노트북**에 걸립니다. 그래서 노트북 안에서 고치면 어디까지 바뀌는지 안 보입니다.
+   여기서는 블록을 한자리에 늘어놓고 고칩니다.
+
+   ⚠ **같은 과목의 모든 반에 함께 저장합니다** — 반마다 설명이 다르면
+     두 반 수업이 어긋납니다 (CLAUDE.md 23). 화면에도 그렇게 적어 둡니다. */
+function vNbBlockEditor(){
+  const mates = (typeof CLASSES !== 'undefined' && TC_CLS)
+    ? CLASSES.filter(c => c.type === (CLASSES.find(x => x.id === TC_CLS.id) || {}).type)
+    : [];
+  const edited = Object.keys(NB_BLK_TEXT || {}).length;
+
+  // 서랍 묶음에 없는 블록도 빠뜨리지 않습니다 — 옛 노트북에 남아 있을 수 있습니다
+  //   (지금은 `scoret` 하나. 서랍에는 안 보이지만 쓰인 노트북이 있습니다)
+  const inGroups = new Set([].concat(...(typeof NB_BLOCK_GROUPS === 'undefined' ? []
+    : NB_BLOCK_GROUPS.map(([, ks]) => ks))));
+  const rest = Object.keys(NB_BLOCK_DEFS).filter(k => !inGroups.has(k));
+  const all = (typeof NB_BLOCK_GROUPS === 'undefined' ? [] : NB_BLOCK_GROUPS.slice())
+    .concat(rest.length ? [['서랍에 없는 것', rest]] : []);
+
+  const groups = all.map(([g, keys]) => `
+      <div class="sec-title" style="margin-top:14px">${esc(g)}</div>
+      ${keys.map(k => {
+        const d = NB_BLOCK_DEFS[k];
+        if(!d) return '';
+        const t = NB_BLK_TEXT[k] || {};
+        const on = !!(t.name || t.say);
+        return `<div class="nbbe-row${on ? ' nbbe-on' : ''}" data-k="${k}"
+            style="--nbk-cat:var(${NB_BLK_CAT[d.cat]})">
+          <div class="nbbe-head">
+            <input class="nbbe-name" id="nbbe-name-${k}" type="text" maxlength="40"
+              value="${esc(t.name || d.name)}" placeholder="${esc(d.name)}"
+              aria-label="블록 이름">
+            <span class="nbbe-k">${k}</span>
+            ${on ? '<span class="chip chip-purple">고친 것</span>' : ''}
+          </div>
+          <pre class="nbbe-code">${esc(nbPalCode(k))}</pre>
+          <textarea class="nbbe-say" id="nbbe-say-${k}" rows="3"
+            placeholder="${esc(d.say || '')}" aria-label="블록 설명">${esc(t.say || d.say || '')}</textarea>
+          <div class="nbbe-foot">
+            ${d.src ? `<span class="nbbe-src">처음 글의 출처 — ${esc(d.src)}</span>` : '<span></span>'}
+            <span>
+              ${on ? `<button class="btn-xs" data-action="nb-blkedit-reset" data-k="${k}"
+                >↺ 처음 글로</button>` : ''}
+              <button class="btn-xs btn-p" data-action="nb-blkedit-save" data-k="${k}">저장</button>
+            </span>
+          </div>
+        </div>`;
+      }).join('')}`).join('');
+
+  return `<div class="section">
+    <div class="nbbe-top">
+      <button class="btn-xs" data-action="nb-blockedit-close">← 노트북 목록</button>
+      <div class="sec-title" style="margin:0">🧩 블록 고치기</div>
+    </div>
+    <div class="box-info">
+      블록의 <b>이름</b>과 <b>아래 설명</b>을 고칩니다.
+      고친 글은 <b>그 블록을 쓴 모든 노트북</b>에 그대로 보입니다 — 학생 화면도 같습니다.
+      <br>저장하면 <b>${mates.length ? esc(mates.map(c => c.short || c.id).join(' · ')) : '이 반'}</b>
+      에 함께 적용됩니다. 반마다 다르면 두 반 수업이 어긋납니다.
+      <br>⚠ 교과서 문장을 고치면 <b>교과서 쪽 표시를 떼어 냅니다</b> — 교과서에 없는 글인데
+      쪽이 달려 있으면 학생이 거기서 찾습니다.
+      ${edited ? `<br>지금 고쳐 둔 블록 <b>${edited}개</b>` : ''}
+    </div>
+    ${groups}
+  </div>`;
+}
+
 // ── 선생님: 노트북 관리 ──
 function vTcNotebook(){
+  // 🧩 블록만 따로 고치는 페이지 (2026-10-28 선생님)
+  if(NB_BLKEDIT && !SEL_NOTEBOOK) return vNbBlockEditor();
+
   const form = `<div class="section">
     <div class="sec-title">📓 노트북 업로드</div>
     <div class="box-info">Google Colab 또는 Jupyter .ipynb 파일을 업로드하면 학생들이 웹에서 단계적으로 실습할 수 있습니다.</div>
@@ -60,7 +132,14 @@ function vTcNotebook(){
     </div>`;
   }).join('');
 
-  return form + `<div class="sec-title" style="margin-top:4px">등록된 노트북</div>` + list;
+  // 🧩 블록은 노트북 하나가 아니라 **반 전체**에 걸립니다. 그래서 여기서 따로 들어갑니다.
+  const blkBtn = `<div class="nbbe-top" style="margin-top:4px">
+    <div class="sec-title" style="margin:0">등록된 노트북</div>
+    <button class="btn-xs" data-action="nb-blockedit-open"
+      title="블록의 이름과 설명을 한자리에서 고칩니다 — 모든 노트북에 적용됩니다"
+      >🧩 블록 고치기</button>
+  </div>`;
+  return form + blkBtn + list;
 }
 
 // ── 학생: 노트북 목록/상세 ──

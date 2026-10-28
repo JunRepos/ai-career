@@ -863,6 +863,23 @@ document.addEventListener('drop', e => {
   if(f && /^image\//.test(f.type || '')){ e.preventDefault(); nbMdUpload(NB_EDITING_MD, f); }
 }, true);
 
+/* ═══ 블록의 이름 · 설명 저장 — 같은 과목의 모든 반에 (2026-10-28) ═══
+   블록 글은 노트북 하나가 아니라 **반 전체**에 걸립니다. 반마다 다르면 두 반
+   수업이 어긋나므로 한 번에 같이 씁니다 (CLAUDE.md 23).
+   `val` 이 null 이면 그 블록의 고친 글을 지웁니다(= 처음 글로). */
+async function nbSaveBlockTextAll(k, val){
+  if(!nbAuthoring() || !TC_CLS) return [];
+  const me = CLASSES.find(c => c.id === TC_CLS.id);
+  const targets = CLASSES.filter(c => c.type === (me || {}).type).map(c => c.id);
+  for(const cid of (targets.length ? targets : [TC_CLS.id])){
+    await saveNbBlockText(cid, k, val);
+  }
+  // 지금 화면이 쓰는 값도 같이 맞춥니다 — 다시 읽지 않아도 바로 보이게
+  if(val === null) delete NB_BLK_TEXT[k];
+  else NB_BLK_TEXT[k] = val;
+  return targets;
+}
+
 /* ═══ 다른 반에도 반영 (2026-10-28) ═══════════════════════════
    선생님의 편집은 보고 있는 반에만 저장됩니다. 두 반을 같게 맞추는 손잡이입니다
    (CLAUDE.md 23). 되돌릴 수 없으니 **먼저 확인받습니다** (CLAUDE.md 24). */
@@ -1275,6 +1292,43 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  /* ── 🧩 블록 고치기 페이지 (2026-10-28 선생님) ── */
+  if(act.action === 'nb-blockedit-open'){
+    if(!nbAuthoring() || !TC_CLS) return;
+    try { await loadNbBlockText(TC_CLS.id); }
+    catch(err){ toast('고쳐 둔 글을 못 읽었습니다 — ' + (err.message || err), 'err'); }
+    NB_BLKEDIT = true;
+    render();
+    return;
+  }
+  if(act.action === 'nb-blockedit-close'){ NB_BLKEDIT = false; render(); return; }
+  if(act.action === 'nb-blkedit-save'){
+    const d = NB_BLOCK_DEFS[act.k];
+    if(!d) return;
+    const nameEl = document.getElementById('nbbe-name-' + act.k);
+    const sayEl  = document.getElementById('nbbe-say-' + act.k);
+    const name = (nameEl ? nameEl.value : '').trim();
+    const say  = (sayEl ? sayEl.value : '').trim();
+    const val = {};
+    if(name && name !== d.name) val.name = name;
+    if(say && say !== d.say) val.say = say;
+    try {
+      await nbSaveBlockTextAll(act.k, Object.keys(val).length ? val : null);
+      render();
+      toast(Object.keys(val).length ? '고쳤습니다 — 모든 노트북에 적용됩니다'
+                                    : '처음 글로 돌아갔습니다', 'ok');
+    } catch(err){ toast('저장하지 못했습니다 — ' + (err.message || err), 'err'); }
+    return;
+  }
+  if(act.action === 'nb-blkedit-reset'){
+    try {
+      await nbSaveBlockTextAll(act.k, null);
+      render();
+      toast('처음 글로 돌아갔습니다', 'ok');
+    } catch(err){ toast('되돌리지 못했습니다 — ' + (err.message || err), 'err'); }
+    return;
+  }
+
   /* ── 블록의 설명을 고칩니다 (2026-10-28) ── */
   if(act.action === 'nb-blk-text'){
     if(!nbAuthoring() || !TC_CLS) return;
@@ -1282,25 +1336,27 @@ document.addEventListener('click', async e => {
     if(!d) return;
     const now = nbBlkSay(act.k);
     const next = prompt('이 블록 아래에 보일 설명입니다.\n'
+      + '이 블록을 쓴 **모든 노트북**에, 같은 과목의 두 반 모두에 적용됩니다.\n'
       + '교과서 문장을 고치면 교과서 쪽 표시는 떼어 냅니다.\n'
       + '비우고 확인을 누르면 처음 글로 돌아갑니다.', now.say || '');
     if(next === null) return;
     const val = next.trim();
     try {
-      if(!val || val === d.say){ await saveNbBlockText(TC_CLS.id, act.k, null);
-                                 delete NB_BLK_TEXT[act.k]; }
-      else { await saveNbBlockText(TC_CLS.id, act.k, {say: val});
-             NB_BLK_TEXT[act.k] = Object.assign({}, NB_BLK_TEXT[act.k], {say: val}); }
+      const keep = NB_BLK_TEXT[act.k] || {};
+      if(!val || val === d.say) await nbSaveBlockTextAll(act.k,
+        keep.name ? {name: keep.name} : null);
+      else await nbSaveBlockTextAll(act.k,
+        Object.assign({}, keep.name ? {name: keep.name} : {}, {say: val}));
       render();
-      toast(val && val !== d.say ? '설명을 고쳤습니다' : '처음 글로 돌아갔습니다', 'ok');
+      toast(val && val !== d.say ? '설명을 고쳤습니다 — 모든 노트북에 적용됩니다'
+                                 : '처음 글로 돌아갔습니다', 'ok');
     } catch(err){ toast('설명을 저장하지 못했습니다 — ' + (err.message || err), 'err'); }
     return;
   }
   if(act.action === 'nb-blk-text-reset'){
     if(!nbAuthoring() || !TC_CLS) return;
     try {
-      await saveNbBlockText(TC_CLS.id, act.k, null);
-      delete NB_BLK_TEXT[act.k];
+      await nbSaveBlockTextAll(act.k, null);
       render();
       toast('처음 글로 돌아갔습니다', 'ok');
     } catch(err){ toast('되돌리지 못했습니다 — ' + (err.message || err), 'err'); }

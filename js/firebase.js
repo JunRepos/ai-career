@@ -257,10 +257,12 @@ async function loadNbBlockText(cid){
   NB_BLK_TEXT = s.exists() ? (s.val() || {}) : {};
   return NB_BLK_TEXT;
 }
+/* val 은 **통째로 덮어씁니다**(set). 고치는 화면이 이름과 설명을 늘 함께
+   보내므로, 합치기(update)로 두면 지운 칸이 DB 에 남습니다. null 이면 지웁니다. */
 async function saveNbBlockText(cid, k, val){
   const ref = db.ref(`aiactivity/submissions/${cid}/nbBlockText/${k}`);
   if(val === null) await ref.remove();
-  else await ref.update(val);
+  else await ref.set(val);
 }
 
 /* ── 텍스트 셀에 넣을 그림 (2026-10-28) ──
