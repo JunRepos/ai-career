@@ -48,17 +48,15 @@ const NB_DATASETS = {
     cols: ['이름', '분류', '용량(ml)', '가격(원)', '칼로리(kcal)', '당류(g)', '카페인(mg)'],
     num:  ['용량(ml)', '가격(원)', '칼로리(kcal)', '당류(g)', '카페인(mg)'],
   },
-  /* ── 2차 수행평가용 세 개 (2026-10-27) ──
+  /* ── 2차 수행평가용 두 개 (2026-10-28) ──
      학생이 **문제 상황을 고르고 그 상황의 데이터를 고릅니다.**
      아래 NB_DATA_ASSESS 에 올려 두어, 평가용 노트북 바깥에서는
-     「데이터 불러오기」 드롭다운에 **보이지 않습니다.** */
-  'wildcam_ko.csv': {
-    cols: ['종', '카메라', '몸길이(cm)', '어깨높이(cm)', '꼬리 길이(cm)', '귀 길이(cm)'],
-    num:  ['몸길이(cm)', '어깨높이(cm)', '꼬리 길이(cm)', '귀 길이(cm)'],
-  },
-  'recycle_ko.csv': {
-    cols: ['재질', '수거지역', '무게(g)', '두께(mm)', '밀도(g/cm³)', '적외선 반사율(%)'],
-    num:  ['무게(g)', '두께(mm)', '밀도(g/cm³)', '적외선 반사율(%)'],
+     「데이터 불러오기」 드롭다운에 **보이지 않습니다.**
+     wildcam(야생동물) · recycle(재활용) 은 **뺐습니다** — 상황을 둘로 줄였습니다
+     (2026-10-28 선생님. 재활용은 정보 시간에 이미 다뤘습니다). */
+  'farmland_ko.csv': {
+    cols: ['쓰임', '위성', '식생지수', '지표면 온도(℃)', '밤 불빛 밝기', '높낮이 변화(m)'],
+    num:  ['식생지수', '지표면 온도(℃)', '밤 불빛 밝기', '높낮이 변화(m)'],
   },
   'firewatch_ko.csv': {
     cols: ['판정', '관측소', '온도(℃)', '습도(%)', '미세먼지(㎍/㎥)', '일산화탄소(ppm)'],
@@ -79,7 +77,31 @@ const NB_DATA_DEFAULT = 'penguins_ko.csv';
    ⚠ 가릴 수 없는 것 — CSV 자체는 사이트에 있어야 wget 으로 받힙니다.
      주소를 아는 사람은 파일을 받을 수 있습니다. 데이터만으로는 답이 되지
      않지만(어느 지표가 중요한지는 상황 글에도 안 적혀 있습니다) 알아 두십시오. */
-const NB_DATA_ASSESS = ['wildcam_ko.csv', 'recycle_ko.csv', 'firewatch_ko.csv'];
+const NB_DATA_ASSESS = ['farmland_ko.csv', 'firewatch_ko.csv'];
+
+/* ── 평가용 노트북에서 **가리는 블록** (2026-10-28) ──
+   2차 수행평가는 정밀도·재현율을 **학생이 혼동 행렬을 보고 직접 계산**합니다
+   (선생님 「애들이 혼동 행렬 보고 직접 계산하라고 할 거야」).
+   `classification_report` 블록을 서랍에 남겨 두면 끌어다 놓고 값만 베낍니다.
+   그래서 **문이 달린 노트북 안에서만** 이 블록을 서랍에서 뺍니다.
+   다른 차시에서는 그대로 보입니다 — 수업에서는 써야 합니다. */
+const NB_BLOCK_ASSESS_HIDE = ['report'];
+
+/* 지금 보고 있는 노트북이 평가용(문이 달린 것)인가 */
+function nbInAssess(){
+  try {
+    const nb = (typeof SEL_NOTEBOOK !== 'undefined') ? SEL_NOTEBOOK : null;
+    const cid = (typeof IS_TC !== 'undefined' && IS_TC)
+      ? ((typeof TC_CLS !== 'undefined' && TC_CLS) ? TC_CLS.id : null)
+      : ((typeof ST_USER !== 'undefined' && ST_USER) ? ST_USER.classId : null);
+    return !!(nb && cid && typeof nbIsGated === 'function' && nbIsGated(cid, nb.id));
+  } catch(err){ return false; }
+}
+
+/* 서랍에 보여 줄 블록인가 — 이미 셀에 놓인 블록은 그대로 그립니다 */
+function nbBlockInDrawer(k){
+  return !(nbInAssess() && NB_BLOCK_ASSESS_HIDE.indexOf(k) >= 0);
+}
 
 function nbDataFilesNow(){
   let gated = false;

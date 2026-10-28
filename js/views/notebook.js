@@ -464,7 +464,12 @@ function vNbBlockPanel(){
   if(typeof NB_BLOCK_GROUPS === 'undefined') return '';
   return `<div class="cb-snip nbk-drawer">
     <div class="cb-snip-hint">블록을 <b>끌어다 놓거나</b> 눌러서 <b>고른 블록 셀</b>에 넣습니다</div>
-    ${NB_BLOCK_GROUPS.map(([g, keys]) => `
+    ${NB_BLOCK_GROUPS.map(([g, keys0]) => {
+      // 평가용 노트북에서는 **가리는 블록**이 있습니다 (nbBlockInDrawer · 2026-10-28)
+      const keys = (typeof nbBlockInDrawer === 'function')
+        ? keys0.filter(nbBlockInDrawer) : keys0;
+      if(!keys.length) return '';
+      return `
       <div class="cb-snip-group">
         <div class="cb-snip-label">${esc(g)}</div>
         ${keys.map(k => `<div class="nbk-pal-row"><button class="nbk-pal" draggable="true" data-action="nb-blk-add"
@@ -473,7 +478,8 @@ function vNbBlockPanel(){
           ><span class="nbk-pal-code">${esc(nbPalCode(k))}</span></button>${
           NB_BLOCK_DEFS[k].guide ? `<button class="nbk-pal-q" data-action="nb-guide-go"
             data-anchor="${NB_BLOCK_DEFS[k].guide}" title="가이드북에서 보기">?</button>` : ''}</div>`).join('')}
-      </div>`).join('')}
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
