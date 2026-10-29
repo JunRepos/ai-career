@@ -336,6 +336,18 @@ const NB_BLOCK_DEFS = {
          '훈련 데이터 점수보다 테스트 데이터 점수가 많이 낮으면 과적합입니다.',
     src: '교과서 95 · 112쪽',
   },
+  /* 2026-10-29 — 혼동 행렬을 읽기 전에 **가로·세로 차례**를 봐야 합니다.
+     차례를 모르면 어느 칸이 TP 인지 알 수 없어 접을 수가 없습니다.
+     10/28 수업과 가이드북(c_classes)에 있는데 블록만 없었습니다. */
+  classes: {
+    guide: 'c_classes',
+    cat: 'ml', name: '클래스 차례 확인',
+    slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
+    tpl: 'print({m}.classes_)',
+    say: '혼동 행렬의 가로와 세로가 어느 클래스 차례인지 알려 줍니다. '
+       + '나오는 차례대로 행과 열이 놓입니다.',
+    src: '교과서 108쪽',
+  },
   cm: {
     guide: 'c_cm',   // 혼동 행렬
     cat: 'ml', name: '혼동 행렬',
@@ -390,7 +402,7 @@ const NB_BLOCK_GROUPS = [
   ['살펴보기', ['shape', 'head', 'info', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
   ['그래프',   ['scat', 'box', 'corr']],
-  ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'cm', 'report',
+  ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'classes', 'cm', 'report',
                 'pred', 'tree']],
 ];
 
