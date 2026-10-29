@@ -113,7 +113,12 @@ NOTEBOOKS = [{ id: 'demo', title: '데이터 분석 실습 — 산곡고 설문'
   { id: 'c15', type: 'code', blk: true, source: '', blocks: [] },
 ] }];
 // 평가용(문이 달린) 노트북으로 둡니다 — nbInAssess() 가 참이 됩니다
-NB_GATE_SEED = { 'ai-2B': { demo: 'closed' } };
+// 평가용 · 보관을 같이 시험합니다 (2026-10-29)
+NB_GATE_SEED = { 'ai-2B': { demo: 'closed', old1: 'archived' } };
+NOTEBOOKS.push({ id: 'old1', title: '1. 파이썬 기초 (옛 코드판)',
+  createdAt: '2026-09-23', cells: [{ id: 'o1', type: 'code', source: 'print(1)' }] });
+NOTEBOOKS.push({ id: 'new1', title: '1. 파이썬 기초 · 데이터 불러오기',
+  createdAt: '2026-10-29', cells: [{ id: 'n1', type: 'code', blk: true, blocks: [] }] });
 </script>
 <script src="js/nb-blocks.js"></script>
 <script src="js/nb-open.js"></script>

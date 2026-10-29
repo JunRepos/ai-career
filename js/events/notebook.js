@@ -1078,6 +1078,26 @@ document.addEventListener('click', async e => {
     render();
     return;
   }
+  // 📦 보관하기 / 되돌리기 — 지우지 않고 **학생 목록에서만** 뺍니다 (2026-10-29)
+  if(act.action === 'nb-archive'){
+    const cid = TC_CLS?.id;
+    if(!cid) return;
+    const nb = NOTEBOOKS.find(n => n.id === act.nid);
+    const on = !nbIsArchived(cid, act.nid);
+    const t = nb ? nb.title : act.nid;
+    if(!confirm(on
+      ? `「${t}」 을 보관합니다.
+
+학생 목록에서 사라집니다. 지우는 것이 아니므로 `
+        + `저장된 학생 작업은 그대로 남고, 언제든 되돌릴 수 있습니다.`
+      : `「${t}」 을 다시 학생에게 보여 줍니다.
+괜찮습니까?`)) return;
+    try { await nbSetArchived(cid, act.nid, on); }
+    catch(err){ alert('바꾸지 못했습니다 — ' + (err.message || err)); return; }
+    toast(on ? '보관했습니다 — 학생 목록에서 사라집니다' : '되돌렸습니다');
+    render();
+    return;
+  }
   // 노트북 열기
   if(act.action === 'open-notebook'){ await openNotebook(act.nid); return; }
   // 노트북 목록으로

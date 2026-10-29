@@ -6715,6 +6715,14 @@ button{border-radius:2px}
   padding:3px 9px;border-radius:2px;background:transparent;color:var(--cb-text-2);
   border:1px solid var(--cb-border)}
 .nbk-mini:hover{background:var(--cb-hover);color:var(--cb-text)}
+/* 📦 보관한 옛판 — 선생님 목록에서만 보입니다. 흐리게 두어 **쓰는 것과 구분**합니다. */
+.list-row.nb-arch{opacity:.62;background:repeating-linear-gradient(135deg,
+  transparent,transparent 7px,rgba(0,0,0,.028) 7px,rgba(0,0,0,.028) 14px)}
+.list-row.nb-arch:hover{opacity:.85}
+.chip-arch{background:#ede9e2;color:#6b6054;border:1px solid #d8d0c4}
+[data-theme="dark"] .chip-arch{background:#2f2b25;color:#c3b9a9;border-color:#4a4338}
+[data-theme="dark"] .list-row.nb-arch{background:repeating-linear-gradient(135deg,
+  transparent,transparent 7px,rgba(255,255,255,.035) 7px,rgba(255,255,255,.035) 14px)}
 /* 「✅ 정답 확인」 — 적은 값이 맞는지. 답은 알려 주지 않습니다 (2026-10-29). */
 .nbk-chk:hover{background:#e8f4ec;border-color:#00703C;color:#00563b}
 [data-theme="dark"] .nbk-chk:hover{background:#17301f;border-color:#2f8f5f;color:#8fd9b0}

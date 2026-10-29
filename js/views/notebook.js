@@ -101,8 +101,12 @@ function vTcNotebook(){
     // 🔒 평가용 — 선생님이 열어야 학생에게 보입니다 (js/nb-open.js)
     const gated = nbIsGated(TC_CLS?.id, nb.id);
     const open = gated && nbIsOpen(TC_CLS?.id, nb.id);
-    const lockChip = !gated ? '' :
-      `<span class="chip ${open ? 'chip-red' : ''}" style="margin-left:6px">${open ? '🔓 열림' : '🔒 닫힘'}</span>`;
+    // 📦 보관 — 블록판으로 바뀐 **옛판**. 학생 목록에서는 사라집니다 (2026-10-29).
+    const arch = typeof nbIsArchived === 'function' && nbIsArchived(TC_CLS?.id, nb.id);
+    const lockChip = arch
+      ? '<span class="chip chip-arch" style="margin-left:6px">📦 보관 — 학생에게 안 보임</span>'
+      : (!gated ? '' :
+      `<span class="chip ${open ? 'chip-red' : ''}" style="margin-left:6px">${open ? '🔓 열림' : '🔒 닫힘'}</span>`);
     const lockBtn = !gated ? '' :
       `<button class="btn-xs ${open ? 'btn-danger' : 'btn-p'}" data-action="nb-toggle-open"
          data-nid="${nb.id}" title="${open ? '학생에게서 숨깁니다' : '학생에게 보여 줍니다'}"
@@ -113,17 +117,26 @@ function vTcNotebook(){
       `<button class="btn-xs" data-action="nb-set-pw" data-nid="${nb.id}"
          title="${hasPw ? '비밀번호를 바꾸거나 없앱니다' : '입장 비밀번호를 정합니다'}"
         >🔑 ${hasPw ? '비밀번호 있음' : '비밀번호 없음'}</button>`;
+    // 보관하기 / 되돌리기 — 평가용에는 달지 않습니다 (문과 섞이면 안 됩니다)
+    const archBtn = gated ? '' :
+      `<button class="btn-xs${arch ? ' btn-p' : ''}" data-action="nb-archive" data-nid="${nb.id}"
+         title="${arch ? '다시 학생에게 보여 줍니다'
+                       : '학생 목록에서 숨깁니다. 지우지 않으므로 학생 작업은 남습니다'}"
+        >${arch ? '↺ 되돌리기' : '📦 보관'}</button>`;
     return `
-    <div class="list-row">
-      <div class="row-icon" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">${gated ? '📝' : '📓'}</div>
+    <div class="list-row${arch ? ' nb-arch' : ''}">
+      <div class="row-icon" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">${
+        arch ? '📦' : (gated ? '📝' : '📓')}</div>
       <div class="row-info" data-action="open-notebook" data-nid="${nb.id}" style="cursor:pointer">
         <div class="row-title">${esc(nb.title)}${lockChip}</div>
         <div class="row-meta">${nb.cells?.length || 0}개 셀 · ${fmtDt(nb.createdAt)}${
-          gated ? (open ? ' · <b>지금 학생에게 보입니다</b>' : ' · 학생에게 안 보입니다') : ''}</div>
+          arch ? ' · <b>학생 목록에 없음</b> — 저장된 학생 작업은 그대로 있습니다'
+               : gated ? (open ? ' · <b>지금 학생에게 보입니다</b>' : ' · 학생에게 안 보입니다') : ''}</div>
       </div>
       <div class="row-right">
         ${pwBtn}
         ${lockBtn}
+        ${archBtn}
         <button class="btn-xs" data-action="notebook-move-up" data-nid="${nb.id}" title="위로">▲</button>
         <button class="btn-xs" data-action="notebook-move-down" data-nid="${nb.id}" title="아래로">▼</button>
         <button class="btn-xs" data-action="rename-notebook" data-nid="${nb.id}" data-ntitle="${esc(nb.title)}" title="노트북 이름 바꾸기">이름 변경</button>

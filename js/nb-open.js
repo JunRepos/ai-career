@@ -30,7 +30,14 @@
      그냥 두면 선생님이 미리 풀어 본 답이 그대로 저장돼 학생이 그것을 받습니다.
 ═══════════════════════════════════════ */
 
-let NB_GATE = {};          // { [반id]: { [노트북id]: 'closed'|'open' } }
+/* { [반id]: { [노트북id]: 'closed' | 'open' | 'archived' } }
+
+   · closed / open — **평가용**. 선생님이 열어야 학생에게 보입니다.
+   · archived      — **보관**. 블록판으로 바뀐 **옛판**입니다 (2026-10-29 선생님 —
+                     「똑같은 게 2개 있는데 헷갈리니까 학생들이 명확하게」).
+                     학생 목록에서 **사라지고**, 선생님에게는 「보관」 표시와 함께
+                     보입니다. 지우지 않는 까닭은 **학생 작업이 그 안에 있기** 때문입니다. */
+let NB_GATE = {};
 let NB_GATE_WATCH = null;  // { cid, ref, fn }
 let NB_SIM = true;         // 평가용 노트북을 선생님이 열었을 때 — true 면 원본을 안 건드립니다
 
@@ -40,9 +47,18 @@ function _nbIsTest(){
   return !!ST_USER && String(ST_USER.number).toLowerCase() === 'test';
 }
 
-/* 이 노트북이 평가용인가 (문이 달려 있나) */
+/* 이 노트북의 상태 — 'closed' · 'open' · 'archived' · 없으면 undefined */
+function nbState(cid, nbId){
+  return (NB_GATE[cid] || {})[nbId];
+}
+/* 보관한 옛판인가 — 블록판으로 바뀌어 학생에게는 더 이상 내지 않는 것 */
+function nbIsArchived(cid, nbId){
+  return nbState(cid, nbId) === 'archived';
+}
+/* 이 노트북이 평가용인가 (문이 달려 있나) — 보관은 평가용이 아닙니다 */
 function nbIsGated(cid, nbId){
-  return !!(NB_GATE[cid] && NB_GATE[cid][nbId]);
+  const st = nbState(cid, nbId);
+  return st === 'closed' || st === 'open';
 }
 /* 지금 열려 있나 */
 function nbIsOpen(cid, nbId){
@@ -50,7 +66,9 @@ function nbIsOpen(cid, nbId){
 }
 /* 학생 목록에 보일 것인가 */
 function nbVisibleToStudent(cid, nb){
-  if(!nb || !nbIsGated(cid, nb.id)) return true;   // 평가용이 아니면 늘 보입니다
+  if(!nb) return true;
+  if(nbIsArchived(cid, nb.id)) return false;       // 보관한 옛판 — 학생에게 안 냅니다
+  if(!nbIsGated(cid, nb.id)) return true;          // 평가용이 아니면 늘 보입니다
   return nbIsOpen(cid, nb.id) || _nbIsTest();
 }
 /* 선생님이 이 노트북을 시뮬레이션으로 보고 있나 — 저장을 막는 자리에서 씁니다 */
@@ -112,6 +130,16 @@ async function nbSetOpen(cid, nbId, on){
   await _nbGateRef(cid).child(nbId).set(on ? 'open' : 'closed');
   NB_GATE[cid] = NB_GATE[cid] || {};
   NB_GATE[cid][nbId] = on ? 'open' : 'closed';
+}
+
+/* 📦 보관하기 / 되돌리기 (2026-10-29 선생님).
+   **지우지 않습니다** — 학생 작업이 그 안에 있습니다. 목록에서만 뺍니다. */
+async function nbSetArchived(cid, nbId, on){
+  if(on) await _nbGateRef(cid).child(nbId).set('archived');
+  else   await _nbGateRef(cid).child(nbId).remove();
+  NB_GATE[cid] = NB_GATE[cid] || {};
+  if(on) NB_GATE[cid][nbId] = 'archived';
+  else   delete NB_GATE[cid][nbId];
 }
 
 /* ═══════════════ 🔑 입장 비밀번호 ═══════════════
