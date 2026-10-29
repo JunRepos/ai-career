@@ -56,7 +56,7 @@ function vNbBlkPreview(k){
           data-k="${k}" data-slot="${key}" aria-pressed="${on}"
           title="${on ? '지금 빈칸입니다 — 누르면 채워 둡니다'
                       : '지금 채워 둡니다 — 누르면 빈칸이 됩니다'}"
-          >${on ? '✎' : '●'} ${esc(key)}<i>${esc(hint)}</i></button>`;
+          >${on ? '✎ 빈칸' : '● 채워 둡'}<i>${esc(key)} · ${esc(hint)}</i></button>`;
       }).join('');
 
   return `<div class="nbbe-prev">
@@ -117,10 +117,18 @@ function vNbBlockEditor(){
   return `<div class="section">
     <div class="nbbe-top">
       <button class="btn-xs" data-action="nb-blockedit-close">← 노트북 목록</button>
-      <div class="sec-title" style="margin:0">🧩 블록 고치기</div>
+      <div class="sec-title" style="margin:0">🧩 블록·빈칸 고치기</div>
+      <span class="nbbe-sp"></span>
+      <button class="btn-xs btn-p" data-action="nb-blkask-apply"
+        title="지금 정한 빈칸을 이미 올라간 노트북에도 그대로 넣습니다"
+        >📓 올라간 노트북에 반영</button>
     </div>
     <div class="box-info">
-      블록의 <b>이름</b>과 <b>아래 설명</b>을 고칩니다.
+      칸마다 <b>✓ 빈칸</b> 칩을 눌러 <b>학생이 채울 자리</b>를 정합니다.
+      정한 빈칸은 <b>새로 끌어다 놓는 블록</b>부터 걸립니다 —
+      이미 노트북에 놓여 있는 블록까지 바꾸려면 위의
+      <b>📓 올라간 노트북에 반영</b> 을 누릅니다.
+      <br>블록의 <b>이름</b>과 <b>아래 설명</b>도 여기서 고칩니다.
       고친 글은 <b>그 블록을 쓴 모든 노트북</b>에 그대로 보입니다 — 학생 화면도 같습니다.
       <br>저장하면 <b>${mates.length ? esc(mates.map(c => c.short || c.id).join(' · ')) : '이 반'}</b>
       에 함께 적용됩니다. 반마다 다르면 두 반 수업이 어긋납니다.
@@ -205,8 +213,8 @@ function vTcNotebook(){
   const blkBtn = `<div class="nbbe-top" style="margin-top:4px">
     <div class="sec-title" style="margin:0">등록된 노트북</div>
     <button class="btn-xs" data-action="nb-blockedit-open"
-      title="블록의 이름과 설명을 한자리에서 고칩니다 — 모든 노트북에 적용됩니다"
-      >🧩 블록 고치기</button>
+      title="빈칸을 어디에 뚫을지, 블록의 이름과 설명을 한자리에서 정합니다 — 모든 노트북에 적용됩니다"
+      >🧩 블록·빈칸 고치기</button>
   </div>`;
   return form + blkBtn + list;
 }

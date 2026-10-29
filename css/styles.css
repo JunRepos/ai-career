@@ -6923,6 +6923,7 @@ button{border-radius:2px}
 
 /* 🧩 블록 고치기 페이지 (2026-10-28) — 선생님 › 📓 노트북 › 「🧩 블록 고치기」 */
 .nbbe-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.nbbe-sp{flex:1}
 .nbbe-row{border:1px solid var(--border,#ddd);border-left:5px solid var(--nbk-cat,#999);
   border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--bg1,#fff)}
 .nbbe-row.nbbe-on{border-color:var(--nbk-cat,#999)}

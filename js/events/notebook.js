@@ -914,6 +914,89 @@ async function nbSaveBlockTextAll(k, val){
   return targets;
 }
 
+/* ═══ 빈칸 설정을 **이미 올라간 노트북에** 반영 (2026-10-29 선생님) ═══
+   왜 — 「🧩 블록·빈칸 고치기」 에서 정한 빈칸은 **새로 끌어다 놓는 블록**에만
+   걸립니다. 이미 놓여 있는 블록은 값이 노트북에 저장돼 있어서, 빈칸으로 바꿔도
+   답이 적힌 채로 그대로 보였습니다. 선생님이 「빈칸을 뚫을 수가 없다」 고 한
+   까닭이 이것입니다. 이 손잡이가 올라간 노트북을 지금 설정대로 맞춥니다.
+
+   · 블록 하나에만 따로 정해 둔 자리(b.q)는 **건드리지 않습니다.**
+   · 학생 진도(notebookProgress)는 건드리지 않습니다 — 학생이 쓴 답은 그대로입니다.
+   · 되돌릴 수 없으니 **몇 자리가 바뀌는지 세어 먼저 확인받습니다** (CLAUDE.md 24).
+   · 두 반에 똑같이 씁니다 (CLAUDE.md 23). */
+function nbBlkApplyCells(cells){
+  // 이 노트북에서 바뀐 자리 수를 셉니다. cells 는 제자리에서 고칩니다.
+  let n = 0;
+  /* ⚠ 데이터 파일 이름도 빈칸이 될 수 있어서, **하나라도 비우기 전에**
+     셀마다 쓰는 파일을 먼저 다 잡아 둡니다. 중간에 잡으면 앞 셀이 이미
+     비어 있어 뒤 셀이 엉뚱한 기본값으로 채워집니다 (2026-10-29). */
+  const files = (cells || []).map(c => nbCellDataFile(c, cells));
+  (cells || []).forEach((cell, ci) => {
+    if(!cell || !Array.isArray(cell.blocks) || !cell.blocks.length) return;
+    const file = files[ci];
+    let hit = false;
+    cell.blocks.forEach(b => {
+      const d = NB_BLOCK_DEFS[b && b.k];
+      if(!d || !d.slots) return;
+      if(Array.isArray(b.q)) return;            // 이 블록만 따로 정해 둔 것은 그대로
+      const want = nbBlkAskDefault(b.k);
+      if(!b.a) b.a = {};
+      Object.keys(d.slots).forEach(s => {
+        const cur = b.a[s];
+        const empty = (cur === '' || cur === null || cur === undefined);
+        if(want.indexOf(s) >= 0){
+          if(empty) return;
+          b.a[s] = '';                           // 빈칸으로 — 학생이 적습니다
+        } else {
+          if(!empty) return;
+          b.a[s] = nbSlotFill(d.slots[s], file); // 채워 둠 — 정답/기본값
+        }
+        n++; hit = true;
+      });
+    });
+    if(hit) cell.source = nbBlockCode(cell.blocks, cell.noimp);
+  });
+  return n;
+}
+
+async function nbBlkAskApply(){
+  if(!nbAuthoring() || !TC_CLS) return;
+  const me = CLASSES.find(c => c.id === TC_CLS.id);
+  const cids = CLASSES.filter(c => c.type === (me || {}).type).map(c => c.id);
+  // ① 먼저 읽어 세어 봅니다 — 쓰지 않습니다
+  const plan = [];
+  let total = 0;
+  try {
+    for(const cid of cids){
+      const s = await db.ref(`notebooks/${cid}`).get();
+      if(!s.exists()) continue;
+      Object.entries(s.val() || {}).forEach(([nbId, nb]) => {
+        const cells = (nb && nb.cells) || [];
+        const n = nbBlkApplyCells(cells);
+        if(n) { plan.push({cid, nbId, title: nb.title || nbId, cells, n}); total += n; }
+      });
+    }
+  } catch(err){ toast('노트북을 못 읽었습니다 — ' + (err.message || err), 'err'); return; }
+
+  if(!total){ toast('이미 설정대로입니다 — 바꿀 자리가 없습니다', 'ok'); return; }
+
+  const lines = plan.map(p => `· ${p.cid} · ${p.title} — ${p.n}자리`).join('\n');
+  if(!confirm('지금 정한 빈칸을 올라간 노트북에 반영합니다.\n\n'
+      + lines + '\n\n모두 ' + total + '자리를 바꿉니다.\n'
+      + '학생이 이미 쓴 답(진도)은 건드리지 않습니다.\n되돌릴 수 없습니다. 반영할까요?')) return;
+
+  try {
+    for(const p of plan){
+      await db.ref(`notebooks/${p.cid}/${p.nbId}`)
+        .update({cells: p.cells, updatedAt: new Date().toISOString()});
+    }
+  } catch(err){ toast('반영하지 못했습니다 — ' + (err.message || err), 'err'); return; }
+
+  try { await loadNotebooks(TC_CLS.id); } catch(err){ /* 목록은 다음에 열 때 맞습니다 */ }
+  toast(total + '자리를 반영했습니다 — 두 반 모두', 'ok');
+  render();
+}
+
 /* ═══ 다른 반에도 반영 (2026-10-28) ═══════════════════════════
    선생님의 편집은 보고 있는 반에만 저장됩니다. 두 반을 같게 맞추는 손잡이입니다
    (CLAUDE.md 23). 되돌릴 수 없으니 **먼저 확인받습니다** (CLAUDE.md 24). */
@@ -1330,6 +1413,7 @@ document.addEventListener('click', async e => {
     render();
     return;
   }
+  if(act.action === 'nb-blkask-apply'){ await nbBlkAskApply(); return; }
   if(act.action === 'nb-blkask-reset'){
     const keep = Object.assign({}, NB_BLK_TEXT[act.k] || {});
     delete keep.q;
