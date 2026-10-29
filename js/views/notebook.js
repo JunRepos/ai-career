@@ -320,6 +320,18 @@ function vNbBlockCell(cell, hoverTb){
     ? cell.blocks.map((b, bi) => vNbBlock(cell.id, b, bi, file)).join('')
     : `<div class="nbk-empty">왼쪽 <b>🧩 블록</b> 서랍에서 끌어다 놓으세요.<br>눌러서 넣어도 됩니다.</div>`;
 
+  /* 「모름」 — 막힌 셀을 넘기고 뒤를 살립니다 (2026-10-29 선생님).
+     평가용 노트북에서만, 그리고 생성기가 달아 둔 셀에서만 뜹니다.
+     누른 기록(idkUsed)은 지워지지 않고 남아 채점 때 그 자리만 깎습니다. */
+  const idk = (typeof nbIdkOf === 'function') ? nbIdkOf(cell) : null;
+  const idkDone = (typeof nbIdkUsed === 'function') && nbIdkUsed(cell);
+  const idkBtn = (idk && typeof nbInAssess === 'function' && nbInAssess())
+    ? (idkDone
+        ? `<span class="nbk-idk-done" title="이 셀은 「모름」 으로 넘겼습니다">모름으로 넘김</span>`
+        : `<button class="nbk-mini nbk-idk" data-action="nb-blk-idk" data-cellid="${cell.id}"
+            title="이 셀을 넘기고 다음으로 갑니다. 이 자리는 점수가 깎이고, 기록이 남습니다">모름</button>`)
+    : '';
+
   const code = cell.source || '# 블록이 없습니다';
   const codePane = NB_BLK_CODE ? `<div class="nbk-code-head">이 블록들이 만드는 파이썬</div>
       <pre class="nbk-code">${esc(code)}</pre>` : '';
@@ -340,6 +352,7 @@ function vNbBlockCell(cell, hoverTb){
           ${nbAuthoring() ? `<button class="nbk-mini" data-action="nb-blk-askui"
             aria-pressed="${NB_BLK_ASKUI}"
             title="칸마다 ✎ 를 붙입니다 — 눌러서 학생이 채울 빈칸을 정합니다">✎ 빈칸 정하기</button>` : ''}
+          ${idkBtn}
         </div>
         <div class="nbk-stack" data-blkstack="${cell.id}">${stack}</div>
         ${codePane}

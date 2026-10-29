@@ -6715,6 +6715,13 @@ button{border-radius:2px}
   padding:3px 9px;border-radius:2px;background:transparent;color:var(--cb-text-2);
   border:1px solid var(--cb-border)}
 .nbk-mini:hover{background:var(--cb-hover);color:var(--cb-text)}
+/* 「모름」 — 막힌 셀을 넘기는 단추. 눈에 띄되 먼저 누르고 싶지는 않게 둡니다. */
+.nbk-idk{border-style:dashed;color:var(--cb-text-2)}
+.nbk-idk:hover{background:#fff4e5;border-color:#d08b2c;color:#8a5a12}
+[data-theme="dark"] .nbk-idk:hover{background:#3a2d16;border-color:#d08b2c;color:#f0c478}
+.nbk-idk-done{font-size:11px;font-weight:600;padding:3px 9px;border-radius:2px;
+  background:#fff4e5;color:#8a5a12;border:1px solid #e3c08a}
+[data-theme="dark"] .nbk-idk-done{background:#3a2d16;color:#f0c478;border-color:#6b5324}
 .nbk-mini[aria-pressed="true"]{background:var(--cb-accent);color:#fff;border-color:var(--cb-accent)}
 [data-theme="dark"] .nbk-mini[aria-pressed="true"]{color:#15202b}
 

@@ -31,6 +31,10 @@ function nbCellsForSave(cells){
   return (cells || []).map(c => {
     const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
     if(nbNoImpOf(c)) o.noimp = true;    // 라이브러리를 맨 앞에서 선언해 둔 셀
+    // 「모름」 — 놓아 줄 블록과 **누른 기록**. 기록이 사라지면 채점할 수가 없습니다.
+    const ik = nbIdkOf(c);
+    if(ik) o.idk = ik;
+    if(nbIdkUsed(c)) o.idkUsed = true;
     if(Array.isArray(c.blocks)){
       o.blk = true;
       if(c.blocks.length) o.blocks = c.blocks;
@@ -307,6 +311,19 @@ function nbNoImpOf(c){
   return !!(c && (c.noimp || c.metadata?.noimp));
 }
 
+/* 「모름」 이 놓아 줄 블록 — 달린 셀에만 있습니다 (verify/nb_house.py 의 idk=).
+   한 셀에서 막혀 뒤 셀이 통째로 못 돌아가는 것을 막는 장치입니다 (2026-10-29 선생님).
+   ⚠ 문제 상황을 알아내야 푸는 셀에는 달지 않습니다 — 생성기가 정합니다. */
+function nbIdkOf(c){
+  if(!c) return null;
+  const v = Array.isArray(c.idk) ? c.idk
+          : (Array.isArray(c.metadata?.idk) ? c.metadata.idk : null);
+  return (v && v.length) ? v : null;
+}
+function nbIdkUsed(c){
+  return !!(c && (c.idkUsed || c.metadata?.idkUsed));
+}
+
 // 셀 배열의 총 바이트 수 추정 (업로드 경고용)
 function estimateCellsSize(cells){
   try {
@@ -343,6 +360,12 @@ function _mergeNotebookCells(origCells, savedCells){
       // ⚠ 빈 배열 [] 도 「블록 셀인데 아직 비어 있다」 는 뜻입니다 — 참/거짓으로 보면 안 됩니다
       const bl = nbBlocksOf(sc) !== null ? nbBlocksOf(sc) : nbBlocksOf(oc);
       if(bl !== null) merged.blocks = bl;
+      // noimp · idk 는 **선생님 원본**의 성질, idkUsed 는 **학생이 누른 기록**입니다.
+      // 셋 다 여기서 안 옮기면 저장하고 다시 열 때 사라집니다 (2026-10-29).
+      if(nbNoImpOf(oc) || nbNoImpOf(sc)) merged.noimp = true;
+      const ik = nbIdkOf(oc) || nbIdkOf(sc);
+      if(ik) merged.idk = ik;
+      if(nbIdkUsed(sc)) merged.idkUsed = true;
       result.push(merged);
       usedIds.add(oc.id);
     } else {
@@ -354,6 +377,9 @@ function _mergeNotebookCells(origCells, savedCells){
       };
       const fb = nbBlocksOf(oc);
       if(fb !== null) fresh.blocks = fb;              // 🧩 블록 셀
+      if(nbNoImpOf(oc)) fresh.noimp = true;
+      const fk = nbIdkOf(oc);
+      if(fk) fresh.idk = fk;
       result.push(fresh);
     }
   }
@@ -368,6 +394,10 @@ function _mergeNotebookCells(origCells, savedCells){
       };
       const ob = nbBlocksOf(sc);
       if(ob !== null) own.blocks = ob;                // 🧩 블록 셀
+      if(nbNoImpOf(sc)) own.noimp = true;
+      const ok = nbIdkOf(sc);
+      if(ok) own.idk = ok;
+      if(nbIdkUsed(sc)) own.idkUsed = true;
       result.push(own);
     }
   }
@@ -419,6 +449,10 @@ async function openNotebook(nbId){
     const bl = nbBlocksOf(c);
     if(bl !== null) o.blocks = bl;
     if(nbNoImpOf(c)) o.noimp = true;   // 라이브러리를 맨 앞에서 한 번에 선언해 둔 셀
+    // 「모름」 — 놓아 줄 블록과 누른 기록. 여기서 안 옮기면 단추가 아예 안 뜹니다.
+    const ik = nbIdkOf(c);
+    if(ik) o.idk = ik;
+    if(nbIdkUsed(c)) o.idkUsed = true;
     return o;
   });
   // 블록의 이름 · 설명을 선생님이 고친 것 — 학생 화면에도 그 글이 보입니다 (2026-10-28).
@@ -1257,6 +1291,7 @@ document.addEventListener('click', async e => {
      블록을 고칠 때마다 cell.source 를 다시 만들어 넣습니다.
      그래야 실행 · 저장 · ipynb 내려받기가 지금 코드 그대로 돕니다. */
   if(act.action === 'nb-blk-add'){ nbBlkAdd(act.k); return; }
+  if(act.action === 'nb-blk-idk'){ nbBlkIdk(act.cellid); return; }
   if(act.action === 'nb-blk-del'){ nbBlkEdit(act.cellid, bs => bs.splice(+act.bi, 1)); return; }
   if(act.action === 'nb-blk-say'){ NB_BLK_SAY = !NB_BLK_SAY; render(); return; }
   if(act.action === 'nb-blk-code'){ NB_BLK_CODE = !NB_BLK_CODE; render(); return; }
@@ -1826,6 +1861,32 @@ function nbBlkEdit(cellId, fn){
   render();
   scheduleNBSave();
 }
+/* 「모름」 — 이 셀을 넘기고 뒤를 살립니다 (2026-10-29 선생님).
+
+   한 셀에서 막히면 그 뒤 셀이 **통째로** 못 돌아갑니다. 전처리 한 번 틀려
+   평가요소 네 개가 같이 무너지는 것은 변별이 아니라 사고라서, 넘길 길을 둡니다.
+   누른 기록(idkUsed)은 **지워지지 않고 남아** 채점 때 그 자리만 깎습니다.
+
+   ⚠ 되돌릴 수 없습니다 — 물어보고 넣습니다. */
+function nbBlkIdk(cellId){
+  const cell = nbBlkCell(cellId);
+  if(!cell) return;
+  const idk = nbIdkOf(cell);
+  if(!idk){ toast('이 셀에는 「모름」 이 없습니다', 'err'); return; }
+  if(nbIdkUsed(cell)){ toast('이미 「모름」 으로 넘긴 셀입니다'); return; }
+  if(!confirm('이 셀을 「모름」 으로 넘길까요?\n\n'
+            + '블록이 채워져 다음 셀부터 이어서 할 수 있습니다.\n'
+            + '대신 이 자리는 점수가 깎이고, 넘겼다는 기록이 남습니다.\n\n'
+            + '되돌릴 수 없습니다.')) return;
+  cell.idkUsed = true;
+  // 놓아 줄 블록은 **베껴서** 넣습니다 — 원본 idk 를 학생이 고치면 안 됩니다
+  nbBlkEdit(cell.id, bs => {
+    bs.length = 0;
+    idk.forEach(b => bs.push(JSON.parse(JSON.stringify(b))));
+  });
+  toast('넘겼습니다 — 다음 셀부터 이어서 하세요');
+}
+
 /* 서랍에서 누른 블록 — 고른 블록 셀 끝에 붙입니다. 없으면 알려 줍니다. */
 function nbBlkAdd(k, cellId, at){
   // 끌어다 놓으면 놓은 셀, 누르면 **고른 블록 셀**에 넣습니다.

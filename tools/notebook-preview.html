@@ -46,7 +46,8 @@ const PV_TC = PV_Q.get('tc') === '1';
 /* ?list=1 — 선생님 **노트북 목록** 화면. 거기서 「🧩 블록 고치기」 로 들어갑니다 */
 const PV_LIST = PV_Q.get('list') === '1';
 IS_TC = PV_TC;
-ST_USER = PV_TC ? null : { number: '20101', name: '미리보기' };
+// classId — nbInAssess() 가 이것으로 문이 달렸는지 봅니다
+ST_USER = PV_TC ? null : { number: '20101', name: '미리보기', classId: 'ai-2B' };
 SEL_CLS = { id: 'ai-2B', label: '인공지능 기초 2B', type: 'ai' };
 TC_CLS = PV_TC ? SEL_CLS : null;
 STUDENTS = [];
@@ -102,7 +103,17 @@ NOTEBOOKS = [{ id: 'demo', title: '데이터 분석 실습 — 산곡고 설문'
     blocks: [{ k: 'load', a: { f: '' } }, { k: 'shape', a: { f: '' } }] },
   { id: 'c12', type: 'code', blk: true, source: '',
     blocks: [{ k: 'score', a: { m: 'dt', d: '' } }, { k: 'pred', a: { m: 'dt', v: '' } }] },
+  /* 「모름」 단추를 볼 자리 (2026-10-29). 빈 블록 셀 + idk 입니다.
+     이 노트북을 **문이 달린 것**으로 두어야 단추가 뜹니다 — 아래 NB_GATE 를 보세요. */
+  { id: 'c13', type: 'markdown', source: '## step 5 「모름」 단추' },
+  { id: 'c14', type: 'code', blk: true, source: '', blocks: [], noimp: true,
+    idk: [{ k: 'dt', a: { d: 'None' } }, { k: 'fit', a: { m: 'dt' } },
+          { k: 'score', a: { m: 'dt', d: 'test' } }] },
+  /* 「모름」 이 안 달린 빈 블록 셀 — 단추가 **뜨면 안 됩니다** */
+  { id: 'c15', type: 'code', blk: true, source: '', blocks: [] },
 ] }];
+// 평가용(문이 달린) 노트북으로 둡니다 — nbInAssess() 가 참이 됩니다
+NB_GATE_SEED = { 'ai-2B': { demo: 'closed' } };
 </script>
 <script src="js/nb-blocks.js"></script>
 <script src="js/nb-open.js"></script>
@@ -111,6 +122,8 @@ NOTEBOOKS = [{ id: 'demo', title: '데이터 분석 실습 — 산곡고 설문'
 <script src="js/events/notebook.js"></script>
 <script src="js/notebook-colab.js"></script>
 <script>
+// nb-open.js 가 NB_GATE 를 선언한 뒤에 심습니다
+if(typeof NB_GATE_SEED !== 'undefined') NB_GATE = NB_GATE_SEED;
 if(PV_TC && PV_LIST) render(); else openNotebook('demo');
 </script>
 </body>
