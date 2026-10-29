@@ -445,8 +445,15 @@ const NB_BLOCK_GROUPS = [
 function nbMakeBlock(k, file){
   const d = NB_BLOCK_DEFS[k];
   if(!d) return null;
+  // 선생님이 **반 전체로 정해 둔 빈칸**을 따릅니다 (2026-10-29).
+  //   빈칸이면 비워 두고, 아니면 기본값을 채웁니다.
+  const ask = (typeof nbBlkAskDefault === 'function')
+    ? nbBlkAskDefault(k)
+    : Object.keys(d.slots || {}).filter(x => d.slots[x].ask);
   const a = {};
-  for(const s in (d.slots || {})) a[s] = nbSlotDefault(d.slots[s], file);
+  for(const s in (d.slots || {})){
+    a[s] = ask.indexOf(s) >= 0 ? '' : nbSlotFill(d.slots[s], file);
+  }
   return { k, a };
 }
 
@@ -496,7 +503,11 @@ function nbSlotDefault(slot, file){
 function nbSlotAsk(d, b, key){
   const slot = d && d.slots && d.slots[key];
   if(!slot) return false;
+  // ① 이 자리에만 정해 둔 것 → ② 반 전체 설정 → ③ 정의 (2026-10-29)
   if(b && Array.isArray(b.q)) return b.q.indexOf(key) >= 0;
+  if(b && b.k && typeof nbBlkAskDefault === 'function'){
+    return nbBlkAskDefault(b.k).indexOf(key) >= 0;
+  }
   return !!slot.ask;
 }
 
@@ -504,6 +515,7 @@ function nbSlotAsk(d, b, key){
    선생님이 토글을 처음 누르는 순간 이 값이 `q` 로 굳습니다. */
 function nbBlkAskList(d, b){
   if(b && Array.isArray(b.q)) return b.q.slice();
+  if(b && b.k && typeof nbBlkAskDefault === 'function') return nbBlkAskDefault(b.k);
   return Object.keys((d && d.slots) || {}).filter(s => d.slots[s].ask);
 }
 
@@ -583,6 +595,25 @@ function nbBlkSay(k){
   const t = NB_BLK_TEXT[k];
   if(t && t.say) return {say: t.say, src: '', edited: true};
   return {say: d.say || '', src: d.src || '', edited: false};
+}
+
+/* ── 빈칸을 **반 전체에** 정하기 (2026-10-29 선생님) ──
+   「빈칸을 어디에 뚫는지도 설정할 수 있도록」.
+
+   지금까지 빈칸은 두 곳에서 왔습니다.
+     · 정의의 `ask` — 레포에 박혀 있어 선생님이 못 고칩니다
+     · 셀의 `q`    — 그 **한 자리**에만 걸립니다
+   가운데에 **반 전체 설정**을 둡니다. 새로 끌어다 놓는 블록부터 그대로 따릅니다.
+   `NB_BLK_TEXT[k].q` 에 담습니다 — 이름·설명과 **같은 자리**라 한 번만 읽으면 됩니다. */
+function nbBlkAskDefault(k){
+  const t = NB_BLK_TEXT[k];
+  if(t && Array.isArray(t.q)) return t.q.slice();
+  const d = NB_BLOCK_DEFS[k] || {};
+  return Object.keys(d.slots || {}).filter(s => d.slots[s].ask);
+}
+/* 선생님이 반 전체 설정을 건드렸나 — 「↺ 처음대로」 를 보일지 정합니다 */
+function nbBlkAskEdited(k){
+  return Array.isArray((NB_BLK_TEXT[k] || {}).q);
 }
 
 /* ── 이 셀이 쓰는 데이터 파일 ──

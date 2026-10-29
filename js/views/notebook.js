@@ -14,6 +14,62 @@
 
    ⚠ **같은 과목의 모든 반에 함께 저장합니다** — 반마다 설명이 다르면
      두 반 수업이 어긋납니다 (CLAUDE.md 23). 화면에도 그렇게 적어 둡니다. */
+/* 🧩 블록 하나의 **최종 모양**과 **빈칸 설정** (2026-10-29 선생님 —
+   「빈칸을 어디에 뚫는지도 설정할 수 있도록」 · 「최종 블록 형태가 어떻게 되는지도
+   한눈에 확인할 수 있게」).
+
+   · 윗줄 — 학생이 보는 그대로. 빈칸은 ✎ 로, 채워 둔 자리는 값으로 보여 줍니다.
+   · 아랫줄 — 칸마다 누르는 단추. 누르면 **반 전체**의 빈칸이 바뀝니다. */
+function vNbBlkPreview(k){
+  const d = NB_BLOCK_DEFS[k];
+  if(!d) return '';
+  const ask = nbBlkAskDefault(k);
+  const file = (typeof NB_DATA_DEFAULT !== 'undefined') ? NB_DATA_DEFAULT : null;
+
+  // ① 최종 모양 — 파이썬 한 줄씩, 빈칸 자리를 눈에 띄게
+  const seen = new Set();
+  const code = (d.tpl || '').split('\n').map(line =>
+    `<div class="nbbe-pl">${line.split(/(\{\w+\})/).map(part => {
+      const m = part.match(/^\{(\w+)\}$/);
+      if(!m) return esc(part);
+      const key = m[1];
+      const first = !seen.has(key);
+      seen.add(key);
+      if(ask.indexOf(key) >= 0){
+        return `<span class="nbbe-blank" title="${esc(key)} — 학생이 채웁니다">✎ ${esc(key)}</span>`;
+      }
+      const v = nbSlotFill(d.slots[key], file);
+      return `<span class="nbbe-filled" title="${esc(key)} — 채워 둡니다">${
+        esc(v === '' || v == null ? '…' : String(v))}</span>`;
+    }).join('')}</div>`).join('');
+
+  // ② 칸마다 켜고 끄기
+  const keys = Object.keys(d.slots || {});
+  const chips = !keys.length
+    ? '<span class="nbbe-noslot">고칠 칸이 없는 블록입니다</span>'
+    : keys.map(key => {
+        const on = ask.indexOf(key) >= 0;
+        const slot = d.slots[key];
+        const hint = slot.kind ? '적는 칸' : (typeof nbSlotHint === 'function'
+          ? nbSlotHint(slot, file) : '고르는 칸');
+        return `<button class="nbbe-slot${on ? ' on' : ''}" data-action="nb-blkask-toggle"
+          data-k="${k}" data-slot="${key}" aria-pressed="${on}"
+          title="${on ? '지금 빈칸입니다 — 누르면 채워 둡니다'
+                      : '지금 채워 둡니다 — 누르면 빈칸이 됩니다'}"
+          >${on ? '✎' : '●'} ${esc(key)}<i>${esc(hint)}</i></button>`;
+      }).join('');
+
+  return `<div class="nbbe-prev">
+    <div class="nbbe-prev-h">학생이 보는 모양
+      <span class="nbbe-prev-n">빈칸 ${ask.length} / ${keys.length}</span>
+      ${nbBlkAskEdited(k) ? `<button class="btn-xs" data-action="nb-blkask-reset" data-k="${k}"
+        >↺ 빈칸 처음대로</button>` : ''}
+    </div>
+    <pre class="nbbe-code">${code}</pre>
+    <div class="nbbe-slots">${chips}</div>
+  </div>`;
+}
+
 function vNbBlockEditor(){
   const mates = (typeof CLASSES !== 'undefined' && TC_CLS)
     ? CLASSES.filter(c => c.type === (CLASSES.find(x => x.id === TC_CLS.id) || {}).type)
@@ -34,7 +90,7 @@ function vNbBlockEditor(){
         const d = NB_BLOCK_DEFS[k];
         if(!d) return '';
         const t = NB_BLK_TEXT[k] || {};
-        const on = !!(t.name || t.say);
+        const on = !!(t.name || t.say);        // 글을 고쳤나 (빈칸 설정은 따로 셉니다)
         return `<div class="nbbe-row${on ? ' nbbe-on' : ''}" data-k="${k}"
             style="--nbk-cat:var(${NB_BLK_CAT[d.cat]})">
           <div class="nbbe-head">
@@ -44,7 +100,7 @@ function vNbBlockEditor(){
             <span class="nbbe-k">${k}</span>
             ${on ? '<span class="chip chip-purple">고친 것</span>' : ''}
           </div>
-          <pre class="nbbe-code">${esc(nbPalCode(k))}</pre>
+          ${vNbBlkPreview(k)}
           <textarea class="nbbe-say" id="nbbe-say-${k}" rows="3"
             placeholder="${esc(d.say || '')}" aria-label="블록 설명">${esc(t.say || d.say || '')}</textarea>
           <div class="nbbe-foot">

@@ -1312,6 +1312,33 @@ document.addEventListener('click', async e => {
      그래야 실행 · 저장 · ipynb 내려받기가 지금 코드 그대로 돕니다. */
   if(act.action === 'nb-blk-add'){ nbBlkAdd(act.k); return; }
   if(act.action === 'nb-blk-idk'){ nbBlkIdk(act.cellid); return; }
+  /* 🧩 빈칸을 **반 전체로** 정합니다 (2026-10-29 선생님).
+     이름·설명과 **같은 자리**(NB_BLK_TEXT[k].q)에 담아 한 번만 읽습니다. */
+  if(act.action === 'nb-blkask-toggle'){
+    const d = NB_BLOCK_DEFS[act.k];
+    if(!d || !d.slots || !d.slots[act.slot]) return;
+    const cur = nbBlkAskDefault(act.k);
+    const i = cur.indexOf(act.slot);
+    if(i >= 0) cur.splice(i, 1); else cur.push(act.slot);
+    // 칸 차례대로 담아 둡니다 — 저장된 값이 읽기 좋아집니다
+    const order = Object.keys(d.slots);
+    const q = order.filter(x => cur.indexOf(x) >= 0);
+    const keep = Object.assign({}, NB_BLK_TEXT[act.k] || {});
+    keep.q = q;
+    try { await nbSaveBlockTextAll(act.k, keep); }
+    catch(err){ alert('저장하지 못했습니다 — ' + (err.message || err)); return; }
+    render();
+    return;
+  }
+  if(act.action === 'nb-blkask-reset'){
+    const keep = Object.assign({}, NB_BLK_TEXT[act.k] || {});
+    delete keep.q;
+    try { await nbSaveBlockTextAll(act.k, Object.keys(keep).length ? keep : null); }
+    catch(err){ alert('되돌리지 못했습니다 — ' + (err.message || err)); return; }
+    toast('빈칸을 처음대로 되돌렸습니다');
+    render();
+    return;
+  }
   if(act.action === 'nb-blk-check'){
     // 한 번 더 누르면 표시를 끕니다 — 틀린 빨간 테두리를 계속 보고 있을 필요는 없습니다
     NB_CHECKED[act.cellid] = !NB_CHECKED[act.cellid];
@@ -1370,14 +1397,19 @@ document.addEventListener('click', async e => {
     const sayEl  = document.getElementById('nbbe-say-' + act.k);
     const name = (nameEl ? nameEl.value : '').trim();
     const say  = (sayEl ? sayEl.value : '').trim();
+    // ⚠ 빈칸 설정(q)을 **지우지 않습니다.** 이름·설명과 같은 자리에 있어서,
+    //   새로 만들어 덮으면 선생님이 정한 빈칸이 사라집니다 (2026-10-29).
     const val = {};
+    const q = (NB_BLK_TEXT[act.k] || {}).q;
+    if(Array.isArray(q)) val.q = q;
     if(name && name !== d.name) val.name = name;
     if(say && say !== d.say) val.say = say;
     try {
+      const changed = !!(val.name || val.say);
       await nbSaveBlockTextAll(act.k, Object.keys(val).length ? val : null);
       render();
-      toast(Object.keys(val).length ? '고쳤습니다 — 모든 노트북에 적용됩니다'
-                                    : '처음 글로 돌아갔습니다', 'ok');
+      toast(changed ? '고쳤습니다 — 모든 노트북에 적용됩니다'
+                    : '처음 글로 돌아갔습니다', 'ok');
     } catch(err){ toast('저장하지 못했습니다 — ' + (err.message || err), 'err'); }
     return;
   }
