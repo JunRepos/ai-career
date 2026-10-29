@@ -554,6 +554,13 @@ function nbBlkCheck(d, b, file){
     const got = String((b.a || {})[key] ?? '').trim();
     out.push({ slot: key, got, want, ok: got !== '' && got === want });
   }
+  // 선생님이 코드에 직접 뚫은 자리 — 원래 있던 글자가 곧 정답입니다 (2026-10-29)
+  nbHoles(b).forEach(h => {
+    const want = nbHoleWant(d, h).trim();
+    if(!want) return;
+    const got = nbHoleVal(b, h).trim();
+    out.push({ hole: nbHoleKey(h), got, want, ok: got !== '' && got === want });
+  });
   return out;
 }
 
@@ -570,7 +577,7 @@ function nbCellCheck(cell, file){
     }
     nbBlkCheck(d, b, file).forEach(r => {
       total++;
-      if(r.ok) done++; else wrong.push({ bi, slot: r.slot });
+      if(r.ok) done++; else wrong.push({ bi, slot: r.slot, hole: r.hole });
     });
   });
   return { done, total, wrong, bydata };
@@ -645,13 +652,60 @@ function nbBlockCode(blocks, noImp){
     const d = NB_BLOCK_DEFS[b.k];
     if(!d) return '';
     const NL = String.fromCharCode(10);
-    const body = (noImp || !d.imp) ? (d.tpl || '')
-               : (d.tpl ? d.imp + NL + d.tpl : d.imp);
-    return body.replace(/\{(\w+)\}/g, (_, s) => {
-      const v = b.a ? b.a[s] : null;
-      return (v === undefined || v === null || v === '') ? '___' : v;   // 아직 안 고른 자리
-    });
+    const body = nbTplFill(d, b);
+    // ⚠ import 줄은 **채운 뒤에** 앞에 붙입니다. 먼저 붙이면 글자 자리가 밀려
+    //   선생님이 코드에 뚫어 둔 빈칸이 엉뚱한 곳을 가리킵니다 (2026-10-29).
+    return (noImp || !d.imp) ? body : (body ? d.imp + NL + body : d.imp);
   }).filter(Boolean).join('\n');
+}
+
+/* ═══ 코드 아무 자리나 빈칸으로 (2026-10-29 선생님) ═══════════════
+   「내가 코드에서 빈칸을 어디에다 뚫을지 설정할 수 있도록 해달라고」.
+
+   지금까지 빈칸은 블록이 **미리 가진 칸**(파일 이름 · 열 이름 · 숫자)에만
+   뚫렸습니다. `df.dropna()` 의 `dropna` 처럼 칸이 아닌 글자는 못 뚫었습니다.
+   그래서 선생님이 코드를 끌어서 고르면 그 자리를 빈칸으로 둡니다.
+
+   어디를 뚫었는지는 **블록 정의의 `tpl` 안 글자 자리**(시작·끝)로 적습니다.
+   `tpl` 은 레포에 박혀 있어 변하지 않으므로, 블록을 다시 그려도 자리가 그대로입니다.
+     · `b.h`  = [[시작, 끝], …]  — 뚫어 둔 자리
+     · `b.hv` = {"시작-끝": "학생이 적은 값"}
+   둘 다 블록 안에 있어서 저장·내려받기·학생 진도에 그대로 따라갑니다. */
+function nbHoles(b){
+  return (b && Array.isArray(b.h) ? b.h : [])
+    .filter(h => Array.isArray(h) && h.length === 2 && h[1] > h[0])
+    .slice().sort((x, y) => x[0] - y[0]);
+}
+function nbHoleKey(h){ return h[0] + '-' + h[1]; }
+function nbHoleVal(b, h){ return String(((b && b.hv) || {})[nbHoleKey(h)] ?? ''); }
+/** 이 자리에 원래 있던 글자 — 정답입니다 */
+function nbHoleWant(d, h){ return String((d && d.tpl) || '').slice(h[0], h[1]); }
+
+/** 블록 하나를 파이썬으로. 칸과 **뚫어 둔 자리**를 함께 채웁니다. */
+function nbTplFill(d, b){
+  const tpl = (d && d.tpl) || '';
+  if(!tpl) return '';
+  const hs = nbHoles(b);
+  // 글자 구간 [a, e) — 그 안에 든 빈칸은 학생이 적은 값으로 바꿉니다
+  const lit = (a, e) => {
+    let out = '', cur = a;
+    hs.forEach(h => {
+      if(h[0] < cur || h[1] > e) return;
+      const v = nbHoleVal(b, h);
+      out += tpl.slice(cur, h[0]) + (v === '' ? '___' : v);
+      cur = h[1];
+    });
+    return out + tpl.slice(cur, e);
+  };
+  let out = '', i = 0, m;
+  const re = /\{(\w+)\}/g;
+  while((m = re.exec(tpl))){
+    out += lit(i, m.index);
+    const v = b && b.a ? b.a[m[1]] : null;
+    out += (v === undefined || v === null || v === '') ? '___' : v;   // 아직 안 고른 자리
+    i = m.index + m[0].length;
+  }
+  return out + lit(i, tpl.length);
 }
 
 /* 데이터를 바꾸면 열 이름 드롭다운의 값도 새 데이터의 것으로 바꿉니다 */

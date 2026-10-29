@@ -380,7 +380,7 @@ function vNbBlockCell(cell, hoverTb){
 
   // 정답 확인을 누른 셀이면, 틀린 자리를 블록에 넘겨 빨갛게 표시합니다
   const bad = NB_CHECKED[cell.id]
-    ? new Set((nbCellCheck(cell, file).wrong || []).map(w => w.bi + '|' + w.slot))
+    ? new Set((nbCellCheck(cell, file).wrong || []).map(w => w.bi + '|' + (w.hole ? 'h' + w.hole : w.slot)))
     : null;
   const stack = cell.blocks.length
     ? cell.blocks.map((b, bi) => vNbBlock(cell.id, b, bi, file, bad)).join('')
@@ -433,17 +433,50 @@ function vNbBlockCell(cell, hoverTb){
           <button class="nbk-mini" data-action="nb-blk-code" aria-pressed="${NB_BLK_CODE}">&lt;/&gt; 코드 칸</button>
           ${nbAuthoring() ? `<button class="nbk-mini" data-action="nb-blk-askui"
             aria-pressed="${NB_BLK_ASKUI}"
-            title="칸마다 ✎ 를 붙입니다 — 눌러서 학생이 채울 빈칸을 정합니다">✎ 빈칸 정하기</button>` : ''}
+            title="칸마다 ✎ 가 붙습니다. 코드 글자를 **끌어서 고르면** 그 자리가 빈칸이 됩니다">✎ 빈칸 정하기</button>` : ''}
           ${chkBtn}
           ${idkBtn}
         </div>
-        <div class="nbk-stack" data-blkstack="${cell.id}">${stack}</div>
+        <div class="nbk-stack${NB_BLK_ASKUI && nbAuthoring() ? ' nbk-askon' : ''}" data-blkstack="${cell.id}">${stack}</div>
         ${chkLine}
         ${codePane}
       </div>
     </div>
     ${result ? vNbOutput(result, cell.id) : ''}
   </div>`;
+}
+
+/* ── 코드의 **글자 구간** 하나를 그립니다 (2026-10-29 선생님) ──
+   그 안에 선생님이 뚫어 둔 자리가 있으면 거기만 적는 칸으로 바꿉니다.
+   `data-lit` 에 그 글자가 `tpl` 의 몇 번째에서 시작하는지 적어 둡니다 —
+   선생님이 끌어서 고른 자리를 되돌릴 때 이것을 읽습니다. */
+function nbLitHtml(cellId, b, bi, d, at, text, bad){
+  if(!text) return '';
+  const span = (s, t) => `<span class="nbk-code-in" data-lit="${s}">${esc(t)}</span>`;
+  const hs = (typeof nbHoles === 'function' ? nbHoles(b) : [])
+    .filter(h => h[0] >= at && h[1] <= at + text.length);
+  if(!hs.length) return span(at, text);
+  const teacher = NB_BLK_ASKUI && nbAuthoring();
+  let out = '', cur = at;
+  hs.forEach(h => {
+    if(h[0] < cur) return;                       // 겹친 자리는 앞의 것만 씁니다
+    if(h[0] > cur) out += span(cur, text.slice(cur - at, h[0] - at));
+    const v = nbHoleVal(b, h);
+    const raw = nbHoleWant(d, h);
+    const miss = bad && bad.has(bi + '|h' + nbHoleKey(h)) ? ' nbk-in-bad' : '';
+    const hot = v === '' ? ' nbk-in-ask' : '';
+    out += `<input class="nbk-in nbk-hin${hot}${miss}" type="text" value="${esc(v)}"
+      size="${Math.max(3, Math.min(24, raw.length + 1))}"
+      placeholder="${esc(String(raw.length) + '자')}" aria-label="빈칸"
+      data-action="nb-hole-in" data-cellid="${cellId}" data-bi="${bi}"
+      data-h="${nbHoleKey(h)}">`;
+    if(teacher) out += `<button class="nbk-hdel" data-action="nb-hole-del"
+      data-cellid="${cellId}" data-bi="${bi}" data-h="${nbHoleKey(h)}"
+      title="이 빈칸을 없앱니다 — 원래 글자로 돌아갑니다">✕</button>`;
+    cur = h[1];
+  });
+  if(cur < at + text.length) out += span(cur, text.slice(cur - at));
+  return out;
 }
 
 function vNbBlock(cellId, b, bi, file, bad){
@@ -454,10 +487,15 @@ function vNbBlock(cellId, b, bi, file, bad){
   // 같은 칸이 코드에 두 번 나오는 블록이 있습니다 (`score` 의 X_{d}, y_{d}).
   //   드롭다운은 둘 다 그려야 하지만, **빈칸 토글은 첫 자리에만** 붙입니다.
   const seenSlot = new Set();
+  /* 글자 자리(off)를 줄을 넘어가며 계속 셉니다 — 선생님이 끌어서 고른 자리를
+     `tpl` 안의 **시작·끝**으로 되돌리려면 절대 자리가 있어야 합니다 (2026-10-29). */
+  let off = 0;
   const lines = d.tpl.split('\n').map(line => {
     const parts = line.split(/(\{\w+\})/).map(part => {
+      const at0 = off;
+      off += part.length;
       const m = part.match(/^\{(\w+)\}$/);
-      if(!m) return part ? `<span class="nbk-code-in">${esc(part)}</span>` : '';
+      if(!m) return nbLitHtml(cellId, b, bi, d, at0, part, bad);
       const key = m[1];
       const slot = d.slots[key];
       const at = `data-action="nb-blk-slot" data-cellid="${cellId}" data-bi="${bi}"
@@ -508,6 +546,7 @@ function vNbBlock(cellId, b, bi, file, bad){
                                           : '채워 둔 자리 — 눌러서 빈칸으로 둡니다'}"
         >${ask ? '✎' : '●'}</button></span>`;
     }).join('');
+    off += 1;   // 줄을 나누며 빠진 줄바꿈 한 글자 — 이걸 안 세면 자리가 밀립니다
     return `<div class="nbk-line">${parts}</div>`;
   }).join('');
   // 설명 — 선생님이 고친 글이 있으면 그것을 씁니다 (nbBlkSay).

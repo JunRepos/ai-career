@@ -1394,6 +1394,7 @@ document.addEventListener('click', async e => {
      블록을 고칠 때마다 cell.source 를 다시 만들어 넣습니다.
      그래야 실행 · 저장 · ipynb 내려받기가 지금 코드 그대로 돕니다. */
   if(act.action === 'nb-blk-add'){ nbBlkAdd(act.k); return; }
+  if(act.action === 'nb-hole-del'){ nbHoleDel(act.cellid, act.bi, act.h); return; }
   if(act.action === 'nb-blk-idk'){ nbBlkIdk(act.cellid); return; }
   /* 🧩 빈칸을 **반 전체로** 정합니다 (2026-10-29 선생님).
      이름·설명과 **같은 자리**(NB_BLK_TEXT[k].q)에 담아 한 번만 읽습니다. */
@@ -1436,7 +1437,7 @@ document.addEventListener('click', async e => {
     if(!nbAuthoring()) return;
     NB_BLK_ASKUI = !NB_BLK_ASKUI;
     render();
-    if(NB_BLK_ASKUI) toast('칸 옆 ✎ 를 누르면 학생이 채울 빈칸이 됩니다', 'ok');
+    if(NB_BLK_ASKUI) toast('칸 옆 ✎ 를 누르거나, 코드 글자를 끌어서 고르면 빈칸이 됩니다', 'ok');
     return;
   }
 
@@ -2063,6 +2064,65 @@ document.addEventListener('change', e => {
     if(b) b.a[s.dataset.slot] = s.value;
   });
 });
+
+/* ═══ 코드 아무 자리나 빈칸으로 (2026-10-29 선생님) ═══════════════
+   「내가 코드에서 빈칸을 어디에다 뚫을지 설정할 수 있도록 해달라고」.
+   「✎ 빈칸 정하기」 를 켠 채로 코드를 **끌어서 고르면** 그 글자가 빈칸이 됩니다.
+   되돌리기는 빈칸 옆 ✕ 입니다. 자리는 블록 정의 `tpl` 의 글자 번호로 적습니다
+   (js/nb-blocks.js 의 nbHoles 설명). */
+
+/* 학생이 빈칸에 적은 값 */
+document.addEventListener('change', e => {
+  const h = e.target.closest('[data-action="nb-hole-in"]');
+  if(!h) return;
+  nbBlkEdit(h.dataset.cellid, bs => {
+    const b = bs[+h.dataset.bi];
+    if(!b) return;
+    if(!b.hv) b.hv = {};
+    b.hv[h.dataset.h] = h.value;
+  });
+});
+
+/* 끌어서 고른 자리를 빈칸으로.
+   ⚠ **한 글자 덩어리 안에서만** 받습니다. 칸(드롭다운)을 가로질러 고르면
+     칸까지 삼켜 코드가 깨집니다 — 그런 선택은 그냥 무시합니다. */
+document.addEventListener('mouseup', () => {
+  if(typeof NB_BLK_ASKUI === 'undefined' || !NB_BLK_ASKUI) return;
+  if(typeof nbAuthoring !== 'function' || !nbAuthoring()) return;
+  const sel = window.getSelection && window.getSelection();
+  if(!sel || sel.isCollapsed || !sel.rangeCount) return;
+  const r = sel.getRangeAt(0);
+  const lit = n => (n && n.nodeType === 3 ? n.parentElement : n);
+  const a = lit(r.startContainer), z = lit(r.endContainer);
+  if(!a || a !== z || !a.dataset || a.dataset.lit === undefined) return;
+  const blk = a.closest('.nbk-blk');
+  if(!blk) return;
+  const base = +a.dataset.lit;
+  const s = base + r.startOffset, t = base + r.endOffset;
+  if(t <= s) return;
+  sel.removeAllRanges();
+  nbBlkEdit(blk.dataset.cellid, bs => {
+    const b = bs[+blk.dataset.bi];
+    if(!b) return;
+    const hs = (b.h || []).filter(x => x[1] <= s || x[0] >= t);   // 겹치면 앞의 것을 버립니다
+    hs.push([s, t]);
+    hs.sort((x, y) => x[0] - y[0]);
+    b.h = hs;
+    if(b.hv) delete b.hv[s + '-' + t];
+  });
+  toast('빈칸을 뚫었습니다 — 되돌리려면 옆의 ✕', 'ok');
+});
+
+/* 빈칸 없애기 — 원래 글자로 돌아갑니다 */
+function nbHoleDel(cellId, bi, key){
+  nbBlkEdit(cellId, bs => {
+    const b = bs[+bi];
+    if(!b) return;
+    b.h = (b.h || []).filter(x => x[0] + '-' + x[1] !== key);
+    if(b.hv) delete b.hv[key];
+    if(!b.h.length) delete b.h;
+  });
+}
 
 /* 끌어다 놓기 — 서랍에서 새로 넣기 · 셀 안에서 자리 옮기기 */
 let _nbkDrag = null;
