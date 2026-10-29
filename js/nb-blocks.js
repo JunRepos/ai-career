@@ -162,6 +162,41 @@ const NB_BLOCK_DEFS = {
     tpl: 'df.{f}()',
     say: '열마다 값의 개수와 자료형', src: '교과서 79쪽',
   },
+  /* 2026-10-29 — 옛 노트북(1~4번)을 블록으로 옮기면서 빠져 있던 넷을 더합니다.
+     넷 다 교과서 말입니다 — columns 책 112 · describe 책 79 · countplot 책 80. */
+  cols: {
+    guide: 'c_columns',
+    cat: 'look', name: '속성 이름 보기',
+    slots: { f: { kind: 'text', def: '', ans: 'columns', ask: 1 } },
+    tpl: 'df.{f}',
+    say: '열(속성) 이름을 모두 보여 줍니다. shape 처럼 뒤에 괄호를 붙이지 않습니다.',
+    src: '교과서 112쪽',
+  },
+  desc: {
+    guide: 'c_describe',
+    cat: 'look', name: '통계 요약 보기',
+    slots: { f: { kind: 'text', def: '', ans: 'describe', ask: 1 } },
+    tpl: 'df.{f}()',
+    say: '수치형 속성의 개수 · 평균 · 표준편차 · 최솟값 · 최댓값을 보여 줍니다.',
+    src: '교과서 79쪽',
+  },
+  col: {
+    guide: 'c_col',
+    cat: 'look', name: '한 열만 고르기',
+    slots: { c: { opt: 'cols', def: 0, ask: 1 } },
+    tpl: 'df["{c}"]',
+    say: '대괄호 안에 속성 이름을 따옴표로 감싸 쓰면 그 열만 골라 봅니다.',
+    src: '교과서 79쪽',
+  },
+  count: {
+    guide: 'c_countplot',
+    cat: 'plot', name: '막대그래프',
+    slots: { c: { opt: 'cols', def: 0, ask: 1 } },
+    imp: 'import seaborn as sns',
+    tpl: 'sns.countplot(x=df["{c}"])',
+    say: '값마다 개수를 세어 막대그래프로 그립니다.',
+    src: '교과서 80쪽',
+  },
   vc: {
     guide: 'c_vc',   // 값마다 개수 세기
     cat: 'look', name: '값마다 개수 세기',
@@ -399,9 +434,9 @@ const NB_BLOCK_DEFS = {
 
 const NB_BLOCK_GROUPS = [
   ['준비',     ['imp', 'load']],
-  ['살펴보기', ['shape', 'head', 'info', 'vc']],
+  ['살펴보기', ['shape', 'head', 'info', 'cols', 'desc', 'col', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
-  ['그래프',   ['scat', 'box', 'corr']],
+  ['그래프',   ['count', 'scat', 'box', 'corr']],
   ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'classes', 'cm', 'report',
                 'pred', 'tree']],
 ];
