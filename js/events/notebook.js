@@ -1292,6 +1292,12 @@ document.addEventListener('click', async e => {
      그래야 실행 · 저장 · ipynb 내려받기가 지금 코드 그대로 돕니다. */
   if(act.action === 'nb-blk-add'){ nbBlkAdd(act.k); return; }
   if(act.action === 'nb-blk-idk'){ nbBlkIdk(act.cellid); return; }
+  if(act.action === 'nb-blk-check'){
+    // 한 번 더 누르면 표시를 끕니다 — 틀린 빨간 테두리를 계속 보고 있을 필요는 없습니다
+    NB_CHECKED[act.cellid] = !NB_CHECKED[act.cellid];
+    render();
+    return;
+  }
   if(act.action === 'nb-blk-del'){ nbBlkEdit(act.cellid, bs => bs.splice(+act.bi, 1)); return; }
   if(act.action === 'nb-blk-say'){ NB_BLK_SAY = !NB_BLK_SAY; render(); return; }
   if(act.action === 'nb-blk-code'){ NB_BLK_CODE = !NB_BLK_CODE; render(); return; }

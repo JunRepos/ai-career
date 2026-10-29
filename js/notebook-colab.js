@@ -24,6 +24,9 @@ let NB_BLK_ASKUI = false;
    블록의 이름과 설명은 노트북 하나에 딸린 것이 아니라 **반 전체에 걸칩니다.**
    그래서 노트북 안이 아니라 목록 화면에서 따로 고칩니다. */
 let NB_BLKEDIT = false;
+/* 🧩 「정답 확인」 을 누른 셀 — { [셀id]: true } (2026-10-29 선생님).
+   저장하지 않습니다. 다시 열면 지워집니다 — 틀린 표시가 남아 있으면 겁먹습니다. */
+let NB_CHECKED = {};
 let NB_FILES     = null;    // [{p, d, s}] — null 이면 아직 안 읽음
 let _nbQueue     = Promise.resolve();
 let _nbGen       = 0;       // 중지할 때마다 올림 — 줄 서 있던 셀은 건너뜀

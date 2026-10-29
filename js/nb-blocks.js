@@ -268,13 +268,20 @@ const NB_BLOCK_DEFS = {
   split: {
     guide: 'c_split',   // 훈련 · 테스트 나누기
     cat: 'ml', name: '훈련 · 테스트로 나누기',
-    slots: { r: { opt: ['0.2', '0.3', '0.4'], def: '0.3' } },
+    // 2026-10-29 선생님 — 「train_test_split 부분에 stratify 도 뚫고」.
+    //   test_size · stratify · random_state 를 **각각 적게** 합니다.
+    //   셋이 무엇을 하는지 모르면 나눈 결과를 설명할 수 없습니다 (평가요소 ③).
+    slots: { r: { kind: 'text', def: '0.3', ans: '0.3', ask: 1, ph: '0.3' },
+             s: { kind: 'text', def: 'y', ans: 'y', ask: 1, ph: 'y' },
+             d: { kind: 'num', def: '42', ans: '42', ask: 1, ph: '42' } },
     // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
     imp: 'from sklearn.model_selection import train_test_split',
     tpl:          'X_train, X_test, y_train, y_test = train_test_split(\n' +
-         '    X, y, test_size={r}, stratify=y, random_state=42)\n' +
+         '    X, y, test_size={r}, stratify={s}, random_state={d})\n' +
          'print(X_train.shape, X_test.shape)',
-    say: '훈련 데이터와 테스트 데이터로 나누기. random_state 는 무작위성을 제어하기 위한 시드(seed)값입니다.',
+    say: '훈련 데이터와 테스트 데이터로 나누기. '
+       + 'test_size 는 테스트 데이터의 비율, stratify 는 클래스를 두 쪽에 '
+       + '고르게 나누라는 뜻이고, random_state 는 무작위성을 제어하기 위한 시드(seed)값입니다.',
     src: '교과서 100 · 111쪽',
   },
   dt: {
@@ -406,6 +413,22 @@ function nbSlotOptions(slot, file){
   }
   return slot.opt;
 }
+/* 빈칸에 흐리게 띄울 안내 — **답을 알려 주지 않고** 무엇을 적을 자리인지만 (2026-10-29).
+   보기 목록을 없애고 직접 적게 했으므로, 어떤 종류의 값인지는 알려 줘야 합니다. */
+function nbSlotHint(slot, file){
+  if(slot.ph) return slot.ph;
+  if(slot.kind) return '함수 이름';
+  if(slot.opt === 'files') return '파일 이름';
+  if(slot.opt === 'cols') return '열 이름';
+  if(slot.opt === 'num') return '숫자 열 이름';
+  if(Array.isArray(slot.opt)){
+    const o = slot.opt;
+    if(o.every(v => /^[0-9.]+$/.test(String(v)))) return '숫자';
+    if(o.length <= 4) return o.join(' / ');       // dt / knn · train / test
+  }
+  return '값';
+}
+
 function nbSlotDefault(slot, file){
   if(slot.ask) return '';            // 학생이 고를 자리 — 비워 둡니다
   if(slot.kind) return slot.def;
@@ -445,6 +468,53 @@ function nbSlotFill(slot, file){
   const opts = nbSlotOptions(slot, file);
   if(typeof slot.def === 'number') return opts[Math.min(slot.def, opts.length - 1)];
   return opts.includes(slot.def) ? slot.def : opts[0];
+}
+
+/* ═══ 정답 확인 (2026-10-29 선생님) ═══════════════════════════════
+   빈칸을 **직접 적게** 바꾸면서, 스스로 맞춰 볼 자리가 필요해졌습니다.
+
+   ⚠ 데이터에 따라 답이 달라지는 칸(열 이름 · 파일 이름)은 **채점하지 않습니다.**
+     그런 칸의 답은 그 차시에 쓰는 데이터마다 다르고, 맞는지는 **실행해 보면**
+     바로 압니다. 여기서 채점하면 틀린 ✖ 를 내놓게 됩니다.
+   ⚠ 평가용 노트북에서는 **아예 쓰지 않습니다** — 화면에 단추를 내지 않습니다. */
+const NB_ANS_BYDATA = ['cols', 'num', 'files'];
+
+function nbSlotCheckable(slot){
+  if(slot.ans != null && slot.ans !== '') return true;
+  if(slot.kind) return false;                       // ans 없는 적는 칸 — 알 수 없음
+  return !NB_ANS_BYDATA.includes(slot.opt);         // 보기가 고정된 칸만
+}
+
+/** 블록 하나를 채점합니다 → [{slot, got, want, ok}] · 채점 못 하는 칸은 뺍니다 */
+function nbBlkCheck(d, b, file){
+  const out = [];
+  for(const key of nbBlkAskList(d, b)){
+    const slot = (d.slots || {})[key];
+    if(!slot || !nbSlotCheckable(slot)) continue;
+    const want = String(nbSlotFill(slot, file) ?? '').trim();
+    const got = String((b.a || {})[key] ?? '').trim();
+    out.push({ slot: key, got, want, ok: got !== '' && got === want });
+  }
+  return out;
+}
+
+/** 셀 하나 → {done, total, wrong:[{bi,slot}], bydata} */
+function nbCellCheck(cell, file){
+  let done = 0, total = 0, bydata = 0;
+  const wrong = [];
+  (cell.blocks || []).forEach((b, bi) => {
+    const d = NB_BLOCK_DEFS[b.k];
+    if(!d) return;
+    for(const key of nbBlkAskList(d, b)){
+      const slot = (d.slots || {})[key];
+      if(slot && !nbSlotCheckable(slot)) bydata++;
+    }
+    nbBlkCheck(d, b, file).forEach(r => {
+      total++;
+      if(r.ok) done++; else wrong.push({ bi, slot: r.slot });
+    });
+  });
+  return { done, total, wrong, bydata };
 }
 
 /* ═══ 블록의 이름과 설명을 선생님이 고칩니다 (2026-10-28) ═══════

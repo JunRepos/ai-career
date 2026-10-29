@@ -287,21 +287,6 @@ function vNotebookDetail(isTeacher){
    지금까지 배운 함수를 세로로 늘어놓습니다. 누르면 고른 코드 셀의
    커서 자리에 주석과 함께 들어갑니다 (nbInsertSnippet).
    사이드바는 sticky 라 셀 옆에 붙어 있어 오르내릴 일이 없습니다. */
-function vNbSnipPanel(){
-  if(typeof NB_SNIPPETS === 'undefined') return '';
-  return `<div class="cb-snip">
-    <div class="cb-snip-hint">누르면 <b>고른 코드 셀</b>에 주석과 함께 들어갑니다</div>
-    ${NB_SNIPPETS.map((g, gi) => `
-      <div class="cb-snip-group">
-        <div class="cb-snip-label">${esc(g.group)}</div>
-        ${g.items.map((it, ii) => `<button class="cb-snip-item" data-action="nb-snip"
-          data-g="${gi}" data-i="${ii}" title="${esc(nbSnippetTip(it))}"
-          ><span class="cb-snip-code">${esc(it.label)}</span
-          ><span class="cb-snip-desc">${esc(it.note)}</span></button>`).join('')}
-      </div>`).join('')}
-  </div>`;
-}
-
 /* ── 🧩 블록 셀 ──
    블록의 얼굴은 파이썬 그대로이고, 바꿀 자리만 드롭다운입니다.
    아래 칸에 그 블록들이 만든 파이썬을 그대로 보여 줍니다 (읽기 전용).
@@ -316,8 +301,12 @@ function vNbBlockCell(cell, hoverTb){
   const execLabel = busy ? '[*]' : (result?.execCount ? `[${result.execCount}]` : '[ ]');
   const file = nbCellDataFile(cell, NB_CELLS);
 
+  // 정답 확인을 누른 셀이면, 틀린 자리를 블록에 넘겨 빨갛게 표시합니다
+  const bad = NB_CHECKED[cell.id]
+    ? new Set((nbCellCheck(cell, file).wrong || []).map(w => w.bi + '|' + w.slot))
+    : null;
   const stack = cell.blocks.length
-    ? cell.blocks.map((b, bi) => vNbBlock(cell.id, b, bi, file)).join('')
+    ? cell.blocks.map((b, bi) => vNbBlock(cell.id, b, bi, file, bad)).join('')
     : `<div class="nbk-empty">왼쪽 <b>🧩 블록</b> 서랍에서 끌어다 놓으세요.<br>눌러서 넣어도 됩니다.</div>`;
 
   /* 「모름」 — 막힌 셀을 넘기고 뒤를 살립니다 (2026-10-29 선생님).
@@ -330,6 +319,22 @@ function vNbBlockCell(cell, hoverTb){
         ? `<span class="nbk-idk-done" title="이 셀은 「모름」 으로 넘겼습니다">모름으로 넘김</span>`
         : `<button class="nbk-mini nbk-idk" data-action="nb-blk-idk" data-cellid="${cell.id}"
             title="이 셀을 넘기고 다음으로 갑니다. 이 자리는 점수가 깎이고, 기록이 남습니다">모름</button>`)
+    : '';
+
+  /* 정답 확인 (2026-10-29 선생님) — **평가 노트북에서는 내지 않습니다.**
+     채점할 수 있는 칸이 하나도 없으면 단추도 내지 않습니다. */
+  const inAssess = typeof nbInAssess === 'function' && nbInAssess();
+  const chk = (!inAssess && typeof nbCellCheck === 'function' && cell.blocks?.length)
+    ? nbCellCheck(cell, file) : null;
+  const chkBtn = (chk && chk.total)
+    ? `<button class="nbk-mini nbk-chk" data-action="nb-blk-check" data-cellid="${cell.id}"
+        title="적은 값이 맞는지 봅니다. 답을 알려 주지는 않습니다">✅ 정답 확인</button>` : '';
+  const shown = NB_CHECKED[cell.id];
+  const chkLine = (shown && chk) ? `<div class="nbk-chkline ${chk.wrong.length ? 'bad' : 'good'}">${
+      chk.wrong.length
+        ? `${chk.wrong.length}곳 다시 — ${chk.done}/${chk.total} 맞음`
+        : `${chk.total}곳 다 맞았습니다`
+    }${chk.bydata ? ` <i>· 열 · 파일 이름 ${chk.bydata}곳은 <b>실행해서</b> 확인하세요</i>` : ''}</div>`
     : '';
 
   const code = cell.source || '# 블록이 없습니다';
@@ -352,9 +357,11 @@ function vNbBlockCell(cell, hoverTb){
           ${nbAuthoring() ? `<button class="nbk-mini" data-action="nb-blk-askui"
             aria-pressed="${NB_BLK_ASKUI}"
             title="칸마다 ✎ 를 붙입니다 — 눌러서 학생이 채울 빈칸을 정합니다">✎ 빈칸 정하기</button>` : ''}
+          ${chkBtn}
           ${idkBtn}
         </div>
         <div class="nbk-stack" data-blkstack="${cell.id}">${stack}</div>
+        ${chkLine}
         ${codePane}
       </div>
     </div>
@@ -362,7 +369,7 @@ function vNbBlockCell(cell, hoverTb){
   </div>`;
 }
 
-function vNbBlock(cellId, b, bi, file){
+function vNbBlock(cellId, b, bi, file, bad){
   const d = NB_BLOCK_DEFS[b.k];
   if(!d) return '';
   // 파이썬 **한 줄씩** 그립니다. 드롭다운은 그 줄 안에 끼워 넣어
@@ -381,14 +388,26 @@ function vNbBlock(cellId, b, bi, file){
       // 이 자리가 **학생이 채울 빈칸**인지 — 블록마다 다릅니다 (nbSlotAsk)
       const ask = nbSlotAsk(d, b, key);
       let html;
+      /* 2026-10-29 선생님 — 「모든 빈칸은 드롭다운 없이 직접 입력하도록
+         (틀리면 오류 코드 알아서 확인하라 그래)」.
+         **빈칸이면 보기 목록이 있어도 적는 칸으로 그립니다.** 고르기만 하면
+         철자도 안 외우고 오류도 안 만나 봅니다. 채워 둔 자리는 그대로 드롭다운이라
+         선생님이 미리 정해 둔 값은 건드리지 않습니다. */
+      const asText = slot.kind || ask;
       // 미리 셀 수 없는 값(행 번호 · 찾을 값)은 적는 칸으로 둡니다 — 교과서 81쪽처럼
-      if(slot.kind){
+      if(asText){
         const v = b.a[key];
         // 아직 안 적은 자리는 빨갛게 — 무엇을 해야 하는지 바로 보이게
-        const hot = ask && (v === '' || v == null) ? ' nbk-in-ask' : '';
+        const miss = bad && bad.has(bi + '|' + key) ? ' nbk-in-bad' : '';
+        const hot = (ask && (v === '' || v == null) ? ' nbk-in-ask' : '') + miss;
+        // 보기 목록이 있던 칸은 **가장 긴 보기만큼** 넓혀 둡니다 — 열 이름이 깁니다
+        const opts = slot.kind ? null : nbSlotOptions(slot, file);
+        const wide = opts && opts.length
+          ? Math.min(28, Math.max(11, ...opts.map(o => String(o).length + 1)))
+          : (slot.kind === 'num' ? 5 : 11);
         html = `<input class="nbk-in${hot}" type="${slot.kind === 'num' ? 'number' : 'text'}"
-          value="${esc(v ?? '')}" size="${slot.kind === 'num' ? 5 : 11}"
-          placeholder="${ask ? esc(slot.ph || '함수 이름') : ''}" ${at}>`;
+          value="${esc(v ?? '')}" size="${wide}"
+          placeholder="${ask ? esc(slot.ph || nbSlotHint(slot, file)) : ''}" ${at}>`;
       } else {
         const opts = nbSlotOptions(slot, file);
         const cur = b.a[key];

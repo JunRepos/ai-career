@@ -6715,6 +6715,17 @@ button{border-radius:2px}
   padding:3px 9px;border-radius:2px;background:transparent;color:var(--cb-text-2);
   border:1px solid var(--cb-border)}
 .nbk-mini:hover{background:var(--cb-hover);color:var(--cb-text)}
+/* 「✅ 정답 확인」 — 적은 값이 맞는지. 답은 알려 주지 않습니다 (2026-10-29). */
+.nbk-chk:hover{background:#e8f4ec;border-color:#00703C;color:#00563b}
+[data-theme="dark"] .nbk-chk:hover{background:#17301f;border-color:#2f8f5f;color:#8fd9b0}
+.nbk-chkline{margin:6px 0 2px;font-size:12px;font-weight:600;padding:5px 9px;border-radius:4px}
+.nbk-chkline.good{background:#e8f4ec;color:#00563b;border:1px solid #b7ddc6}
+.nbk-chkline.bad{background:#fdecec;color:#8a1f1f;border:1px solid #e9b9b9}
+.nbk-chkline i{font-style:normal;font-weight:400;opacity:.85}
+[data-theme="dark"] .nbk-chkline.good{background:#16301f;color:#8fd9b0;border-color:#2c5a3c}
+[data-theme="dark"] .nbk-chkline.bad{background:#36191a;color:#f0a9a9;border-color:#6b3030}
+.nbk-in-bad{border-color:#c0392b !important;background:#fdecec !important}
+[data-theme="dark"] .nbk-in-bad{background:#36191a !important;border-color:#a9453a !important}
 /* 「모름」 — 막힌 셀을 넘기는 단추. 눈에 띄되 먼저 누르고 싶지는 않게 둡니다. */
 .nbk-idk{border-style:dashed;color:var(--cb-text-2)}
 .nbk-idk:hover{background:#fff4e5;border-color:#d08b2c;color:#8a5a12}

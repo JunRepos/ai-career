@@ -801,14 +801,21 @@ async function setMlRlDesc(cid, text){
 async function loadUnitContent(cid){
   UNIT_CONTENT = {};
   // 단원·섹션 골격은 항상 만들어 둠 (없어도 빈 배열)
-  for(const u of assignUnits()) UNIT_CONTENT[u.key] = { material: [], practice: [] };
+  // 칸 이름은 views/unit.js 의 UC_SECTIONS 하나에서 옵니다 (2026-10-29).
+  //   여기에 따로 적어 두면 칸을 늘릴 때 한쪽만 고쳐 **안 읽히는 칸**이 생깁니다.
+  const SECS = (typeof UC_SEC_KEYS !== 'undefined') ? UC_SEC_KEYS
+                                                    : ['material', 'worksheet', 'practice'];
+  for(const u of assignUnits()){
+    UNIT_CONTENT[u.key] = {};
+    SECS.forEach(sec => { UNIT_CONTENT[u.key][sec] = []; });
+  }
   try {
     const s = await db.ref(`aiactivity/submissions/${cid}/unitContent`).get();
     if(!s.exists()) return;
     const raw = s.val() || {};
     for(const u of assignUnits()){
       const uu = raw[u.key] || {};
-      ['material', 'practice'].forEach(sec => {
+      SECS.forEach(sec => {
         const items = uu[sec] || {};
         UNIT_CONTENT[u.key][sec] = Object.entries(items)
           .map(([id, v]) => ({ id, ...v }))

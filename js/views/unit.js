@@ -38,24 +38,36 @@ const UC_APP_FEATURE = ['aicode', 'ml', 'aia'];
 //  학생 뷰
 // ══════════════════════════════════════
 
+/* 단원 안의 칸 — **한 곳에서만** 정합니다. 학생 화면과 선생님 화면이 같이 씁니다.
+   2026-10-29 선생님 — 「수업자료 학습지 다 혼재되어 있어서 어지러워」.
+   학습지를 수업자료에서 **갈라냈습니다.** 옛 자료는 `material` 에 들어 있으므로
+   여기서 칸만 늘리고, 옮기는 것은 `verify/unit-fill.py` 가 합니다. */
+const UC_SECTIONS = [
+  { key: 'material', label: '📂 수업 자료', ico: '📂', empty: '아직 등록된 수업 자료가 없습니다.' },
+  { key: 'worksheet', label: '📝 학습지',   ico: '📝', empty: '아직 등록된 학습지가 없습니다.' },
+  { key: 'practice', label: '🧪 학습 활동', ico: '🧪', empty: '아직 등록된 학습 활동이 없습니다.' },
+];
+const UC_SEC_KEYS = UC_SECTIONS.map(s => s.key);
+function ucSec(k){ return UC_SEC_KEYS.includes(k) ? k : 'material'; }
+function ucSecDef(k){ return UC_SECTIONS.find(s => s.key === ucSec(k)); }
+
 function vStUnit(unitKey){
   const u = assignUnit(unitKey);
   if(!u) return emptyBox('📖', '단원을 찾을 수 없습니다.');
-  const sec = ST_UNIT_SEC === 'practice' ? 'practice' : 'material';
-  const data = UNIT_CONTENT[unitKey] || { material: [], practice: [] };
+  const sec = ucSec(ST_UNIT_SEC);
+  const data = UNIT_CONTENT[unitKey] || {};
   const items = data[sec] || [];
 
   const head = `<div class="sec-title" style="margin-bottom:8px">${u.roman}. ${esc(u.label)}</div>`;
-  const bar = _subTabs([
-    { key: 'material', label: '📂 수업 자료' },
-    { key: 'practice', label: '🧪 학습 활동' },
-  ], sec, 'setUnitSec');
+  // 빈 칸에는 **개수를 달지 않습니다** — 0 이 붙어 있으면 눌러 보게 됩니다
+  const bar = _subTabs(UC_SECTIONS.map(s => {
+    const n = (data[s.key] || []).length;
+    return { key: s.key, label: n ? `${s.label} ${n}` : s.label };
+  }), sec, 'setUnitSec');
 
   if(!items.length){
-    return head + bar + emptyBox(
-      sec === 'material' ? '📂' : '🧪',
-      sec === 'material' ? '아직 등록된 수업 자료가 없습니다.' : '아직 등록된 학습 활동이 없습니다.'
-    );
+    const d = ucSecDef(sec);
+    return head + bar + emptyBox(d.ico, d.empty);
   }
   return head + bar + items.map(it => _ucStudentCard(it, unitKey)).join('');
 }
@@ -189,24 +201,26 @@ function vTcUnit(){
   const unitChips = units.map(u =>
     `<button class="btn-sm ${u.key === UC_TC_UNIT ? 'btn-p' : ''}" data-action="uc-pick-unit" data-unit="${u.key}">${u.roman}. ${esc(u.label)}</button>`
   ).join(' ');
-  const secTabs = _subTabs([
-    { key: 'material', label: '📂 수업 자료' },
-    { key: 'practice', label: '🧪 학습 활동' },
-  ], UC_TC_SEC, 'setUcSec');
+  const tcSec = ucSec(UC_TC_SEC);
+  const tcData = UNIT_CONTENT[UC_TC_UNIT] || {};
+  const secTabs = _subTabs(UC_SECTIONS.map(x => {
+    const n = (tcData[x.key] || []).length;
+    return { key: x.key, label: n ? `${x.label} ${n}` : x.label };
+  }), tcSec, 'setUcSec');
 
-  const items = ((UNIT_CONTENT[UC_TC_UNIT] || {})[UC_TC_SEC]) || [];
+  const items = tcData[tcSec] || [];
   const list = items.length
     ? items.map((it, i) => _ucTcRow(it, i, items.length)).join('')
     : emptyBox('📭', '이 칸에 항목이 없습니다. 위에서 추가하세요.');
 
   return `<div class="section">
     <div class="sec-title">📚 단원 구성</div>
-    <div class="box-info">학생 사이드바의 단원(Ⅰ~Ⅳ) 안 <b>수업 자료 / 학습 활동</b>에 보일 항목을 구성합니다. 반별로 따로 저장됩니다.</div>
+    <div class="box-info">학생 사이드바의 단원(Ⅰ~Ⅳ) 안 <b>수업 자료 · 학습지 · 학습 활동</b>에 보일 항목을 구성합니다. 반별로 따로 저장됩니다.</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">${unitChips}</div>
     ${secTabs}
   </div>
   ${_ucForm()}
-  <div class="sec-title" style="margin-top:4px">${unit.roman}. ${esc(unit.label)} · ${UC_TC_SEC === 'material' ? '수업 자료' : '학습 활동'} 항목 (${items.length})</div>
+  <div class="sec-title" style="margin-top:4px">${unit.roman}. ${esc(unit.label)} · ${esc(ucSecDef(tcSec).label.replace(/^\S+\s/, ''))} 항목 (${items.length})</div>
   ${list}`;
 }
 
@@ -260,9 +274,12 @@ function _ucForm(){
   // '앱연결'(노트북·OJ 등)은 정보 교과 전용 기능이라 이 앱에서는 빼둡니다.
   // 코드는 그대로 남아 있어 필요하면 아래 목록에 ['app','앱연결'] 을 다시 넣으면 됩니다.
   /* 학습 활동 칸에서는 게임·학습지를 앞에 둡니다 — 거기서 주로 쓰는 것이라. */
-  const types = UC_TC_SEC === 'practice'
+  const _sec = ucSec(UC_TC_SEC);
+  const types = _sec === 'practice'
     ? [['game', '실습 게임'], ['sheet', '학습지'], ['slides', '수업자료'], ['file', '파일'], ['link', '링크'], ['text', '글']]
-    : [['file', '파일'], ['slides', '수업자료'], ['sheet', '학습지'], ['game', '실습 게임'], ['link', '링크'], ['text', '글']];
+    : _sec === 'worksheet'
+    ? [['sheet', '학습지'], ['file', '파일'], ['slides', '수업자료'], ['link', '링크'], ['text', '글'], ['game', '실습 게임']]
+    : [['slides', '수업자료'], ['file', '파일'], ['sheet', '학습지'], ['link', '링크'], ['text', '글'], ['game', '실습 게임']];
   if(TC_CLS?.type === 'ai') types.splice(2, 0, ['notebook', '노트북']);   // Colab 노트북 실습
   const typeBtns = types.map(([k, l]) =>
     `<button class="btn-sm ${d.type === k ? 'btn-p' : ''}" data-action="uc-type" data-type="${k}">${l}</button>`
