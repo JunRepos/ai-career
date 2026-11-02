@@ -16,6 +16,14 @@
    결정트리는 `dt`, 최근접 이웃은 `knn` 입니다 (교과서 112 · 114쪽 · 가이드북 · 노트북과 같게).
    그래서 fit · 정확도 · 혼동 행렬 블록에는 **어느 모델인지 고르는 드롭다운**이 하나 더 있습니다.
 
+   ━━ 함수 이름 칸(fn)은 채워 둡니다 (2026-11-02 선생님) ━━━━━━━━━━━━━━━
+   「함수 빈칸을 끄고 대신 안에 써야 되는 것들은 빈칸을 많이 배치하는 걸로 하자」.
+   평가계획서의 어느 수행 수준에도 「함수 이름을 안다」가 없고, 1차시 50분에
+   블록 셀 열한 개를 쌓아야 합니다. 그래서 `fn` 에는 `ask` 를 두지 않습니다.
+   **비우는 것은 열 이름 · 값 · 숫자 인자 · 모델 이름**입니다 — 어느 열을 볼지(①),
+   어느 속성을 특징으로 쓸지(②), 어느 모델을 재는지(③) 가 평가요소입니다.
+   반마다 어디를 비울지는 `verify/nb-blank-set.py` 한 곳에서 정합니다.
+
    ━━ 말을 지어내지 않습니다 (CLAUDE.md 5-1 · 5-2) ━━━━━━━━━━━━━━━━━━
    `say` 는 **교과서 문장을 그대로** 옮긴 것이고 `src` 에 나온 쪽을 적었습니다.
    교과서에 없는 것은 `src` 를 비워 둡니다 (지금은 classification_report 하나).
@@ -197,7 +205,7 @@ const NB_BLOCK_DEFS = {
   count: {
     guide: 'c_countplot',
     cat: 'plot', name: '막대그래프',
-    slots: { fn: { kind: 'text', def: 'countplot', ans: 'countplot', ask: 1, ph: '함수 이름' }, c: { opt: 'cols', def: 0, ask: 1 } },
+    slots: { fn: { kind: 'text', def: 'countplot', ans: 'countplot', ph: '함수 이름' }, c: { opt: 'cols', def: 0, ask: 1 } },
     imp: 'import seaborn as sns',
     tpl: 'sns.{fn}(x=df["{c}"])',
     say: '값마다 개수를 세어 막대그래프로 그립니다.',
@@ -257,7 +265,7 @@ const NB_BLOCK_DEFS = {
   scat: {
     guide: 'c_scatter',   // 산점도
     cat: 'plot', name: '산점도',
-    slots: { fn: { kind: 'text', def: 'scatterplot', ans: 'scatterplot', ask: 1, ph: '함수 이름' }, x: { opt: 'num', def: 0 }, y: { opt: 'num', def: 2 }, h: { opt: 'cols', def: 0 } },
+    slots: { fn: { kind: 'text', def: 'scatterplot', ans: 'scatterplot', ph: '함수 이름' }, x: { opt: 'num', def: 0 }, y: { opt: 'num', def: 2 }, h: { opt: 'cols', def: 0 } },
     tpl: 'sns.{fn}(data=df, x="{x}", y="{y}", hue="{h}")',
     say: '산점도 — 두 속성의 관계. hue 에 넣은 속성의 값마다 색이 달라집니다.',
     src: '교과서 82쪽',
@@ -265,7 +273,7 @@ const NB_BLOCK_DEFS = {
   box: {
     guide: 'c_box',   // 상자그림
     cat: 'plot', name: '상자그림',
-    slots: { fn: { kind: 'text', def: 'boxplot', ans: 'boxplot', ask: 1, ph: '함수 이름' }, c: { opt: 'num', def: 3 } },
+    slots: { fn: { kind: 'text', def: 'boxplot', ans: 'boxplot', ph: '함수 이름' }, c: { opt: 'num', def: 3 } },
     tpl: 'sns.{fn}(data=df, x="{c}")',
     say: '상자그림 — 값이 퍼진 모양과 범위를 벗어난 값', src: '교과서 81쪽',
   },
@@ -291,7 +299,7 @@ const NB_BLOCK_DEFS = {
   corr: {
     guide: 'c_corr',   // 상관계수
     cat: 'plot', name: '상관계수',
-    slots: { fn: { kind: 'text', def: 'corr', ans: 'corr', ask: 1, ph: '함수 이름' } },
+    slots: { fn: { kind: 'text', def: 'corr', ans: 'corr', ph: '함수 이름' } },
     tpl: 'df.{fn}(numeric_only=True)',
     say: '상관계수 — 두 속성의 상관 정도를 수치로 나타낸 값', src: '교과서 77 · 83쪽',
   },
@@ -332,7 +340,7 @@ const NB_BLOCK_DEFS = {
     // 2026-10-29 선생님 — 「train_test_split 부분에 stratify 도 뚫고」.
     //   test_size · stratify · random_state 를 **각각 적게** 합니다.
     //   셋이 무엇을 하는지 모르면 나눈 결과를 설명할 수 없습니다 (평가요소 ③).
-    slots: { fn: { kind: 'text', def: 'train_test_split', ans: 'train_test_split', ask: 1, ph: '함수 이름' }, r: { kind: 'text', def: '0.3', ans: '0.3', ask: 1, ph: '0.3' },
+    slots: { fn: { kind: 'text', def: 'train_test_split', ans: 'train_test_split', ph: '함수 이름' }, r: { kind: 'text', def: '0.3', ans: '0.3', ask: 1, ph: '0.3' },
              s: { kind: 'text', def: 'y', ans: 'y', ask: 1, ph: 'y' },
              d: { kind: 'num', def: '42', ans: '42', ask: 1, ph: '42' } },
     // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
@@ -348,7 +356,7 @@ const NB_BLOCK_DEFS = {
   dt: {
     guide: 'c_dt',   // 결정트리
     cat: 'ml', name: '결정트리 모델 만들기',
-    slots: { fn: { kind: 'text', def: 'DecisionTreeClassifier', ans: 'DecisionTreeClassifier', ask: 1, ph: '함수 이름' }, d: { opt: ['None', '1', '2', '3', '4', '5'], def: 'None' } },
+    slots: { fn: { kind: 'text', def: 'DecisionTreeClassifier', ans: 'DecisionTreeClassifier', ph: '함수 이름' }, d: { opt: ['None', '1', '2', '3', '4', '5'], def: 'None' } },
     imp: 'from sklearn.tree import DecisionTreeClassifier',
     tpl:          'dt = {fn}(max_depth={d}, random_state=42)',
     say: '결정트리는 트리 구조 기반의 알고리즘입니다. 트리의 루트 노드에서부터 각 분기마다 ' +
@@ -359,7 +367,7 @@ const NB_BLOCK_DEFS = {
   knn: {
     guide: 'c_knn',   // k-최근접 이웃
     cat: 'ml', name: 'kNN 모델 만들기',
-    slots: { fn: { kind: 'text', def: 'KNeighborsClassifier', ans: 'KNeighborsClassifier', ask: 1, ph: '함수 이름' }, k: { opt: ['1', '3', '5', '7', '9'], def: '5' } },
+    slots: { fn: { kind: 'text', def: 'KNeighborsClassifier', ans: 'KNeighborsClassifier', ph: '함수 이름' }, k: { opt: ['1', '3', '5', '7', '9'], def: '5' } },
     imp: 'from sklearn.neighbors import KNeighborsClassifier',
     tpl:          'knn = {fn}(n_neighbors={k})',
     say: '예측 데이터에서 가장 가까운 k개의 데이터로 예측하는 방법입니다. 분류를 할 경우 ' +
@@ -371,7 +379,7 @@ const NB_BLOCK_DEFS = {
     cat: 'ml', name: '학습시키기',
     // d — 학습에 **어느 데이터**를 쓸지. 테스트 데이터로 학습하면 틀립니다.
     //     수행평가 ② 「정확하게 학습」 이 이 선택입니다 (2026-10-22 선생님).
-    slots: { fn: { kind: 'text', def: 'fit', ans: 'fit', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
+    slots: { fn: { kind: 'text', def: 'fit', ans: 'fit', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
              d: { opt: ['train', 'test'], def: '', ans: 'train', ask: 1 } },
     tpl: '{m}.{fn}(X_{d}, y_{d})',
     say: '모델을 학습시키기. 학습에는 훈련 데이터를 씁니다.', src: '교과서 100쪽',
@@ -381,7 +389,7 @@ const NB_BLOCK_DEFS = {
     cat: 'ml', name: '분류 정확도 재기',
     // d — **어느 데이터로 잴지**. 모델의 성능은 테스트 데이터로 봅니다.
     //     수행평가 ③ 「정확하게 평가」 가 이 선택입니다 (2026-10-22 선생님).
-    slots: { fn: { kind: 'text', def: 'score', ans: 'score', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
+    slots: { fn: { kind: 'text', def: 'score', ans: 'score', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
              d: { opt: ['train', 'test'], def: '', ans: 'test', ask: 1 } },
     tpl: 'print({m}.{fn}(X_{d}, y_{d}))',
     say: '분류 정확도는 전체 데이터 중 예측값과 실젯값이 같은 데이터 개수의 비율입니다. ' +
@@ -391,7 +399,7 @@ const NB_BLOCK_DEFS = {
   scoret: {
     guide: 'c_dtscore',   // 분류 정확도
     cat: 'ml', name: '정확도 재기 — 테스트 데이터',
-    slots: { fn: { kind: 'text', def: 'score', ans: 'score', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
+    slots: { fn: { kind: 'text', def: 'score', ans: 'score', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     tpl: 'print({m}.{fn}(X_test, y_test))',
     say: '테스트 데이터는 학습에 사용하지 않은 데이터입니다. ' +
          '훈련 데이터 점수보다 테스트 데이터 점수가 많이 낮으면 과적합입니다.',
@@ -403,7 +411,7 @@ const NB_BLOCK_DEFS = {
   classes: {
     guide: 'c_classes',
     cat: 'ml', name: '클래스 차례 확인',
-    slots: { fn: { kind: 'text', def: 'classes_', ans: 'classes_', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
+    slots: { fn: { kind: 'text', def: 'classes_', ans: 'classes_', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     tpl: 'print({m}.{fn})',
     say: '혼동 행렬의 가로와 세로가 어느 클래스 차례인지 알려 줍니다. '
        + '나오는 차례대로 행과 열이 놓입니다.',
@@ -412,7 +420,7 @@ const NB_BLOCK_DEFS = {
   cm: {
     guide: 'c_cm',   // 혼동 행렬
     cat: 'ml', name: '혼동 행렬',
-    slots: { fn: { kind: 'text', def: 'confusion_matrix', ans: 'confusion_matrix', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
+    slots: { fn: { kind: 'text', def: 'confusion_matrix', ans: 'confusion_matrix', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     imp: 'from sklearn.metrics import confusion_matrix',
     tpl:          'print({fn}(y_test, {m}.predict(X_test)))',
     say: '혼동 행렬은 실제 클래스와 예측 클래스를 비교하여 모델이 각 클래스를 얼마나 ' +
@@ -422,7 +430,7 @@ const NB_BLOCK_DEFS = {
   report: {
     guide: 'c_report',   // 정밀도 · 재현율 표
     cat: 'ml', name: '정밀도 · 재현율 표',
-    slots: { fn: { kind: 'text', def: 'classification_report', ans: 'classification_report', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
+    slots: { fn: { kind: 'text', def: 'classification_report', ans: 'classification_report', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     imp: 'from sklearn.metrics import classification_report',
     tpl:          'print({fn}(y_test, {m}.predict(X_test)))',
     say: '정밀도는 모델이 참이라고 분류한 것 중에서 실제 참인 것의 비율이고, ' +
@@ -439,7 +447,7 @@ const NB_BLOCK_DEFS = {
     //   새 데이터 예측은 c_new 에 있습니다. 「?」 를 눌러도 안 나왔습니다.
     guide: 'c_new',
     cat: 'ml', name: '새로운 데이터로 예측하기',
-    slots: { fn: { kind: 'text', def: 'predict', ans: 'predict', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
+    slots: { fn: { kind: 'text', def: 'predict', ans: 'predict', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
              v: { kind: 'text', def: '', ans: '2, 5', ask: 1, ph: '값, 값' } },
     tpl: 'print({m}.{fn}([[{v}]]))',
     say: 'model.predict(): 새로운 데이터에 대한 예측을 수행한다. ' +
