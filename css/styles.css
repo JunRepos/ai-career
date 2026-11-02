@@ -6754,7 +6754,9 @@ button{border-radius:2px}
 /* 블록 하나 */
 .nbk-blk{display:flex;align-items:flex-start;gap:8px;padding:7px 9px;
   background:var(--cb-bg);border:1px solid var(--cb-code-border);
-  border-left:5px solid var(--nbk-cat);border-radius:2px;cursor:grab}
+  border-left:5px solid var(--nbk-cat);border-radius:2px}
+/* ⚠ 블록에 cursor:grab 을 주지 않습니다 — 칸 안에서는 글자를 고르는 자리입니다.
+   끄는 것은 손잡이(⠿)로만 합니다 (js/events/notebook.js · 2026-11-02). */
 .nbk-blk:hover{border-color:var(--nbk-cat)}
 .nbk-blk.nbk-dragging{opacity:.4}
 .nbk-grip{color:var(--cb-text-3);font-size:12px;line-height:1.7;user-select:none;cursor:grab}
@@ -6818,8 +6820,15 @@ button{border-radius:2px}
   font-weight:700;padding:1px 5px;color:var(--cb-text);background:var(--cb-code-bg);
   border:1px solid var(--cb-code-border);border-radius:2px}
 .nbk-in[type="number"]{width:5.5em}
-.nbk-in[type="text"]{width:7em}
+/* ⚠ 적는 칸에 **고정 폭을 주지 않습니다** (2026-11-02 선생님 — 「함수가 길어서
+   입력 칸 안에서 짤리거나」). width:7em 이 `size` 를 눌러 버려서
+   `DecisionTreeClassifier`(22자) 가 7글자만 보였습니다. `size` 로 폭을 잡고,
+   적는 대로 늘어납니다 (js/events/notebook.js). */
+.nbk-in[type="text"]{width:auto;min-width:4.5em;max-width:100%}
 .nbk-in:hover{border-color:var(--cb-accent)}
+/* 같은 칸이 코드에 두 번 나오는 자리 — 적은 값을 그대로 비춥니다 */
+.nbk-mirror{font-family:'Consolas','D2Coding',monospace;font-size:12.5px;
+  font-weight:700;color:var(--cb-text);white-space:pre}
 .nbk-in:focus-visible{outline:2px solid var(--cb-accent);outline-offset:1px}
 
 /* 🧩 아직 안 고른 드롭다운 — 눈에 띄게 (2026-10-22) */

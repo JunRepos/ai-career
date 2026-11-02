@@ -276,7 +276,7 @@ const NB_BLOCK_DEFS = {
      근거 — 교과서 76쪽 「핵심 속성은 데이터 분포 … 를 분석하여 추출할 수 있다」,
             13~21차시 노트북에서 `sns.boxplot(data=df, x="종", y="체질량(g)")` 로 가르쳤습니다. */
   boxall: {
-    guide: 'c_box',
+    guide: 'c_boxall',
     cat: 'plot', name: '속성마다 클래스별 상자그림',
     slots: { t: { opt: 'cols', def: 0, ask: 1 } },
     tpl: 'for c in df.select_dtypes("number").columns:\n'
@@ -420,7 +420,7 @@ const NB_BLOCK_DEFS = {
     src: '교과서 108 · 115쪽',
   },
   report: {
-    guide: 'c_metrics',   // 정밀도 · 재현율
+    guide: 'c_report',   // 정밀도 · 재현율 표
     cat: 'ml', name: '정밀도 · 재현율 표',
     slots: { fn: { kind: 'text', def: 'classification_report', ans: 'classification_report', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     imp: 'from sklearn.metrics import classification_report',
@@ -435,7 +435,9 @@ const NB_BLOCK_DEFS = {
      판은 교과서 109쪽 그대로입니다 — `print(knn.predict([[2,5]]))`.
      값은 특징을 고른 순서대로 적어야 하므로 **적는 칸**으로 둡니다. */
   pred: {
-    guide: 'c_dtscore',   // 성능 평가 — 예측이 같은 자리에 있습니다
+    // 2026-11-02 — c_dtscore 를 가리키고 있었습니다. 거기에는 정확도만 있고
+    //   새 데이터 예측은 c_new 에 있습니다. 「?」 를 눌러도 안 나왔습니다.
+    guide: 'c_new',
     cat: 'ml', name: '새로운 데이터로 예측하기',
     slots: { fn: { kind: 'text', def: 'predict', ans: 'predict', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
              v: { kind: 'text', def: '', ans: '2, 5', ask: 1, ph: '값, 값' } },
@@ -734,7 +736,15 @@ function nbTplFill(d, b){
   return out + lit(i, tpl.length);
 }
 
-/* 데이터를 바꾸면 열 이름 드롭다운의 값도 새 데이터의 것으로 바꿉니다 */
+/* 데이터를 바꾸면 **선생님이 채워 둔** 열 이름을 새 데이터의 것으로 바꿉니다.
+
+   ⚠ **학생이 적는 칸(빈칸)은 건드리지 않습니다** (2026-11-02 고침).
+     예전에는 「비어 있을 때만」 건너뛰었습니다. 그래서 학생이 `날개 길이` 처럼
+     **덜 적거나 틀리게 적으면** 그 값이 열 이름 목록에 없다고 보고 기본 열
+     이름(`체질량(g)` · `종` …)으로 **말없이 바꿔 버렸습니다.** 선생님이
+     「입력을 했는데 다른 속성으로 입력된다」 고 한 것이 이것입니다.
+     틀리게 적은 것은 실행해서 오류로 알아야 합니다 (2026-10-29 선생님 —
+     「틀리면 오류 코드 알아서 확인하라 그래」). 앱이 고쳐 쓰지 않습니다. */
 function nbRefitBlocks(blocks, file){
   (blocks || []).forEach(b => {
     const d = NB_BLOCK_DEFS[b.k];
@@ -742,10 +752,8 @@ function nbRefitBlocks(blocks, file){
       const slot = d.slots[s];
       if(slot.kind) continue;
       if(slot.opt !== 'cols' && slot.opt !== 'num') continue;
+      if(nbSlotAsk(d, b, s)) continue;        // 학생이 적는 칸 — 그대로 둡니다
       const opts = nbSlotOptions(slot, file);
-      // 아직 안 고른 빈칸은 그대로 둡니다. (예전에는 `return` 이라 **그 블록의 남은
-      //   칸까지 건너뛰었습니다** — 2026-10-28 고침)
-      if(nbSlotAsk(d, b, s) && (b.a[s] === '' || b.a[s] == null)) continue;
       if(!opts.includes(b.a[s])) b.a[s] = nbSlotDefault(slot, file);
     }
   });

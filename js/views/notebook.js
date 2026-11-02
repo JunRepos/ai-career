@@ -490,8 +490,11 @@ function vNbBlock(cellId, b, bi, file, bad){
   if(!d) return '';
   // 파이썬 **한 줄씩** 그립니다. 드롭다운은 그 줄 안에 끼워 넣어
   // 「열 이름은 따옴표 안에 쓴다」 가 눈에 그대로 보이게 합니다.
-  // 같은 칸이 코드에 두 번 나오는 블록이 있습니다 (`score` 의 X_{d}, y_{d}).
-  //   드롭다운은 둘 다 그려야 하지만, **빈칸 토글은 첫 자리에만** 붙입니다.
+  /* 같은 칸이 코드에 두 번 나오는 블록이 있습니다 (`fit` · `score` 의 X_{d}, y_{d}).
+     ⚠ 2026-11-02 — 예전에는 **입력 칸을 둘 다** 그렸습니다. 그래서 학생이 한쪽에
+       적으면 다른 쪽은 아직 `___` 이라 「입력이 안 된다」 로 보였고, 어느 쪽에
+       적어야 하는지도 알 수 없었습니다. 이제 **첫 자리만 입력 칸**이고 뒤의
+       자리는 적은 값을 그대로 비추는 글자입니다. */
   const seenSlot = new Set();
   /* 글자 자리(off)를 줄을 넘어가며 계속 셉니다 — 선생님이 끌어서 고른 자리를
      `tpl` 안의 **시작·끝**으로 되돌리려면 절대 자리가 있어야 합니다 (2026-10-29). */
@@ -521,14 +524,20 @@ function vNbBlock(cellId, b, bi, file, bad){
         // 아직 안 적은 자리는 빨갛게 — 무엇을 해야 하는지 바로 보이게
         const miss = bad && bad.has(bi + '|' + key) ? ' nbk-in-bad' : '';
         const hot = (ask && (v === '' || v == null) ? ' nbk-in-ask' : '') + miss;
-        // 보기 목록이 있던 칸은 **가장 긴 보기만큼** 넓혀 둡니다 — 열 이름이 깁니다
+        /* 칸 너비 (2026-11-02 선생님 — 「함수가 길어서 입력 칸 안에서 짤리거나」).
+           ⚠ **정답 길이로 넓히지 않습니다** — 넓히면 몇 글자인지가 보입니다.
+             적은 글자에 맞춰 늘어나게 둡니다 (events/notebook.js 가 적는 동안에도
+             늘립니다). 바닥은 안내 글씨가 다 보일 만큼입니다.
+             CSS 의 고정 폭(width:7em)이 size 를 눌러 버리던 것도 함께 고쳤습니다. */
+        const ph = ask ? (slot.ph || nbSlotHint(slot, file)) : '';
         const opts = slot.kind ? null : nbSlotOptions(slot, file);
-        const wide = opts && opts.length
+        const floor = opts && opts.length && !ask
           ? Math.min(28, Math.max(11, ...opts.map(o => String(o).length + 1)))
-          : (slot.kind === 'num' ? 5 : 11);
+          : Math.max(slot.kind === 'num' ? 5 : 8, ph.length + 1);
+        const wide = Math.min(30, Math.max(floor, String(v ?? '').length + 2));
         html = `<input class="nbk-in${hot}" type="${slot.kind === 'num' ? 'number' : 'text'}"
-          value="${esc(v ?? '')}" size="${wide}"
-          placeholder="${ask ? esc(slot.ph || nbSlotHint(slot, file)) : ''}" ${at}>`;
+          value="${esc(v ?? '')}" size="${wide}" data-grow="${floor}"
+          placeholder="${esc(ph)}" ${at}>`;
       } else {
         const opts = nbSlotOptions(slot, file);
         const cur = b.a[key];
@@ -541,11 +550,14 @@ function vNbBlock(cellId, b, bi, file, bad){
           opts.map(v => `<option${v === cur ? ' selected' : ''}>${esc(v)}</option>`).join('')
         }</select>`;
       }
-      // 선생님만 — 이 자리를 빈칸으로 둘지 채워 둘지 (2026-10-28)
       const first = !seenSlot.has(key);
       seenSlot.add(key);
+      // 두 번째로 나온 자리 — 입력 칸이 아니라 **적은 값을 비추는 글자**입니다
+      if(!first) return `<span class="nbk-mirror" data-mirror="${key}"
+        >${esc((b.a[key] === '' || b.a[key] == null) ? '___' : String(b.a[key]))}</span>`;
+      // 선생님만 — 이 자리를 빈칸으로 둘지 채워 둘지 (2026-10-28)
       // 「✎ 빈칸 정하기」 를 켰을 때만 — 늘 붙여 두면 파이썬이 지저분합니다
-      if(!first || !NB_BLK_ASKUI || !nbAuthoring()) return html;
+      if(!NB_BLK_ASKUI || !nbAuthoring()) return html;
       return `<span class="nbk-slotwrap">${html}<button class="nbk-askb${ask ? ' on' : ''}"
         data-action="nb-blk-ask" data-cellid="${cellId}" data-bi="${bi}" data-slot="${key}"
         aria-pressed="${ask}" title="${ask ? '학생이 채우는 빈칸 — 눌러서 채워 둡니다'

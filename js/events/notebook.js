@@ -2064,9 +2064,54 @@ document.addEventListener('click', e => {
 function nbBlkCell(cellId){
   return NB_CELLS.find(c => c.id === cellId && c.blocks);
 }
+/* ═══ 적는 동안에는 화면을 다시 그리지 않습니다 (2026-11-02 고침) ═══
+   `render()` 는 화면 전체를 새로 그립니다. 그래서 칸 하나에 적고 다른 칸을
+   누르면, 누른 순간 앞 칸의 `change` 가 터져 **화면이 통째로 바뀌고** 방금
+   누른 칸이 사라집니다. 거기에 적어도 아무 일이 일어나지 않습니다 —
+   선생님이 「입력 자체가 안 되거나」 라고 한 것이 이것입니다.
+
+   그래서 적는 칸은 **모델과 코드 칸만** 고칩니다 (nbBlkTouch).
+   다시 그려야 하는 것은 블록을 넣고 뺄 때 · 드롭다운을 바꿀 때뿐입니다. */
+function nbBlkTouch(cellId){
+  const cell = nbBlkCell(cellId);
+  if(!cell) return;
+  cell.source = nbBlockCode(cell.blocks, nbNoImpOf(cell));
+  const box = document.querySelector('.cb-cell-blk[data-cellid="' + cellId + '"]');
+  const pre = box && box.querySelector('.nbk-code');
+  if(pre) pre.textContent = cell.source || '# 블록이 없습니다';
+  if(NB_SELECTED !== cell.id){
+    NB_SELECTED = cell.id;
+    document.querySelectorAll('.cb-cell.cb-selected').forEach(el => el.classList.remove('cb-selected'));
+    if(box) box.classList.add('cb-selected');
+  }
+  scheduleNBSave();
+}
+
+/* 다시 그려야 할 때 — **적고 있던 자리**를 기억해 두고 돌아갑니다 */
+function nbBlkFocusSave(){
+  const el = document.activeElement;
+  const d = el && el.dataset;
+  if(!d || !d.cellid || !d.action) return null;
+  let sel = '[data-action="' + d.action + '"][data-cellid="' + d.cellid + '"]';
+  if(d.bi !== undefined) sel += '[data-bi="' + d.bi + '"]';
+  if(d.slot) sel += '[data-slot="' + d.slot + '"]';
+  if(d.h) sel += '[data-h="' + d.h + '"]';
+  let a = null, b = null;
+  try { a = el.selectionStart; b = el.selectionEnd; } catch(err){}
+  return { sel, a, b };
+}
+function nbBlkFocusLoad(f){
+  if(!f) return;
+  const el = document.querySelector(f.sel);
+  if(!el) return;
+  el.focus({ preventScroll: true });
+  try { if(f.a != null) el.setSelectionRange(f.a, f.b); } catch(err){}
+}
+
 function nbBlkEdit(cellId, fn){
   const cell = nbBlkCell(cellId);
   if(!cell) return;
+  const keep = nbBlkFocusSave();
   fn(cell.blocks);
   nbRefitBlocks(cell.blocks, nbCellDataFile(cell, NB_CELLS));
   // noimp — 라이브러리를 맨 앞에서 한 번에 선언해 둔 노트북입니다 (수행평가).
@@ -2074,6 +2119,7 @@ function nbBlkEdit(cellId, fn){
   cell.source = nbBlockCode(cell.blocks, nbNoImpOf(cell));
   NB_SELECTED = cell.id;
   render();
+  nbBlkFocusLoad(keep);
   scheduleNBSave();
 }
 /* 「모름」 — 이 셀을 넘기고 뒤를 살립니다 (2026-10-29 선생님).
@@ -2127,10 +2173,48 @@ function nbBlkAdd(k, cellId, at){
   }
 }
 
-/* 드롭다운을 바꾸면 그 자리만 바꿉니다 */
+/* 적는 칸 — **글자를 넣는 대로** 모델에 담습니다. 화면은 다시 그리지 않습니다.
+   칸 · 뚫어 둔 자리 둘 다 여기로 옵니다 (2026-11-02 고침). */
+document.addEventListener('input', e => {
+  const el = e.target.closest('[data-action="nb-blk-slot"], [data-action="nb-hole-in"]');
+  if(!el || el.tagName !== 'INPUT') return;
+  const cell = nbBlkCell(el.dataset.cellid);
+  if(!cell) return;
+  const b = (cell.blocks || [])[+el.dataset.bi];
+  if(!b) return;
+  if(el.dataset.action === 'nb-hole-in'){
+    if(!b.hv) b.hv = {};
+    b.hv[el.dataset.h] = el.value;
+  } else {
+    b.a[el.dataset.slot] = el.value;
+    // 같은 칸이 코드에 두 번 나오는 자리(X_train, y_train)도 같이 비춥니다
+    const blk = el.closest('.nbk-blk');
+    if(blk) blk.querySelectorAll('[data-mirror="' + el.dataset.slot + '"]')
+      .forEach(m => { m.textContent = el.value === '' ? '___' : el.value; });
+  }
+  // 적는 대로 칸이 늘어납니다 — 긴 함수 이름이 칸 안에서 잘리지 않게
+  if(el.type === 'text'){
+    const floor = +(el.dataset.grow || 8);
+    el.size = Math.min(30, Math.max(floor, el.value.length + 2));
+  }
+  el.classList.toggle('nbk-in-ask', el.value === '');
+  el.classList.remove('nbk-in-bad');
+  nbBlkTouch(cell.id);
+});
+
+/* 드롭다운을 바꾸면 그 자리만 바꿉니다.
+   ⚠ 적는 칸의 `change`(칸을 벗어날 때)는 **그냥 넘깁니다** — 위 input 이 이미
+     담았습니다. 다만 **데이터 파일**을 바꿀 때는 다시 그립니다. 열 이름
+     드롭다운의 보기 목록이 그 파일의 것으로 바뀌어야 하기 때문입니다. */
 document.addEventListener('change', e => {
   const s = e.target.closest('[data-action="nb-blk-slot"]');
   if(!s) return;
+  if(s.tagName === 'INPUT'){
+    const cell = nbBlkCell(s.dataset.cellid);
+    const b = cell && (cell.blocks || [])[+s.dataset.bi];
+    const slot = b && ((NB_BLOCK_DEFS[b.k] || {}).slots || {})[s.dataset.slot];
+    if(!slot || slot.opt !== 'files') return;
+  }
   nbBlkEdit(s.dataset.cellid, bs => {
     const b = bs[+s.dataset.bi];
     if(b) b.a[s.dataset.slot] = s.value;
@@ -2143,17 +2227,8 @@ document.addEventListener('change', e => {
    되돌리기는 빈칸 옆 ✕ 입니다. 자리는 블록 정의 `tpl` 의 글자 번호로 적습니다
    (js/nb-blocks.js 의 nbHoles 설명). */
 
-/* 학생이 빈칸에 적은 값 */
-document.addEventListener('change', e => {
-  const h = e.target.closest('[data-action="nb-hole-in"]');
-  if(!h) return;
-  nbBlkEdit(h.dataset.cellid, bs => {
-    const b = bs[+h.dataset.bi];
-    if(!b) return;
-    if(!b.hv) b.hv = {};
-    b.hv[h.dataset.h] = h.value;
-  });
-});
+/* 학생이 빈칸에 적은 값은 위의 `input` 이 담습니다 (2026-11-02).
+   예전에는 여기서 `change` 로 받아 **화면을 다시 그렸습니다.** */
 
 /* 끌어서 고른 자리를 빈칸으로.
    ⚠ **한 글자 덩어리 안에서만** 받습니다. 칸(드롭다운)을 가로질러 고르면
@@ -2195,6 +2270,24 @@ function nbHoleDel(cellId, bi, key){
     if(!b.h.length) delete b.h;
   });
 }
+
+/* ── 블록 안에서 **글자를 끌어서 고를 수 있게** (2026-11-02 고침) ──
+   블록 전체에 `draggable="true"` 가 걸려 있어서, 칸 안에서 글자를 끌면
+   글자가 잡히지 않고 **블록이 끌려갔습니다.** 그래서 이미 적어 둔 값을
+   드래그해서 지우고 다시 쓸 수가 없었습니다 (선생님 — 「입력 자체가 안 되거나」).
+   선생님의 「✎ 빈칸 정하기」(코드 글자를 끌어서 고르기)도 같은 이유로 막혔습니다.
+
+   이제 **손잡이(⠿)를 누를 때만** 끌 수 있게 켭니다. */
+function nbBlkDraggable(on){
+  document.querySelectorAll('.nbk-blk').forEach(b => { b.draggable = on; });
+}
+document.addEventListener('pointerdown', e => {
+  const blk = e.target.closest && e.target.closest('.nbk-blk');
+  if(!blk) return;
+  blk.draggable = !!e.target.closest('.nbk-grip');
+}, true);
+document.addEventListener('pointerup', () => nbBlkDraggable(true));
+document.addEventListener('dragend', () => nbBlkDraggable(true));
 
 /* 끌어다 놓기 — 서랍에서 새로 넣기 · 셀 안에서 자리 옮기기 */
 let _nbkDrag = null;
