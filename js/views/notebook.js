@@ -796,17 +796,20 @@ function vNbMenubar(isTeacher, isStudent){
 
 // ── 좌측 사이드바 (마크다운 헤더 자동 목차) ──
 function vNbSidebar(){
-  const T = [['blk', '🧩 블록'], ['snip', 'ƒ 함수'], ['toc', '📋 목차'], ['files', '📁 파일']];
+  /* 「ƒ 함수」 탭을 뺐습니다 (2026-11-03 선생님 — 「왼쪽에 있는 이 함수 블록
+     없애줘」). 🧩 블록 서랍이 같은 함수를 **코드까지 보여 주며** 담고 있어
+     둘이 겹쳤습니다. vNbSnipPanel 과 NB_SNIPPETS 는 지우지 않고 남겨 둡니다 —
+     다시 쓰실 수 있고, 지우면 되돌리기가 번거롭습니다. */
+  const T = [['blk', '🧩 블록'], ['toc', '📋 목차'], ['files', '📁 파일']];
   const tabs = `<div class="cb-side-tabs">
     ${T.map(([k, label]) => `<button class="${NB_SIDE_TAB === k ? 'on' : ''}"
       data-action="nb-side-tab" data-tab="${k}">${label}</button>`).join('')}
   </div>`;
   // 🧩 블록 서랍은 파이썬을 같이 보여 줘서 240px 로는 줄바꿈이 너무 잦습니다
   //   (2026-10-27 선생님). 이 탭일 때만 넓힙니다.
-  if(NB_SIDE_TAB === 'blk') return `<aside class="cb-sidebar cb-sidebar-wide">${tabs}${vNbBlockPanel()}</aside>`;
   if(NB_SIDE_TAB === 'files') return `<aside class="cb-sidebar">${tabs}${vNbFilesPanel()}</aside>`;
   if(NB_SIDE_TAB === 'toc') return _vNbSidebarToc().replace('<aside class="cb-sidebar">', '<aside class="cb-sidebar">' + tabs);
-  return `<aside class="cb-sidebar">${tabs}${vNbSnipPanel()}</aside>`;
+  return `<aside class="cb-sidebar cb-sidebar-wide">${tabs}${vNbBlockPanel()}</aside>`;
 }
 
 function _vNbSidebarToc(){

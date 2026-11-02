@@ -14,7 +14,7 @@
 let NB_RUNTIME   = '';      // 워커가 알려 주는 상태 글 ('' 이면 준비됨)
 let NB_RT_READY  = false;   // 한 번이라도 준비가 끝났는지
 let NB_RUNNING   = null;    // 실행 중인 셀 id
-let NB_SIDE_TAB  = 'blk';   // 사이드바 탭 'blk'(블록) | 'snip'(함수) | 'toc' | 'files'
+let NB_SIDE_TAB  = 'blk';   // 사이드바 탭 'blk'(블록) | 'toc' | 'files'
 let NB_BLK_SAY   = true;    // 🧩 블록 셀 — 블록 아래 설명을 보일지
 let NB_BLK_CODE  = true;    // 🧩 블록 셀 — 블록이 만든 파이썬 칸을 보일지
 /* 🧩 블록 셀 — **빈칸을 정하는 손잡이**를 보일지 (선생님만 · 2026-10-28).
@@ -405,7 +405,9 @@ document.addEventListener('click', async e => {
   }
   if(act === 'nb-side-tab'){
     const t = el.dataset.tab;
-    NB_SIDE_TAB = (t === 'files' || t === 'toc' || t === 'snip') ? t : 'blk';
+    // 'snip'(ƒ 함수) 탭은 뺀다 (2026-11-03 선생님). 전에 그 탭을 보던
+    //   화면이 남아 있어도 블록 서람으로 돌아옵니다.
+    NB_SIDE_TAB = (t === 'files' || t === 'toc') ? t : 'blk';
     if(NB_SIDE_TAB === 'files') NB_FILES = NB_FILES || null;
     const side = document.querySelector('.cb-sidebar');
     if(side){ side.outerHTML = vNbSidebar(); }
