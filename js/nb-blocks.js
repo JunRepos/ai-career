@@ -147,18 +147,20 @@ const NB_BLOCK_DEFS = {
     // opt 'files' — 보기 목록을 **그릴 때마다** 구합니다 (nbDataFilesNow).
     // ask 1 — 끌어다 놓으면 「고르세요」로 비어 있습니다. 수행평가에서 학생이
     //          **상황에 맞는 데이터를 고르는 것**이 평가요소 ④ 입니다 (2026-10-27).
-    /* 2026-11-02 선생님 — 「파일 이름은 그냥 드롭다운으로 선택할 수 있게 해주고
-       (어차피 2개 중 하나니까), read_csv 쪽을 비워줘」.
-       그래서 **자리를 둘로 나눴습니다.**
-         f — 내려받을 파일을 **고르는 칸**(드롭다운). `pick:1` 이라 빈칸이어도
-             적는 칸이 아니라 고르는 칸으로 그립니다.
-         g — `read_csv` 에 **학생이 적는 칸**.
-       예전에는 `{f}` 하나가 두 줄에 모두 쓰여, 한 칸인데 둘로 보였습니다. */
+    /* 2026-11-02 선생님 (아침) — 「파일 이름은 그냥 드롭다운으로 선택할 수 있게
+       해주고 (어차피 2개 중 하나니까), read_csv 쪽을 비워줘」 → 자리를 둘로 나눔.
+       2026-11-02 선생님 (메모) — 「채점 안하니까 블록은 이미 있는 상태로
+       **파일 명만 드롭 다운으로 고르도록** 하자」 → **적는 칸을 다시 뺐습니다.**
+
+       그래서 자리는 **하나(f)** 입니다. `pick:1` 이라 빈칸이어도 적는 칸이 아니라
+       고르는 칸으로 그립니다. `{f}` 가 두 줄에 쓰여 **칸이 둘로 보이지만**,
+       같은 자리라 한쪽을 고르면 두 줄이 함께 바뀝니다 (nbTplFill).
+       ⚠ 이 블록은 다른 차시 노트북도 씁니다. 파일 이름을 **손으로 적는 연습**이
+         그 차시에서도 함께 없어집니다 (선생님께 보고함). */
     slots: {
       f: { opt: 'files', def: NB_DATA_DEFAULT, ask: 1, pick: 1 },
-      g: { kind: 'text', def: NB_DATA_DEFAULT, ans: NB_DATA_DEFAULT, ask: 1, ph: '파일 이름' },
     },
-    tpl: '!wget "' + NB_DATA_URL + '{f}"\ndf = pd.read_csv("{g}")',
+    tpl: '!wget "' + NB_DATA_URL + '{f}"\ndf = pd.read_csv("{f}")',
     say: '파일을 읽어 데이터 프레임 만들기',
     src: '교과서 79쪽',
   },
@@ -286,6 +288,22 @@ const NB_BLOCK_DEFS = {
     slots: { fn: { kind: 'text', def: 'boxplot', ans: 'boxplot', ph: '함수 이름' }, c: { opt: 'num', def: 3 } },
     tpl: 'sns.{fn}(data=df, x="{c}")',
     say: '상자그림 — 값이 퍼진 모양과 범위를 벗어난 값', src: '교과서 81쪽',
+  },
+  /* ── 2026-11-02 선생님 — 「타겟값을 기준으로 하는 그 x축 y축 해서 하는거
+       있잖아. 그거 boxplot 그리게 해주고」 ──
+     13~21차시 노트북에서 `sns.boxplot(data=df, x="종", y="체질량(g)")` 로
+     가르친 꼴 그대로입니다. `box`(x 하나)와 `boxall`(여덟 장을 한 번에) 사이에
+     **속성 하나를 클래스별로** 그리는 칸이 없었습니다.
+     쓰는 곳 — 2차 수행평가 노트북 5번(이상치 확인 · 핵심 속성 고르기). */
+  boxc: {
+    guide: 'c_box',   // 상자그림
+    cat: 'plot', name: '클래스별 상자그림',
+    slots: { fn: { kind: 'text', def: 'boxplot', ans: 'boxplot', ph: '함수 이름' },
+             x: { opt: 'cols', def: 0, ask: 1 }, y: { opt: 'num', def: 0, ask: 1 } },
+    tpl: 'sns.{fn}(data=df, x="{x}", y="{y}")',
+    say: '클래스별 상자그림 — x 에 타깃값, y 에 속성. 상자 셋이 떨어져 있으면 '
+       + '그 속성으로 클래스가 갈리고, 상자 밖에 찍힌 점이 이상치입니다.',
+    src: '교과서 76 · 81쪽',
   },
   /* ── 2026-11-01 선생님 — 「산점도로 핵심 속성 구하는 건 노가다 아냐?」 ──
      속성이 8개면 두 개씩 짝지은 산점도가 28장입니다. 클래스별 상자그림은
@@ -482,7 +500,7 @@ const NB_BLOCK_GROUPS = [
   ['준비',     ['imp', 'load']],
   ['살펴보기', ['shape', 'head', 'info', 'cols', 'desc', 'col', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
-  ['그래프',   ['count', 'scat', 'box', 'boxall', 'corr']],
+  ['그래프',   ['count', 'scat', 'box', 'boxc', 'boxall', 'corr']],
   ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'classes', 'cm', 'report',
                 'pred', 'tree']],
 ];

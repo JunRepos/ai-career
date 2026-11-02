@@ -1697,8 +1697,39 @@ document.addEventListener('click', async e => {
 
 // 마크다운 더블클릭 → 편집 모드
 document.addEventListener('dblclick', e => {
+  // ✍️ 적는 칸 안에서는 편집기를 열지 않습니다 — 칸에 바로 적습니다
+  //   (2026-11-02 선생님 「애들이 마크다운 문법을 어떻게 알아」).
+  //   원문을 고칠 때는 셀 오른쪽 위 ✏️ 단추를 씁니다.
+  if(e.target.closest?.('.cb-fill-t')) return;
   const md = e.target.closest?.('.cb-md-render');
   if(md) startMdEdit(md.dataset.cellid);
+});
+
+/* ✍️ 적는 칸 — 적은 값을 **cell.source 의 그 표 칸에** 써 넣습니다.
+   따로 둘 수가 없습니다: 저장되는 것은 source 뿐입니다
+   (js/firebase.js saveNotebookProgress). 그린 쪽은 js/views/notebook.js 의 nbFillTable.
+   ⚠ **다시 그리지 않습니다.** render() 를 부르면 적는 중에 커서가 날아갑니다. */
+document.addEventListener('input', e => {
+  const el = e.target;
+  if(!el.classList?.contains('cb-fill')) return;
+  const cell = (NB_CELLS || []).find(c => c && c.id === el.dataset.cellid);
+  if(!cell) return;
+  const at = String(el.dataset.fill || '').split(',');
+  const li = Number(at[0]), ci = Number(at[1]);
+  const lines = String(cell.source || '').split('\n');
+  const ln = lines[li];
+  if(typeof ln !== 'string' || ln.trim().charAt(0) !== '|') return;
+  const lead = ln.slice(0, ln.indexOf('|'));           // 들여쓴 만큼은 그대로
+  let body = ln.trim();
+  const hasR = body.length > 1 && body.charAt(body.length - 1) === '|';
+  body = body.replace(/^\|/, '').replace(/\|$/, '');
+  const cells = body.split('|');
+  if(!(ci >= 1 && ci < cells.length)) return;
+  // 파이프와 줄바꿈이 들어가면 표가 깨집니다 — 공백으로 바꿉니다
+  cells[ci] = ' ' + String(el.value).replace(/[|\r\n]+/g, ' ') + ' ';
+  lines[li] = lead + '|' + cells.join('|') + (hasR ? '|' : '');
+  cell.source = lines.join('\n');
+  scheduleNBSave();
 });
 
 // 셀 클릭 시 선택 표시

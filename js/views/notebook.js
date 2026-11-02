@@ -859,6 +859,74 @@ function buildNbTOC(){
   return items;
 }
 
+/* ═══ ✍️ 기입칸 — 마크다운을 보여 주지 않습니다 (2026-11-02 선생님) ═══════
+   「적는칸 이것도 할말이 많은데 … 무슨 마크 다운 그대로 애들이 적도록 하고
+    있어… **애들이 마크다운 문법을 어떻게 알아** / 그냥 적을 수 있도록 해야지」
+
+   지금까지 ✍️ 표는 더블클릭하면 `| | |` 가 **날것으로** 떴습니다. 학생은
+   파이프 사이에 끼워 적어야 했고, 한 칸을 지우면 표가 깨졌습니다.
+
+   그래서 ✍️ 가 든 텍스트 셀의 **표만** 직접 그립니다 —
+     · 머리줄과 **첫 칸**은 이름표라 글자 그대로
+     · **둘째 칸부터가 적는 자리** → `<input>`
+   ⚠ 적은 값은 **cell.source 의 그 칸에 그대로** 써 넣습니다 (js/events/notebook.js
+     의 `cb-fill` 처리). 따로 둘 수가 없습니다 — 저장되는 것은 source 뿐입니다
+     (js/firebase.js saveNotebookProgress 는 id·type·source·blocks 만 남깁니다).
+   선생님은 ✏️ 단추로 **원문을 그대로** 고칠 수 있습니다. */
+function nbFillUse(cell){
+  const s = String(cell.source || '');
+  return s.indexOf('✍️') >= 0 && /^\s*\|/m.test(s);
+}
+function nbInline(s){
+  if(typeof marked !== 'undefined' && marked.parseInline) return marked.parseInline(s);
+  return esc(s);
+}
+function nbFillTable(lines, from, cellId){
+  const isSep = cs => cs.every(c => /^\s*:?-{2,}:?\s*$/.test(c));
+  const split = ln => ln.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
+  let out = '<table class="cb-fill-t">', head = true;
+  lines.forEach((ln, k) => {
+    const cs = split(ln);
+    if(isSep(cs)){ head = false; return; }
+    out += '<tr>' + cs.map((c, ci) => {
+      const v = c.trim();
+      if(head) return `<th>${nbInline(v)}</th>`;
+      if(ci === 0) return `<td class="lb">${nbInline(v)}</td>`;
+      return `<td><input class="cb-fill" data-cellid="${cellId}"
+        data-fill="${from + k},${ci}" value="${esc(v)}"
+        placeholder="여기에 적으세요"></td>`;
+    }).join('') + '</tr>';
+  });
+  return out + '</table>';
+}
+function nbFillBody(cell){
+  const lines = String(cell.source || '').split('\n');
+  let out = '', buf = [], tab = [], tabFrom = -1;
+  const flushText = () => {
+    if(!buf.length) return;
+    const t = buf.join('\n');
+    out += typeof marked !== 'undefined' ? marked.parse(t) : esc(t);
+    buf = [];
+  };
+  const flushTab = () => {
+    if(!tab.length) return;
+    out += nbFillTable(tab, tabFrom, cell.id);
+    tab = []; tabFrom = -1;
+  };
+  lines.forEach((ln, i) => {
+    if(ln.trim().charAt(0) === '|'){
+      flushText();
+      if(!tab.length) tabFrom = i;
+      tab.push(ln);
+    } else {
+      flushTab();
+      buf.push(ln);
+    }
+  });
+  flushText(); flushTab();
+  return out;
+}
+
 // ── 셀 한 개 렌더 ──
 function vNbCell(cell, idx){
   const selected = NB_SELECTED === cell.id ? ' cb-selected' : '';
@@ -909,7 +977,10 @@ function vNbCell(cell, idx){
         <div style="font-size:11px;color:var(--text3);padding:4px 8px">💡 Shift+Enter 로 렌더링 완료 · Esc로 취소</div>
       </div>`;
     } else {
-      const html = typeof marked !== 'undefined' ? marked.parse(cell.source || '') : esc(cell.source || '');
+      // ✍️ 표가 든 셀은 **칸마다 입력 상자**로 그립니다 (nbFillBody)
+      const html = nbFillUse(cell)
+        ? nbFillBody(cell)
+        : (typeof marked !== 'undefined' ? marked.parse(cell.source || '') : esc(cell.source || ''));
       body = `<div class="cb-md-render" data-cellid="${cell.id}" title="더블클릭하여 편집">${html || '<div style="color:var(--cb-text-3);font-style:italic">(빈 텍스트 셀 — 더블클릭해서 편집)</div>'}</div>`;
     }
     return addRow + `<div class="cb-cell cb-cell-md${selected}" data-cellid="${cell.id}">

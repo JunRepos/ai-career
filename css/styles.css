@@ -848,6 +848,19 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
 .cb-md-render table th,.cb-md-render table td{border:1px solid var(--cb-border);padding:7px 12px;text-align:left}
 .cb-md-render table th{background:var(--cb-bg-2);font-weight:500}
 .cb-md-render hr{border:none;border-top:1px solid var(--cb-border);margin:16px 0}
+/* ✍️ 적는 칸 — 마크다운을 보여 주지 않습니다 (2026-11-02 선생님
+   「애들이 마크다운 문법을 어떻게 알아」). 그리는 쪽은 js/views/notebook.js 의
+   nbFillTable, 적은 값을 source 에 써 넣는 쪽은 js/events/notebook.js 의 cb-fill. */
+.cb-md-render table.cb-fill-t{display:table;width:100%;table-layout:fixed}
+.cb-md-render table.cb-fill-t td.lb{background:var(--cb-bg-2);font-weight:500;width:42%}
+.cb-md-render table.cb-fill-t td:has(> input){padding:0}
+.cb-md-render input.cb-fill{display:block;width:100%;box-sizing:border-box;
+  border:0;background:transparent;font:inherit;color:var(--cb-text);
+  padding:9px 12px;outline:0}
+.cb-md-render input.cb-fill:focus{background:var(--cb-bg-2);
+  box-shadow:inset 0 0 0 2px var(--cb-accent)}
+.cb-md-render input.cb-fill::placeholder{color:var(--cb-text-3);font-style:italic}
+
 .cb-md-render a{color:var(--cb-accent);text-decoration:underline}
 .cb-md-render img{max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
 [data-theme="dark"] .cb-md-render img{background:#fff;padding:4px}
