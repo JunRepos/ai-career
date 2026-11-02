@@ -609,14 +609,19 @@ function nbPalCode(k){
 function vNbSituPanel(){
   if(!NB_SITU_OPEN || typeof nbSituReady !== 'function' || !nbSituReady()) return '';
   const list = NB_SITU.situ || [];
-  const cur = list.find(x => x.mark === NB_SITU_PICK);
-  const tabs = list.map(x => `<button class="cb-situ-tab${x.mark === NB_SITU_PICK ? ' on' : ''}"
+  // 상황이 하나뿐이면 **고를 것이 없습니다** — 바로 펴 놓습니다 (2026-11-02)
+  const cur = (list.length === 1) ? list[0] : list.find(x => x.mark === NB_SITU_PICK);
+  // 글 안의 **굵게** 를 살립니다. 먼저 escape 한 뒤 바꾸므로 태그가 새지 않습니다.
+  const md = t => esc(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  const tabs = (list.length < 2) ? '' : list.map(x =>
+    `<button class="cb-situ-tab${x.mark === NB_SITU_PICK ? ' on' : ''}"
       data-action="nb-situ-pick" data-mark="${esc(x.mark)}">${esc(x.mark)}</button>`).join('');
   const body = cur
-    ? `<div class="cb-situ-h">${esc(cur.mark)}. ${esc(cur.name)}
+    ? `<div class="cb-situ-h">${list.length > 1 ? esc(cur.mark) + '. ' : ''}${esc(cur.name)}
          <span class="cb-situ-f">${esc(cur.file)}</span></div>`
-      + (cur.body || []).map(t => `<p>${esc(t)}</p>`).join('')
-      + (NB_SITU.common ? `<div class="cb-situ-note">${NB_SITU.common}</div>` : '')
+      + (cur.img ? `<img class="cb-situ-img" src="${esc(cur.img)}" alt="">` : '')
+      + (cur.body || []).map(t => `<p>${md(t)}</p>`).join('')
+      + (NB_SITU.common ? `<div class="cb-situ-note">${md(NB_SITU.common)}</div>` : '')
     : `<div class="cb-situ-pickme">종이 카드에서 고른 상황을 위에서 누르시오.</div>`
       + list.map(x => `<button class="cb-situ-one" data-action="nb-situ-pick"
           data-mark="${esc(x.mark)}"><b>${esc(x.mark)}</b> ${esc(x.one)}</button>`).join('');

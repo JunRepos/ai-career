@@ -6995,6 +6995,10 @@ button{border-radius:2px}
   color:var(--cb-text-2); font-size:14px; padding:0 2px}
 .cb-situ-body{overflow-y:auto; padding:12px 14px 20px; font-size:14px; line-height:1.72}
 .cb-situ-body p{margin:0 0 11px; text-align:justify}
+/* 문제 상황 그림 — 패널 폭에 맞춰 줄입니다 (2026-11-02) */
+.cb-situ-img{display:block; width:100%; height:auto; border-radius:8px;
+  margin:0 0 13px; border:1px solid var(--line,#ddd)}
+.cb-situ-body b{font-weight:700; color:#00703C}
 .cb-situ-h{font-weight:700; font-size:15px; margin-bottom:9px;
   padding-bottom:6px; border-bottom:2px solid #00703C}
 .cb-situ-f{float:right; font-weight:400; font-size:11.5px;
