@@ -6986,8 +6986,16 @@ button{border-radius:2px}
   padding:1px 4px;border:1px solid var(--cb-border);border-radius:3px;
   background:var(--cb-bg);color:var(--cb-text-2)}
 .nbk-hdel:hover{border-color:#C8102E;color:#C8102E}
-/* 빈칸 정하기를 켜면 코드 글자를 끌어서 고를 수 있다는 것을 보입니다 */
-.nbk-askon .nbk-code-in{cursor:text;border-radius:2px}
+/* 빈칸 정하기를 켜면 코드 글자를 끌어서 고를 수 있다는 것을 보입니다.
+
+   ⚠ **user-select:text 가 없으면 글자가 아예 안 고릅니다** (2026-11-02 선생님 —
+     「내가 원하는 위치에 빈칸을 뚫고 싶다고!」). 블록은 끌어다 옮기려고
+     `draggable="true"` 가 걸려 있는데, 크롬은 그런 요소에 **user-select:none 을
+     스스로 먹입니다.** 그래서 10/29 에 만든 「끌어서 뚫기」 는 손으로는 한 번도
+     되지 않았습니다 — 코드를 끌어도 선택 자체가 안 잡혔습니다.
+     CSS 파일 어디에도 none 이 없어 눈으로는 안 보이는 것이었습니다. */
+.nbk-askon .nbk-code-in{cursor:text;border-radius:2px;
+  -webkit-user-select:text;user-select:text}
 .nbk-askon .nbk-code-in::selection{background:#00703C;color:#fff}
 
 /* ── 📄 문제 상황을 노트북 옆에 (2026-11-01 선생님) ──
