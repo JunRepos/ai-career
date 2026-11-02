@@ -98,8 +98,15 @@ const NB_DATA_ASSESS = ['farmland_ko.csv', 'firewatch_ko.csv'];
    (선생님 「애들이 혼동 행렬 보고 직접 계산하라고 할 거야」).
    `classification_report` 블록을 서랍에 남겨 두면 끌어다 놓고 값만 베낍니다.
    그래서 **문이 달린 노트북 안에서만** 이 블록을 서랍에서 뺍니다.
-   다른 차시에서는 그대로 보입니다 — 수업에서는 써야 합니다. */
-const NB_BLOCK_ASSESS_HIDE = ['report'];
+   다른 차시에서는 그대로 보입니다 — 수업에서는 써야 합니다.
+
+   `load` 도 같이 뺍니다 — 수행평가는 파일 이름을 고르기만 하는 `loadp` 를 씁니다.
+   둘이 함께 보이면 이름이 같아(둘 다 「데이터 불러오기」) 어느 것인지 모릅니다. */
+const NB_BLOCK_ASSESS_HIDE = ['report', 'load'];
+
+/* 거꾸로 — **평가용 노트북에서만** 서랍에 보이는 블록 (2026-11-03).
+   `loadp` 를 다른 차시 서랍에 두면 같은 이름의 블록이 둘 보입니다. */
+const NB_BLOCK_ASSESS_ONLY = ['loadp'];
 
 /* 지금 보고 있는 노트북이 평가용(문이 달린 것)인가 */
 function nbInAssess(){
@@ -114,7 +121,10 @@ function nbInAssess(){
 
 /* 서랍에 보여 줄 블록인가 — 이미 셀에 놓인 블록은 그대로 그립니다 */
 function nbBlockInDrawer(k){
-  return !(nbInAssess() && NB_BLOCK_ASSESS_HIDE.indexOf(k) >= 0);
+  const inA = nbInAssess();
+  if(inA && NB_BLOCK_ASSESS_HIDE.indexOf(k) >= 0) return false;
+  if(!inA && NB_BLOCK_ASSESS_ONLY.indexOf(k) >= 0) return false;
+  return true;
 }
 
 function nbDataFilesNow(){
@@ -133,6 +143,30 @@ const NB_DATA_URL = 'https://junrepos.github.io/ai-career/data/';
 
 const NB_BLOCK_DEFS = {
 
+  /* ── 파이썬 기초 ──
+     가이드북 3장에 코드가 있는데 블록이 없었습니다 (2026-11-03 선생님 —
+     「가이드북에 있는 내용 중 회귀 제외하고 다 들어있는지 확인」).
+     이 장은 가이드북이 **교과서 쪽을 적지 않았습니다.** 그래서 `src` 를 비웁니다 —
+     없는 쪽 번호를 지어 넣지 않습니다. */
+  prt: {
+    guide: 'c_print',
+    cat: 'py', name: '화면에 출력하기',
+    slots: { f: { kind: 'text', def: '', ans: 'print', ask: 1 },
+             v: { kind: 'text', def: '"안녕하세요"', ph: '출력할 값' } },
+    tpl: '{f}({v})',
+    say: '괄호 안에 넣는 값을 인수라고 합니다. 글자는 따옴표로 감싸고, '
+       + '쉼표로 여러 요소를 넣으면 한 칸씩 띄워 이어서 출력합니다.',
+  },
+  setvar: {
+    guide: 'c_var',
+    cat: 'py', name: '변수에 값 저장하기',
+    slots: { n: { kind: 'text', def: 'name', ph: '변수 이름' },
+             v: { kind: 'text', def: '"아델리펭귄"', ph: '저장할 값' } },
+    tpl: '{n} = {v}',
+    say: '변수는 값을 저장해 두는 이름입니다. = 는 수학의 「같다」가 아니라 '
+       + '오른쪽 값을 왼쪽 변수에 저장하라는 뜻의 대입 연산자입니다.',
+  },
+
   /* ── 준비 ── */
   imp: {
     guide: 'c_setup',   // 준비 — 라이브러리 가져오기
@@ -148,15 +182,35 @@ const NB_BLOCK_DEFS = {
     // ask 1 — 끌어다 놓으면 「고르세요」로 비어 있습니다. 수행평가에서 학생이
     //          **상황에 맞는 데이터를 고르는 것**이 평가요소 ④ 입니다 (2026-10-27).
     /* 2026-11-02 선생님 (아침) — 「파일 이름은 그냥 드롭다운으로 선택할 수 있게
-       해주고 (어차피 2개 중 하나니까), read_csv 쪽을 비워줘」 → 자리를 둘로 나눔.
-       2026-11-02 선생님 (메모) — 「채점 안하니까 블록은 이미 있는 상태로
-       **파일 명만 드롭 다운으로 고르도록** 하자」 → **적는 칸을 다시 뺐습니다.**
+       해주고 (어차피 2개 중 하나니까), read_csv 쪽을 비워줘」.
+       그래서 **자리를 둘로 나눴습니다.**
+         f — 내려받을 파일을 **고르는 칸**(드롭다운). `pick:1` 이라 빈칸이어도
+             적는 칸이 아니라 고르는 칸으로 그립니다.
+         g — `read_csv` 에 **학생이 적는 칸**.
+       예전에는 `{f}` 하나가 두 줄에 모두 쓰여, 한 칸인데 둘로 보였습니다. */
+    slots: {
+      f: { opt: 'files', def: NB_DATA_DEFAULT, ask: 1, pick: 1 },
+      g: { kind: 'text', def: NB_DATA_DEFAULT, ans: NB_DATA_DEFAULT, ask: 1, ph: '파일 이름' },
+    },
+    tpl: '!wget "' + NB_DATA_URL + '{f}"\ndf = pd.read_csv("{g}")',
+    say: '파일을 읽어 데이터 프레임 만들기',
+    src: '교과서 79쪽',
+  },
+  /* 수행평가 전용 — 파일 이름을 **고르기만** 합니다 (2026-11-02 선생님 메모 —
+     「채점 안하니까 블록은 이미 있는 상태로 **파일 명만 드롭 다운으로 고르도록**」).
 
-       그래서 자리는 **하나(f)** 입니다. `pick:1` 이라 빈칸이어도 적는 칸이 아니라
-       고르는 칸으로 그립니다. `{f}` 가 두 줄에 쓰여 **칸이 둘로 보이지만**,
-       같은 자리라 한쪽을 고르면 두 줄이 함께 바뀝니다 (nbTplFill).
-       ⚠ 이 블록은 다른 차시 노트북도 씁니다. 파일 이름을 **손으로 적는 연습**이
-         그 차시에서도 함께 없어집니다 (선생님께 보고함). */
+     ⚠ 왜 `load` 를 고치지 않고 블록을 따로 두나 (2026-11-03 선생님 —
+       「블록 변경하면 유지되게 만들어줘야지」) — 11/02 에 `load` 자체에서 적는 칸을
+       빼 버려, 파일 이름을 **손으로 적는 연습**이 다른 차시 노트북에서도 함께
+       없어졌습니다. 블록 하나를 고치면 그것을 쓰는 **모든 차시**가 따라 바뀝니다.
+       그래서 한 차시에서만 다르게 쓸 것은 **블록을 새로 만듭니다.**
+
+     자리는 **하나(f)** 입니다. `{f}` 가 두 줄에 쓰여 칸이 둘로 보이지만, 같은
+     자리라 한쪽을 고르면 두 줄이 함께 바뀝니다 (nbTplFill). 학생이 상황에 맞는
+     데이터를 고르는 것이라 `ask:1` 로 **비운 채** 나옵니다. */
+  loadp: {
+    guide: 'c_load',
+    cat: 'prep', name: '데이터 불러오기',
     slots: {
       f: { opt: 'files', def: NB_DATA_DEFAULT, ask: 1, pick: 1 },
     },
@@ -214,9 +268,18 @@ const NB_BLOCK_DEFS = {
     say: '대괄호 안에 속성 이름을 따옴표로 감싸 쓰면 그 열만 골라 봅니다.',
     src: '교과서 79쪽',
   },
+  /* 가이드북 c_col 에 두 번째 코드 상자로 있는데 블록이 없었습니다 (2026-11-03) */
+  col2: {
+    guide: 'c_col',
+    cat: 'look', name: '여러 열 고르기',
+    slots: { a: { opt: 'cols', def: 0, ask: 1 }, b: { opt: 'cols', def: 1, ask: 1 } },
+    tpl: 'df[["{a}", "{b}"]]',
+    say: '대괄호를 두 겹으로 쓰면 여러 열을 한꺼번에 골라 봅니다.',
+    src: '교과서 79쪽',
+  },
   count: {
     guide: 'c_countplot',
-    cat: 'plot', name: '막대그래프',
+    cat: 'look', name: '막대그래프',
     slots: { fn: { kind: 'text', def: 'countplot', ans: 'countplot', ph: '함수 이름' }, c: { opt: 'cols', def: 0, ask: 1 } },
     imp: 'import seaborn as sns',
     tpl: 'sns.{fn}(x=df["{c}"])',
@@ -284,7 +347,7 @@ const NB_BLOCK_DEFS = {
   },
   box: {
     guide: 'c_box',   // 상자그림
-    cat: 'plot', name: '상자그림',
+    cat: 'clean', name: '상자그림',
     slots: { fn: { kind: 'text', def: 'boxplot', ans: 'boxplot', ph: '함수 이름' }, c: { opt: 'num', def: 3 } },
     tpl: 'sns.{fn}(data=df, x="{c}")',
     say: '상자그림 — 값이 퍼진 모양과 범위를 벗어난 값', src: '교과서 81쪽',
@@ -297,7 +360,7 @@ const NB_BLOCK_DEFS = {
      쓰는 곳 — 2차 수행평가 노트북 5번(이상치 확인 · 핵심 속성 고르기). */
   boxc: {
     guide: 'c_box',   // 상자그림
-    cat: 'plot', name: '클래스별 상자그림',
+    cat: 'clean', name: '클래스별 상자그림',
     slots: { fn: { kind: 'text', def: 'boxplot', ans: 'boxplot', ph: '함수 이름' },
              x: { opt: 'cols', def: 0, ask: 1 }, y: { opt: 'num', def: 0, ask: 1 } },
     tpl: 'sns.{fn}(data=df, x="{x}", y="{y}")',
@@ -313,7 +376,7 @@ const NB_BLOCK_DEFS = {
             13~21차시 노트북에서 `sns.boxplot(data=df, x="종", y="체질량(g)")` 로 가르쳤습니다. */
   boxall: {
     guide: 'c_boxall',
-    cat: 'plot', name: '속성마다 클래스별 상자그림',
+    cat: 'clean', name: '속성마다 클래스별 상자그림',
     slots: { t: { opt: 'cols', def: 0, ask: 1 } },
     tpl: 'for c in df.select_dtypes("number").columns:\n'
        + '    sns.boxplot(data=df, x="{t}", y=c)\n'
@@ -330,6 +393,20 @@ const NB_BLOCK_DEFS = {
     slots: { fn: { kind: 'text', def: 'corr', ans: 'corr', ph: '함수 이름' } },
     tpl: 'df.{fn}(numeric_only=True)',
     say: '상관계수 — 두 속성의 상관 정도를 수치로 나타낸 값', src: '교과서 77 · 83쪽',
+  },
+  /* 가이드북 c_heatmap 에 있는데 블록이 없었습니다 (2026-11-03).
+     상관계수를 색으로 보는 것은 핵심 속성 추출의 근거라 꼭 필요합니다. */
+  heat: {
+    guide: 'c_heatmap',
+    cat: 'plot', name: '히트맵 — 상관계수를 색으로',
+    // `fn` 은 **채워 두는** 자리입니다 (corr · count 와 같은 규칙).
+    // 함수 이름을 비우는 자리는 `f` 로 씁니다 — verify/nb-blank-set.py.
+    slots: { fn: { kind: 'text', def: 'heatmap', ans: 'heatmap', ph: '함수 이름' } },
+    imp: 'import seaborn as sns',
+    tpl: 'sns.{fn}(df.corr(numeric_only=True), annot=True, cmap="Greens")',
+    say: '색이 진할수록 상관계수가 큽니다. 칸의 숫자가 상관계수이고, '
+       + '대각선의 1 은 자기 자신과의 상관계수라 늘 1 입니다.',
+    src: '교과서 83쪽',
   },
 
   /* ── 기계학습 ── */
@@ -414,7 +491,7 @@ const NB_BLOCK_DEFS = {
   },
   score: {
     guide: 'c_dtscore',   // 분류 정확도
-    cat: 'ml', name: '분류 정확도 재기',
+    cat: 'eval', name: '분류 정확도 재기',
     // d — **어느 데이터로 잴지**. 모델의 성능은 테스트 데이터로 봅니다.
     //     수행평가 ③ 「정확하게 평가」 가 이 선택입니다 (2026-10-22 선생님).
     slots: { fn: { kind: 'text', def: 'score', ans: 'score', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
@@ -426,7 +503,7 @@ const NB_BLOCK_DEFS = {
   },
   scoret: {
     guide: 'c_dtscore',   // 분류 정확도
-    cat: 'ml', name: '정확도 재기 — 테스트 데이터',
+    cat: 'eval', name: '정확도 재기 — 테스트 데이터',
     slots: { fn: { kind: 'text', def: 'score', ans: 'score', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     tpl: 'print({m}.{fn}(X_test, y_test))',
     say: '테스트 데이터는 학습에 사용하지 않은 데이터입니다. ' +
@@ -438,7 +515,7 @@ const NB_BLOCK_DEFS = {
      10/28 수업과 가이드북(c_classes)에 있는데 블록만 없었습니다. */
   classes: {
     guide: 'c_classes',
-    cat: 'ml', name: '클래스 차례 확인',
+    cat: 'eval', name: '클래스 차례 확인',
     slots: { fn: { kind: 'text', def: 'classes_', ans: 'classes_', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     tpl: 'print({m}.{fn})',
     say: '혼동 행렬의 가로와 세로가 어느 클래스 차례인지 알려 줍니다. '
@@ -447,7 +524,7 @@ const NB_BLOCK_DEFS = {
   },
   cm: {
     guide: 'c_cm',   // 혼동 행렬
-    cat: 'ml', name: '혼동 행렬',
+    cat: 'eval', name: '혼동 행렬',
     slots: { fn: { kind: 'text', def: 'confusion_matrix', ans: 'confusion_matrix', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     imp: 'from sklearn.metrics import confusion_matrix',
     tpl:          'print({fn}(y_test, {m}.predict(X_test)))',
@@ -457,7 +534,7 @@ const NB_BLOCK_DEFS = {
   },
   report: {
     guide: 'c_report',   // 정밀도 · 재현율 표
-    cat: 'ml', name: '정밀도 · 재현율 표',
+    cat: 'eval', name: '정밀도 · 재현율 표',
     slots: { fn: { kind: 'text', def: 'classification_report', ans: 'classification_report', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     imp: 'from sklearn.metrics import classification_report',
     tpl:          'print({fn}(y_test, {m}.predict(X_test)))',
@@ -496,13 +573,39 @@ const NB_BLOCK_DEFS = {
   },
 };
 
+/* ── 서랍 묶음 (2026-11-03 선생님 — 「블록들이 범주화가 안되어있는 상태니까
+   그것 좀 범주화 시켜봐」) ──
+
+   묶음과 차례를 **가이드북 장 그대로** 둡니다. 서랍에서 찾은 자리와 가이드북에서
+   읽는 자리가 같아야 학생이 헤매지 않습니다. 내가 지어낸 묶음이 아닙니다.
+
+     3 파이썬 기초                      → 파이썬 기초
+     4 데이터 불러오기 · 살펴보기          → 준비 · 불러오기 / 살펴보기
+     5 데이터 전처리                     → 데이터 전처리   (상자그림이 여기 있습니다)
+     6 핵심 속성 추출                    → 핵심 속성 추출  (산점도 · 상관계수 · 히트맵)
+     7 기계학습 유형과 모델 만드는 절차     → 훈련 · 테스트 나누기
+     8 회귀 — 선형 회귀                  → (가르치지 않습니다. 블록 없음)
+     9 분류 — 결정트리 · kNN · 성능 평가   → 모델 만들고 학습 / 성능 평가 / 예측
+
+   전에는 그래프가 한 묶음에 몰려 있어, **상자그림(이상치 찾기)** 과
+   **산점도·상관계수(속성 고르기)** 가 같은 칸에 있었습니다. 둘은 하는 일이
+   다릅니다 — 가이드북도 5장과 6장으로 나눠 놓았습니다.
+
+   ⚠ `scoret` 는 일부러 넣지 않았습니다 — 옛 노트북에만 쓰인 블록입니다
+     (서랍 밖 블록은 블록 편집기의 「서랍에 없는 것」 에 나옵니다).
+   ⚠ `loadp` 는 수행평가에서만, `load` 는 그 밖에서만 보입니다 (nbBlockInDrawer). */
 const NB_BLOCK_GROUPS = [
-  ['준비',     ['imp', 'load']],
-  ['살펴보기', ['shape', 'head', 'info', 'cols', 'desc', 'col', 'vc']],
-  ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
-  ['그래프',   ['count', 'scat', 'box', 'boxc', 'boxall', 'corr']],
-  ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'classes', 'cm', 'report',
-                'pred', 'tree']],
+  ['파이썬 기초',        ['prt', 'setvar']],
+  ['준비 · 불러오기',    ['imp', 'load', 'loadp']],
+  ['살펴보기',           ['shape', 'head', 'info', 'cols', 'desc', 'col', 'col2',
+                           'vc', 'count']],
+  ['데이터 전처리',      ['isnull', 'dropna', 'uniq', 'findrow', 'droprow',
+                           'box', 'boxc', 'boxall']],
+  ['핵심 속성 추출',     ['scat', 'corr', 'heat']],
+  ['훈련 · 테스트 나누기', ['xy', 'xyn', 'split']],
+  ['모델 만들고 학습',   ['dt', 'knn', 'fit']],
+  ['성능 평가',          ['score', 'classes', 'cm', 'report']],
+  ['예측 · 트리 그림',   ['pred', 'tree']],
 ];
 
 /* ── 블록 하나 만들기 — 드롭다운은 기본값으로 ── */

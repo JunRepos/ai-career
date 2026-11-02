@@ -6711,12 +6711,12 @@ button{border-radius:2px}
    ⚠ 어두운 배경에 짙은 글씨가 되지 않도록 묶음 색은 밝기를 따로 잡았습니다.
 ═══════════════════════════════════════ */
 :root{
-  --nbk-prep:#5f6368; --nbk-look:#1a73e8; --nbk-clean:#b06000;
-  --nbk-plot:#137333; --nbk-ml:#6b2fb5;
+  --nbk-py:#c5221f; --nbk-prep:#5f6368; --nbk-look:#1a73e8; --nbk-clean:#b06000;
+  --nbk-plot:#137333; --nbk-ml:#6b2fb5; --nbk-eval:#0b7d8c;
 }
 [data-theme="dark"]{
-  --nbk-prep:#9aa0a6; --nbk-look:#8ab4f8; --nbk-clean:#fdd663;
-  --nbk-plot:#81c995; --nbk-ml:#c9a9ff;
+  --nbk-py:#f28b82; --nbk-prep:#9aa0a6; --nbk-look:#8ab4f8; --nbk-clean:#fdd663;
+  --nbk-plot:#81c995; --nbk-ml:#c9a9ff; --nbk-eval:#7fd4de;
 }
 
 /* 셀 머리줄 */

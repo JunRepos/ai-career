@@ -378,8 +378,11 @@ function vNotebookDetail(isTeacher){
    블록의 얼굴은 파이썬 그대로이고, 바꿀 자리만 드롭다운입니다.
    아래 칸에 그 블록들이 만든 파이썬을 그대로 보여 줍니다 (읽기 전용).
    블록 정의는 js/nb-blocks.js 에 있습니다. */
-const NB_BLK_CAT = {prep:'--nbk-prep', look:'--nbk-look', clean:'--nbk-clean',
-                    plot:'--nbk-plot', ml:'--nbk-ml'};
+/* 비칠 땀지 — 서람 묶음과 **하나씩 맞추어** 둡니다 (2026-11-03).
+   한 묶음 에 서로 다른 땀지가 섞여 있으면 묶어 둔 표가 안 나납니다. */
+const NB_BLK_CAT = {py:'--nbk-py', prep:'--nbk-prep', look:'--nbk-look',
+                    clean:'--nbk-clean', plot:'--nbk-plot', ml:'--nbk-ml',
+                    eval:'--nbk-eval'};
 
 function vNbBlockCell(cell, hoverTb){
   const selected = NB_SELECTED === cell.id ? ' cb-selected' : '';
@@ -522,7 +525,7 @@ function vNbBlock(cellId, b, bi, file, bad){
          철자도 안 외우고 오류도 안 만나 봅니다. 채워 둔 자리는 그대로 드롭다운이라
          선생님이 미리 정해 둔 값은 건드리지 않습니다. */
       /* 단 `pick:1` 인 자리는 **빈칸이어도 고르는 칸**입니다 (2026-11-02 선생님 —
-         「어차피 2개 중 하나니까」). 지금은 `load` 의 파일 고르기 하나뿐입니다. */
+         「어차피 2개 중 하나니까」). `load` · `loadp` 의 파일 고르기 둘뿐입니다. */
       const asText = slot.kind || (ask && !slot.pick);
       // 미리 셀 수 없는 값(행 번호 · 찾을 값)은 적는 칸으로 둡니다 — 교과서 81쪽처럼
       if(asText){
