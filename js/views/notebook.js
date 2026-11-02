@@ -536,9 +536,14 @@ function vNbBlock(cellId, b, bi, file, bad){
         /* 칸 너비 (2026-11-02 선생님 — 「함수가 길어서 입력 칸 안에서 짤리거나」).
            ⚠ **정답 길이로 넓히지 않습니다** — 넓히면 몇 글자인지가 보입니다.
              적은 글자에 맞춰 늘어나게 둡니다 (events/notebook.js 가 적는 동안에도
-             늘립니다). 바닥은 안내 글씨가 다 보일 만큼입니다.
+             늘립니다). 바닥은 열 이름이 들어갈 만큼입니다.
              CSS 의 고정 폭(width:7em)이 size 를 눌러 버리던 것도 함께 고쳤습니다. */
-        const ph = ask ? (slot.ph || nbSlotHint(slot, file)) : '';
+        /* ⚠ 빈칸에 흐린 안내 글자를 넣지 않습니다 (2026-11-03 선생님 —
+             「지금 빈칸들 보면 회색글씨로 가이드가 다 들어가 있는데 가이드 다 빼」).
+             안내가 있으면 교과서를 보지 않고 그것만 읽고 적습니다.
+             무엇을 적을 자리인지는 블록 이름과 발표자 노트, 가이드북에 있습니다.
+             `slot.ph` 와 `nbSlotHint` 는 **선생님 쪽 칸 목록**에서만 씁니다. */
+        const ph = '';
         const opts = slot.kind ? null : nbSlotOptions(slot, file);
         const floor = opts && opts.length && !ask
           ? Math.min(28, Math.max(11, ...opts.map(o => String(o).length + 1)))
@@ -566,14 +571,14 @@ function vNbBlock(cellId, b, bi, file, bad){
       //     (2026-11-02 선생님 — 「코드 셀 왜 이래? 버그 걸렸어?」).
       //     `load` 블록은 틀에 `{f}` 가 두 번 들어가, 윗줄은 분홍 입력 상자인데
       //     아랫줄만 `___` 라 한 칸이 둘로 보였습니다.
-      //     그래서 비었을 때는 **위 칸과 같은 안내 글자**를 흐리게 보여 주고,
+      //     그래서 비었을 때는 「같은 값」 을 흐리게 보여 주고,
       //     윗줄에 적으면 여기도 같이 찬다고 일러 줍니다.
       if(!first){
         const mv = b.a[key];
         const mempty = (mv === '' || mv == null);
-        // 위 칸의 안내 글자를 그대로 씁니다. `ph` 는 적는 칸 쪽에만 있으므로
-        // 여기서 다시 구합니다 (드롭다운 자리는 ph 가 없어 「같은 값」).
-        const mph = (ask ? (slot.ph || nbSlotHint(slot, file)) : '') || '같은 값';
+        // 무엇을 적는 자리인지는 알려 주지 않습니다 — 위 칸과 **같은 값**이
+        // 들어온다는 것만 (2026-11-03 선생님, 위 `ph` 주석과 같은 까닭).
+        const mph = '같은 값';
         return `<span class="nbk-mirror${mempty ? ' nbk-mirror-ask' : ''}"
           data-mirror="${key}" data-ph="${esc(mph)}"
           title="위 칸에 적으면 여기에도 똑같이 들어갑니다"

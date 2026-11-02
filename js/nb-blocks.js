@@ -443,11 +443,14 @@ const NB_BLOCK_DEFS = {
     guide: 'c_split',   // 훈련 · 테스트 나누기
     cat: 'ml', name: '훈련 · 테스트로 나누기',
     // 2026-10-29 선생님 — 「train_test_split 부분에 stratify 도 뚫고」.
-    //   test_size · stratify · random_state 를 **각각 적게** 합니다.
-    //   셋이 무엇을 하는지 모르면 나눈 결과를 설명할 수 없습니다 (평가요소 ③).
+    //   test_size · stratify 를 **각각 적게** 합니다.
+    //   둘이 무엇을 하는지 모르면 나눈 결과를 설명할 수 없습니다 (평가요소 ③).
+    //   ⚠ random_state(42) 는 **채워 둡니다** (2026-11-03 선생님 —
+    //     「random_state = 42 에서 숫자에 빈칸을 뚫는 것은 무의미」). 아무 숫자나 넣어도
+    //     되는 자리라 알아맞혀 볼 것이 없습니다.
     slots: { fn: { kind: 'text', def: 'train_test_split', ans: 'train_test_split', ph: '함수 이름' }, r: { kind: 'text', def: '0.3', ans: '0.3', ask: 1, ph: '0.3' },
              s: { kind: 'text', def: 'y', ans: 'y', ask: 1, ph: 'y' },
-             d: { kind: 'num', def: '42', ans: '42', ask: 1, ph: '42' } },
+             d: { kind: 'num', def: '42', ans: '42' } },
     // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
     imp: 'from sklearn.model_selection import train_test_split',
     tpl:          'X_train, X_test, y_train, y_test = {fn}(\n' +
