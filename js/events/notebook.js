@@ -924,10 +924,6 @@ function nbBlkAskGate(){
     toast('학생 노트북을 보는 중입니다 — 목록으로 나간 뒤 바꾸세요', 'err');
     return false;
   }
-  if(typeof nbInSim === 'function' && nbInSim()){
-    toast('「학생처럼 보기」 를 끄면 빈칸을 바꿀 수 있습니다', 'err');
-    return false;
-  }
   if(!TC_CLS){
     toast('반을 먼저 고르세요', 'err');
     return false;
@@ -936,7 +932,7 @@ function nbBlkAskGate(){
 }
 
 async function nbSaveBlockTextAll(k, val){
-  if(!nbAuthoring() || !TC_CLS) return [];
+  if(!nbCanSetAsk() || !TC_CLS) return [];
   const me = CLASSES.find(c => c.id === TC_CLS.id);
   const targets = CLASSES.filter(c => c.type === (me || {}).type).map(c => c.id);
   for(const cid of (targets.length ? targets : [TC_CLS.id])){
@@ -994,7 +990,7 @@ function nbBlkApplyCells(cells){
 }
 
 async function nbBlkAskApply(){
-  if(!nbAuthoring() || !TC_CLS) return;
+  if(!nbCanSetAsk() || !TC_CLS) return;
   const me = CLASSES.find(c => c.id === TC_CLS.id);
   const cids = CLASSES.filter(c => c.type === (me || {}).type).map(c => c.id);
   // ① 먼저 읽어 세어 봅니다 — 쓰지 않습니다
@@ -1507,7 +1503,7 @@ document.addEventListener('click', async e => {
   if(act.action === 'nb-blk-say'){ NB_BLK_SAY = !NB_BLK_SAY; render(); return; }
   if(act.action === 'nb-blk-code'){ NB_BLK_CODE = !NB_BLK_CODE; render(); return; }
   if(act.action === 'nb-blk-askui'){
-    if(!nbAuthoring()) return;
+    if(!nbBlkAskGate()) return;
     NB_BLK_ASKUI = !NB_BLK_ASKUI;
     render();
     if(NB_BLK_ASKUI) toast('칸 옆 ✎ 를 누르거나, 코드 글자를 끌어서 고르면 빈칸이 됩니다', 'ok');
@@ -1518,7 +1514,10 @@ document.addEventListener('click', async e => {
      이 자리를 「학생이 채움」 ↔ 「채워 둠」 으로 바꿉니다. 블록 하나에만 걸립니다.
      켜면 값을 비우고, 끄면 정답(`ans`) 또는 기본값을 넣습니다. */
   if(act.action === 'nb-blk-ask'){
-    if(!nbAuthoring()) return;
+    if(!nbBlkAskGate()) return;
+    const bi0 = +act.bi;
+    const now = ((nbBlkCell(act.cellid) || {}).blocks || [])[bi0];
+    if(!now) return;
     nbBlkEdit(act.cellid, bs => {
       const b = bs[+act.bi];
       const d = NB_BLOCK_DEFS[b && b.k];
@@ -1534,13 +1533,13 @@ document.addEventListener('click', async e => {
         b.a[act.slot] = '';
       }
       b.q = q;          // 여기서 굳습니다 — 이제 정의의 ask 를 안 봅니다
-    });
+    }, {bi: bi0, k: now.k});
     return;
   }
 
   /* ── 🧩 블록 고치기 페이지 (2026-10-28 선생님) ── */
   if(act.action === 'nb-blockedit-open'){
-    if(!nbAuthoring() || !TC_CLS) return;
+    if(!nbBlkAskGate()) return;
     try { await loadNbBlockText(TC_CLS.id); }
     catch(err){ toast('고쳐 둔 글을 못 읽었습니다 — ' + (err.message || err), 'err'); }
     NB_BLKEDIT = true;
@@ -1582,7 +1581,7 @@ document.addEventListener('click', async e => {
 
   /* ── 블록의 설명을 고칩니다 (2026-10-28) ── */
   if(act.action === 'nb-blk-text'){
-    if(!nbAuthoring() || !TC_CLS) return;
+    if(!nbBlkAskGate()) return;
     const d = NB_BLOCK_DEFS[act.k];
     if(!d) return;
     const now = nbBlkSay(act.k);
@@ -1605,7 +1604,7 @@ document.addEventListener('click', async e => {
     return;
   }
   if(act.action === 'nb-blk-text-reset'){
-    if(!nbAuthoring() || !TC_CLS) return;
+    if(!nbBlkAskGate()) return;
     try {
       await nbSaveBlockTextAll(act.k, null);
       render();
@@ -2109,7 +2108,7 @@ function nbBlkFocusLoad(f){
   try { if(f.a != null) el.setSelectionRange(f.a, f.b); } catch(err){}
 }
 
-function nbBlkEdit(cellId, fn){
+function nbBlkEdit(cellId, fn, design){
   const cell = nbBlkCell(cellId);
   if(!cell) return;
   const keep = nbBlkFocusSave();
@@ -2121,7 +2120,51 @@ function nbBlkEdit(cellId, fn){
   NB_SELECTED = cell.id;
   render();
   nbBlkFocusLoad(keep);
+  // 빈칸을 뚫은 것이면 시뮬레이션에서도 원본에 남깁니다 (2026-11-02)
+  if(design && typeof nbInSim === 'function' && nbInSim()){
+    nbSaveDesignInSim(cellId, fn, design);
+    return;
+  }
   scheduleNBSave();
+}
+
+/* ── 🧪 시뮬레이션에서 뚫은 빈칸을 **원본에** 적습니다 (2026-11-02 선생님) ──
+   시뮬레이션은 저장을 통째로 막습니다 (scheduleNBSave). 그러면 선생님이 뚫은
+   빈칸도 화면에서만 바뀌고 새로 고치면 사라집니다. 그렇다고 통째로 저장하면
+   **선생님이 풀어 본 답이 학생 노트북에 들어갑니다.**
+
+   그래서 화면이 아니라 **저장된 원본**(SEL_NOTEBOOK.cells — 시뮬레이션 중에는
+   손대지 않으므로 그대로입니다)을 가져와, 거기에 **같은 손질만** 하고 씁니다.
+   시뮬레이션에서 적어 본 값은 어느 셀에서도 저장되지 않습니다.
+
+   ⚠ 시뮬레이션에서 블록을 더 놓았거나 지운 셀은 자리 번호가 어긋납니다.
+     그러면 엉뚱한 칸을 비우게 되므로 **쓰지 않고 알려 줍니다.** */
+async function nbSaveDesignInSim(cellId, fn, design){
+  if(!TC_CLS || !SEL_NOTEBOOK) return;
+  const saved = JSON.parse(JSON.stringify(SEL_NOTEBOOK.cells || []));
+  const cell = saved.find(c => c && c.id === cellId);
+  const bs = cell && (Array.isArray(cell.blocks) ? cell.blocks
+    : (Array.isArray(cell.metadata?.blocks) ? cell.metadata.blocks : null));
+  const at = bs && bs[design.bi];
+  if(!at || at.k !== design.k){
+    toast('시뮬레이션에서 블록을 옮긴 셀입니다 — 노트북을 닫았다 다시 열고 뚫어 주세요', 'err');
+    return;
+  }
+  try {
+    nbMigrateBlocks(bs);
+    fn(bs);
+    cell.blocks = bs;
+    nbRefitBlocks(bs, nbCellDataFile(cell, saved));
+    cell.source = nbBlockCode(bs, nbNoImpOf(cell));
+    const sanitized = nbCellsForSave(saved);
+    await db.ref(`notebooks/${TC_CLS.id}/${SEL_NOTEBOOK.id}`).update({cells: sanitized});
+    SEL_NOTEBOOK.cells = sanitized;
+    const cached = NOTEBOOKS.find(n => n.id === SEL_NOTEBOOK.id);
+    if(cached) cached.cells = sanitized;
+    toast('빈칸을 원본에 적었습니다 — 풀어 본 답은 저장되지 않습니다', 'ok');
+  } catch(err){
+    toast('원본에 적지 못했습니다 — ' + (err.message || err), 'err');
+  }
 }
 /* 「모름」 — 이 셀을 넘기고 뒤를 살립니다 (2026-10-29 선생님).
 
@@ -2242,7 +2285,7 @@ document.addEventListener('change', e => {
      칸까지 삼켜 코드가 깨집니다 — 그런 선택은 그냥 무시합니다. */
 document.addEventListener('mouseup', () => {
   if(typeof NB_BLK_ASKUI === 'undefined' || !NB_BLK_ASKUI) return;
-  if(typeof nbAuthoring !== 'function' || !nbAuthoring()) return;
+  if(typeof nbCanSetAsk !== 'function' || !nbCanSetAsk()) return;
   const sel = window.getSelection && window.getSelection();
   if(!sel || sel.isCollapsed || !sel.rangeCount) return;
   const r = sel.getRangeAt(0);
@@ -2255,27 +2298,32 @@ document.addEventListener('mouseup', () => {
   const s = base + r.startOffset, t = base + r.endOffset;
   if(t <= s) return;
   sel.removeAllRanges();
+  const bi0 = +blk.dataset.bi;
+  const now = ((nbBlkCell(blk.dataset.cellid) || {}).blocks || [])[bi0];
+  if(!now) return;
   nbBlkEdit(blk.dataset.cellid, bs => {
-    const b = bs[+blk.dataset.bi];
+    const b = bs[bi0];
     if(!b) return;
     const hs = (b.h || []).filter(x => x[1] <= s || x[0] >= t);   // 겹치면 앞의 것을 버립니다
     hs.push([s, t]);
     hs.sort((x, y) => x[0] - y[0]);
     b.h = hs;
     if(b.hv) delete b.hv[s + '-' + t];
-  });
+  }, {bi: bi0, k: now.k});
   toast('빈칸을 뚫었습니다 — 되돌리려면 옆의 ✕', 'ok');
 });
 
 /* 빈칸 없애기 — 원래 글자로 돌아갑니다 */
 function nbHoleDel(cellId, bi, key){
+  const now = ((nbBlkCell(cellId) || {}).blocks || [])[+bi];
+  if(!now) return;
   nbBlkEdit(cellId, bs => {
     const b = bs[+bi];
     if(!b) return;
     b.h = (b.h || []).filter(x => x[0] + '-' + x[1] !== key);
     if(b.hv) delete b.hv[key];
     if(!b.h.length) delete b.h;
-  });
+  }, {bi: +bi, k: now.k});
 }
 
 /* ── 블록 안에서 **글자를 끌어서 고를 수 있게** (2026-11-02 고침) ──

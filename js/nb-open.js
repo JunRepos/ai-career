@@ -90,6 +90,23 @@ function nbCanAuthor(){
   return !nbInSim();
 }
 
+/* ── 빈칸을 **정하는** 손잡이는 시뮬레이션에서도 씁니다 (2026-11-02 선생님 —
+     「블록 빈칸 왜 내가 맘대로 못 뚥게 하는거야?」) ──
+   시뮬레이션이 막으려던 것은 **선생님이 풀어 본 답**이 원본에 저장돼 학생이
+   답이 채워진 노트북을 받는 것입니다. 빈칸을 뚫는 일은 그 반대 — 자리를
+   **비우는** 것이라 답이 새지 않습니다. 그런데 nbCanAuthor() 하나로 묶여 있어서,
+   평가용 노트북(늘 시뮬레이션으로 열립니다)에서는 ✎ 단추가 아예 나오지
+   않았습니다. 그래서 빈칸·설명 손잡이만 따로 뗍니다.
+     · 빈칸을 뚫으면 **그 셀 하나만** 원본에 적습니다 — 시뮬레이션에서 적어 본
+       답은 저장하지 않습니다 (js/events/notebook.js 의 nbSaveDesignInSim).
+     · 블록 설명과 반 전체 빈칸 설정은 노트북이 아니라 반 DB(nbBlockText)에
+       있어서 시뮬레이션과 상관이 없습니다. */
+function nbCanSetAsk(){
+  if(typeof IS_TC === 'undefined' || !IS_TC) return false;
+  if(typeof NB_VIEWING_STUDENT !== 'undefined' && NB_VIEWING_STUDENT) return false;
+  return true;
+}
+
 /* ── 📄 문제 상황 글 읽기 (2026-11-01) ──
    평가용 노트북에만 붙어 있습니다. 없으면 조용히 넘어갑니다 — 다른 차시는
    상황 글이 없는 것이 정상입니다. 글은 verify/assess2_common.py 한 곳에서

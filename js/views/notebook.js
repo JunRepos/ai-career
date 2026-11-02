@@ -261,6 +261,10 @@ function vStNotebook(){
 function nbAuthoring(){
   return typeof nbCanAuthor === 'function' && nbCanAuthor();
 }
+/* 빈칸·설명을 정하는 손잡이만 — 🧪 시뮬레이션에서도 보입니다 (js/nb-open.js) */
+function nbAskUi(){
+  return typeof nbCanSetAsk === 'function' && nbCanSetAsk();
+}
 
 function vNotebookDetail(isTeacher){
   const nb = SEL_NOTEBOOK;
@@ -437,13 +441,13 @@ function vNbBlockCell(cell, hoverTb){
           <span class="nbk-sp"></span>
           <button class="nbk-mini" data-action="nb-blk-say" aria-pressed="${NB_BLK_SAY}">설명</button>
           <button class="nbk-mini" data-action="nb-blk-code" aria-pressed="${NB_BLK_CODE}">&lt;/&gt; 코드 칸</button>
-          ${nbAuthoring() ? `<button class="nbk-mini" data-action="nb-blk-askui"
+          ${nbAskUi() ? `<button class="nbk-mini" data-action="nb-blk-askui"
             aria-pressed="${NB_BLK_ASKUI}"
             title="칸마다 ✎ 가 붙습니다. 코드 글자를 **끌어서 고르면** 그 자리가 빈칸이 됩니다">✎ 빈칸 정하기</button>` : ''}
           ${chkBtn}
           ${idkBtn}
         </div>
-        <div class="nbk-stack${NB_BLK_ASKUI && nbAuthoring() ? ' nbk-askon' : ''}" data-blkstack="${cell.id}">${stack}</div>
+        <div class="nbk-stack${NB_BLK_ASKUI && nbAskUi() ? ' nbk-askon' : ''}" data-blkstack="${cell.id}">${stack}</div>
         ${chkLine}
         ${codePane}
       </div>
@@ -462,7 +466,7 @@ function nbLitHtml(cellId, b, bi, d, at, text, bad){
   const hs = (typeof nbHoles === 'function' ? nbHoles(b) : [])
     .filter(h => h[0] >= at && h[1] <= at + text.length);
   if(!hs.length) return span(at, text);
-  const teacher = NB_BLK_ASKUI && nbAuthoring();
+  const teacher = NB_BLK_ASKUI && nbAskUi();
   let out = '', cur = at;
   hs.forEach(h => {
     if(h[0] < cur) return;                       // 겹친 자리는 앞의 것만 씁니다
@@ -574,7 +578,7 @@ function vNbBlock(cellId, b, bi, file, bad){
       }
       // 선생님만 — 이 자리를 빈칸으로 둘지 채워 둘지 (2026-10-28)
       // 「✎ 빈칸 정하기」 를 켰을 때만 — 늘 붙여 두면 파이썬이 지저분합니다
-      if(!NB_BLK_ASKUI || !nbAuthoring()) return html;
+      if(!NB_BLK_ASKUI || !nbAskUi()) return html;
       return `<span class="nbk-slotwrap">${html}<button class="nbk-askb${ask ? ' on' : ''}"
         data-action="nb-blk-ask" data-cellid="${cellId}" data-bi="${bi}" data-slot="${key}"
         aria-pressed="${ask}" title="${ask ? '학생이 채우는 빈칸 — 눌러서 채워 둡니다'
@@ -588,7 +592,7 @@ function vNbBlock(cellId, b, bi, file, bad){
   //   고친 글에는 교과서 쪽을 달지 않습니다. 학생 화면에는 고쳤다는 표시가
   //   하나도 나오지 않습니다 (CLAUDE.md 16).
   const t = nbBlkSay(b.k);
-  const sayBtns = nbAuthoring()
+  const sayBtns = nbAskUi()
     ? `<button class="nbk-sayb" data-action="nb-blk-text" data-k="${b.k}"
          title="이 블록의 설명을 고칩니다">✏️</button>${t.edited
       ? `<button class="nbk-sayb" data-action="nb-blk-text-reset" data-k="${b.k}"
