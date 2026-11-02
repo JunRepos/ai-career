@@ -299,8 +299,9 @@ function parseIpynb(jsonText){
    빈 배열도 「블록 셀인데 아직 비어 있다」 는 뜻이므로 참/거짓으로 보면 안 됩니다. */
 function nbBlocksOf(c){
   if(!c) return null;
-  if(Array.isArray(c.blocks)) return c.blocks;
-  if(Array.isArray(c.metadata?.blocks)) return c.metadata.blocks;
+  // 읽는 길이 모두 여기를 지납니다 — 옛 블록을 지금 틀에 맞추는 자리입니다
+  if(Array.isArray(c.blocks)) return nbMigrateBlocks(c.blocks);
+  if(Array.isArray(c.metadata?.blocks)) return nbMigrateBlocks(c.metadata.blocks);
   return (c.blk || c.metadata?.blk) ? [] : null;
 }
 

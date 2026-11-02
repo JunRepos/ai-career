@@ -517,7 +517,9 @@ function vNbBlock(cellId, b, bi, file, bad){
          **빈칸이면 보기 목록이 있어도 적는 칸으로 그립니다.** 고르기만 하면
          철자도 안 외우고 오류도 안 만나 봅니다. 채워 둔 자리는 그대로 드롭다운이라
          선생님이 미리 정해 둔 값은 건드리지 않습니다. */
-      const asText = slot.kind || ask;
+      /* 단 `pick:1` 인 자리는 **빈칸이어도 고르는 칸**입니다 (2026-11-02 선생님 —
+         「어차피 2개 중 하나니까」). 지금은 `load` 의 파일 고르기 하나뿐입니다. */
+      const asText = slot.kind || (ask && !slot.pick);
       // 미리 셀 수 없는 값(행 번호 · 찾을 값)은 적는 칸으로 둡니다 — 교과서 81쪽처럼
       if(asText){
         const v = b.a[key];

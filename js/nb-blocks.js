@@ -147,8 +147,18 @@ const NB_BLOCK_DEFS = {
     // opt 'files' — 보기 목록을 **그릴 때마다** 구합니다 (nbDataFilesNow).
     // ask 1 — 끌어다 놓으면 「고르세요」로 비어 있습니다. 수행평가에서 학생이
     //          **상황에 맞는 데이터를 고르는 것**이 평가요소 ④ 입니다 (2026-10-27).
-    slots: { f: { opt: 'files', def: NB_DATA_DEFAULT, ask: 1 } },
-    tpl: '!wget "' + NB_DATA_URL + '{f}"\ndf = pd.read_csv("{f}")',
+    /* 2026-11-02 선생님 — 「파일 이름은 그냥 드롭다운으로 선택할 수 있게 해주고
+       (어차피 2개 중 하나니까), read_csv 쪽을 비워줘」.
+       그래서 **자리를 둘로 나눴습니다.**
+         f — 내려받을 파일을 **고르는 칸**(드롭다운). `pick:1` 이라 빈칸이어도
+             적는 칸이 아니라 고르는 칸으로 그립니다.
+         g — `read_csv` 에 **학생이 적는 칸**.
+       예전에는 `{f}` 하나가 두 줄에 모두 쓰여, 한 칸인데 둘로 보였습니다. */
+    slots: {
+      f: { opt: 'files', def: NB_DATA_DEFAULT, ask: 1, pick: 1 },
+      g: { kind: 'text', def: NB_DATA_DEFAULT, ans: NB_DATA_DEFAULT, ask: 1, ph: '파일 이름' },
+    },
+    tpl: '!wget "' + NB_DATA_URL + '{f}"\ndf = pd.read_csv("{g}")',
     say: '파일을 읽어 데이터 프레임 만들기',
     src: '교과서 79쪽',
   },
@@ -753,6 +763,17 @@ function nbTplFill(d, b){
      「입력을 했는데 다른 속성으로 입력된다」 고 한 것이 이것입니다.
      틀리게 적은 것은 실행해서 오류로 알아야 합니다 (2026-10-29 선생님 —
      「틀리면 오류 코드 알아서 확인하라 그래」). 앱이 고쳐 쓰지 않습니다. */
+/* 옛 노트북에 저장된 블록을 지금 틀에 맞춥니다 (2026-11-02).
+   `load` 는 예전에 칸이 `f` 하나였고 그것이 wget 과 read_csv 두 줄에 모두 쓰였습니다.
+   지금은 `g`(read_csv) 가 따로 있으므로, **없으면 f 에서 가져옵니다.**
+   이렇게 하지 않으면 이미 만들어 둔 차시 노트북의 read_csv 가 전부 빈칸이 됩니다. */
+function nbMigrateBlocks(blocks){
+  (blocks || []).forEach(b => {
+    if(b && b.k === 'load' && b.a && b.a.g == null) b.a.g = b.a.f ?? '';
+  });
+  return blocks;
+}
+
 function nbRefitBlocks(blocks, file){
   (blocks || []).forEach(b => {
     const d = NB_BLOCK_DEFS[b.k];
