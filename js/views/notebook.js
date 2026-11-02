@@ -552,9 +552,24 @@ function vNbBlock(cellId, b, bi, file, bad){
       }
       const first = !seenSlot.has(key);
       seenSlot.add(key);
-      // 두 번째로 나온 자리 — 입력 칸이 아니라 **적은 값을 비추는 글자**입니다
-      if(!first) return `<span class="nbk-mirror" data-mirror="${key}"
-        >${esc((b.a[key] === '' || b.a[key] == null) ? '___' : String(b.a[key]))}</span>`;
+      // 두 번째로 나온 자리 — 입력 칸이 아니라 **적은 값을 비추는 글자**입니다.
+      //   ⚠ 비었을 때 `___` 를 찍으면 **「여기도 채워야 하나」 로 읽힙니다**
+      //     (2026-11-02 선생님 — 「코드 셀 왜 이래? 버그 걸렸어?」).
+      //     `load` 블록은 틀에 `{f}` 가 두 번 들어가, 윗줄은 분홍 입력 상자인데
+      //     아랫줄만 `___` 라 한 칸이 둘로 보였습니다.
+      //     그래서 비었을 때는 **위 칸과 같은 안내 글자**를 흐리게 보여 주고,
+      //     윗줄에 적으면 여기도 같이 찬다고 일러 줍니다.
+      if(!first){
+        const mv = b.a[key];
+        const mempty = (mv === '' || mv == null);
+        // 위 칸의 안내 글자를 그대로 씁니다. `ph` 는 적는 칸 쪽에만 있으므로
+        // 여기서 다시 구합니다 (드롭다운 자리는 ph 가 없어 「같은 값」).
+        const mph = (ask ? (slot.ph || nbSlotHint(slot, file)) : '') || '같은 값';
+        return `<span class="nbk-mirror${mempty ? ' nbk-mirror-ask' : ''}"
+          data-mirror="${key}" data-ph="${esc(mph)}"
+          title="위 칸에 적으면 여기에도 똑같이 들어갑니다"
+          >${esc(mempty ? mph : String(mv))}</span>`;
+      }
       // 선생님만 — 이 자리를 빈칸으로 둘지 채워 둘지 (2026-10-28)
       // 「✎ 빈칸 정하기」 를 켰을 때만 — 늘 붙여 두면 파이썬이 지저분합니다
       if(!NB_BLK_ASKUI || !nbAuthoring()) return html;

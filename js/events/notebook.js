@@ -2189,8 +2189,14 @@ document.addEventListener('input', e => {
     b.a[el.dataset.slot] = el.value;
     // 같은 칸이 코드에 두 번 나오는 자리(X_train, y_train)도 같이 비춥니다
     const blk = el.closest('.nbk-blk');
+    //   비었을 때는 `___` 가 아니라 **위 칸과 같은 안내 글자**를 흐리게 둡니다
+    //   (2026-11-02 — `___` 가 또 하나의 빈칸처럼 보였습니다)
     if(blk) blk.querySelectorAll('[data-mirror="' + el.dataset.slot + '"]')
-      .forEach(m => { m.textContent = el.value === '' ? '___' : el.value; });
+      .forEach(m => {
+        const empty = el.value === '';
+        m.textContent = empty ? (m.dataset.ph || '같은 값') : el.value;
+        m.classList.toggle('nbk-mirror-ask', empty);
+      });
   }
   // 적는 대로 칸이 늘어납니다 — 긴 함수 이름이 칸 안에서 잘리지 않게
   if(el.type === 'text'){

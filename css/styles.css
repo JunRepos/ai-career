@@ -6829,6 +6829,11 @@ button{border-radius:2px}
 /* 같은 칸이 코드에 두 번 나오는 자리 — 적은 값을 그대로 비춥니다 */
 .nbk-mirror{font-family:'Consolas','D2Coding',monospace;font-size:12.5px;
   font-weight:700;color:var(--cb-text);white-space:pre}
+/* 아직 안 적었을 때 — 위 칸과 **같은 안내 글자**를 흐리게.
+   점선 밑줄로 「여기는 적는 칸이 아니라 따라 차는 자리」임을 보입니다
+   (2026-11-02 — `___` 가 또 하나의 빈칸처럼 보였습니다). */
+.nbk-mirror.nbk-mirror-ask{font-weight:400;color:#C8102E;opacity:.62;
+  border-bottom:1px dashed #C8102E;cursor:help}
 .nbk-in:focus-visible{outline:2px solid var(--cb-accent);outline-offset:1px}
 
 /* 🧩 아직 안 고른 드롭다운 — 눈에 띄게 (2026-10-22) */
