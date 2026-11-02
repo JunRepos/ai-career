@@ -710,12 +710,12 @@ function vNbBlockPanel(){
       return `
       <div class="cb-snip-group">
         <div class="cb-snip-label">${esc(g)}</div>
+        ${/* 블록마다 붙던 ? 단추를 뺐습니다 (2026-11-02 선생님 — 「물음표 블록 다 빼」).
+             가이드북은 윗줄의 「📖 가이드북」 단추로 그대로 엽니다. */''}
         ${keys.map(k => `<div class="nbk-pal-row"><button class="nbk-pal" draggable="true" data-action="nb-blk-add"
           data-k="${k}" style="--nbk-cat:var(${NB_BLK_CAT[NB_BLOCK_DEFS[k].cat]})"
           ><span class="nbk-pal-name">${esc(nbBlkName(k))}</span
-          ><span class="nbk-pal-code">${esc(nbPalCode(k))}</span></button>${
-          NB_BLOCK_DEFS[k].guide ? `<button class="nbk-pal-q" data-action="nb-guide-go"
-            data-anchor="${NB_BLOCK_DEFS[k].guide}" title="가이드북에서 보기">?</button>` : ''}</div>`).join('')}
+          ><span class="nbk-pal-code">${esc(nbPalCode(k))}</span></button></div>`).join('')}
       </div>`;
     }).join('')}
   </div>`;
