@@ -90,6 +90,45 @@ function nbCanAuthor(){
   return !nbInSim();
 }
 
+/* ── 📄 문제 상황 글 읽기 (2026-11-01) ──
+   평가용 노트북에만 붙어 있습니다. 없으면 조용히 넘어갑니다 — 다른 차시는
+   상황 글이 없는 것이 정상입니다. 글은 verify/assess2_common.py 한 곳에서
+   와서 종이 카드와 글자 그대로 같습니다 (CLAUDE.md 18). */
+async function loadNbSitu(cid, nbId){
+  NB_SITU = null;
+  if(!cid || !nbId) return null;
+  try {
+    const s = await db.ref(`aiactivity/submissions/${cid}/nbSitu/${nbId}`).get();
+    NB_SITU = s.exists() ? (s.val() || null) : null;
+  } catch(err){
+    console.warn('[문제 상황] 못 읽었습니다:', err.message || err);
+    NB_SITU = null;
+  }
+  if(NB_SITU && Array.isArray(NB_SITU.situ) && !NB_SITU_PICK){
+    try { NB_SITU_PICK = localStorage.getItem('nb-situ-' + nbId) || ''; } catch(e){ /* 사생활 보호 창 */ }
+  }
+  return NB_SITU;
+}
+
+/* 고른 상황을 기기에 남깁니다 — 다시 열어도 그 상황이 펴집니다.
+   ⚠ 점수와 무관합니다. 채점은 종이에 표시한 것으로 합니다. */
+function nbSituPick(mark){
+  NB_SITU_PICK = mark || '';
+  try {
+    const id = (typeof SEL_NOTEBOOK !== 'undefined' && SEL_NOTEBOOK) ? SEL_NOTEBOOK.id : '';
+    if(id) localStorage.setItem('nb-situ-' + id, NB_SITU_PICK);
+  } catch(e){ /* 저장 못 해도 화면은 그대로 돕니다 */ }
+}
+
+/* 지금 펴 놓을 수 있는가 — **상황 글이 올라와 있는 노트북**이면 됩니다.
+   2026-11-02 선생님 — 「예전에 펭귄 관련 문제 상황도 만들었고 그걸 써서
+   수행평가 연습은 그렇게 진행 될 수 있도록」. 앞서는 평가용(nbInAssess)
+   에만 붙어서 복습 노트북에는 뜨지 않았습니다. 글이 없는 노트북은
+   NB_SITU 가 비어 있어 그대로 안 뜹니다. */
+function nbSituReady(){
+  return !!(NB_SITU && Array.isArray(NB_SITU.situ) && NB_SITU.situ.length);
+}
+
 async function loadNbGate(cid){
   if(!cid) return;
   try {

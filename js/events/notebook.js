@@ -415,6 +415,17 @@ async function openNotebook(nbId){
   }
   SEL_NOTEBOOK = nb;
 
+  /* 📄 평가용 노트북이면 문제 상황 글을 읽어 둡니다 (2026-11-01 선생님).
+     다른 차시에는 올라와 있지 않아 조용히 넘어갑니다. 글을 읽은 뒤에야
+     「전체화면으로 펴기」 띠를 띄울지 알 수 있어 여기서 기다립니다. */
+  NB_SITU_OPEN = false;
+  NB_FULL_ASK = false;
+  if(typeof loadNbSitu === 'function'){
+    const cid = IS_TC ? (TC_CLS && TC_CLS.id) : (ST_USER && ST_USER.classId);
+    try { await loadNbSitu(cid, nbId); } catch(err){ /* 없으면 그만 */ }
+    if(typeof nbSituReady === 'function' && nbSituReady()) NB_FULL_ASK = true;
+  }
+
   // 학생이면 저장된 진행 상황 시도
   let savedCells = null;
   if(ST_USER && !IS_TC && SEL_CLS){
@@ -901,6 +912,28 @@ document.addEventListener('drop', e => {
    블록 글은 노트북 하나가 아니라 **반 전체**에 걸립니다. 반마다 다르면 두 반
    수업이 어긋나므로 한 번에 같이 씁니다 (CLAUDE.md 23).
    `val` 이 null 이면 그 블록의 고친 글을 지웁니다(= 처음 글로). */
+/* 빈칸을 바꿀 수 있는 상태인가 — **안 되면 까닭을 말해 줍니다** (2026-11-02).
+   앞서는 조용히 return 해서 「눌러도 안 먹는다」 로만 보였습니다. */
+function nbBlkAskGate(){
+  if(typeof IS_TC === 'undefined' || !IS_TC){
+    toast('선생님 화면에서만 빈칸을 바꿀 수 있습니다', 'err');
+    return false;
+  }
+  if(typeof NB_VIEWING_STUDENT !== 'undefined' && NB_VIEWING_STUDENT){
+    toast('학생 노트북을 보는 중입니다 — 목록으로 나간 뒤 바꾸세요', 'err');
+    return false;
+  }
+  if(typeof nbInSim === 'function' && nbInSim()){
+    toast('「학생처럼 보기」 를 끄면 빈칸을 바꿀 수 있습니다', 'err');
+    return false;
+  }
+  if(!TC_CLS){
+    toast('반을 먼저 고르세요', 'err');
+    return false;
+  }
+  return true;
+}
+
 async function nbSaveBlockTextAll(k, val){
   if(!nbAuthoring() || !TC_CLS) return [];
   const me = CLASSES.find(c => c.id === TC_CLS.id);
@@ -1276,6 +1309,8 @@ document.addEventListener('click', async e => {
   if(act.action === 'nb-toggle-sidebar'){
     closeNbMenu();
     NB_SIDEBAR_OPEN = !NB_SIDEBAR_OPEN;
+    // 왼쪽은 **하나만** 엽니다 — 셋으로 나누면 노트북이 421px 로 눌립니다 (2026-11-01 재어 봄)
+    if(NB_SIDEBAR_OPEN) NB_SITU_OPEN = false;
     destroyAllCMs(); render();
     return;
   }
@@ -1393,12 +1428,45 @@ document.addEventListener('click', async e => {
   /* ── 🧩 블록 셀 ──
      블록을 고칠 때마다 cell.source 를 다시 만들어 넣습니다.
      그래야 실행 · 저장 · ipynb 내려받기가 지금 코드 그대로 돕니다. */
+  /* ── 📄 문제 상황을 옆에 펴 놓기 (2026-11-01 선생님) ── */
+  if(act.action === 'nb-toggle-situ'){
+    NB_SITU_OPEN = !NB_SITU_OPEN;
+    if(NB_SITU_OPEN) NB_SIDEBAR_OPEN = false;   // 왼쪽은 하나만
+    destroyAllCMs(); render();
+    return;
+  }
+  if(act.action === 'nb-situ-pick'){
+    if(typeof nbSituPick === 'function') nbSituPick(act.mark);
+    NB_SITU_OPEN = true;
+    NB_SIDEBAR_OPEN = false;
+    destroyAllCMs(); render();
+    return;
+  }
+  if(act.action === 'nb-full-dismiss'){ NB_FULL_ASK = false; render(); return; }
+  if(act.action === 'nb-go-full'){
+    NB_FULL_ASK = false;
+    NB_SITU_OPEN = true;
+    NB_SIDEBAR_OPEN = false;
+    /* ⚠ 전체화면은 **누른 바로 그 순간**에만 들어갑니다. render() 뒤로 미루면
+       브라우저가 「사용자가 누른 것이 아니다」 로 보고 막습니다 (2026-11-01). */
+    try {
+      const el = document.documentElement;
+      const go = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+      if(go) { const r = go.call(el); if(r && r.catch) r.catch(() => {}); }
+    } catch(err){ /* 막혀도 반반 보기는 그대로 됩니다 */ }
+    render();
+    return;
+  }
   if(act.action === 'nb-blk-add'){ nbBlkAdd(act.k); return; }
   if(act.action === 'nb-hole-del'){ nbHoleDel(act.cellid, act.bi, act.h); return; }
   if(act.action === 'nb-blk-idk'){ nbBlkIdk(act.cellid); return; }
   /* 🧩 빈칸을 **반 전체로** 정합니다 (2026-10-29 선생님).
      이름·설명과 **같은 자리**(NB_BLK_TEXT[k].q)에 담아 한 번만 읽습니다. */
   if(act.action === 'nb-blkask-toggle'){
+    // 2026-11-02 선생님 — 「왜 아직도 빈칸을 내맘대로 못 뚫는거야??」
+    //   nbSaveBlockTextAll 이 nbAuthoring() 아니면 **조용히 return** 했습니다.
+    //   눌러도 아무 일이 안 나고 까닭도 안 보였습니다. 여기서 먼저 말해 줍니다.
+    if(!nbBlkAskGate()) return;
     const d = NB_BLOCK_DEFS[act.k];
     if(!d || !d.slots || !d.slots[act.slot]) return;
     const cur = nbBlkAskDefault(act.k);
@@ -1414,8 +1482,12 @@ document.addEventListener('click', async e => {
     render();
     return;
   }
-  if(act.action === 'nb-blkask-apply'){ await nbBlkAskApply(); return; }
+  if(act.action === 'nb-blkask-apply'){
+    if(!nbBlkAskGate()) return;
+    await nbBlkAskApply(); return;
+  }
   if(act.action === 'nb-blkask-reset'){
+    if(!nbBlkAskGate()) return;
     const keep = Object.assign({}, NB_BLK_TEXT[act.k] || {});
     delete keep.q;
     try { await nbSaveBlockTextAll(act.k, Object.keys(keep).length ? keep : null); }

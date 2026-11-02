@@ -314,6 +314,10 @@ function vNotebookDetail(isTeacher){
     ${saveInd}
     <div class="cb-toolbar-actions">
       <button class="cb-tb-btn" data-action="nb-upload-open" title="내 컴퓨터의 파일을 노트북(/content)에 올리기 — 파일을 노트북 위로 끌어다 놓아도 됩니다">📤 파일 올리기</button>
+      ${(typeof nbSituReady === 'function' && nbSituReady())
+        ? `<button class="cb-tb-btn${NB_SITU_OPEN ? ' cb-tb-on' : ''}" data-action="nb-toggle-situ"
+             aria-pressed="${NB_SITU_OPEN}" title="문제 상황을 노트북 옆에 펴 놓기">📄 문제 상황</button>`
+        : ''}
       <button class="cb-tb-btn${NB_GUIDE_OPEN ? ' cb-tb-on' : ''}" data-action="nb-toggle-guide"
         aria-pressed="${NB_GUIDE_OPEN}" title="가이드북을 펴 놓고 보기">📖 가이드북</button>
       ${syncBtn}
@@ -348,8 +352,10 @@ function vNotebookDetail(isTeacher){
   return `
     <div class="cb-wrap">
       ${toolbar}
+      ${vNbFullBanner()}
       ${menubar}
-      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}">
+      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}${NB_SITU_OPEN ? ' cb-has-situ' : ''}">
+        ${vNbSituPanel()}
         ${sidebar}
         <div class="cb-main">
           <div class="cb-cells" id="cb-cells">${cellsHtml || ''}</div>
@@ -592,6 +598,52 @@ function nbPalCode(k){
    바깥을 누르거나 Esc 로 닫습니다.
    iframe 을 다시 그리면 보던 자리를 잃으므로, 자리 이동은 **다시 그리지 않고**
    postMessage 로 알립니다 (events/notebook.js 의 nb-guide-go). */
+/* ═══ 📄 문제 상황을 노트북 옆에 (2026-11-01 선생님) ═══════════════
+   「문제 상황을 노트북과 같이 볼 수 있게. 화면에서 반반」.
+   가이드북은 **덮는 창**이라 노트북이 가려집니다. 이것은 왼쪽에 자리를
+   차지하고 노트북을 오른쪽으로 밀어, 둘을 같이 봅니다.
+
+   · 평가용 노트북에서만 보입니다 (nbSituReady).
+   · 상황을 고르면 그 글만 큼직하게 보여 줍니다. 다시 고를 수 있습니다.
+   · 글은 반 DB 에서 옵니다 — 종이 카드와 글자 그대로 같습니다 (CLAUDE.md 18). */
+function vNbSituPanel(){
+  if(!NB_SITU_OPEN || typeof nbSituReady !== 'function' || !nbSituReady()) return '';
+  const list = NB_SITU.situ || [];
+  const cur = list.find(x => x.mark === NB_SITU_PICK);
+  const tabs = list.map(x => `<button class="cb-situ-tab${x.mark === NB_SITU_PICK ? ' on' : ''}"
+      data-action="nb-situ-pick" data-mark="${esc(x.mark)}">${esc(x.mark)}</button>`).join('');
+  const body = cur
+    ? `<div class="cb-situ-h">${esc(cur.mark)}. ${esc(cur.name)}
+         <span class="cb-situ-f">${esc(cur.file)}</span></div>`
+      + (cur.body || []).map(t => `<p>${esc(t)}</p>`).join('')
+      + (NB_SITU.common ? `<div class="cb-situ-note">${NB_SITU.common}</div>` : '')
+    : `<div class="cb-situ-pickme">종이 카드에서 고른 상황을 위에서 누르시오.</div>`
+      + list.map(x => `<button class="cb-situ-one" data-action="nb-situ-pick"
+          data-mark="${esc(x.mark)}"><b>${esc(x.mark)}</b> ${esc(x.one)}</button>`).join('');
+  return `<aside class="cb-situ" id="cb-situ" aria-label="문제 상황">
+    <div class="cb-situ-bar">
+      <span class="cb-situ-t">📄 문제 상황</span>
+      <span class="cb-situ-tabs">${tabs}</span>
+      <button class="cb-situ-x" data-action="nb-toggle-situ" title="닫기">✕</button>
+    </div>
+    <div class="cb-situ-body">${body}</div>
+  </aside>`;
+}
+
+/* 전체화면을 권하는 띠 — 평가용 노트북을 열었을 때 한 번.
+   반반으로 보려면 화면이 넓어야 합니다. 누르는 것은 학생이 정합니다
+   (전체화면은 **누른 순간에만** 들어갈 수 있습니다 — 브라우저 규칙). */
+function vNbFullBanner(){
+  if(!NB_FULL_ASK || typeof nbSituReady !== 'function' || !nbSituReady()) return '';
+  return `<div class="cb-full-ask">
+    <span>📄 문제 상황을 <b>노트북 옆에 펴 놓고</b> 풀 수 있습니다.
+      화면을 넓게 쓰면 둘이 나란히 보입니다.</span>
+    <button class="cb-tb-btn cb-tb-on" data-action="nb-go-full">⛶ 전체화면으로 펴기</button>
+    <button class="cb-tb-btn" data-action="nb-full-dismiss">그냥 보기</button>
+  </div>`;
+}
+
+
 function vNbGuidePanel(){
   if(!NB_GUIDE_OPEN) return '';
   const src = 'guide/index.html?panel=1' + (NB_GUIDE_ANCHOR ? '#' + NB_GUIDE_ANCHOR : '');

@@ -57,20 +57,16 @@ const NB_DATASETS = {
      결측 13 · 범주 오류 2 · 지울 수치 오류 2 · 남길 극단값 1.
      어느 것을 골라도 전처리 결과가 240 → 227 → 225 → 223 으로 같습니다. */
   'farmland_ko.csv': {
-    cols: ['쓰임', '위성', '식생지수', '지표면 온도(℃)', '밤 불빛 밝기', '높낮이 변화(m)'],
-    num:  ['식생지수', '지표면 온도(℃)', '밤 불빛 밝기', '높낮이 변화(m)'],
+    cols: ['쓰임', '위성', '격자 번호', '식생지수', '지표면 온도(℃)', '밤 불빛 밝기',
+           '높낮이 변화(m)', '잎 면적 지수', '촬영 고도(km)', '구름량(%)', '영상 선명도'],
+    num:  ['식생지수', '지표면 온도(℃)', '밤 불빛 밝기', '높낮이 변화(m)',
+           '잎 면적 지수', '촬영 고도(km)', '구름량(%)', '영상 선명도'],
   },
   'firewatch_ko.csv': {
-    cols: ['판정', '관측소', '온도(℃)', '습도(%)', '미세먼지(㎍/㎥)', '일산화탄소(ppm)'],
-    num:  ['온도(℃)', '습도(%)', '미세먼지(㎍/㎥)', '일산화탄소(ppm)'],
-  },
-  'remicon_ko.csv': {
-    cols: ['판정', '운반 차량', '슬럼프(mm)', '공기량(%)', '콘크리트 온도(℃)', '염화물량(kg/m³)'],
-    num:  ['슬럼프(mm)', '공기량(%)', '콘크리트 온도(℃)', '염화물량(kg/m³)'],
-  },
-  'wafer_ko.csv': {
-    cols: ['등급', '검사 장비', '대기 전류(㎂)', '불량 셀 수', '최소 동작 전압(V)', '읽기 지연 시간(ns)'],
-    num:  ['대기 전류(㎂)', '불량 셀 수', '최소 동작 전압(V)', '읽기 지연 시간(ns)'],
+    cols: ['판정', '관측소', '기록 번호', '온도(℃)', '습도(%)', '미세먼지(㎍/㎥)',
+           '일산화탄소(ppm)', '초미세먼지(㎍/㎥)', '기압(hPa)', '배터리 전압(V)', '센서 가동 시간(h)'],
+    num:  ['온도(℃)', '습도(%)', '미세먼지(㎍/㎥)', '일산화탄소(ppm)',
+           '초미세먼지(㎍/㎥)', '기압(hPa)', '배터리 전압(V)', '센서 가동 시간(h)'],
   },
 };
 const NB_DATA_FILES = Object.keys(NB_DATASETS);
@@ -87,8 +83,7 @@ const NB_DATA_DEFAULT = 'penguins_ko.csv';
    ⚠ 가릴 수 없는 것 — CSV 자체는 사이트에 있어야 wget 으로 받힙니다.
      주소를 아는 사람은 파일을 받을 수 있습니다. 데이터만으로는 답이 되지
      않지만(어느 지표가 중요한지는 상황 글에도 안 적혀 있습니다) 알아 두십시오. */
-const NB_DATA_ASSESS = ['farmland_ko.csv', 'firewatch_ko.csv',
-                        'remicon_ko.csv', 'wafer_ko.csv'];
+const NB_DATA_ASSESS = ['farmland_ko.csv', 'firewatch_ko.csv'];
 
 /* ── 평가용 노트북에서 **가리는 블록** (2026-10-28) ──
    2차 수행평가는 정밀도·재현율을 **학생이 혼동 행렬을 보고 직접 계산**합니다
@@ -202,9 +197,9 @@ const NB_BLOCK_DEFS = {
   count: {
     guide: 'c_countplot',
     cat: 'plot', name: '막대그래프',
-    slots: { c: { opt: 'cols', def: 0, ask: 1 } },
+    slots: { fn: { kind: 'text', def: 'countplot', ans: 'countplot', ask: 1, ph: '함수 이름' }, c: { opt: 'cols', def: 0, ask: 1 } },
     imp: 'import seaborn as sns',
-    tpl: 'sns.countplot(x=df["{c}"])',
+    tpl: 'sns.{fn}(x=df["{c}"])',
     say: '값마다 개수를 세어 막대그래프로 그립니다.',
     src: '교과서 80쪽',
   },
@@ -262,22 +257,42 @@ const NB_BLOCK_DEFS = {
   scat: {
     guide: 'c_scatter',   // 산점도
     cat: 'plot', name: '산점도',
-    slots: { x: { opt: 'num', def: 0 }, y: { opt: 'num', def: 2 }, h: { opt: 'cols', def: 0 } },
-    tpl: 'sns.scatterplot(data=df, x="{x}", y="{y}", hue="{h}")',
+    slots: { fn: { kind: 'text', def: 'scatterplot', ans: 'scatterplot', ask: 1, ph: '함수 이름' }, x: { opt: 'num', def: 0 }, y: { opt: 'num', def: 2 }, h: { opt: 'cols', def: 0 } },
+    tpl: 'sns.{fn}(data=df, x="{x}", y="{y}", hue="{h}")',
     say: '산점도 — 두 속성의 관계. hue 에 넣은 속성의 값마다 색이 달라집니다.',
     src: '교과서 82쪽',
   },
   box: {
     guide: 'c_box',   // 상자그림
     cat: 'plot', name: '상자그림',
-    slots: { c: { opt: 'num', def: 3 } },
-    tpl: 'sns.boxplot(data=df, x="{c}")',
+    slots: { fn: { kind: 'text', def: 'boxplot', ans: 'boxplot', ask: 1, ph: '함수 이름' }, c: { opt: 'num', def: 3 } },
+    tpl: 'sns.{fn}(data=df, x="{c}")',
     say: '상자그림 — 값이 퍼진 모양과 범위를 벗어난 값', src: '교과서 81쪽',
+  },
+  /* ── 2026-11-01 선생님 — 「산점도로 핵심 속성 구하는 건 노가다 아냐?」 ──
+     속성이 8개면 두 개씩 짝지은 산점도가 28장입니다. 클래스별 상자그림은
+     속성 하나에 한 장이라 8장이고, 이 블록은 그 8장을 **한 번에** 그립니다.
+     세 상자가 떨어져 있으면 쓸모 있는 속성, 겹쳐 있으면 버립니다.
+     근거 — 교과서 76쪽 「핵심 속성은 데이터 분포 … 를 분석하여 추출할 수 있다」,
+            13~21차시 노트북에서 `sns.boxplot(data=df, x="종", y="체질량(g)")` 로 가르쳤습니다. */
+  boxall: {
+    guide: 'c_box',
+    cat: 'plot', name: '속성마다 클래스별 상자그림',
+    slots: { t: { opt: 'cols', def: 0, ask: 1 } },
+    tpl: 'for c in df.select_dtypes("number").columns:\n'
+       + '    sns.boxplot(data=df, x="{t}", y=c)\n'
+       + '    plt.title(c)\n'
+       + '    plt.show()',
+    imp: 'import seaborn as sns\nimport matplotlib.pyplot as plt',
+    say: '수치 속성마다 클래스별 상자그림을 그립니다. '
+       + '세 상자가 떨어져 있으면 그 속성으로 클래스가 갈립니다.',
+    src: '교과서 76 · 81쪽',
   },
   corr: {
     guide: 'c_corr',   // 상관계수
     cat: 'plot', name: '상관계수',
-    tpl: 'df.corr(numeric_only=True)',
+    slots: { fn: { kind: 'text', def: 'corr', ans: 'corr', ask: 1, ph: '함수 이름' } },
+    tpl: 'df.{fn}(numeric_only=True)',
     say: '상관계수 — 두 속성의 상관 정도를 수치로 나타낸 값', src: '교과서 77 · 83쪽',
   },
 
@@ -317,12 +332,12 @@ const NB_BLOCK_DEFS = {
     // 2026-10-29 선생님 — 「train_test_split 부분에 stratify 도 뚫고」.
     //   test_size · stratify · random_state 를 **각각 적게** 합니다.
     //   셋이 무엇을 하는지 모르면 나눈 결과를 설명할 수 없습니다 (평가요소 ③).
-    slots: { r: { kind: 'text', def: '0.3', ans: '0.3', ask: 1, ph: '0.3' },
+    slots: { fn: { kind: 'text', def: 'train_test_split', ans: 'train_test_split', ask: 1, ph: '함수 이름' }, r: { kind: 'text', def: '0.3', ans: '0.3', ask: 1, ph: '0.3' },
              s: { kind: 'text', def: 'y', ans: 'y', ask: 1, ph: 'y' },
              d: { kind: 'num', def: '42', ans: '42', ask: 1, ph: '42' } },
     // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
     imp: 'from sklearn.model_selection import train_test_split',
-    tpl:          'X_train, X_test, y_train, y_test = train_test_split(\n' +
+    tpl:          'X_train, X_test, y_train, y_test = {fn}(\n' +
          '    X, y, test_size={r}, stratify={s}, random_state={d})\n' +
          'print(X_train.shape, X_test.shape)',
     say: '훈련 데이터와 테스트 데이터로 나누기. '
@@ -333,9 +348,9 @@ const NB_BLOCK_DEFS = {
   dt: {
     guide: 'c_dt',   // 결정트리
     cat: 'ml', name: '결정트리 모델 만들기',
-    slots: { d: { opt: ['None', '1', '2', '3', '4', '5'], def: 'None' } },
+    slots: { fn: { kind: 'text', def: 'DecisionTreeClassifier', ans: 'DecisionTreeClassifier', ask: 1, ph: '함수 이름' }, d: { opt: ['None', '1', '2', '3', '4', '5'], def: 'None' } },
     imp: 'from sklearn.tree import DecisionTreeClassifier',
-    tpl:          'dt = DecisionTreeClassifier(max_depth={d}, random_state=42)',
+    tpl:          'dt = {fn}(max_depth={d}, random_state=42)',
     say: '결정트리는 트리 구조 기반의 알고리즘입니다. 트리의 루트 노드에서부터 각 분기마다 ' +
          '특징에 대한 분할 기준을 만들어 데이터를 분할합니다. 각 특징값을 기준으로 분할하므로 ' +
          '데이터 정규화가 필요 없습니다.',
@@ -344,9 +359,9 @@ const NB_BLOCK_DEFS = {
   knn: {
     guide: 'c_knn',   // k-최근접 이웃
     cat: 'ml', name: 'kNN 모델 만들기',
-    slots: { k: { opt: ['1', '3', '5', '7', '9'], def: '5' } },
+    slots: { fn: { kind: 'text', def: 'KNeighborsClassifier', ans: 'KNeighborsClassifier', ask: 1, ph: '함수 이름' }, k: { opt: ['1', '3', '5', '7', '9'], def: '5' } },
     imp: 'from sklearn.neighbors import KNeighborsClassifier',
-    tpl:          'knn = KNeighborsClassifier(n_neighbors={k})',
+    tpl:          'knn = {fn}(n_neighbors={k})',
     say: '예측 데이터에서 가장 가까운 k개의 데이터로 예측하는 방법입니다. 분류를 할 경우 ' +
          'k개의 가장 가까운 데이터 중 다수의 레이블이 예측 데이터의 클래스를 결정합니다.',
     src: '교과서 107쪽',
@@ -356,9 +371,9 @@ const NB_BLOCK_DEFS = {
     cat: 'ml', name: '학습시키기',
     // d — 학습에 **어느 데이터**를 쓸지. 테스트 데이터로 학습하면 틀립니다.
     //     수행평가 ② 「정확하게 학습」 이 이 선택입니다 (2026-10-22 선생님).
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' },
+    slots: { fn: { kind: 'text', def: 'fit', ans: 'fit', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
              d: { opt: ['train', 'test'], def: '', ans: 'train', ask: 1 } },
-    tpl: '{m}.fit(X_{d}, y_{d})',
+    tpl: '{m}.{fn}(X_{d}, y_{d})',
     say: '모델을 학습시키기. 학습에는 훈련 데이터를 씁니다.', src: '교과서 100쪽',
   },
   score: {
@@ -366,9 +381,9 @@ const NB_BLOCK_DEFS = {
     cat: 'ml', name: '분류 정확도 재기',
     // d — **어느 데이터로 잴지**. 모델의 성능은 테스트 데이터로 봅니다.
     //     수행평가 ③ 「정확하게 평가」 가 이 선택입니다 (2026-10-22 선생님).
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' },
+    slots: { fn: { kind: 'text', def: 'score', ans: 'score', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
              d: { opt: ['train', 'test'], def: '', ans: 'test', ask: 1 } },
-    tpl: 'print({m}.score(X_{d}, y_{d}))',
+    tpl: 'print({m}.{fn}(X_{d}, y_{d}))',
     say: '분류 정확도는 전체 데이터 중 예측값과 실젯값이 같은 데이터 개수의 비율입니다. ' +
          '모델의 성능은 학습에 쓰지 않은 테스트 데이터로 봅니다.',
     src: '교과서 108 · 112쪽',
@@ -376,8 +391,8 @@ const NB_BLOCK_DEFS = {
   scoret: {
     guide: 'c_dtscore',   // 분류 정확도
     cat: 'ml', name: '정확도 재기 — 테스트 데이터',
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
-    tpl: 'print({m}.score(X_test, y_test))',
+    slots: { fn: { kind: 'text', def: 'score', ans: 'score', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
+    tpl: 'print({m}.{fn}(X_test, y_test))',
     say: '테스트 데이터는 학습에 사용하지 않은 데이터입니다. ' +
          '훈련 데이터 점수보다 테스트 데이터 점수가 많이 낮으면 과적합입니다.',
     src: '교과서 95 · 112쪽',
@@ -388,8 +403,8 @@ const NB_BLOCK_DEFS = {
   classes: {
     guide: 'c_classes',
     cat: 'ml', name: '클래스 차례 확인',
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
-    tpl: 'print({m}.classes_)',
+    slots: { fn: { kind: 'text', def: 'classes_', ans: 'classes_', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
+    tpl: 'print({m}.{fn})',
     say: '혼동 행렬의 가로와 세로가 어느 클래스 차례인지 알려 줍니다. '
        + '나오는 차례대로 행과 열이 놓입니다.',
     src: '교과서 108쪽',
@@ -397,9 +412,9 @@ const NB_BLOCK_DEFS = {
   cm: {
     guide: 'c_cm',   // 혼동 행렬
     cat: 'ml', name: '혼동 행렬',
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
+    slots: { fn: { kind: 'text', def: 'confusion_matrix', ans: 'confusion_matrix', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     imp: 'from sklearn.metrics import confusion_matrix',
-    tpl:          'print(confusion_matrix(y_test, {m}.predict(X_test)))',
+    tpl:          'print({fn}(y_test, {m}.predict(X_test)))',
     say: '혼동 행렬은 실제 클래스와 예측 클래스를 비교하여 모델이 각 클래스를 얼마나 ' +
          '정확하게 예측했는지 표시한 행렬입니다.',
     src: '교과서 108 · 115쪽',
@@ -407,9 +422,9 @@ const NB_BLOCK_DEFS = {
   report: {
     guide: 'c_metrics',   // 정밀도 · 재현율
     cat: 'ml', name: '정밀도 · 재현율 표',
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' } },
+    slots: { fn: { kind: 'text', def: 'classification_report', ans: 'classification_report', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' } },
     imp: 'from sklearn.metrics import classification_report',
-    tpl:          'print(classification_report(y_test, {m}.predict(X_test)))',
+    tpl:          'print({fn}(y_test, {m}.predict(X_test)))',
     say: '정밀도는 모델이 참이라고 분류한 것 중에서 실제 참인 것의 비율이고, ' +
          '재현율은 실제 참인 것 중에서 모델이 참이라고 예측한 것의 비율입니다.',
     src: '교과서 115쪽',
@@ -422,9 +437,9 @@ const NB_BLOCK_DEFS = {
   pred: {
     guide: 'c_dtscore',   // 성능 평가 — 예측이 같은 자리에 있습니다
     cat: 'ml', name: '새로운 데이터로 예측하기',
-    slots: { m: { opt: ['dt', 'knn'], def: 'dt' },
+    slots: { fn: { kind: 'text', def: 'predict', ans: 'predict', ask: 1, ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
              v: { kind: 'text', def: '', ans: '2, 5', ask: 1, ph: '값, 값' } },
-    tpl: 'print({m}.predict([[{v}]]))',
+    tpl: 'print({m}.{fn}([[{v}]]))',
     say: 'model.predict(): 새로운 데이터에 대한 예측을 수행한다. ' +
          '값은 특징을 고른 순서대로 적는다.',
     src: '교과서 101 · 109쪽',
@@ -447,7 +462,7 @@ const NB_BLOCK_GROUPS = [
   ['준비',     ['imp', 'load']],
   ['살펴보기', ['shape', 'head', 'info', 'cols', 'desc', 'col', 'vc']],
   ['전처리',   ['isnull', 'dropna', 'uniq', 'findrow', 'droprow']],
-  ['그래프',   ['count', 'scat', 'box', 'corr']],
+  ['그래프',   ['count', 'scat', 'box', 'boxall', 'corr']],
   ['기계학습', ['xy', 'xyn', 'split', 'dt', 'knn', 'fit', 'score', 'classes', 'cm', 'report',
                 'pred', 'tree']],
 ];

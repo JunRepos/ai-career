@@ -6975,3 +6975,48 @@ button{border-radius:2px}
 /* 빈칸 정하기를 켜면 코드 글자를 끌어서 고를 수 있다는 것을 보입니다 */
 .nbk-askon .nbk-code-in{cursor:text;border-radius:2px}
 .nbk-askon .nbk-code-in::selection{background:#00703C;color:#fff}
+
+/* ── 📄 문제 상황을 노트북 옆에 (2026-11-01 선생님) ──
+   「화면에서 반반」. 가이드북(.cb-guide)은 덮는 창이지만 이것은 **자리를 차지해**
+   노트북을 오른쪽으로 밉니다. 좁은 화면에서는 위아래로 쌓입니다. */
+.cb-situ{flex:0 0 clamp(260px, 29vw, 440px); min-width:0;
+  border-right:1px solid var(--cb-border); background:var(--cb-bg-2);
+  display:flex; flex-direction:column;
+  position:sticky; top:88px; align-self:flex-start; max-height:calc(100vh - 100px)}
+.cb-situ-bar{display:flex; align-items:center; gap:8px; padding:7px 10px;
+  border-bottom:1px solid var(--cb-border); background:var(--cb-bg); flex:0 0 auto}
+.cb-situ-t{font-weight:700; font-size:13px}
+.cb-situ-tabs{display:flex; gap:4px; margin-left:auto}
+.cb-situ-tab{font:inherit; font-size:12px; font-weight:700; cursor:pointer;
+  width:26px; height:24px; border-radius:5px;
+  border:1px solid var(--cb-border); background:var(--cb-bg); color:var(--cb-text-2)}
+.cb-situ-tab.on{background:#00703C; border-color:#00703C; color:#fff}
+.cb-situ-x{font:inherit; cursor:pointer; border:0; background:none;
+  color:var(--cb-text-2); font-size:14px; padding:0 2px}
+.cb-situ-body{overflow-y:auto; padding:12px 14px 20px; font-size:14px; line-height:1.72}
+.cb-situ-body p{margin:0 0 11px; text-align:justify}
+.cb-situ-h{font-weight:700; font-size:15px; margin-bottom:9px;
+  padding-bottom:6px; border-bottom:2px solid #00703C}
+.cb-situ-f{float:right; font-weight:400; font-size:11.5px;
+  font-family:'Consolas','D2Coding',monospace; color:var(--cb-text-2)}
+.cb-situ-note{margin-top:4px; padding:9px 11px; border-radius:6px;
+  background:var(--cb-hover); font-size:13px; line-height:1.66}
+.cb-situ-pickme{margin-bottom:10px; color:var(--cb-text-2); font-size:13px}
+.cb-situ-one{display:block; width:100%; text-align:left; font:inherit; font-size:13.5px;
+  cursor:pointer; margin-bottom:7px; padding:9px 11px; border-radius:6px;
+  border:1px solid var(--cb-border); background:var(--cb-bg); color:var(--cb-text)}
+.cb-situ-one:hover{border-color:#00703C}
+.cb-situ-one b{display:inline-block; min-width:18px; color:#00703C}
+/* 전체화면을 권하는 띠 */
+.cb-full-ask{display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  padding:8px 12px; border-bottom:1px solid var(--cb-border);
+  background:var(--cb-hover); font-size:13px}
+.cb-full-ask span{flex:1; min-width:220px}
+/* 좁은 화면 — 나란히 두면 둘 다 못 읽습니다. 위아래로 쌓습니다. */
+@media (max-width: 1000px){
+  .cb-body.cb-has-situ{flex-wrap:wrap}
+  .cb-situ{flex:1 1 100%; position:static; max-height:46vh; border-right:0;
+    border-bottom:1px solid var(--cb-border)}
+  /* ⚠ .cb-main 은 flex:1 뿐이라 줄바꿈하면 폭이 0 이 됩니다 — 재어 보고 찾았습니다 */
+  .cb-body.cb-has-situ > .cb-main{flex:1 1 100%}
+}

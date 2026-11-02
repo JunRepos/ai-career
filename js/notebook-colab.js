@@ -27,6 +27,18 @@ let NB_BLKEDIT = false;
 /* 🧩 「정답 확인」 을 누른 셀 — { [셀id]: true } (2026-10-29 선생님).
    저장하지 않습니다. 다시 열면 지워집니다 — 틀린 표시가 남아 있으면 겁먹습니다. */
 let NB_CHECKED = {};
+/* 📄 문제 상황을 노트북 **옆에 펴 놓기** (2026-11-01 선생님).
+   「문제 상황을 노트북과 같이 볼 수 있게. 화면에서 반반」.
+   종이 카드를 1차시에 걷으므로, 2차시 논술 때는 화면이 유일한 자리입니다.
+     NB_SITU      — 반 DB 에서 읽은 상황 글 (aiactivity/submissions/{반}/nbSitu/{노트북id})
+     NB_SITU_OPEN — 지금 펴 놓았는지
+     NB_SITU_PICK — 고른 상황의 표시('가'·'나'). 기기에 남겨 다시 열어도 그대로. */
+let NB_SITU      = null;
+let NB_SITU_OPEN = false;
+let NB_SITU_PICK = '';
+/* 전체화면을 권하는 띠를 아직 안 닫았는지. 노트북을 열 때마다 다시 뜹니다 —
+   1차시와 2차시가 다른 날이라, 한 번 닫았다고 영영 안 보이면 안 됩니다. */
+let NB_FULL_ASK = false;
 let NB_FILES     = null;    // [{p, d, s}] — null 이면 아직 안 읽음
 let _nbQueue     = Promise.resolve();
 let _nbGen       = 0;       // 중지할 때마다 올림 — 줄 서 있던 셀은 건너뜀
