@@ -404,17 +404,13 @@ function vNbBlockCell(cell, hoverTb){
     ? cell.blocks.map((b, bi) => vNbBlock(cell.id, b, bi, file, bad)).join('')
     : `<div class="nbk-empty">왼쪽 <b>🧩 블록</b> 서랍에서 끌어다 놓으세요.<br>눌러서 넣어도 됩니다.</div>`;
 
-  /* 「모름」 — 막힌 셀을 넘기고 뒤를 살립니다 (2026-10-29 선생님).
-     평가용 노트북에서만, 그리고 생성기가 달아 둔 셀에서만 뜹니다.
-     누른 기록(idkUsed)은 지워지지 않고 남아 채점 때 그 자리만 깎습니다. */
-  const idk = (typeof nbIdkOf === 'function') ? nbIdkOf(cell) : null;
-  const idkDone = (typeof nbIdkUsed === 'function') && nbIdkUsed(cell);
-  const idkBtn = (idk && typeof nbInAssess === 'function' && nbInAssess())
-    ? (idkDone
-        ? `<span class="nbk-idk-done" title="이 셀은 「모름」 으로 넘겼습니다">모름으로 넘김</span>`
-        : `<button class="nbk-mini nbk-idk" data-action="nb-blk-idk" data-cellid="${cell.id}"
-            title="이 셀을 넘기고 다음으로 갑니다. 이 자리는 점수가 깎이고, 기록이 남습니다">모름</button>`)
-    : '';
+  /* 「모름」 을 **없앴습니다** (2026-11-03 선생님 — 「모름으로 넘겨도 결국
+     지웠다가 다시 하면 똑같잖아. 모름 기능 없애는 게 나을 듯」).
+     막힌 셀을 넘기라고 만든 것인데(2026-10-29), 놓아 준 블록을 지우고 다시
+     쌓으면 안 누른 것과 같아져 **깎을 근거가 남지 않습니다.**
+     ⚠ 단추만 내지 않습니다. 셀에 붙어 있는 `idk` · `idkUsed` 는 읽고 쓰는
+       자리를 그대로 두었습니다 — 이미 만들어 둔 노트북이 깨지지 않게. */
+  const idkBtn = '';
 
   /* 정답 확인 (2026-10-29 선생님) — **평가 노트북에서는 내지 않습니다.**
      채점할 수 있는 칸이 하나도 없으면 단추도 내지 않습니다. */
