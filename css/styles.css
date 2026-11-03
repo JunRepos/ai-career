@@ -863,12 +863,37 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
 /* ✍️ 적는 칸 — 마크다운을 보여 주지 않습니다 (2026-11-02 선생님
    「애들이 마크다운 문법을 어떻게 알아」). 그리는 쪽은 js/views/notebook.js 의
    nbFillTable, 적은 값을 source 에 써 넣는 쪽은 js/events/notebook.js 의 cb-fill. */
-.cb-md-render table.cb-fill-t{display:table;width:100%;table-layout:fixed}
-.cb-md-render table.cb-fill-t td.lb{background:var(--cb-bg-2);font-weight:500;width:42%}
+.cb-md-render table.cb-fill-t{display:table;width:100%;table-layout:fixed;
+  border:1px solid var(--cb-border);border-radius:10px;border-collapse:separate;
+  border-spacing:0;overflow:hidden;margin:12px 0}
+.cb-md-render table.cb-fill-t th,.cb-md-render table.cb-fill-t td{border:0;
+  border-bottom:1px solid var(--cb-border)}
+.cb-md-render table.cb-fill-t tr:last-child th,
+.cb-md-render table.cb-fill-t tr:last-child td{border-bottom:0}
+.cb-md-render table.cb-fill-t th{background:var(--cb-bg-2);color:var(--cb-text-2);
+  font-size:12px;font-weight:600;letter-spacing:.3px;padding:8px 14px}
+.cb-md-render table.cb-fill-t td.lb{background:transparent;font-weight:500;width:46%;
+  padding:0 12px;border-right:1px solid var(--cb-border);vertical-align:middle}
 .cb-md-render table.cb-fill-t td:has(> input){padding:0}
+.cb-md-render table.cb-fill-t tr:hover td{background:var(--cb-bg-2)}
+/* 묶음 머리줄 — 「시도 1」 한 줄 아래에 그 묶음의 칸들 */
+.cb-md-render table.cb-fill-t tr.cb-fill-h td{background:var(--cb-bg-2);
+  padding:7px 14px;font-size:12px;font-weight:700;letter-spacing:.4px;
+  color:var(--cb-accent);border-top:1px solid var(--cb-border);border-right:0}
+.cb-md-render table.cb-fill-t tr.cb-fill-h:hover td{background:var(--cb-bg-2)}
+/* 줄 번호 */
+.cb-md-render .cb-fill-n{display:inline-flex;align-items:center;justify-content:center;
+  width:19px;height:19px;margin-right:9px;border-radius:50%;font-style:normal;
+  font-size:11px;font-weight:600;color:var(--cb-text-3);background:var(--cb-bg-2);
+  border:1px solid var(--cb-border);vertical-align:-3px}
 .cb-md-render input.cb-fill{display:block;width:100%;box-sizing:border-box;
   border:0;background:transparent;font:inherit;color:var(--cb-text);
-  padding:9px 12px;outline:0}
+  padding:11px 14px;outline:0;transition:background .12s,box-shadow .12s}
+/* 적은 칸 — 왼쪽에 띄를 두어 어디까지 했는지 한눈에 */
+.cb-md-render input.cb-fill:not(:placeholder-shown){
+  box-shadow:inset 3px 0 0 var(--cb-accent)}
+.cb-md-render table.cb-fill-t tr:has(input.cb-fill:not(:placeholder-shown)) .cb-fill-n{
+  color:#fff;background:var(--cb-accent);border-color:var(--cb-accent)}
 .cb-md-render input.cb-fill:focus{background:var(--cb-bg-2);
   box-shadow:inset 0 0 0 2px var(--cb-accent)}
 .cb-md-render input.cb-fill::placeholder{color:var(--cb-text-3);font-style:italic}

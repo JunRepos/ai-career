@@ -959,17 +959,40 @@ function nbInline(s){
   if(typeof marked !== 'undefined' && marked.parseInline) return marked.parseInline(s);
   return esc(s);
 }
+/* 이름표 앞머리 — 「시도 1 — 모델」 의 「시도 1」.
+   앞머리가 같은 줄을 묶어 **머리줄 한 줄로 올리고**, 이름표에서는 앞머리를
+   덜어 냅니다 (2026-11-03 선생님 — 「이것 좀 이쁘게 안되낭?」).
+     시도 1 — 모델 · 시도 1 — 세 속성 · 시도 1 — 정확도
+       → 「시도 1」 한 줄 아래 「모델 · 세 속성 · 정확도」
+   여덟 줄이 같은 간격으로 늘어서 시도 1 · 2 · 3 이 한 덩어리로 보이던 것을
+   고칩니다. **마크다운은 그대로입니다** — 선생님이 따로 적을 것이 없습니다.
+   앞머리가 없는 줄(「셋 중 고른 것과 그 까닭」)은 머리줄 없이 그냥 놓습니다. */
+function nbFillGroup(label){
+  const m = String(label).replace(/[*_`]/g, '').match(/^\s*(.{1,14}?)\s+—\s+(.+)$/);
+  return m ? {g: m[1].trim(), rest: m[2].trim()} : {g: '', rest: String(label).trim()};
+}
 function nbFillTable(lines, from, cellId){
   const isSep = cs => cs.every(c => /^\s*:?-{2,}:?\s*$/.test(c));
   const split = ln => ln.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
-  let out = '<table class="cb-fill-t">', head = true;
+  const wide = Math.max(2, ...lines.map(ln => split(ln).length));
+  let out = '<table class="cb-fill-t">', head = true, no = 0, prev = '';
   lines.forEach((ln, k) => {
     const cs = split(ln);
     if(isSep(cs)){ head = false; return; }
+    let lb = (cs[0] || '').trim();
+    if(!head){
+      no++;
+      const {g, rest} = nbFillGroup(lb);
+      if(g && g !== prev){
+        out += `<tr class="cb-fill-h"><td colspan="${wide}">${nbInline(g)}</td></tr>`;
+      }
+      if(g) lb = rest;
+      prev = g;
+    }
     out += '<tr>' + cs.map((c, ci) => {
-      const v = c.trim();
+      const v = ci === 0 ? lb : c.trim();
       if(head) return `<th>${nbInline(v)}</th>`;
-      if(ci === 0) return `<td class="lb">${nbInline(v)}</td>`;
+      if(ci === 0) return `<td class="lb"><i class="cb-fill-n">${no}</i>${nbInline(v)}</td>`;
       return `<td><input class="cb-fill" data-cellid="${cellId}"
         data-fill="${from + k},${ci}" value="${esc(v)}"
         placeholder="여기에 적으세요"></td>`;
