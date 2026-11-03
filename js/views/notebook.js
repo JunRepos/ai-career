@@ -1079,7 +1079,9 @@ function nbFillTable(lines, from, cellId){
     }
     out += '<tr>' + cs.map((c, ci) => {
       const v = ci === 0 ? lb : c.trim();
-      if(head) return `<th>${nbInline(v)}</th>`;
+      // 머리줄에 `--` 만 적은 칸은 **비워 둡니다** — 적을 머리말이 없다는 뜻으로
+      //   쓰시는데 그 글자가 그대로 보였습니다 (2026-11-03)
+      if(head) return `<th>${/^-+$/.test(v) ? '' : nbInline(v)}</th>`;
       if(ci === 0) return `<td class="lb"><i class="cb-fill-n">${no}</i>${nbInline(v)}</td>`;
       /* 적는 칸은 **여러 줄**입니다 (2026-11-03 선생님 — 「적으면 그만큼
          아래로 늘어나게」). 한 줄짜리 칸이라 긴 까닭을 적으면 글자가 옆으로
@@ -1091,7 +1093,7 @@ function nbFillTable(lines, from, cellId){
       return `<td><textarea class="cb-fill" data-cellid="${cellId}" rows="${
         Math.max(tall, tv.split('\n').length)}"
         data-fill="${from + k},${ci}" spellcheck="false"
-        placeholder="여기에 적으세요">${esc(tv)}</textarea></td>`;
+        placeholder="　">${esc(tv)}</textarea></td>`;
     }).join('') + '</tr>';
   });
   return out + '</table>';

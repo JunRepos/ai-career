@@ -863,41 +863,51 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
 /* ✍️ 적는 칸 — 마크다운을 보여 주지 않습니다 (2026-11-02 선생님
    「애들이 마크다운 문법을 어떻게 알아」). 그리는 쪽은 js/views/notebook.js 의
    nbFillTable, 적은 값을 source 에 써 넣는 쪽은 js/events/notebook.js 의 cb-fill. */
+/* 2026-11-03 선생님 — 「적는 칸들 좀 더 예쁘고 깔끔하게」.
+   적는 칸이 표 칸과 구별이 안 돼 **누를 수 있는 자리로 안 보였습니다.**
+   ① 빈 칸은 **점선 상자**, 적은 칸은 실선 — 눈으로 세지 않아도 남은 것이 보입니다.
+   ② 줄 사이 줄을 없았습니다 — 상자가 줄을 대신합니다.
+   ③ 「여기에 적으세요」 를 뺌습니다 — 열 번 되풀이되던 글씨입니다.
+     안내는 상자가 합니다. (빈칸 가이드를 뺀 것과 같은 까닭)
+   ⚠ 내용이 비었는지는 `:placeholder-shown` 으로 봅니다. 그래서
+     placeholder 를 아예 지우지 않고 **빈칸 한 글자**(　)를 넣습니다. */
 .cb-md-render table.cb-fill-t{display:table;width:100%;table-layout:fixed;
-  border:1px solid var(--cb-border);border-radius:10px;border-collapse:separate;
-  border-spacing:0;overflow:hidden;margin:12px 0}
-.cb-md-render table.cb-fill-t th,.cb-md-render table.cb-fill-t td{border:0;
+  border:1px solid var(--cb-border);border-radius:12px;border-collapse:separate;
+  border-spacing:0;overflow:hidden;margin:14px 0;background:var(--cb-bg)}
+.cb-md-render table.cb-fill-t th,.cb-md-render table.cb-fill-t td{border:0}
+.cb-md-render table.cb-fill-t th{background:var(--cb-bg-2);color:var(--cb-text-3);
+  font-size:11.5px;font-weight:600;letter-spacing:.4px;padding:7px 16px;
   border-bottom:1px solid var(--cb-border)}
-.cb-md-render table.cb-fill-t tr:last-child th,
-.cb-md-render table.cb-fill-t tr:last-child td{border-bottom:0}
-.cb-md-render table.cb-fill-t th{background:var(--cb-bg-2);color:var(--cb-text-2);
-  font-size:12px;font-weight:600;letter-spacing:.3px;padding:8px 14px}
-.cb-md-render table.cb-fill-t td.lb{background:transparent;font-weight:500;width:46%;
-  padding:12px 12px;border-right:1px solid var(--cb-border);vertical-align:top}
-.cb-md-render table.cb-fill-t td:has(> textarea){padding:0;vertical-align:top}
-.cb-md-render table.cb-fill-t tr:hover td{background:var(--cb-bg-2)}
+.cb-md-render table.cb-fill-t td.lb{background:transparent;font-weight:500;width:38%;
+  padding:14px 10px 14px 16px;vertical-align:top;line-height:1.5}
+.cb-md-render table.cb-fill-t td:has(> textarea){padding:8px 16px 8px 0;
+  vertical-align:top}
 /* 묶음 머리줄 — 「시도 1」 한 줄 아래에 그 묶음의 칸들 */
 .cb-md-render table.cb-fill-t tr.cb-fill-h td{background:var(--cb-bg-2);
-  padding:7px 14px;font-size:12px;font-weight:700;letter-spacing:.4px;
-  color:var(--cb-accent);border-top:1px solid var(--cb-border);border-right:0}
-.cb-md-render table.cb-fill-t tr.cb-fill-h:hover td{background:var(--cb-bg-2)}
+  padding:6px 16px;font-size:11.5px;font-weight:700;letter-spacing:.4px;
+  color:var(--cb-accent);border-top:1px solid var(--cb-border);
+  border-bottom:1px solid var(--cb-border)}
 /* 줄 번호 */
 .cb-md-render .cb-fill-n{display:inline-flex;align-items:center;justify-content:center;
-  width:19px;height:19px;margin-right:9px;border-radius:50%;font-style:normal;
-  font-size:11px;font-weight:600;color:var(--cb-text-3);background:var(--cb-bg-2);
-  border:1px solid var(--cb-border);vertical-align:-3px}
+  width:18px;height:18px;margin-right:9px;border-radius:50%;font-style:normal;
+  font-size:10.5px;font-weight:700;color:var(--cb-text-3);background:var(--cb-bg-2);
+  border:1px solid var(--cb-border);vertical-align:-2px;transition:all .12s}
+/* 적는 상자 */
 .cb-md-render textarea.cb-fill{display:block;width:100%;box-sizing:border-box;
-  border:0;background:transparent;font:inherit;color:var(--cb-text);
-  padding:11px 14px;outline:0;transition:background .12s,box-shadow .12s;
-  resize:none;overflow:hidden;line-height:1.6;min-height:44px}
-/* 적은 칸 — 왼쪽에 띄를 두어 어디까지 했는지 한눈에 */
-.cb-md-render textarea.cb-fill:not(:placeholder-shown){
-  box-shadow:inset 3px 0 0 var(--cb-accent)}
+  font:inherit;color:var(--cb-text);padding:9px 13px;outline:0;
+  border:1.5px dashed rgba(128,134,139,.42);border-radius:9px;
+  background:var(--cb-bg-2);
+  resize:none;overflow:hidden;line-height:1.6;min-height:40px;
+  transition:border-color .12s,background .12s,box-shadow .12s}
+.cb-md-render textarea.cb-fill:hover{border-color:var(--cb-text-3)}
+/* 적은 칸 — 점선이 실선으로 바뀝니다 */
+.cb-md-render textarea.cb-fill:not(:placeholder-shown){border-style:solid;
+  border-color:var(--cb-accent);background:var(--cb-bg)}
 .cb-md-render table.cb-fill-t tr:has(textarea.cb-fill:not(:placeholder-shown)) .cb-fill-n{
   color:#fff;background:var(--cb-accent);border-color:var(--cb-accent)}
-.cb-md-render textarea.cb-fill:focus{background:var(--cb-bg-2);
-  box-shadow:inset 0 0 0 2px var(--cb-accent)}
-.cb-md-render textarea.cb-fill::placeholder{color:var(--cb-text-3);font-style:italic}
+.cb-md-render textarea.cb-fill:focus{border-style:solid;border-color:var(--cb-accent);
+  background:var(--cb-bg);box-shadow:0 0 0 3px rgba(26,115,232,.18)}
+.cb-md-render textarea.cb-fill::placeholder{color:transparent}
 /* 2026-11-03 — 표 모양 그대로(혼동 행렬). 교과서 115쪽 그림과 같게 */
 .cb-md-render table.cb-fill-m{table-layout:auto;width:auto;min-width:340px;
   max-width:100%}
@@ -922,8 +932,13 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
   font-size:11px;font-weight:700;letter-spacing:.4px;color:var(--cb-text-2);
   pointer-events:none}
 .cb-md-render table.cb-fill-m textarea.cb-fill{text-align:center;font-size:16px;
-  font-weight:600;padding:24px 10px 12px;min-height:58px}
-.cb-md-render table.cb-fill-m textarea.cb-fill:not(:placeholder-shown){box-shadow:none}
+  font-weight:600;padding:24px 10px 12px;min-height:58px;
+  border:0;border-radius:0;background:transparent}
+.cb-md-render table.cb-fill-m textarea.cb-fill:not(:placeholder-shown){box-shadow:none;
+  border:0;background:transparent}
+.cb-md-render table.cb-fill-m textarea.cb-fill:hover{border:0}
+.cb-md-render table.cb-fill-m textarea.cb-fill:focus{border:0;background:transparent;
+  box-shadow:inset 0 0 0 2px var(--cb-accent)}
 
 .cb-md-render a{color:var(--cb-accent);text-decoration:underline}
 .cb-md-render img{max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
