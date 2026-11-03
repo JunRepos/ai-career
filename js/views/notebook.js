@@ -436,17 +436,27 @@ function vNbBlockCell(cell, hoverTb){
   const codePane = NB_BLK_CODE ? `<div class="nbk-code-head">이 블록들이 만드는 파이썬</div>
       <pre class="nbk-code">${esc(code)}</pre>` : '';
 
+  /* 2026-11-03 선생님 — 「블록 위에 이거 다 없애줘」.
+     「설명 · </> 코드 칸 · ✏️ 코드로 고치기」 가 **셀마다** 붙어 블록보다 먼저
+     눈에 들어왔습니다.
+       · 설명 · 코드 칸은 노트북 전체에 걸리는 켜고 끄기라 **메뉴바 「보기」** 로
+         올렸습니다 — 한 번만 있으면 됩니다.
+       · ✏️ 코드로 고치기는 **셀 오른쪽 위 호버 막대**(vNbCell)로 옮겼습니다.
+       · 정답 확인 · 모름 · ✎ 빈칸 정하기는 **그 셀에만** 걸리므로 남깁니다.
+     셋 다 없으면 막대 자체를 그리지 않습니다. */
+
   /* ✏️ 코드로 고치기 — **수행평가 노트북에서만** (2026-11-03 선생님).
      「블록을 지금은 배치해서 빈칸을 수정해야 하잖아. 배치를 풀면 수정한
       빈칸이 다시 돌아와. 블록 자체를 수정할 수 있도록 만들어줘」.
      블록이 만든 파이썬을 그대로 둔 채 **보통 코드 셀**로 바꿉니다. 그러면
      빈칸에 매이지 않고 아무 코드나 쓸 수 있고, 고친 글이 그대로 저장됩니다.
      블록은 **처음 틀을 깔아 주는 역할**만 하게 됩니다. */
-  const toCodeBtn = (inAssess && cell.blocks.length)
-    ? `<button class="nbk-mini nbk-tocode" data-action="nb-blk-tocode"
-        data-cellid="${cell.id}"
-        title="블록을 풀고 이 파이썬을 글로 고칩니다. 되돌리려면 블록을 다시 놓으면 됩니다">✏️ 코드로 고치기</button>`
+  const askBtn = nbAskUi()
+    ? `<button class="nbk-mini" data-action="nb-blk-askui"
+        aria-pressed="${NB_BLK_ASKUI}"
+        title="칸마다 ✎ 가 붙습니다. 코드 글자를 **끌어서 고르면** 그 자리가 빈칸이 됩니다">✎ 빈칸 정하기</button>`
     : '';
+  const barBtns = askBtn + chkBtn + idkBtn;
 
   return `<div class="cb-cell cb-cell-code cb-cell-blk${selected}" data-cellid="${cell.id}">
     ${hoverTb}
@@ -456,18 +466,11 @@ function vNbBlockCell(cell, hoverTb){
         <span class="cb-exec-count">${execLabel}</span>
       </div>
       <div class="cb-code-main">
-        <div class="nbk-bar">
+        ${barBtns ? `<div class="nbk-bar">
           <span class="nbk-tag">🧩 블록 셀</span>
           <span class="nbk-sp"></span>
-          <button class="nbk-mini" data-action="nb-blk-say" aria-pressed="${NB_BLK_SAY}">설명</button>
-          <button class="nbk-mini" data-action="nb-blk-code" aria-pressed="${NB_BLK_CODE}">&lt;/&gt; 코드 칸</button>
-          ${nbAskUi() ? `<button class="nbk-mini" data-action="nb-blk-askui"
-            aria-pressed="${NB_BLK_ASKUI}"
-            title="칸마다 ✎ 가 붙습니다. 코드 글자를 **끌어서 고르면** 그 자리가 빈칸이 됩니다">✎ 빈칸 정하기</button>` : ''}
-          ${chkBtn}
-          ${toCodeBtn}
-          ${idkBtn}
-        </div>
+          ${barBtns}
+        </div>` : ''}
         <div class="nbk-stack${NB_BLK_ASKUI && nbAskUi() ? ' nbk-askon' : ''}" data-blkstack="${cell.id}">${stack}</div>
         ${chkLine}
         ${codePane}
@@ -805,6 +808,9 @@ function vNbMenubar(isTeacher, isStudent){
     ]},
     {id: 'view', label: '보기', items: [
       {label: '☰   사이드바 ' + (NB_SIDEBAR_OPEN ? '숨기기' : '표시'), action: 'nb-toggle-sidebar', shortcut: 'Ctrl+/'},
+      // 2026-11-03 — 블록 셀마다 붙어 있던 두 단추를 여기로 올렸습니다
+      {label: '🧩  블록 설명 ' + (NB_BLK_SAY ? '숨기기' : '표시'), action: 'nb-blk-say'},
+      {label: '</>  블록이 만든 파이썬 ' + (NB_BLK_CODE ? '숨기기' : '표시'), action: 'nb-blk-code'},
       {label: '🌗  테마 전환', action: 'nb-toggle-theme'},
     ]},
     {id: 'insert', label: '삽입', items: [
@@ -1180,8 +1186,16 @@ function vNbCell(cell, idx, fold){
   </div>`;
 
   // 셀 호버 툴바 (오른쪽 위) — 코드 셀의 ▶ 는 셀 왼쪽 [ ] 자리에 늘 보이게 따로 둔다
+  /* ✏️ 블록을 풀어 글로 고치기 — **수행평가 노트북의 블록 셀에서만** (2026-11-03).
+     셀 위 막대에 있던 것을 여기로 옮겼습니다 (선생님 「블록 위에 이거 다 없애줘」). */
+  const toCode = (cell.blocks && cell.blocks.length
+                  && typeof nbInAssess === 'function' && nbInAssess())
+    ? `<button class="cb-act-btn" data-action="nb-blk-tocode" data-cellid="${cell.id}"
+        title="블록을 풀고 이 파이썬을 글로 고칩니다">✏️</button>`
+    : '';
   const hoverTb = `<div class="cb-cell-actions">
     ${isMd ? `<button class="cb-act-btn" data-action="nb-md-edit-btn" data-cellid="${cell.id}" title="편집">✏️</button>` : ''}
+    ${toCode}
     ${!isMd && String(cell.source || '').includes('확인(답,')
       ? `<button class="cb-act-btn" data-action="nb-quiz-edit" data-cellid="${cell.id}" title="퀴즈 문제 고치기">🧠</button>` : ''}
     <button class="cb-act-btn" data-action="nb-move-up" data-cellid="${cell.id}" title="셀 위로 이동">↑</button>

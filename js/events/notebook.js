@@ -1591,8 +1591,9 @@ document.addEventListener('click', async e => {
     return;
   }
   if(act.action === 'nb-blk-del'){ nbBlkEdit(act.cellid, bs => bs.splice(+act.bi, 1)); return; }
-  if(act.action === 'nb-blk-say'){ NB_BLK_SAY = !NB_BLK_SAY; render(); return; }
-  if(act.action === 'nb-blk-code'){ NB_BLK_CODE = !NB_BLK_CODE; render(); return; }
+  // 2026-11-03 — 셀 막대에서 **메뉴바 「보기」** 로 옮겼으므로 메뉴를 닫아 줍니다
+  if(act.action === 'nb-blk-say'){ closeNbMenu(); NB_BLK_SAY = !NB_BLK_SAY; render(); return; }
+  if(act.action === 'nb-blk-code'){ closeNbMenu(); NB_BLK_CODE = !NB_BLK_CODE; render(); return; }
   if(act.action === 'nb-blk-askui'){
     if(!nbBlkAskGate()) return;
     NB_BLK_ASKUI = !NB_BLK_ASKUI;
