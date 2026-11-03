@@ -478,6 +478,7 @@ async function openNotebook(nbId){
   NB_EXEC_COUNT = 0;
   NB_SELECTED = NB_CELLS[0]?.id || null;
   NB_EDITING_MD = null;
+  nbFoldLoad();                      // 📂 지난번에 접어 둔 묶음 그대로
   destroyAllCMs();
   NB_FILES = null;
   resetNBWorker().catch(() => {});   // 기다리지 않음 — 파이썬이 뜨는 동안에도 노트북은 바로 보이게
@@ -504,8 +505,30 @@ function closeNotebook(){
   NB_VIEWING_STUDENT = null;
   NB_SHOW_PROGRESS = false;
   NB_PROGRESS_MAP = {};
+  NB_FOLDED = {};                    // 📂 다음 노트북 것과 섞이지 않게
   destroyAllCMs();
   render();
+}
+
+/* ── 📂 묶음 접힘을 **기기에만** 남깁니다 (2026-11-03) ──
+   노트북에 저장하면 학생이 접어 둔 것이 저장 파일에 섞여 선생님 화면까지
+   따라갑니다. 노트북마다 따로 두고, 못 읽어도 그냥 다 펴진 채로 엽니다. */
+function nbFoldKey(){
+  return 'nbFold.' + (SEL_NOTEBOOK ? SEL_NOTEBOOK.id : '');
+}
+function nbFoldLoad(){
+  NB_FOLDED = {};
+  try {
+    const raw = localStorage.getItem(nbFoldKey());
+    if(raw) NB_FOLDED = JSON.parse(raw) || {};
+  } catch(e){ NB_FOLDED = {}; }
+}
+function nbFoldSave(){
+  try {
+    const on = Object.keys(NB_FOLDED).filter(k => NB_FOLDED[k]);
+    if(on.length) localStorage.setItem(nbFoldKey(), JSON.stringify(NB_FOLDED));
+    else localStorage.removeItem(nbFoldKey());
+  } catch(e){}
 }
 
 // ── CodeMirror 헬퍼 ──
@@ -1418,15 +1441,44 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  /* ── 📂 묶음 접기 (2026-11-03 선생님 — 코랩처럼 범주별로) ── */
+  if(act.action === 'nb-fold'){
+    if(NB_FOLDED[act.cellid]) delete NB_FOLDED[act.cellid];
+    else NB_FOLDED[act.cellid] = true;
+    nbFoldSave();
+    destroyAllCMs(); render();
+    return;
+  }
+  if(act.action === 'nb-fold-all' || act.action === 'nb-unfold-all'){
+    NB_FOLDED = {};
+    if(act.action === 'nb-fold-all'){
+      // 가장 깊은 급만 접습니다 — 맨 위 `#` 을 접으면 노트북이 통째로 사라집니다
+      const lv = (NB_CELLS || []).map(nbHeadLevel);
+      const deep = Math.max(0, ...lv);
+      (NB_CELLS || []).forEach((c, i) => { if(lv[i] === deep) NB_FOLDED[c.id] = true; });
+    }
+    nbFoldSave();
+    destroyAllCMs(); render();
+    return;
+  }
+
   // 목차 점프
   if(act.action === 'nb-toc-jump'){
     closeNbMenu();
-    const cellEl = document.querySelector(`.cb-cell[data-cellid="${act.cellid}"]`);
-    if(cellEl){
+    // 접힌 묶음 안이면 먼저 펴 줍니다 — 안 그러면 눌러도 아무 일이 없습니다
+    if(nbFoldMap().hide[act.cellid]){
+      nbUnfoldFor(act.cellid);
+      nbFoldSave();
+      destroyAllCMs(); render();
+    }
+    const go = () => {
+      const cellEl = document.querySelector(`.cb-cell[data-cellid="${act.cellid}"]`);
+      if(!cellEl) return;
       cellEl.scrollIntoView({behavior: 'smooth', block: 'start'});
       cellEl.classList.add('cb-flash');
       setTimeout(() => cellEl.classList.remove('cb-flash'), 1200);
-    }
+    };
+    setTimeout(go, 0);
     return;
   }
 

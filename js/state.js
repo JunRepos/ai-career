@@ -89,6 +89,12 @@ let NB_VIEWING_STUDENT = null; // 선생님이 특정 학생 진도 보기 중 (
 let NB_PROGRESS_MAP    = {};   // { [학번]: {cells, updatedAt} } — 로드된 학생 진도 캐시
 let NB_SHOW_PROGRESS   = false; // 학생 진도 패널 표시 여부
 let NB_COLLAPSED_OUTPUTS = {}; // { [cellId]: true } — 출력 접힘 상태
+/* 📂 묶음 접힘 — { [제목 셀 id]: true } (2026-11-03 선생님 —
+   「문제 별로 ### 이렇게 하는데 코랩처럼 범주별로 묶을 수 있잖아」).
+   제목 셀을 접으면 **다음 같은 급 이상 제목 앞까지**를 숨깁니다.
+   노트북에 저장하지 않고 **기기에만** 남깁니다 (localStorage) — 학생이
+   접어 둔 것이 다른 학생이나 선생님 화면까지 따라가면 안 됩니다. */
+let NB_FOLDED = {};
 let NB_SIDEBAR_OPEN    = true; // 좌측 사이드바(목차) 열림 여부
 let NB_OPEN_MENU       = null; // 현재 열린 메뉴바 메뉴 id ('file'|'edit'|...|null)
 let NB_GUIDE_OPEN      = false; // 오른쪽 가이드북 칸 열림 여부 (2026-10-23)

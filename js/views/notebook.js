@@ -339,7 +339,12 @@ function vNotebookDetail(isTeacher){
     return `<div class="cb-wrap">${toolbar}${vNbProgressPanel()}</div>`;
   }
 
-  const cellsHtml = (NB_CELLS || []).map((cell, idx) => vNbCell(cell, idx)).join('');
+  // 📂 접힌 묶음 — 셀은 그대로 그리고 겉을 감쌉니다 (CSS 로 감춥니다)
+  const fold = nbFoldMap();
+  const cellsHtml = (NB_CELLS || []).map((cell, idx) => {
+    const h = vNbCell(cell, idx, fold);
+    return fold.hide[cell.id] ? `<div class="cb-sec-hid">${h}</div>` : h;
+  }).join('');
 
   // 맨 아래 셀 추가 버튼
   const addEndRow = `<div class="cb-add-row cb-add-row-end">
@@ -823,8 +828,15 @@ function _vNbSidebarToc(){
   if(!toc.length){
     tocHtml = `<div class="cb-toc-empty">텍스트 셀에 <code># 제목</code>을<br>적으면 여기에 목차가 생겨요.</div>`;
   } else {
-    tocHtml = toc.map(it => `
-      <a class="cb-toc-item cb-toc-lv${it.level}" data-action="nb-toc-jump" data-cellid="${it.cellId}">
+    // 📂 접힌 묶음은 목차에서도 접힌 표가 납니다 (2026-11-03)
+    const shut = {};
+    for(const it of toc) shut[it.cellId] = !!NB_FOLDED[it.cellId];
+    tocHtml = `<div class="cb-toc-fold">
+        <button class="cb-toc-foldb" data-action="nb-fold-all">모두 접기</button>
+        <button class="cb-toc-foldb" data-action="nb-unfold-all">모두 펼치기</button>
+      </div>` + toc.map(it => `
+      <a class="cb-toc-item cb-toc-lv${it.level}${shut[it.cellId] ? ' cb-toc-shut' : ''}"
+         data-action="nb-toc-jump" data-cellid="${it.cellId}">
         ${esc(it.text)}
       </a>
     `).join('');
@@ -868,6 +880,61 @@ function buildNbTOC(){
     }
   }
   return items;
+}
+
+/* ═══ 📂 묶음 접기 — Colab 의 「섹션 접기」 와 같게 (2026-11-03 선생님) ═════
+   「문제 별로 ### 이렇게 하는데 그 코랩 보면은 범주 별로 묶을 수 있잖아?」
+
+   제목 줄(`#`~`####`)이 든 텍스트 셀이 **묶음의 머리**입니다. 머리를 접으면
+   그 아래부터 **같은 급 이상 제목이 나오기 전까지** 숨깁니다. `##` 을 접으면
+   그 안의 `###` 도 함께 숨고, 다시 펴면 `###` 는 자기 상태를 그대로 둡니다.
+
+   숨기는 방법 — 셀을 **그리고 나서 CSS 로 감춥니다**(안 그리지 않습니다).
+   「모두 실행」 이 접힌 셀을 돌릴 때 출력이 들어갈 자리가 있어야 합니다. */
+function nbHeadLevel(cell){
+  if(!cell || cell.type !== 'markdown') return 0;
+  let inFence = false;
+  for(const line of String(cell.source || '').split('\n')){
+    if(/^\s*```/.test(line)){ inFence = !inFence; continue; }
+    if(inFence) continue;
+    const m = line.match(/^(#{1,4})\s+\S/);
+    if(m) return m[1].length;
+  }
+  return 0;
+}
+
+/* { head: [셀마다 제목 급수 0~4], hide: {셀id: true}, kids: {제목셀id: 숨긴 수} } */
+function nbFoldMap(){
+  const cells = NB_CELLS || [];
+  const head = cells.map(nbHeadLevel);
+  const hide = {}, kids = {};
+  for(let i = 0; i < cells.length; i++){
+    if(!head[i]) continue;
+    let n = 0;
+    for(let j = i + 1; j < cells.length; j++){
+      if(head[j] && head[j] <= head[i]) break;
+      n++;
+      if(NB_FOLDED[cells[i].id]) hide[cells[j].id] = true;
+    }
+    kids[cells[i].id] = n;
+  }
+  return {head, hide, kids};
+}
+
+/* 그 셀을 숨기고 있는 제목을 모두 펴 줍니다 — 목차로 건너뛸 때 (2026-11-03) */
+function nbUnfoldFor(cellId){
+  const cells = NB_CELLS || [];
+  const head = cells.map(nbHeadLevel);
+  const at = cells.findIndex(c => c.id === cellId);
+  if(at < 0) return;
+  for(let i = 0; i < at; i++){
+    if(!head[i] || !NB_FOLDED[cells[i].id]) continue;
+    let end = cells.length;
+    for(let j = i + 1; j < cells.length; j++){
+      if(head[j] && head[j] <= head[i]){ end = j; break; }
+    }
+    if(at < end) delete NB_FOLDED[cells[i].id];
+  }
 }
 
 /* ═══ ✍️ 기입칸 — 마크다운을 보여 주지 않습니다 (2026-11-02 선생님) ═══════
@@ -939,7 +1006,7 @@ function nbFillBody(cell){
 }
 
 // ── 셀 한 개 렌더 ──
-function vNbCell(cell, idx){
+function vNbCell(cell, idx, fold){
   const selected = NB_SELECTED === cell.id ? ' cb-selected' : '';
   const isMd = cell.type === 'markdown';
   const isEditingMd = isMd && NB_EDITING_MD === cell.id;
@@ -994,8 +1061,21 @@ function vNbCell(cell, idx){
         : (typeof marked !== 'undefined' ? marked.parse(cell.source || '') : esc(cell.source || ''));
       body = `<div class="cb-md-render" data-cellid="${cell.id}" title="더블클릭하여 편집">${html || '<div style="color:var(--cb-text-3);font-style:italic">(빈 텍스트 셀 — 더블클릭해서 편집)</div>'}</div>`;
     }
-    return addRow + `<div class="cb-cell cb-cell-md${selected}" data-cellid="${cell.id}">
+    /* 📂 제목 셀이면 왼쪽에 ▾ — 누르면 그 아래 묶음을 접습니다 (2026-11-03).
+       접힌 동안에는 **몇 개를 접었는지** 옆에 적습니다. 숫자가 없으면
+       접힌 것인지 원래 비어 있는 것인지 알 수 없습니다. */
+    const lv = fold ? (fold.head[idx] || 0) : 0;
+    const shut = lv && NB_FOLDED[cell.id];
+    const kids = lv ? (fold.kids[cell.id] || 0) : 0;
+    const foldBtn = (lv && kids && !isEditingMd) ? `
+      <button class="cb-sec-fold" data-action="nb-fold" data-cellid="${cell.id}"
+        title="${shut ? '묶음 펼치기' : '묶음 접기'}">${shut ? '▸' : '▾'}</button>
+      ${shut ? `<span class="cb-sec-count" data-action="nb-fold"
+        data-cellid="${cell.id}">셀 ${kids}개 접힘</span>` : ''}` : '';
+    return addRow + `<div class="cb-cell cb-cell-md${selected}${lv ? ' cb-cell-head' : ''}${
+        shut ? ' cb-sec-shut' : ''}" data-cellid="${cell.id}">
       ${hoverTb}
+      ${foldBtn}
       ${body}
     </div>`;
   }

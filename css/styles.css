@@ -827,6 +827,18 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
 .cb-cell-md{cursor:text;margin:6px 20px 0 25px;padding:0;border:1px solid var(--cb-code-border);background:var(--cb-bg)}
 .cb-cell-md::before{content:'텍스트 셀';position:absolute;top:-9px;left:12px;z-index:1;padding:0 6px;font-size:11px;line-height:16px;font-weight:600;color:var(--cb-text-3);background:var(--cb-bg);border-radius:4px;pointer-events:none}
 .cb-cell-md.cb-selected{border-color:var(--cb-selected);box-shadow:inset 3px 0 0 var(--cb-selected)}
+/* 2026-11-03 묶음 접기 */
+.cb-sec-hid{display:none}
+.cb-sec-fold{position:absolute;top:10px;left:-24px;width:20px;height:20px;padding:0;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:var(--cb-text-3);font-size:12px;line-height:1;border-radius:4px}
+.cb-sec-fold:hover{background:var(--cb-hover);color:var(--cb-accent)}
+.cb-sec-count{position:absolute;top:-9px;left:80px;z-index:2;padding:0 7px;font-size:11px;line-height:16px;color:var(--cb-text-3);background:var(--cb-bg-2);border:1px solid var(--cb-border);border-radius:8px;cursor:pointer}
+.cb-sec-count:hover{color:var(--cb-accent);border-color:var(--cb-accent)}
+.cb-cell-md.cb-sec-shut{border-style:dashed}
+.cb-toc-fold{display:flex;gap:4px;padding:0 2px 6px}
+.cb-toc-foldb{flex:1;padding:3px 0;font-size:11px;color:var(--cb-text-2);background:var(--cb-bg-2);border:1px solid var(--cb-border);border-radius:4px;cursor:pointer}
+.cb-toc-foldb:hover{color:var(--cb-accent);border-color:var(--cb-accent)}
+.cb-toc-item.cb-toc-shut{color:var(--cb-text-3)}
+.cb-toc-item.cb-toc-shut::after{content:' ▸'}
 .cb-md-render{padding:13px 16px 10px;color:var(--cb-text);line-height:1.7;font-size:14px;min-height:30px;cursor:text;border-radius:4px;transition:background .15s}
 .cb-md-render > :first-child{margin-top:0}
 .cb-md-render > :last-child{margin-bottom:0}
