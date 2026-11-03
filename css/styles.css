@@ -7107,15 +7107,15 @@ button{border-radius:2px}
 /* 2026-11-03 — 나란히 두는 대신 **덮는 창**입니다 (선생님 「팝업창으로」).
    바탕에는 `data-action` 이 없어 **눌러도 닫히지 않습니다** — ✕ 만 닫습니다. */
 .cb-situ-back{position:fixed; inset:0; z-index:60; display:flex;
-  align-items:center; justify-content:center; padding:24px;
+  align-items:center; justify-content:center; padding:14px;
   background:rgba(32,33,36,.52)}
-.cb-situ{width:min(760px, 100%); max-height:min(86vh, 900px); min-width:0;
+.cb-situ{width:min(1180px, 100%); max-height:min(92vh, 1000px); min-width:0;
   border:1px solid var(--cb-border); border-radius:14px; overflow:hidden;
   background:var(--cb-bg); display:flex; flex-direction:column;
   box-shadow:0 12px 40px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.2)}
 .cb-situ-bar{display:flex; align-items:center; gap:8px; padding:7px 10px;
   border-bottom:1px solid var(--cb-border); background:var(--cb-bg); flex:0 0 auto}
-.cb-situ-t{font-weight:700; font-size:13px}
+.cb-situ-t{font-weight:700; font-size:14.5px}
 .cb-situ-tabs{display:flex; gap:4px; margin-left:auto}
 .cb-situ-tab{font:inherit; font-size:12px; font-weight:700; cursor:pointer;
   width:26px; height:24px; border-radius:5px;
@@ -7123,20 +7123,23 @@ button{border-radius:2px}
 .cb-situ-tab.on{background:#00703C; border-color:#00703C; color:#fff}
 .cb-situ-x{font:inherit; cursor:pointer; border:0; background:none;
   color:var(--cb-text-2); font-size:14px; padding:0 2px}
-.cb-situ-body{overflow-y:auto; padding:12px 14px 20px; font-size:14px; line-height:1.72}
+.cb-situ-body{overflow-y:auto; padding:14px 20px 22px; font-size:15.5px; line-height:1.78}
 .cb-situ-body p{margin:0 0 11px; text-align:justify}
 /* 문제 상황 그림 — 패널 폭에 맞춰 줄입니다 (2026-11-02) */
-.cb-situ-img{display:block; width:100%; height:auto; border-radius:8px;
-  margin:0 0 13px; border:1px solid var(--line,#ddd)}
+/* 2026-11-03 선생님 「그림은 줄여줘」 — 종이 카드처럼 글 오른쪽에 작게 */
+.cb-situ-img{float:right; width:230px; max-width:38%; height:auto; border-radius:8px;
+  margin:0 0 10px 16px; border:1px solid var(--line,#ddd)}
 .cb-situ-body b{font-weight:700; color:#00703C}
-.cb-situ-h{font-weight:700; font-size:15px; margin-bottom:9px;
+.cb-situ-h{font-weight:700; font-size:18px; margin-bottom:11px;
   padding-bottom:6px; border-bottom:2px solid #00703C}
-.cb-situ-f{float:right; font-weight:400; font-size:11.5px;
+.cb-situ-f{float:right; font-weight:400; font-size:12.5px;
   font-family:'Consolas','D2Coding',monospace; color:var(--cb-text-2)}
 /* 데이터 다섯 줄 — 종이 카드와 같게 (2026-11-03) */
-.cb-situ-d5{margin:10px 0 4px; overflow-x:auto}
-.cb-situ-d5 table{border-collapse:collapse; width:100%; font-size:11.5px}
-.cb-situ-d5 th,.cb-situ-d5 td{border:1px solid var(--cb-border); padding:4px 5px;
+.cb-situ-d5{clear:both; margin:12px 0 4px; overflow-x:auto}
+.cb-situ-d5 .fn{font-size:12.5px; color:var(--cb-text-2); margin-bottom:5px}
+.cb-situ-d5 .fn b{font-family:'Consolas','D2Coding',monospace; color:#00703C}
+.cb-situ-d5 table{border-collapse:collapse; width:100%; font-size:12.5px}
+.cb-situ-d5 th,.cb-situ-d5 td{border:1px solid var(--cb-border); padding:5px 6px;
   text-align:center; white-space:nowrap}
 .cb-situ-d5 th{background:var(--cb-bg-2); font-weight:600; font-size:11px;
   color:var(--cb-text-2)}
