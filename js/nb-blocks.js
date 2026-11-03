@@ -499,11 +499,14 @@ const NB_BLOCK_DEFS = {
   score: {
     guide: 'c_dtscore',   // 분류 정확도
     cat: 'eval', name: '분류 정확도 재기',
-    // d — **어느 데이터로 잴지**. 모델의 성능은 테스트 데이터로 봅니다.
+    // d · e — **어느 데이터로 잴지**. 모델의 성능은 테스트 데이터로 봅니다.
     //     수행평가 ③ 「정확하게 평가」 가 이 선택입니다 (2026-10-22 선생님).
+    //   ⚠ 2026-11-03 — `fit` 과 같은 사정입니다. 틀에 `{d}` 가 두 번이라
+    //     `y_` 쪽이 앞 칸을 **비추기만** 했습니다. 칸을 둘로 둡니다.
     slots: { fn: { kind: 'text', def: 'score', ans: 'score', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
-             d: { opt: ['train', 'test'], def: '', ans: 'test', ask: 1 } },
-    tpl: 'print({m}.{fn}(X_{d}, y_{d}))',
+             d: { opt: ['train', 'test'], def: '', ans: 'test', ask: 1 },
+             e: { opt: ['train', 'test'], def: '', ans: 'test', ask: 1 } },
+    tpl: 'print({m}.{fn}(X_{d}, y_{e}))',
     say: '분류 정확도는 전체 데이터 중 예측값과 실젯값이 같은 데이터 개수의 비율입니다. ' +
          '모델의 성능은 학습에 쓰지 않은 테스트 데이터로 봅니다.',
     src: '교과서 108 · 112쪽',

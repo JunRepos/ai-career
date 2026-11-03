@@ -642,11 +642,19 @@ function vNbBlock(cellId, b, bi, file, bad){
 }
 
 /* 서랍의 블록에 보여 줄 파이썬 — {자리}는 기본값으로 채웁니다 */
+/* 서랍에 보여 줄 코드 — **빈칸은 … 로 뭉갭니다** (2026-11-03 선생님 —
+   「핵심 속성 추출 부분부터는 옆에 블록에 코드가 다 나와 … 위에 블록처럼
+    빈칸은 뭉개놔야지」).
+   ⚠ 전에는 `nbSlotDefault` 만 보았습니다. 그것은 **정의의 `ask`** 만 읽어서,
+     빈칸을 반 전체 설정(`NB_BLK_TEXT[k].q`)으로 옮긴 뒤로 서랍이 `corr` ·
+     `heatmap` · `stratify=y` 같은 **답을 그대로 내보이고 있었습니다.**
+     `nbSlotAsk` 로 같은 판단을 쓰게 고칩니다 — 셀에 놓인 블록과 한 몸입니다. */
 function nbPalCode(k){
   const d = NB_BLOCK_DEFS[k];
   return d.tpl.replace(/\{(\w+)\}/g, (m, key) => {
     const slot = d.slots && d.slots[key];
     if(!slot) return m;
+    if(nbSlotAsk(d, {k}, key)) return '…';
     const v = nbSlotDefault(slot, NB_DATA_DEFAULT);
     return (v === undefined || v === null || v === '') ? '…' : String(v);
   });
