@@ -971,10 +971,72 @@ function nbFillGroup(label){
   const m = String(label).replace(/[*_`]/g, '').match(/^\s*(.{1,14}?)\s+—\s+(.+)$/);
   return m ? {g: m[1].trim(), rest: m[2].trim()} : {g: '', rest: String(label).trim()};
 }
+/* ✍️ 적는 칸을 **표 모양 그대로** 그립니다 (2026-11-03 선생님 — 혼동 행렬
+   그림을 보여 주시며 「이것도 이런 그림처럼 만들어줘봐」).
+   머리줄 첫 칸에 `행이름 \ 열이름` 이라 적으면 켜집니다 —
+     | 실젯값 \ 예측값 | Negative | Positive |
+   · 위에 열 이름이 한 칸으로 걸치고, 왼쪽에 행 이름이 세로로 섭니다
+   · 대각선(맞힌 칸)은 초록, 나머지(틀린 칸)는 노랑 — 교과서 115쪽 그림대로
+   · 두 칸 × 두 칸이면 TP · TN · FP · FN 이름을 칸 안에 적어 줍니다.
+     축 이름과 칸 이름을 보고 **어느 쪽이 실젯값이고 어느 쪽이 참인지**
+     가려서 붙이므로, 축을 뒤집어 적어도 이름이 따라갑니다. */
+function nbFillAxes(h0){
+  const m = String(h0).split('\\');
+  if(m.length !== 2) return null;
+  return {row: m[0].trim(), col: m[1].trim()};
+}
+function nbFillMx(axes, rowLabels, colLabels){
+  if(!axes || rowLabels.length !== 2 || colLabels.length !== 2) return null;
+  const POS = /(positive|true|yes|참|맞다)/i;
+  const ACT = /(실젯값|실제|정답|actual)/;
+  const rowIsActual = ACT.test(axes.row);
+  if(!rowIsActual && !ACT.test(axes.col)) return null;
+  const rp = rowLabels.map(t => POS.test(t)), cp = colLabels.map(t => POS.test(t));
+  if(rp[0] === rp[1] || cp[0] === cp[1]) return null;   // 참·거짓이 안 갈립니다
+  const name = (r, c) => {
+    const actual = rowIsActual ? rp[r] : cp[c];
+    const pred   = rowIsActual ? cp[c] : rp[r];
+    return (actual === pred) ? (pred ? 'TP' : 'TN') : (pred ? 'FP' : 'FN');
+  };
+  return name;
+}
+
+function nbFillMatrix(lines, from, cellId, axes, isSep, split){
+  const body = [];               // {k, label, cells:[…]}
+  let head = true, cols = [];
+  lines.forEach((ln, k) => {
+    const cs = split(ln).map(c => c.trim());
+    if(isSep(cs)){ head = false; return; }
+    if(head){ cols = cs.slice(1); return; }
+    body.push({k, label: cs[0], cells: cs.slice(1)});
+  });
+  const name = nbFillMx(axes, body.map(r => r.label), cols);
+  const n = cols.length;
+  let out = `<table class="cb-fill-t cb-fill-m">
+    <tr><th class="cb-fm-cnr" rowspan="2">${nbInline(axes.row)}</th>
+        <th class="cb-fm-ax" colspan="${n}">${nbInline(axes.col)}</th></tr>
+    <tr>${cols.map(c => `<th class="cb-fm-ch">${nbInline(c)}</th>`).join('')}</tr>`;
+  body.forEach((r, ri) => {
+    out += `<tr><th class="cb-fm-rh">${nbInline(r.label)}</th>` + cols.map((_, ci) => {
+      const v = (r.cells[ci] || '').trim().replace(/<br\s*\/?>/gi, '\n');
+      const hit = name ? (name(ri, ci)[0] === 'T') : (ri === ci);
+      const tag = name ? `<i class="cb-fm-tag">${name(ri, ci)}</i>` : '';
+      return `<td class="cb-fm-c ${hit ? 'ok' : 'no'}">${tag}<textarea class="cb-fill"
+        data-cellid="${cellId}" rows="1" data-fill="${from + r.k},${ci + 1}"
+        spellcheck="false" placeholder="　">${esc(v)}</textarea></td>`;
+    }).join('') + '</tr>';
+  });
+  return out + '</table>';
+}
+
 function nbFillTable(lines, from, cellId){
   const isSep = cs => cs.every(c => /^\s*:?-{2,}:?\s*$/.test(c));
   const split = ln => ln.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
   const wide = Math.max(2, ...lines.map(ln => split(ln).length));
+  // 표 모양으로 그릴지 — 머리줄 첫 칸의 `행 \ 열`
+  const hd = split(lines[0] || '').map(c => c.trim());
+  const axes = nbFillAxes(hd[0] || '');
+  if(axes) return nbFillMatrix(lines, from, cellId, axes, isSep, split);
   /* 앞머리가 **두 줄 이상** 이어질 때만 묶습니다 (2026-11-03).
      「TP — …」 「FN — …」 처럼 줄마다 앞머리가 다르면 한 줄짜리 머리줄이
      넷 생겨 오히려 어지럽습니다. 묶음이 아니라 설명이기 때문입니다. */
