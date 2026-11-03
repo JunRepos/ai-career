@@ -240,7 +240,8 @@ function vStNotebook(){
   }
   if(SEL_NOTEBOOK) return vNotebookDetail(false);
   // 🔒 평가용 노트북은 선생님이 열어야 보입니다 (js/nb-open.js)
-  const shown = NOTEBOOKS.filter(nb => nbVisibleToStudent(SEL_CLS?.id, nb));
+  // 수행평가(문이 달린 것)는 **왼쪽 「평가」 메뉴**로만 갑니다 (2026-11-03)
+  const shown = NOTEBOOKS.filter(nb => nbInStudentList(SEL_CLS?.id, nb));
   if(!shown.length) return emptyBox('📓','선생님이 올린 노트북이 없습니다.');
   return shown.map(nb => `
     <div class="list-row click" data-action="open-notebook" data-nid="${nb.id}">
@@ -435,6 +436,18 @@ function vNbBlockCell(cell, hoverTb){
   const codePane = NB_BLK_CODE ? `<div class="nbk-code-head">이 블록들이 만드는 파이썬</div>
       <pre class="nbk-code">${esc(code)}</pre>` : '';
 
+  /* ✏️ 코드로 고치기 — **수행평가 노트북에서만** (2026-11-03 선생님).
+     「블록을 지금은 배치해서 빈칸을 수정해야 하잖아. 배치를 풀면 수정한
+      빈칸이 다시 돌아와. 블록 자체를 수정할 수 있도록 만들어줘」.
+     블록이 만든 파이썬을 그대로 둔 채 **보통 코드 셀**로 바꿉니다. 그러면
+     빈칸에 매이지 않고 아무 코드나 쓸 수 있고, 고친 글이 그대로 저장됩니다.
+     블록은 **처음 틀을 깔아 주는 역할**만 하게 됩니다. */
+  const toCodeBtn = (inAssess && cell.blocks.length)
+    ? `<button class="nbk-mini nbk-tocode" data-action="nb-blk-tocode"
+        data-cellid="${cell.id}"
+        title="블록을 풀고 이 파이썬을 글로 고칩니다. 되돌리려면 블록을 다시 놓으면 됩니다">✏️ 코드로 고치기</button>`
+    : '';
+
   return `<div class="cb-cell cb-cell-code cb-cell-blk${selected}" data-cellid="${cell.id}">
     ${hoverTb}
     <div class="cb-code-wrap">
@@ -452,6 +465,7 @@ function vNbBlockCell(cell, hoverTb){
             aria-pressed="${NB_BLK_ASKUI}"
             title="칸마다 ✎ 가 붙습니다. 코드 글자를 **끌어서 고르면** 그 자리가 빈칸이 됩니다">✎ 빈칸 정하기</button>` : ''}
           ${chkBtn}
+          ${toCodeBtn}
           ${idkBtn}
         </div>
         <div class="nbk-stack${NB_BLK_ASKUI && nbAskUi() ? ' nbk-askon' : ''}" data-blkstack="${cell.id}">${stack}</div>
@@ -657,7 +671,13 @@ function vNbSituPanel(){
   // 상황이 하나뿐이면 **고를 것이 없습니다** — 바로 펴 놓습니다 (2026-11-02)
   const cur = (list.length === 1) ? list[0] : list.find(x => x.mark === NB_SITU_PICK);
   // 글 안의 **굵게** 를 살립니다. 먼저 escape 한 뒤 바꾸므로 태그가 새지 않습니다.
-  const md = t => esc(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  /* 글 안의 굵게를 살립니다. 먼저 escape 한 뒤 바꾸므로 태그가 새지 않습니다.
+     ⚠ 상황 글은 종이 카드와 **같은 글**이라 `<b>` 가 그대로 들어 있습니다
+       (verify/assess2_common.py). escape 만 하면 화면에 `<b>` 가 글자로
+       보입니다 — 2026-11-03 선생님이 test 계정에서 찾으셨습니다.
+       그래서 `<b>` · `</b>` 둘만 도로 태그로 돌립니다. 다른 태그는 글자 그대로. */
+  const md = t => esc(t).replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+                        .replace(/&lt;(\/?b)&gt;/g, '<$1>');
   const tabs = (list.length < 2) ? '' : list.map(x =>
     `<button class="cb-situ-tab${x.mark === NB_SITU_PICK ? ' on' : ''}"
       data-action="nb-situ-pick" data-mark="${esc(x.mark)}">${esc(x.mark)}</button>`).join('');

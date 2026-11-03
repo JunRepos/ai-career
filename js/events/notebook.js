@@ -312,6 +312,13 @@ function nbNoImpOf(c){
   return !!(c && (c.noimp || c.metadata?.noimp));
 }
 
+/* 학생이 「✏️ 코드로 고치기」 로 **블록을 푼** 셀인가 (2026-11-03 선생님).
+   이 표가 없으면 다시 열 때 합치기가 선생님 원본의 블록을 다시 씌워
+   학생이 고친 글이 날아갑니다. nbNoImpOf 와 같은 사정으로 두 자리를 봅니다. */
+function nbRawOf(c){
+  return !!(c && (c.raw || c.metadata?.raw));
+}
+
 /* 「모름」 이 놓아 줄 블록 — 달린 셀에만 있습니다 (verify/nb_house.py 의 idk=).
    한 셀에서 막혀 뒤 셀이 통째로 못 돌아가는 것을 막는 장치입니다 (2026-10-29 선생님).
    ⚠ 문제 상황을 알아내야 푸는 셀에는 달지 않습니다 — 생성기가 정합니다. */
@@ -359,8 +366,12 @@ function _mergeNotebookCells(origCells, savedCells){
       };
       // 🧩 블록 셀 — 학생이 쌓은 블록을 먼저, 없으면 선생님 원본의 블록을
       // ⚠ 빈 배열 [] 도 「블록 셀인데 아직 비어 있다」 는 뜻입니다 — 참/거짓으로 보면 안 됩니다
-      const bl = nbBlocksOf(sc) !== null ? nbBlocksOf(sc) : nbBlocksOf(oc);
+      // 2026-11-03 — 학생이 「✏️ 코드로 고치기」 로 **풀었으면**(raw) 선생님
+      //   원본의 블록을 다시 씌우지 않습니다. 씌우면 고친 글이 날아갑니다.
+      const bl = nbRawOf(sc) ? null
+               : (nbBlocksOf(sc) !== null ? nbBlocksOf(sc) : nbBlocksOf(oc));
       if(bl !== null) merged.blocks = bl;
+      if(nbRawOf(sc)) merged.raw = true;
       // noimp · idk 는 **선생님 원본**의 성질, idkUsed 는 **학생이 누른 기록**입니다.
       // 셋 다 여기서 안 옮기면 저장하고 다시 열 때 사라집니다 (2026-10-29).
       if(nbNoImpOf(oc) || nbNoImpOf(sc)) merged.noimp = true;
@@ -461,6 +472,7 @@ async function openNotebook(nbId){
     const bl = nbBlocksOf(c);
     if(bl !== null) o.blocks = bl;
     if(nbNoImpOf(c)) o.noimp = true;   // 라이브러리를 맨 앞에서 한 번에 선언해 둔 셀
+    if(nbRawOf(c)) o.raw = true;       // 학생이 블록을 풀어 글로 고친 셀 (2026-11-03)
     // 「모름」 — 놓아 줄 블록과 누른 기록. 여기서 안 옮기면 단추가 아예 안 뜹니다.
     const ik = nbIdkOf(c);
     if(ik) o.idk = ik;
@@ -1516,6 +1528,26 @@ document.addEventListener('click', async e => {
   if(act.action === 'nb-blk-add'){ nbBlkAdd(act.k); return; }
   if(act.action === 'nb-hole-del'){ nbHoleDel(act.cellid, act.bi, act.h); return; }
   if(act.action === 'nb-blk-idk'){ nbBlkIdk(act.cellid); return; }
+  /* ✏️ 블록 셀을 **보통 코드 셀**로 (2026-11-03 선생님, 수행평가에서만).
+     「블록 자체를 수정할 수 있도록 만들어줘」 — 블록이 만든 파이썬은 그대로
+     두고 글상자로 바꿉니다. 고친 글은 `cell.source` 에 남아 그대로
+     저장됩니다(firebase 는 source 를 저장합니다). 블록을 다시 놓으면
+     블록 셀로 돌아오지만, **그때는 고친 글이 블록이 만든 코드로 덮입니다.** */
+  if(act.action === 'nb-blk-tocode'){
+    const cell = (NB_CELLS || []).find(c => c && c.id === act.cellid);
+    if(!cell || !cell.blocks) return;
+    if(!confirm('블록을 풀고 이 파이썬을 글로 고칩니다.\n\n'
+              + '· 지금 코드는 그대로 남습니다.\n'
+              + '· 블록을 다시 놓으면 블록 셀로 돌아오고, 고친 글은 사라집니다.\n\n'
+              + '바꿀까요?')) return;
+    delete cell.blocks;
+    delete cell.idk;
+    cell.raw = true;     // 다시 열 때 블록 셀로 되돌아가지 않게
+    NB_SELECTED = cell.id;
+    destroyAllCMs(); render();
+    scheduleNBSave();
+    return;
+  }
   /* 🧩 빈칸을 **반 전체로** 정합니다 (2026-10-29 선생님).
      이름·설명과 **같은 자리**(NB_BLK_TEXT[k].q)에 담아 한 번만 읽습니다. */
   if(act.action === 'nb-blkask-toggle'){

@@ -71,6 +71,15 @@ function nbVisibleToStudent(cid, nb){
   if(!nbIsGated(cid, nb.id)) return true;          // 평가용이 아니면 늘 보입니다
   return nbIsOpen(cid, nb.id) || _nbIsTest();
 }
+/* 학생의 **「파이썬 실습」 목록**에 낼 것인가 (2026-11-03 선생님 —
+   「노트북에서는 없애고 저렇게 왼쪽 메뉴에서만 들어갈 수 있게」).
+   문이 달린 노트북(수행평가)은 목록에서 빼고 **왼쪽 「평가」 메뉴**로만 갑니다.
+   ⚠ nbVisibleToStudent 와 나눠 둡니다 — 그쪽은 **들어갈 수 있나**를 보는
+     자리라, 여기서 함께 막으면 평가 중인 학생이 바로 쫓겨납니다. */
+function nbInStudentList(cid, nb){
+  return nbVisibleToStudent(cid, nb) && !nbIsGated(cid, nb && nb.id);
+}
+
 /* 선생님이 이 노트북을 시뮬레이션으로 보고 있나 — 저장을 막는 자리에서 씁니다 */
 function nbInSim(){
   return !!(IS_TC && TC_CLS && SEL_NOTEBOOK

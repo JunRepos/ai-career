@@ -21,6 +21,19 @@ function _stNavGroups(){
   if(on(MLA_ACTIVE))                   asmtItems.push({key:'mlassess', ico:'🧪', label:'ML 수행평가'});
   // 인공지능 기초 1차 수행평가 — 선생님이 작성 범위를 열었을 때만 (확인용 test 계정은 늘)
   if(a1Visible(SEL_CLS))                asmtItems.push({key:'assess1', ico:'📝', label:'1차 수행평가'});
+  /* 🔒 노트북 수행평가 — **왼쪽 메뉴로만** 들어갑니다 (2026-11-03 선생님 —
+     「노트북에서는 없애고 저렇게 왼쪽 메뉴에서만 들어갈 수 있게 만들어줘」).
+     문이 달린(closed · open) 노트북이 그것입니다. 학생에게는 선생님이 열었을
+     때만 보이고(확인용 test 계정은 늘), 「파이썬 실습」 목록에서는 빠집니다. */
+  if(typeof nbIsGated === 'function' && typeof NOTEBOOKS !== 'undefined'){
+    NOTEBOOKS.forEach(nb => {
+      if(!nbIsGated(cid, nb.id) || !nbVisibleToStudent(cid, nb)) return;
+      const t = nb.title || '';
+      asmtItems.push({key: 'nbgate:' + nb.id, ico: '🧪',
+                      label: /2\s*차/.test(t) ? '2차 수행평가'
+                           : (t.indexOf('수행평가') >= 0 ? '2차 수행평가' : t)});
+    });
+  }
 
   // 최상단 — 나의 포트폴리오 (차시별로 내가 한 활동 모아보기)
   const groups = [{ items:[
@@ -302,6 +315,15 @@ function setST(t){
     if(SEL_CLS && ST_USER) loadMyNotes(SEL_CLS.id, ST_USER.number).then(render);
   }
   ST_TAB = t;
+  /* 🔒 수행평가 노트북 — 왼쪽 메뉴에서 바로 엽니다 (2026-11-03).
+     목록을 거치지 않으므로 `openNotebook` 이 비밀번호도 알아서 묻습니다. */
+  if(t.indexOf('nbgate:') === 0){
+    ST_TAB = 'notebook';
+    const id = t.slice(7);
+    if(typeof openNotebook === 'function') openNotebook(id);
+    else render();
+    return;
+  }
   if(t.indexOf('unit-') === 0){
     ST_UNIT_SEC = 'material';  // 단원 진입 시 항상 수업 자료부터
     render();

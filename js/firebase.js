@@ -206,6 +206,9 @@ async function saveNotebookProgress(cid, nbId, studentNum, cells){
   const sanitized = (cells || []).map(c => {
     const o = {id: c.id || '', type: c.type || 'code', source: c.source || ''};
     if(c.noimp) o.noimp = true;         // 라이브러리를 맨 앞에서 선언해 둔 셀
+    // 2026-11-03 — 「✏️ 코드로 고치기」 로 블록을 푼 셀. 이게 없으면 다시 열 때
+    //   합치기가 선생님 원본의 블록을 다시 씌워 고친 글이 날아갑니다.
+    if(c.raw) o.raw = true;
     // ⚠ Firebase 는 **빈 배열을 통째로 지웁니다.** 아직 블록을 안 놓은 🧩 셀은
     //   blocks:[] 라서 키가 사라지고, 다시 열면 그냥 코드 셀이 됩니다.
     //   그래서 blk:true 를 따로 적어 둡니다 (nbBlocksOf 가 읽을 때 되살립니다).
