@@ -151,6 +151,64 @@ function nbSanitize(html){
   return doc.body.firstChild ? doc.body.firstChild.innerHTML : '';
 }
 
+/* ═══ 「이름이 없다」 오류를 **무엇을 안 했는지**로 바꿔 보여 줍니다 ═══════
+   2026-11-03 선생님 — 「처음에 import 셀 시작 안 해서 오류 생기는 거는 좀 더
+   명시적으로 보여줘」. `NameError: name 'pd' is not defined` 를 학생은 읽지
+   못합니다. 무엇을 먼저 눌러야 하는지와 **그 셀로 가는 단추**를 답니다. */
+const NB_ERR_LIB = ['pd', 'np', 'sns', 'plt', 'train_test_split', 'confusion_matrix',
+                    'DecisionTreeClassifier', 'KNeighborsClassifier',
+                    'classification_report', 'plot_tree'];
+const NB_ERR_AFTER = {
+  df: ['데이터를 불러오는 셀', '`pd.read_csv` 가 든 셀'],
+  X: ['특징과 타깃을 나누는 셀', '`X = ` 가 든 셀'],
+  y: ['특징과 타깃을 나누는 셀', '`y = ` 가 든 셀'],
+  X_train: ['훈련 · 테스트로 나누는 셀', '`train_test_split` 이 든 셀'],
+  X_test: ['훈련 · 테스트로 나누는 셀', '`train_test_split` 이 든 셀'],
+  y_train: ['훈련 · 테스트로 나누는 셀', '`train_test_split` 이 든 셀'],
+  y_test: ['훈련 · 테스트로 나누는 셀', '`train_test_split` 이 든 셀'],
+  dt: ['결정트리 모델을 만드는 셀', '`dt = ` 가 든 셀'],
+  knn: ['kNN 모델을 만드는 셀', '`knn = ` 가 든 셀'],
+};
+
+/* 그 코드가 **처음 나오는** 셀을 찾습니다 — 그 셀로 데려가려고 */
+function nbCellWith(re){
+  for(const c of (typeof NB_CELLS !== 'undefined' ? NB_CELLS : [])){
+    if(!c || c.type === 'markdown') continue;
+    if(re.test(c.source || '')) return c.id;
+  }
+  return null;
+}
+
+function nbErrGuide(tb){
+  const m = /NameError: name '([^']+)' is not defined/.exec(String(tb || ''));
+  if(!m) return '';
+  const n = m[1];
+  let title, how, cid;
+  if(NB_ERR_LIB.indexOf(n) >= 0){
+    title = '맨 위 <b>준비 단계 0</b> 의 셀을 아직 실행하지 않았습니다.';
+    how = '<code>' + esc(n) + '</code> — 거기서 <code>import</code> 로 가져오는 것입니다. '
+        + '그 셀을 먼저 ▶ 로 실행한 뒤 이 셀을 다시 실행하시오.';
+    cid = nbCellWith(/^\s*(import|from)\s/m);
+  } else if(NB_ERR_AFTER[n]){
+    title = '<b>' + esc(NB_ERR_AFTER[n][0]) + '</b>을 아직 실행하지 않았습니다.';
+    how = '<code>' + esc(n) + '</code> — 그 셀에서 만들어지는 값입니다. '
+        + '위에 있는 ' + NB_ERR_AFTER[n][1].replace(/`([^`]+)`/g, '<code>$1</code>')
+        + '을 먼저 ▶ 로 실행하시오.';
+    cid = n === 'df' ? nbCellWith(/read_csv/)
+        : /^(X|y)$/.test(n) ? nbCellWith(/^\s*X\s*=/m)
+        : /train/.test(n) || /test/.test(n) ? nbCellWith(/train_test_split/)
+        : nbCellWith(new RegExp('^\\s*' + n + '\\s*='), 'm');
+  } else {
+    return '';
+  }
+  return `<div class="cb-out-guide">
+    <div class="cb-out-guide-t">⚠ ${title}</div>
+    <div class="cb-out-guide-b">${how}</div>
+    ${cid ? `<button class="cb-out-guide-go" data-action="nb-run-cell"
+        data-cellid="${esc(cid)}">▶ 그 셀 실행하기</button>` : ''}
+  </div>`;
+}
+
 function vNbItems(items){
   return (items || []).map(it => {
     if(it.kind === 'stream') return `<pre class="cb-out-text${it.a === 'stderr' ? ' cb-out-stderr' : ''}">${esc(it.b)}</pre>`;
@@ -162,9 +220,11 @@ function vNbItems(items){
     if(it.kind === 'error'){
       let j;
       try { j = JSON.parse(it.a); } catch(e){ j = {tb: String(it.a || '')}; }
+      const tb = j.tb || ((j.ename || 'Error') + ': ' + (j.evalue || ''));
       return `<div class="cb-out-errbox">
+        ${nbErrGuide(tb)}
         ${j.hint ? `<div class="cb-out-hint">💡 ${esc(j.hint)}</div>` : ''}
-        <pre class="cb-out-err">${esc(j.tb || ((j.ename || 'Error') + ': ' + (j.evalue || '')))}</pre></div>`;
+        <pre class="cb-out-err">${esc(tb)}</pre></div>`;
     }
     return '';
   }).join('');

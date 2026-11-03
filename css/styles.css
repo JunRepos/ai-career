@@ -5062,6 +5062,17 @@ textarea.qb-desc{resize:vertical;line-height:1.5;font-family:inherit}
 .cb-out-md{margin:4px 12px;font-size:14px;line-height:1.7;color:var(--cb-text)}
 .cb-out-frame{width:calc(100% - 24px);height:320px;margin:6px 12px;border:1px solid var(--cb-border);border-radius:4px;background:#fff;resize:vertical}
 .cb-out-errbox{align-self:stretch;margin:4px 0}
+/* 2026-11-03 — 「이름이 없다」 오류를 무엇을 안 했는지로 바꿈 */
+.cb-out-guide{margin:0 0 6px;padding:11px 13px;border-left:4px solid #d93025;
+  background:rgba(217,48,37,.08);font-family:'Pretendard',sans-serif}
+.cb-out-guide-t{font-size:14px;font-weight:700;color:var(--cb-text);line-height:1.5}
+.cb-out-guide-b{margin-top:4px;font-size:13px;line-height:1.65;color:var(--cb-text-2)}
+.cb-out-guide code{background:var(--cb-code-bg);padding:1px 5px;border-radius:3px;
+  font-family:'Consolas','D2Coding',monospace;font-size:12.5px;color:#c5221f}
+.cb-out-guide-go{margin-top:8px;font:inherit;font-size:13px;font-weight:600;
+  cursor:pointer;padding:6px 13px;border-radius:7px;border:0;
+  background:#d93025;color:#fff}
+.cb-out-guide-go:hover{background:#b31412}
 .cb-out-hint{margin:2px 12px 4px;padding:7px 11px;border-radius:6px;background:rgba(251,188,4,.14);color:var(--cb-text);font-size:13px;line-height:1.6;font-family:'Pretendard',sans-serif}
 .cb-out-errbox .cb-out-err{margin:0;padding:6px 12px;white-space:pre-wrap;word-break:break-word;font-family:'Consolas','D2Coding','Malgun Gothic','Pretendard',monospace;font-size:12.5px;line-height:1.5;color:var(--cb-error-text);background:var(--cb-error-bg)}
 /* 사이드바 탭 · 파일 창 */
@@ -7093,10 +7104,15 @@ button{border-radius:2px}
 /* ── 📄 문제 상황을 노트북 옆에 (2026-11-01 선생님) ──
    「화면에서 반반」. 가이드북(.cb-guide)은 덮는 창이지만 이것은 **자리를 차지해**
    노트북을 오른쪽으로 밉니다. 좁은 화면에서는 위아래로 쌓입니다. */
-.cb-situ{flex:0 0 clamp(260px, 29vw, 440px); min-width:0;
-  border-right:1px solid var(--cb-border); background:var(--cb-bg-2);
-  display:flex; flex-direction:column;
-  position:sticky; top:88px; align-self:flex-start; max-height:calc(100vh - 100px)}
+/* 2026-11-03 — 나란히 두는 대신 **덮는 창**입니다 (선생님 「팝업창으로」).
+   바탕에는 `data-action` 이 없어 **눌러도 닫히지 않습니다** — ✕ 만 닫습니다. */
+.cb-situ-back{position:fixed; inset:0; z-index:60; display:flex;
+  align-items:center; justify-content:center; padding:24px;
+  background:rgba(32,33,36,.52)}
+.cb-situ{width:min(760px, 100%); max-height:min(86vh, 900px); min-width:0;
+  border:1px solid var(--cb-border); border-radius:14px; overflow:hidden;
+  background:var(--cb-bg); display:flex; flex-direction:column;
+  box-shadow:0 12px 40px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.2)}
 .cb-situ-bar{display:flex; align-items:center; gap:8px; padding:7px 10px;
   border-bottom:1px solid var(--cb-border); background:var(--cb-bg); flex:0 0 auto}
 .cb-situ-t{font-weight:700; font-size:13px}
@@ -7132,9 +7148,6 @@ button{border-radius:2px}
 .cb-full-ask span{flex:1; min-width:220px}
 /* 좁은 화면 — 나란히 두면 둘 다 못 읽습니다. 위아래로 쌓습니다. */
 @media (max-width: 1000px){
-  .cb-body.cb-has-situ{flex-wrap:wrap}
-  .cb-situ{flex:1 1 100%; position:static; max-height:46vh; border-right:0;
-    border-bottom:1px solid var(--cb-border)}
-  /* ⚠ .cb-main 은 flex:1 뿐이라 줄바꿈하면 폭이 0 이 됩니다 — 재어 보고 찾았습니다 */
-  .cb-body.cb-has-situ > .cb-main{flex:1 1 100%}
+  .cb-situ-back{padding:10px}
+  .cb-situ{max-height:94vh}
 }

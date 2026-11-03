@@ -1337,8 +1337,7 @@ document.addEventListener('click', async e => {
   if(act.action === 'nb-toggle-sidebar'){
     closeNbMenu();
     NB_SIDEBAR_OPEN = !NB_SIDEBAR_OPEN;
-    // 왼쪽은 **하나만** 엽니다 — 셋으로 나누면 노트북이 421px 로 눌립니다 (2026-11-01 재어 봄)
-    if(NB_SIDEBAR_OPEN) NB_SITU_OPEN = false;
+    // 2026-11-03 — 문제 상황이 **덮는 창**이 되어 자리를 다투지 않습니다
     destroyAllCMs(); render();
     return;
   }
@@ -1485,17 +1484,17 @@ document.addEventListener('click', async e => {
   /* ── 🧩 블록 셀 ──
      블록을 고칠 때마다 cell.source 를 다시 만들어 넣습니다.
      그래야 실행 · 저장 · ipynb 내려받기가 지금 코드 그대로 돕니다. */
-  /* ── 📄 문제 상황을 옆에 펴 놓기 (2026-11-01 선생님) ── */
+  /* ── 📄 문제 상황 — **덮는 창** (2026-11-03 선생님 「팝업창으로 보게 해줘」) ──
+     ✕ 로만 닫힙니다. 바탕을 눌러도, Esc 를 눌러도 닫히지 않습니다.
+     덮는 창이라 사이드바와 자리를 다투지 않습니다. */
   if(act.action === 'nb-toggle-situ'){
     NB_SITU_OPEN = !NB_SITU_OPEN;
-    if(NB_SITU_OPEN) NB_SIDEBAR_OPEN = false;   // 왼쪽은 하나만
     destroyAllCMs(); render();
     return;
   }
   if(act.action === 'nb-situ-pick'){
     if(typeof nbSituPick === 'function') nbSituPick(act.mark);
     NB_SITU_OPEN = true;
-    NB_SIDEBAR_OPEN = false;
     destroyAllCMs(); render();
     return;
   }

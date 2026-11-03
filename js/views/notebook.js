@@ -361,16 +361,15 @@ function vNotebookDetail(isTeacher){
   return `
     <div class="cb-wrap">
       ${toolbar}
-      ${vNbFullBanner()}
       ${menubar}
-      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}${NB_SITU_OPEN ? ' cb-has-situ' : ''}">
-        ${vNbSituPanel()}
+      <div class="cb-body${NB_SIDEBAR_OPEN ? ' cb-has-sidebar' : ''}">
         ${sidebar}
         <div class="cb-main">
           <div class="cb-cells" id="cb-cells">${cellsHtml || ''}</div>
           ${addEndRow}
         </div>
       </div>
+      ${vNbSituPanel()}
       ${vNbGuidePanel()}
     </div>`;
 }
@@ -671,20 +670,32 @@ function vNbSituPanel(){
     : `<div class="cb-situ-pickme">종이 카드에서 고른 상황을 위에서 누르시오.</div>`
       + list.map(x => `<button class="cb-situ-one" data-action="nb-situ-pick"
           data-mark="${esc(x.mark)}"><b>${esc(x.mark)}</b> ${esc(x.one)}</button>`).join('');
-  return `<aside class="cb-situ" id="cb-situ" aria-label="문제 상황">
-    <div class="cb-situ-bar">
-      <span class="cb-situ-t">📄 문제 상황</span>
-      <span class="cb-situ-tabs">${tabs}</span>
-      <button class="cb-situ-x" data-action="nb-toggle-situ" title="닫기">✕</button>
-    </div>
-    <div class="cb-situ-body">${body}</div>
-  </aside>`;
+  /* 2026-11-03 선생님 — 「전체화면 할 때 분할로 나오잖아 그거 없애주고 그냥
+     문제상황 버튼 누르면 팝업창으로 보게 해줘. 팝업창은 x 누르지 않는 이상
+     안 사라지도록」.
+     그래서 **덮는 창**입니다 — 뒤 바탕을 눌러도, Esc 를 눌러도 닫히지 않고
+     오른쪽 위 ✕ 로만 닫힙니다. 바탕에는 `data-action` 을 두지 않습니다. */
+  return `<div class="cb-situ-back" id="cb-situ-back">
+    <aside class="cb-situ" id="cb-situ" role="dialog" aria-modal="true"
+           aria-label="문제 상황">
+      <div class="cb-situ-bar">
+        <span class="cb-situ-t">📄 문제 상황</span>
+        <span class="cb-situ-tabs">${tabs}</span>
+        <button class="cb-situ-x" data-action="nb-toggle-situ" title="닫기">✕</button>
+      </div>
+      <div class="cb-situ-body">${body}</div>
+    </aside>
+  </div>`;
 }
 
 /* 전체화면을 권하는 띠 — 평가용 노트북을 열었을 때 한 번.
    반반으로 보려면 화면이 넓어야 합니다. 누르는 것은 학생이 정합니다
    (전체화면은 **누른 순간에만** 들어갈 수 있습니다 — 브라우저 규칙). */
 function vNbFullBanner(){
+  // 2026-11-03 — 문제 상황이 **팝업창**으로 바뀌어 나란히 둘 수가 없습니다.
+  //   전체화면을 권할 일이 없어졌으므로 띄를 그리지 않습니다.
+  return '';
+  /* eslint-disable no-unreachable */
   if(!NB_FULL_ASK || typeof nbSituReady !== 'function' || !nbSituReady()) return '';
   return `<div class="cb-full-ask">
     <span>📄 문제 상황을 <b>노트북 옆에 펴 놓고</b> 풀 수 있습니다.
