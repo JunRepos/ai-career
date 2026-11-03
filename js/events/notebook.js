@@ -1772,6 +1772,7 @@ document.addEventListener('dblclick', e => {
 document.addEventListener('input', e => {
   const el = e.target;
   if(!el.classList?.contains('cb-fill')) return;
+  nbFillGrow(el);          // 높이는 **먼저** — 아래에서 중간에 돌아가도 늘어나게
   const cell = (NB_CELLS || []).find(c => c && c.id === el.dataset.cellid);
   if(!cell) return;
   const at = String(el.dataset.fill || '').split(',');
@@ -1785,12 +1786,27 @@ document.addEventListener('input', e => {
   body = body.replace(/^\|/, '').replace(/\|$/, '');
   const cells = body.split('|');
   if(!(ci >= 1 && ci < cells.length)) return;
-  // 파이프와 줄바꿈이 들어가면 표가 깨집니다 — 공백으로 바꿉니다
-  cells[ci] = ' ' + String(el.value).replace(/[|\r\n]+/g, ' ') + ' ';
+  /* 표 한 칸은 **한 줄**입니다 — 줄바꿈은 `<br>` 로 넣습니다 (2026-11-03).
+     파이프(|)는 칸을 가르는 글자라 넣을 수 없어 공백으로 바꿉니다. */
+  cells[ci] = ' ' + String(el.value).replace(/\|/g, ' ')
+                                    .replace(/\r\n?|\n/g, '<br>') + ' ';
   lines[li] = lead + '|' + cells.join('|') + (hasR ? '|' : '');
   cell.source = lines.join('\n');
   scheduleNBSave();
 });
+
+/* ✍️ 적는 칸 — 적은 만큼 아래로 늘립니다 (2026-11-03 선생님 —
+   「슬라이딩 윈도우 같이 되서 글자가 짤리는게 보기 안 좋고」).
+   `field-sizing:content` 는 크롬이 새것이어야 하므로 여기서 잽니다.
+   ⚠ 높이를 먼저 `auto` 로 두어야 **줄을 지웠을 때 다시 줄어듭니다.** */
+function nbFillGrow(el){
+  if(!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.max(el.scrollHeight, 22) + 'px';
+}
+function nbFillGrowAll(){
+  document.querySelectorAll('textarea.cb-fill').forEach(nbFillGrow);
+}
 
 // 셀 클릭 시 선택 표시
 document.addEventListener('click', e => {

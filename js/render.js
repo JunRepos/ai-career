@@ -205,6 +205,17 @@ function afterRender(){
     });
   }
 
+  /* ✍️ 적는 칸 — 이미 적어 둔 글에 맞춰 높이를 잡습니다 (2026-11-03).
+     ⚠ **표가 자리를 잡은 뒤에** 재야 합니다. 칸 너비가 정해지기 전에 재면
+       안내 글씨가 몇 줄로 접혀 칸이 엉뚱하게 깊어집니다. 그래서 두 번 — 다음
+       프레임과 그다음 프레임에 (글꼴이 늦게 와도 맞게). */
+  if(typeof nbFillGrowAll === 'function' && document.querySelector('textarea.cb-fill')){
+    requestAnimationFrame(() => {
+      nbFillGrowAll();
+      requestAnimationFrame(nbFillGrowAll);
+    });
+  }
+
   // AI 코딩 — 채팅 스크롤·포커스·진입 타이머
   if(typeof afterRenderAiCode === 'function'){
     afterRenderAiCode();

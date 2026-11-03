@@ -873,8 +873,8 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
 .cb-md-render table.cb-fill-t th{background:var(--cb-bg-2);color:var(--cb-text-2);
   font-size:12px;font-weight:600;letter-spacing:.3px;padding:8px 14px}
 .cb-md-render table.cb-fill-t td.lb{background:transparent;font-weight:500;width:46%;
-  padding:0 12px;border-right:1px solid var(--cb-border);vertical-align:middle}
-.cb-md-render table.cb-fill-t td:has(> input){padding:0}
+  padding:12px 12px;border-right:1px solid var(--cb-border);vertical-align:top}
+.cb-md-render table.cb-fill-t td:has(> textarea){padding:0;vertical-align:top}
 .cb-md-render table.cb-fill-t tr:hover td{background:var(--cb-bg-2)}
 /* 묶음 머리줄 — 「시도 1」 한 줄 아래에 그 묶음의 칸들 */
 .cb-md-render table.cb-fill-t tr.cb-fill-h td{background:var(--cb-bg-2);
@@ -886,17 +886,18 @@ details[open] .cb-stdin-summary::before{transform:rotate(90deg);color:var(--cb-a
   width:19px;height:19px;margin-right:9px;border-radius:50%;font-style:normal;
   font-size:11px;font-weight:600;color:var(--cb-text-3);background:var(--cb-bg-2);
   border:1px solid var(--cb-border);vertical-align:-3px}
-.cb-md-render input.cb-fill{display:block;width:100%;box-sizing:border-box;
+.cb-md-render textarea.cb-fill{display:block;width:100%;box-sizing:border-box;
   border:0;background:transparent;font:inherit;color:var(--cb-text);
-  padding:11px 14px;outline:0;transition:background .12s,box-shadow .12s}
+  padding:11px 14px;outline:0;transition:background .12s,box-shadow .12s;
+  resize:none;overflow:hidden;line-height:1.6;min-height:44px}
 /* 적은 칸 — 왼쪽에 띄를 두어 어디까지 했는지 한눈에 */
-.cb-md-render input.cb-fill:not(:placeholder-shown){
+.cb-md-render textarea.cb-fill:not(:placeholder-shown){
   box-shadow:inset 3px 0 0 var(--cb-accent)}
-.cb-md-render table.cb-fill-t tr:has(input.cb-fill:not(:placeholder-shown)) .cb-fill-n{
+.cb-md-render table.cb-fill-t tr:has(textarea.cb-fill:not(:placeholder-shown)) .cb-fill-n{
   color:#fff;background:var(--cb-accent);border-color:var(--cb-accent)}
-.cb-md-render input.cb-fill:focus{background:var(--cb-bg-2);
+.cb-md-render textarea.cb-fill:focus{background:var(--cb-bg-2);
   box-shadow:inset 0 0 0 2px var(--cb-accent)}
-.cb-md-render input.cb-fill::placeholder{color:var(--cb-text-3);font-style:italic}
+.cb-md-render textarea.cb-fill::placeholder{color:var(--cb-text-3);font-style:italic}
 
 .cb-md-render a{color:var(--cb-accent);text-decoration:underline}
 .cb-md-render img{max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
