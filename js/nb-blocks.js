@@ -449,12 +449,15 @@ const NB_BLOCK_DEFS = {
     //     「random_state = 42 에서 숫자에 빈칸을 뚫는 것은 무의미」). 아무 숫자나 넣어도
     //     되는 자리라 알아맞혀 볼 것이 없습니다.
     slots: { fn: { kind: 'text', def: 'train_test_split', ans: 'train_test_split', ph: '함수 이름' }, r: { kind: 'text', def: '0.3', ans: '0.3', ask: 1, ph: '0.3' },
-             s: { kind: 'text', def: 'y', ans: 'y', ask: 1, ph: 'y' },
+             // 2026-11-03 선생님 — 「stratify = y 이 부분, 빈칸을 stratify 쪽으로
+             //   바꿔줘. y 는 빈칸 풀고」. 적을 것이 한 글자 `y` 가 아니라
+             //   **옵션 이름**이어야 무엇을 하는 것인지 알고 적게 됩니다.
+             s: { kind: 'text', def: 'stratify', ans: 'stratify', ask: 1 },
              d: { kind: 'num', def: '42', ans: '42' } },
     // 「확인」 은 (233, 3) (100, 3) 이 나온다고 적혀 있습니다 — print 를 넣습니다 (2026-10-21)
     imp: 'from sklearn.model_selection import train_test_split',
     tpl:          'X_train, X_test, y_train, y_test = {fn}(\n' +
-         '    X, y, test_size={r}, stratify={s}, random_state={d})\n' +
+         '    X, y, test_size={r}, {s}=y, random_state={d})\n' +
          'print(X_train.shape, X_test.shape)',
     say: '훈련 데이터와 테스트 데이터로 나누기. '
        + 'test_size 는 테스트 데이터의 비율, stratify 는 클래스를 두 쪽에 '
