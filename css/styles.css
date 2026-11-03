@@ -7133,6 +7133,13 @@ button{border-radius:2px}
   padding-bottom:6px; border-bottom:2px solid #00703C}
 .cb-situ-f{float:right; font-weight:400; font-size:11.5px;
   font-family:'Consolas','D2Coding',monospace; color:var(--cb-text-2)}
+/* 데이터 다섯 줄 — 종이 카드와 같게 (2026-11-03) */
+.cb-situ-d5{margin:10px 0 4px; overflow-x:auto}
+.cb-situ-d5 table{border-collapse:collapse; width:100%; font-size:11.5px}
+.cb-situ-d5 th,.cb-situ-d5 td{border:1px solid var(--cb-border); padding:4px 5px;
+  text-align:center; white-space:nowrap}
+.cb-situ-d5 th{background:var(--cb-bg-2); font-weight:600; font-size:11px;
+  color:var(--cb-text-2)}
 .cb-situ-note{margin-top:4px; padding:9px 11px; border-radius:6px;
   background:var(--cb-hover); font-size:13px; line-height:1.66}
 .cb-situ-pickme{margin-bottom:10px; color:var(--cb-text-2); font-size:13px}

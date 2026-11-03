@@ -666,6 +666,12 @@ function vNbSituPanel(){
          <span class="cb-situ-f">${esc(cur.file)}</span></div>`
       + (cur.img ? `<img class="cb-situ-img" src="${esc(cur.img)}" alt="">` : '')
       + (cur.body || []).map(t => `<p>${md(t)}</p>`).join('')
+      /* 데이터 다섯 줄 — 종이 카드와 **같은 것**을 보여 줍니다 (2026-11-03 선생님
+         「난 저게 그대로 올라갔으면 좋겠어」). 타깃 열은 카드처럼 맨 오른쪽. */
+      + ((cur.head && cur.rows) ? `<div class="cb-situ-d5">
+          <table><tr>${cur.head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>
+          ${cur.rows.map(r => `<tr>${r.map(v => `<td>${esc(v)}</td>`).join('')}</tr>`).join('')}
+          </table></div>` : '')
       + (NB_SITU.common ? `<div class="cb-situ-note">${md(NB_SITU.common)}</div>` : '')
     : `<div class="cb-situ-pickme">종이 카드에서 고른 상황을 위에서 누르시오.</div>`
       + list.map(x => `<button class="cb-situ-one" data-action="nb-situ-pick"
