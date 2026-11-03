@@ -623,9 +623,14 @@ function vNbBlock(cellId, b, bi, file, bad){
       ? `<button class="nbk-sayb" data-action="nb-blk-text-reset" data-k="${b.k}"
            title="처음 글로 되돌립니다">↺</button>` : ''}`
     : '';
-  const say = NB_BLK_SAY && (t.say || sayBtns)
-    ? `<div class="nbk-say">${esc(t.say)}${
-        t.src ? ` <i class="nbk-src">${esc(t.src)}</i>` : ''}${sayBtns}</div>`
+  /* 블록 아래 한 줄 — **블록 이름만** 둡니다 (2026-11-03 선생님 —
+     「교과서 ~쪽 이런 설명은 다 빼고 그냥 해당 블록 제목만 출력되게 해줘」).
+     설명 문장과 교과서 쪽은 **가이드북**에 있습니다. 블록마다 두 줄씩 붙으니
+     블록이 쌓일수록 코드가 글에 묻혔습니다.
+     ⚠ 설명 글(`say`)과 출처(`src`)는 지우지 않았습니다 — 선생님이 고치는
+       화면(nbBlockEdit)과 가이드북이 그대로 씁니다. */
+  const say = (NB_BLK_SAY && (d.name || sayBtns))
+    ? `<div class="nbk-say">${esc(d.name || '')}${sayBtns}</div>`
     : '';
   return `<div class="nbk-blk" draggable="true" data-cellid="${cellId}" data-bi="${bi}"
       style="--nbk-cat:var(${NB_BLK_CAT[d.cat]})">

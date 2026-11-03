@@ -485,11 +485,15 @@ const NB_BLOCK_DEFS = {
   fit: {
     guide: 'c_dt',   // 학습 — 결정트리 자리에 함께 있습니다
     cat: 'ml', name: '학습시키기',
-    // d — 학습에 **어느 데이터**를 쓸지. 테스트 데이터로 학습하면 틀립니다.
+    // d · e — 학습에 **어느 데이터**를 쓸지. 테스트 데이터로 학습하면 틀립니다.
     //     수행평가 ② 「정확하게 학습」 이 이 선택입니다 (2026-10-22 선생님).
+    //   ⚠ 2026-11-03 선생님 — 「fit 블록에서 y 부분에 같은 값 하지 마.
+    //     그냥 저기도 빈칸 뚫어놔」. 전에는 틀에 `{d}` 가 두 번이라 뒤엣것이
+    //     앞 칸을 **비추기만** 했습니다. X 와 y 를 따로 고르게 칸을 둘로 둡니다.
     slots: { fn: { kind: 'text', def: 'fit', ans: 'fit', ph: '함수 이름' }, m: { opt: ['dt', 'knn'], def: 'dt' },
-             d: { opt: ['train', 'test'], def: '', ans: 'train', ask: 1 } },
-    tpl: '{m}.{fn}(X_{d}, y_{d})',
+             d: { opt: ['train', 'test'], def: '', ans: 'train', ask: 1 },
+             e: { opt: ['train', 'test'], def: '', ans: 'train', ask: 1 } },
+    tpl: '{m}.{fn}(X_{d}, y_{e})',
     say: '모델을 학습시키기. 학습에는 훈련 데이터를 씁니다.', src: '교과서 100쪽',
   },
   score: {
