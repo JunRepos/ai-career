@@ -975,6 +975,18 @@ function nbFillTable(lines, from, cellId){
   const isSep = cs => cs.every(c => /^\s*:?-{2,}:?\s*$/.test(c));
   const split = ln => ln.trim().replace(/^\|/, '').replace(/\|$/, '').split('|');
   const wide = Math.max(2, ...lines.map(ln => split(ln).length));
+  /* 앞머리가 **두 줄 이상** 이어질 때만 묶습니다 (2026-11-03).
+     「TP — …」 「FN — …」 처럼 줄마다 앞머리가 다르면 한 줄짜리 머리줄이
+     넷 생겨 오히려 어지럽습니다. 묶음이 아니라 설명이기 때문입니다. */
+  const many = {};
+  let seen = false;
+  lines.forEach(ln => {
+    const cs = split(ln);
+    if(isSep(cs)){ seen = true; return; }
+    if(!seen) return;
+    const g = nbFillGroup((cs[0] || '').trim()).g;
+    if(g) many[g] = (many[g] || 0) + 1;
+  });
   let out = '<table class="cb-fill-t">', head = true, no = 0, prev = '';
   lines.forEach((ln, k) => {
     const cs = split(ln);
@@ -982,11 +994,14 @@ function nbFillTable(lines, from, cellId){
     let lb = (cs[0] || '').trim();
     if(!head){
       no++;
-      const {g, rest} = nbFillGroup(lb);
-      if(g && g !== prev){
-        out += `<tr class="cb-fill-h"><td colspan="${wide}">${nbInline(g)}</td></tr>`;
+      const r = nbFillGroup(lb);
+      const g = (r.g && many[r.g] >= 2) ? r.g : '';     // 혼자면 묶지 않습니다
+      if(g){
+        if(g !== prev){
+          out += `<tr class="cb-fill-h"><td colspan="${wide}">${nbInline(g)}</td></tr>`;
+        }
+        lb = r.rest;
       }
-      if(g) lb = rest;
       prev = g;
     }
     out += '<tr>' + cs.map((c, ci) => {
