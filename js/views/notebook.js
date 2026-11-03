@@ -1054,6 +1054,17 @@ function nbFillTable(lines, from, cellId){
     const cs = split(ln);
     if(isSep(cs)){ head = false; return; }
     let lb = (cs[0] || '').trim();
+    /* 칸 높이 — 이름표 끝의 `+` 개수가 **처음 줄 수**입니다 (2026-11-03 선생님 —
+       「칸 작아보여서 애들이 별로 작성 안할 거 같은데 … 이유 서술하라던가
+        그런 칸들만 키울수 있는 방법」).
+         | 고른 까닭 +++ | |   → 세 줄짜리 칸으로 열립니다
+       `+` 는 **지워서 보여 줍니다.** 학생이 고치는 것은 답 칸뿐이라 이름표에
+       두는 것이 안전합니다 — 답 칸에 두면 학생이 지우는 순간 사라집니다. */
+    let tall = 1;
+    if(!head){
+      const mt = lb.match(/\s*(\++)$/);
+      if(mt){ tall = Math.min(12, mt[1].length); lb = lb.slice(0, mt.index).trim(); }
+    }
     if(!head){
       no++;
       const r = nbFillGroup(lb);
@@ -1078,7 +1089,7 @@ function nbFillTable(lines, from, cellId){
            높이는 nbFillGrow 가 글자에 맞춰 늘립니다. */
       const tv = v.replace(/<br\s*\/?>/gi, '\n');
       return `<td><textarea class="cb-fill" data-cellid="${cellId}" rows="${
-        Math.max(1, tv.split('\n').length)}"
+        Math.max(tall, tv.split('\n').length)}"
         data-fill="${from + k},${ci}" spellcheck="false"
         placeholder="여기에 적으세요">${esc(tv)}</textarea></td>`;
     }).join('') + '</tr>';
