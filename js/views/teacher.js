@@ -157,6 +157,8 @@ function setTC(t){
   TC_TAB = t;
   // 1차 수행평가 실시간 구독은 그 탭에 있을 때만
   if(t !== 'assess1') a1TcStop(); else { A1_TC_VIEW = 'list'; A1_TC_SNUM = null; }
+  // 2차도 같습니다 (2026-11-05) — 탭을 떠나면 구독을 끊고, 들어오면 명단부터
+  if(t !== 'assess2') a2TcStop(); else { A2_VIEW = 'list'; A2_SNUM = null; }
   // 수업자료 탭은 늘 목록부터 (지난번에 열어본 자료가 그대로 뜨지 않게)
   if(t === 'slides' && TC_CLS){
     SLIDE_TC_SEL = null; SLIDE_TC_NOTES = false;
