@@ -505,6 +505,9 @@ $('btnStart').onclick=()=>{ $('intro').classList.add('hidden'); startDay(); };
 buildFeats(); noteData(); drawChart(); drawShop(); renderLedger(); renderStats();
 /* ?auto — 확인용: 이름 없이 바로 시작 */
 if(location.search.includes('auto')){ $('team').value='확인'; $('btnStart').click(); }
+/* ?demo — 캡처용: 1일차를 손으로 돌리고 네 독립 변수로 학습해 적용한 2일차 아침 */
+if(location.search.includes('demo')){ (async()=>{ const sl=ms=>new Promise(r=>setTimeout(r,ms)); S.today.forEach((b,i)=>{ $('p'+i).value=[3600,3400,6200,4600][i]; $('p'+i).dispatchEvent(new Event('input')); });
+  $('btnOpen').click(); await sl(4600); $('btnOpen').click(); await sl(100); [1,2,3].forEach(i=>$('feats').querySelectorAll('.chk')[i].click()); $('btnTrain').click(); await sl(4000); $('btnApply').click(); })(); }
 </script>
 </body>
 </html>
