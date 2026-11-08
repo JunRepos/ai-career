@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>도트 빵집 — 가격을 정하라 · 신동고 인공지능 기초</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%90%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<style>
+/* 도트 빵집 — 회귀 수업 실습 (2026-11-09). 데이터·회귀식의 근거는 verify/bakery.py · verify/bakery-facts.json.
+   화면의 말은 교과서 96~98쪽의 것만 씁니다 — 독립 변수 · 종속 변수 · 훈련 데이터 · 회귀계수 · 절편 · 오차 · MAE · 예측값 · 실젯값. */
+@font-face{font-family:'DGM';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/DungGeunMo.woff') format('woff');font-display:swap}
+:root{--bg:#f4f6f3;--card:#fff;--ink:#1c1c1c;--sub:#6b7280;--line:#dfe5e0;--acc:#00703C;--acc2:#e8f2ec;--red:#c8102e;--amber:#b7791f;--paper:#fbf7ee}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif;-webkit-text-size-adjust:100%}
+body{padding:14px 16px 40px}
+.page{max-width:1280px;margin:0 auto}
+.px{font-family:'DGM',"Pretendard Variable",sans-serif;letter-spacing:.2px}
+header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+header.top h1{font-size:22px;font-weight:800}
+header.top h1 small{font-size:13px;color:var(--sub);font-weight:500;margin-left:8px}
+.stats{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 14px;min-width:120px}
+.stat .k{font-size:11px;color:var(--sub);font-weight:600}
+.stat .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.stat .v.neg{color:var(--red)}.stat .v.pos{color:var(--acc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:960px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px 16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card h2{font-size:15px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card h2 .tag{font-size:11px;font-weight:700;color:var(--acc);background:var(--acc2);padding:2px 8px;border-radius:999px}
+canvas.shop{width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;border-radius:10px;background:#dbe9dd;display:block}
+.ticker{margin-top:8px;font-size:13px;min-height:22px;color:var(--ink)}
+.ticker b{color:var(--acc)}
+.ticker.ev{color:var(--red);font-weight:700}
+.log{margin-top:8px;font-size:12.5px;border-top:1px solid var(--line)}
+.log div{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr .8fr;gap:6px;padding:4px 2px;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
+.log div.h{color:var(--sub);font-weight:700;border-bottom:1px solid var(--line)}
+.log .no{color:var(--red)}.log .ok{color:var(--acc)}.log .low{color:var(--amber)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row+.row{margin-top:10px}
+.lbl{font-size:12px;font-weight:700;color:var(--sub);min-width:74px}
+.chk{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:var(--card);user-select:none}
+.chk.on{border-color:var(--acc);background:var(--acc2);color:var(--acc)}
+.chk input{display:none}
+.seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:none;background:var(--card);padding:6px 12px;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
+.seg button.on{background:var(--ink);color:#fff}
+button.btn{border:none;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;background:var(--acc);color:#fff}
+button.btn.sec{background:var(--ink)}
+button.btn.ghost{background:var(--card);color:var(--ink);border:1.5px solid var(--line)}
+button.btn:disabled{opacity:.45;cursor:not-allowed}
+canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:#fff;border:1px solid var(--line)}
+.eq{margin-top:10px;padding:10px 12px;background:var(--paper);border:1px solid #e9dfc8;border-radius:10px;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;min-height:44px}
+.eq small{display:block;font-weight:500;color:var(--sub);font-size:12px;margin-top:3px}
+.metrics{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.m{flex:1;min-width:110px;border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.m .k{font-size:11px;color:var(--sub);font-weight:700}
+.m .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5}
+.hint b{color:var(--ink)}
+.overlay{position:fixed;inset:0;background:rgba(20,30,24,.55);display:flex;align-items:center;justify-content:center;z-index:9;padding:16px}
+.overlay .box{background:var(--card);border-radius:18px;padding:24px 26px;max-width:620px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.overlay h3{font-size:22px;font-weight:900;margin-bottom:10px}
+.overlay p{font-size:14.5px;line-height:1.65;margin-bottom:8px}
+.overlay ol{padding-left:20px;font-size:14px;line-height:1.7;margin:6px 0 12px}
+.overlay input{font:inherit;font-size:15px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;width:100%;margin:6px 0 12px}
+.result{font-size:14px;line-height:1.7;background:var(--paper);border-radius:10px;padding:10px 12px;margin:8px 0 12px;white-space:pre-wrap;font-variant-numeric:tabular-nums}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div class="page">
+<header class="top">
+  <h1 class="px">🥐 도트 빵집 — 가격을 정하라 <small>회귀 · 교과서 96~98쪽</small></h1>
+  <div class="stats">
+    <div class="stat"><div class="k">남은 시간</div><div class="v" id="sTime">8:00</div></div>
+    <div class="stat"><div class="k">누적 이윤</div><div class="v" id="sProfit">0원</div></div>
+    <div class="stat"><div class="k">팔림 / 손님</div><div class="v" id="sSold">0 / 0</div></div>
+    <div class="stat"><div class="k">지금 가격표</div><div class="v" id="sModel" style="font-size:14px">평균 가격</div></div>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <h2>가게 <span class="tag" id="tagShop">영업 중</span></h2>
+    <canvas class="shop" id="shop" width="640" height="300"></canvas>
+    <div class="ticker" id="ticker">손님이 옵니다. 가격표는 아직 <b>평균 가격</b>(지난 평균 가격)으로 붙어 있습니다.</div>
+    <div class="log" id="log"></div>
+  </section>
+
+  <section class="card">
+    <h2>공방 — 가격 예측 모델 <span class="tag">선형 회귀</span></h2>
+    <div class="row"><span class="lbl">독립 변수</span><span id="feats"></span></div>
+    <div class="row"><span class="lbl">훈련 데이터</span>
+      <span class="seg" id="dataSeg"><button class="on" data-set="first">지난 기록 60개</button><button data-set="recent">최근 손님 60명</button></span>
+      <span class="hint" id="dataNote" style="margin:0"></span></div>
+    <div class="row">
+      <button class="btn" id="btnTrain">학습</button>
+      <button class="btn sec" id="btnApply" disabled>가게에 적용</button>
+      <button class="btn ghost" id="btnHand" disabled>손으로 긋기</button>
+      <span class="hint" id="trainNote" style="margin:0"></span>
+    </div>
+    <canvas class="chart" id="chart" width="640" height="380" style="margin-top:10px"></canvas>
+    <div class="eq" id="eq">아직 모델이 없습니다 — 독립 변수를 고르고 <b>학습</b>을 누르세요.</div>
+    <div class="metrics">
+      <div class="m"><div class="k">MAE — 훈련 데이터</div><div class="v" id="mTrain">—</div></div>
+      <div class="m"><div class="k">MAE — 새 손님 40명</div><div class="v" id="mTest">—</div></div>
+      <div class="m"><div class="k">결정계수 R²</div><div class="v" id="mR2">—</div></div>
+      <div class="m"><div class="k">에포크</div><div class="v" id="mEpoch">—</div></div>
+    </div>
+    <div class="hint">종속 변수는 <b>가격(손님이 생각하는 적정가)</b>입니다. 특징이 하나면 점 사이로 <b>회귀선</b>이 맞춰지는 것이 보이고,
+      둘 이상이면 <b>예측값 ↔ 실젯값</b> 그림으로 바뀝니다(대각선에 가까울수록 오차가 작음). 가게는 모델을 적용하는 동안에도 계속 돕니다.</div>
+  </section>
+</div>
+</div>
+
+<div class="overlay" id="intro">
+  <div class="box">
+    <h3 class="px">🥐 도트 빵집 — 가격을 정하라</h3>
+    <p>매일 <b>새 빵</b>이 들어오는데 가격표가 없습니다. 손님은 자기 머릿속 <b>적정가</b>와 우리 가격을 견줘 사거나 그냥 갑니다.
+      비싸면 안 팔려 재료값을 날리고, 싸면 남는 게 없습니다.</p>
+    <ol>
+      <li>지난 판매 기록 <b>60개</b>가 훈련 데이터 — 특징 다섯 가운데 쓸 것을 고른다</li>
+      <li><b>학습</b> — 선이 점들 사이로 맞춰지며 MAE 가 줄어든다 · 회귀식이 나온다</li>
+      <li><b>가게에 적용</b> — 이윤이 움직인다</li>
+      <li>사건이 터지면 <b>최근 손님 데이터</b>로 다시 학습한다</li>
+    </ol>
+    <p>8분 동안의 <b>누적 이윤</b>이 점수입니다. 짝 이름을 적고 시작하세요.</p>
+    <input id="team" placeholder="학번 · 이름 (둘)" maxlength="40">
+    <button class="btn" id="btnStart">가게 열기</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="endBox">
+  <div class="box">
+    <h3 class="px">영업 끝</h3>
+    <div class="result" id="result"></div>
+    <div class="row"><button class="btn" id="btnCopy">결과 복사</button><button class="btn ghost" onclick="location.reload()">다시</button></div>
+  </div>
+</div>
+
+<script>
+/* ═══ 데이터 — verify/bakery-facts.json 과 같은 수 ═══ */
+const FEATS = ['무게','재료 등급','굽는 시간','토핑 수','포장 색'];
+const UNIT  = ['g','','분','개',''];
+const TRUE  = {w:[10,300,15,150,0], b:500, noise:200};   // 적정가 = Σ w·x + b + N(0,200)
+let   BIAS  = TRUE.b;                                    // 사건으로 바뀜
+const TRAIN = /*TRAIN*/[
+{"name":"소금빵","x":[358, 4, 21, 3, 2],"y":6140},
+{"name":"크루아상","x":[218, 3, 29, 0, 2],"y":4280},
+{"name":"단팥빵","x":[80, 5, 24, 2, 4],"y":3590},
+{"name":"바게트","x":[275, 5, 31, 5, 4],"y":6130},
+{"name":"식빵","x":[299, 2, 19, 2, 2],"y":4850},
+{"name":"베이글","x":[142, 5, 31, 2, 1],"y":4230},
+{"name":"머핀","x":[392, 1, 13, 1, 1],"y":5180},
+{"name":"스콘","x":[294, 5, 33, 5, 3],"y":6340},
+{"name":"치아바타","x":[233, 4, 36, 2, 1],"y":5270},
+{"name":"피자빵","x":[291, 4, 35, 0, 1],"y":5290},
+{"name":"마늘빵","x":[270, 5, 13, 1, 4],"y":5310},
+{"name":"모카빵","x":[81, 5, 24, 4, 1],"y":3820},
+{"name":"크림빵","x":[85, 3, 22, 0, 2],"y":2450},
+{"name":"호두빵","x":[87, 2, 31, 2, 4],"y":2600},
+{"name":"치즈빵","x":[180, 3, 34, 3, 4],"y":4010},
+{"name":"카스텔라","x":[314, 4, 38, 0, 4],"y":5310},
+{"name":"도넛","x":[315, 2, 16, 0, 2],"y":4580},
+{"name":"프레첼","x":[252, 4, 39, 4, 2],"y":5150},
+{"name":"깜빠뉴","x":[351, 2, 33, 3, 4],"y":5500},
+{"name":"브리오슈","x":[132, 1, 29, 1, 4],"y":2580},
+{"name":"소금빵 2","x":[198, 4, 14, 3, 3],"y":4340},
+{"name":"크루아상 2","x":[282, 4, 29, 4, 4],"y":5560},
+{"name":"단팥빵 2","x":[257, 5, 26, 1, 4],"y":5080},
+{"name":"바게트 2","x":[130, 2, 36, 3, 3],"y":3450},
+{"name":"식빵 2","x":[393, 2, 20, 3, 4],"y":5810},
+{"name":"베이글 2","x":[360, 1, 18, 1, 4],"y":4990},
+{"name":"머핀 2","x":[395, 3, 20, 0, 1],"y":5650},
+{"name":"스콘 2","x":[164, 5, 13, 4, 3],"y":4120},
+{"name":"치아바타 2","x":[123, 1, 12, 4, 1],"y":3030},
+{"name":"피자빵 2","x":[134, 5, 32, 5, 4],"y":4650},
+{"name":"마늘빵 2","x":[323, 3, 30, 1, 1],"y":5340},
+{"name":"모카빵 2","x":[371, 3, 33, 4, 2],"y":6100},
+{"name":"크림빵 2","x":[310, 1, 34, 5, 1],"y":5090},
+{"name":"호두빵 2","x":[275, 5, 24, 4, 4],"y":5450},
+{"name":"치즈빵 2","x":[302, 1, 39, 2, 2],"y":4890},
+{"name":"카스텔라 2","x":[240, 5, 12, 0, 2],"y":4360},
+{"name":"도넛 2","x":[128, 1, 38, 2, 3],"y":3080},
+{"name":"프레첼 2","x":[399, 5, 19, 2, 2],"y":6570},
+{"name":"깜빠뉴 2","x":[200, 5, 27, 0, 1],"y":4070},
+{"name":"브리오슈 2","x":[123, 4, 37, 5, 4],"y":4430},
+{"name":"소금빵 3","x":[236, 5, 18, 1, 2],"y":4990},
+{"name":"크루아상 3","x":[314, 5, 40, 4, 2],"y":6750},
+{"name":"단팥빵 3","x":[341, 2, 11, 5, 1],"y":5390},
+{"name":"바게트 3","x":[197, 4, 32, 4, 3],"y":4690},
+{"name":"식빵 3","x":[242, 5, 36, 5, 2],"y":6010},
+{"name":"베이글 3","x":[246, 5, 24, 2, 3],"y":5060},
+{"name":"머핀 3","x":[262, 5, 29, 4, 2],"y":5610},
+{"name":"스콘 3","x":[346, 4, 15, 3, 3],"y":5800},
+{"name":"치아바타 3","x":[396, 5, 10, 0, 4],"y":6350},
+{"name":"피자빵 3","x":[226, 3, 27, 1, 1],"y":4320},
+{"name":"마늘빵 3","x":[325, 3, 13, 0, 1],"y":5160},
+{"name":"모카빵 3","x":[91, 3, 21, 4, 3],"y":3410},
+{"name":"크림빵 3","x":[322, 4, 33, 2, 2],"y":5880},
+{"name":"호두빵 3","x":[150, 2, 34, 3, 4],"y":3440},
+{"name":"치즈빵 3","x":[123, 2, 21, 2, 1],"y":2870},
+{"name":"카스텔라 3","x":[143, 3, 34, 0, 1],"y":3360},
+{"name":"도넛 3","x":[271, 3, 23, 5, 4],"y":5230},
+{"name":"프레첼 3","x":[80, 5, 18, 2, 3],"y":3600},
+{"name":"깜빠뉴 3","x":[299, 1, 22, 3, 4],"y":4860},
+{"name":"브리오슈 3","x":[293, 5, 28, 2, 4],"y":5710}
+]/*/TRAIN*/;
+const TEST  = /*TEST*/[
+{"x":[97, 5, 37, 1, 4],"y":3710},
+{"x":[119, 5, 18, 2, 4],"y":3550},
+{"x":[364, 4, 33, 3, 3],"y":6480},
+{"x":[227, 4, 12, 5, 1],"y":4720},
+{"x":[224, 5, 12, 0, 2],"y":4240},
+{"x":[136, 1, 17, 0, 3],"y":2130},
+{"x":[204, 3, 33, 0, 3],"y":3960},
+{"x":[353, 3, 32, 3, 4],"y":5860},
+{"x":[163, 1, 40, 4, 4],"y":3690},
+{"x":[251, 2, 14, 1, 4],"y":4000},
+{"x":[215, 5, 30, 5, 2],"y":5060},
+{"x":[137, 1, 28, 3, 2],"y":2950},
+{"x":[260, 5, 12, 1, 4],"y":5180},
+{"x":[355, 2, 26, 3, 1],"y":5610},
+{"x":[270, 3, 25, 3, 4],"y":4670},
+{"x":[110, 4, 30, 3, 2],"y":3460},
+{"x":[298, 4, 15, 2, 2],"y":5360},
+{"x":[292, 1, 25, 3, 2],"y":4490},
+{"x":[240, 5, 24, 4, 3],"y":5660},
+{"x":[300, 1, 34, 3, 3],"y":4830},
+{"x":[361, 1, 37, 4, 2],"y":5540},
+{"x":[203, 1, 16, 4, 2],"y":3960},
+{"x":[280, 3, 28, 2, 1],"y":4700},
+{"x":[255, 2, 19, 5, 1],"y":4410},
+{"x":[296, 2, 16, 0, 3],"y":4400},
+{"x":[335, 4, 19, 3, 1],"y":5660},
+{"x":[272, 2, 16, 3, 2],"y":4420},
+{"x":[253, 1, 38, 2, 2],"y":4040},
+{"x":[326, 5, 33, 3, 1],"y":6270},
+{"x":[174, 1, 34, 3, 2],"y":3320},
+{"x":[208, 2, 33, 0, 1],"y":3840},
+{"x":[161, 5, 15, 3, 1],"y":4370},
+{"x":[203, 4, 18, 5, 1],"y":4960},
+{"x":[259, 3, 35, 2, 2],"y":5020},
+{"x":[391, 2, 14, 5, 3],"y":5960},
+{"x":[149, 1, 38, 3, 2],"y":3040},
+{"x":[230, 4, 16, 5, 1],"y":4830},
+{"x":[312, 2, 25, 1, 1],"y":4620},
+{"x":[349, 1, 31, 4, 4],"y":5320},
+{"x":[352, 4, 12, 5, 3],"y":6080}
+]/*/TEST*/;
+const BREAD = ['소금빵','크루아상','단팥빵','바게트','식빵','베이글','머핀','스콘','치아바타','피자빵','마늘빵','모카빵','크림빵','호두빵','치즈빵','카스텔라','도넛','프레첼','깜빠뉴','브리오슈'];
+const ROUND = 480;            // 초
+const EVENTS = [
+  {t:150, name:'옆에 대형 빵집 개업', text:'손님들이 생각하는 적정가가 뚝 떨어졌습니다 — 지난 기록으로 만든 가격표는 이제 비쌉니다', apply(){ BIAS = TRUE.b - 1200; }},
+  {t:300, name:'밀가루값 상승', text:'재료값이 올라 손님들이 생각하는 적정가가 다시 올랐습니다 — 어느 기록으로 학습해야 할까요', apply(){ BIAS = TRUE.b + 600; }},
+  {t:390, name:'대형 신제품 입고', text:'무게 400 g 이 넘는 대형 빵이 들어옵니다 — 훈련 데이터에 없던 크기입니다', apply(){ BIG = true; }},
+];
+let BIG = false;
+
+/* ═══ 난수 (씨앗 고정 — 짝마다 같은 손님 차례) ═══ */
+let seed = 20261109;
+function rnd(){ seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
+function rint(a,b){ return a + Math.floor(rnd()*(b-a+1)); }
+function gauss(){ let u=0,v=0; while(!u) u=rnd(); while(!v) v=rnd(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function newBread(){
+  const x = BIG && rnd()<0.5
+    ? [rint(400,600), rint(3,5), rint(25,45), rint(3,7), rint(1,4)]
+    : [rint(80,400), rint(1,5), rint(10,40), rint(0,5), rint(1,4)];
+  const fair = Math.round((x[0]*TRUE.w[0]+x[1]*TRUE.w[1]+x[2]*TRUE.w[2]+x[3]*TRUE.w[3]+BIAS+gauss()*TRUE.noise)/10)*10;
+  return {name:BREAD[rint(0,BREAD.length-1)], x, fair};
+}
+const fmt = v => Math.round(v).toLocaleString('ko-KR') + '원';
+const r10 = v => Math.round(v/10)*10;
+
+/* ═══ 상태 ═══ */
+const S = { running:false, t:0, profit:0, sold:0, visits:0, recent:[], model:null, applied:null, hand:false,
+            feats:[true,false,false,false,false], dataset:'first', trainCount:0, history:[], evIdx:0, log:[], usedFeats:'' };
+
+/* ═══ 선형 회귀 — 표준화한 특징에 경사 하강 (에포크마다 그림) ═══ */
+function dataset(){
+  if(S.dataset==='recent' && S.recent.length>=10) return S.recent.slice(-60);
+  return TRAIN;
+}
+function sel(){ return FEATS.map((_,i)=>i).filter(i=>S.feats[i]); }
+function fitStart(rows, idx){
+  const n=rows.length, k=idx.length;
+  const mu=idx.map(j=>rows.reduce((s,r)=>s+r.x[j],0)/n);
+  const sd=idx.map((j,c)=>Math.sqrt(rows.reduce((s,r)=>s+(r.x[j]-mu[c])**2,0)/n)||1);
+  const ym=rows.reduce((s,r)=>s+r.y,0)/n;
+  return {rows, idx, mu, sd, w:idx.map(()=>0), b:ym, epoch:0, lr:0.08};
+}
+function fitStep(m){
+  const n=m.rows.length, k=m.idx.length;
+  const gw=m.w.map(()=>0); let gb=0;
+  for(const r of m.rows){
+    let p=m.b; const z=m.idx.map((j,c)=>(r.x[j]-m.mu[c])/m.sd[c]);
+    for(let c=0;c<k;c++) p+=m.w[c]*z[c];
+    const e=p-r.y; gb+=e; for(let c=0;c<k;c++) gw[c]+=e*z[c];
+  }
+  for(let c=0;c<k;c++) m.w[c]-=m.lr*2*gw[c]/n;
+  m.b-=m.lr*2*gb/n; m.epoch++;
+}
+function rawCoef(m){ const coef=m.w.map((w,c)=>w/m.sd[c]); const b=m.b-coef.reduce((s,a,c)=>s+a*m.mu[c],0); return {coef,b}; }
+function predict(m, x){ const {coef,b}=rawCoef(m); return b+coef.reduce((s,a,c)=>s+a*x[m.idx[c]],0); }
+function mae(m, rows){ return rows.reduce((s,r)=>s+Math.abs(predict(m,r.x)-r.y),0)/rows.length; }
+function r2(m, rows){ const ym=rows.reduce((s,r)=>s+r.y,0)/rows.length; const sst=rows.reduce((s,r)=>s+(r.y-ym)**2,0); const sse=rows.reduce((s,r)=>s+(r.y-predict(m,r.x))**2,0); return 1-sse/sst; }
+const MEAN_PRICE = TRAIN.reduce((s,r)=>s+r.y,0)/TRAIN.length;
+
+/* ═══ 공방 UI ═══ */
+const $ = id => document.getElementById(id);
+function buildFeats(){
+  $('feats').innerHTML = FEATS.map((f,i)=>`<label class="chk ${S.feats[i]?'on':''}" data-i="${i}"><input type="checkbox" ${S.feats[i]?'checked':''}>${f}${UNIT[i]?' ('+UNIT[i]+')':''}</label>`).join(' ');
+  $('feats').querySelectorAll('.chk').forEach(el=>el.onclick=e=>{ e.preventDefault(); const i=+el.dataset.i; S.feats[i]=!S.feats[i]; el.classList.toggle('on',S.feats[i]); S.model=null; S.hand=false; $('btnApply').disabled=true; $('btnHand').disabled = sel().length!==1; drawChart(); setEq(); });
+  $('btnHand').disabled = sel().length!==1;
+}
+$('dataSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{ $('dataSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); S.dataset=b.dataset.set; S.model=null; $('btnApply').disabled=true; drawChart(); setEq(); noteData(); });
+function noteData(){ $('dataNote').textContent = S.dataset==='recent' ? (S.recent.length<10 ? `최근 손님 기록이 ${S.recent.length}명뿐 — 10명부터 쓸 수 있음` : `최근 ${Math.min(60,S.recent.length)}명의 적정가`) : '영업 전 60개 판매 기록'; }
+
+let animTimer=null;
+$('btnTrain').onclick=()=>{
+  const idx=sel(); if(!idx.length){ $('trainNote').textContent='독립 변수를 하나 이상 고르세요'; return; }
+  const rows=dataset();
+  if(S.dataset==='recent' && rows===TRAIN){ $('trainNote').textContent='최근 손님 기록이 10명 미만 — 지난 기록으로 학습합니다'; }
+  else $('trainNote').textContent='';
+  clearInterval(animTimer); S.hand=false;
+  const m=fitStart(rows, idx); S.model=m; S.trainCount++;
+  $('btnApply').disabled=true; $('btnTrain').disabled=true;
+  animTimer=setInterval(()=>{
+    for(let i=0;i<3;i++) fitStep(m);
+    drawChart(); setEq();
+    if(m.epoch>=240){ clearInterval(animTimer); $('btnApply').disabled=false; $('btnTrain').disabled=false; $('trainNote').textContent='학습 끝 — 가게에 적용할 수 있습니다'; }
+  }, 40);
+};
+$('btnApply').onclick=()=>{ if(!S.model) return; S.applied={...S.model, w:[...S.model.w], idx:[...S.model.idx], hand:S.hand}; S.usedFeats=S.model.idx.map(i=>FEATS[i]).join('+'); $('sModel').textContent=(S.hand?'손으로 그은 선 · ':'회귀 모델 · ')+S.usedFeats; $('tagShop').textContent='모델 적용 중'; S.history.push({t:S.t, what:'적용 '+S.usedFeats+(S.hand?'(손)':'')}); };
+$('btnHand').onclick=()=>{ const idx=sel(); if(idx.length!==1) return; clearInterval(animTimer); $('btnTrain').disabled=false;
+  const rows=dataset(); const m=fitStart(rows, idx); m.epoch=0; // 손으로: 표준화 없이 직접 기울기·절편
+  m.mu=[0]; m.sd=[1]; const j=idx[0]; const xs=rows.map(r=>r.x[j]); const xmin=Math.min(...xs), xmax=Math.max(...xs);
+  const ym=rows.reduce((s,r)=>s+r.y,0)/rows.length; m.w=[0]; m.b=ym; m.handles=[{x:xmin,y:ym},{x:xmax,y:ym}];
+  S.model=m; S.hand=true; $('btnApply').disabled=false; $('trainNote').textContent='점 두 개를 끌어 선을 그으세요'; drawChart(); setEq(); };
+
+function setEq(){
+  const m=S.model; if(!m){ $('eq').innerHTML='아직 모델이 없습니다 — 독립 변수를 고르고 <b>학습</b>을 누르세요.'; ['mTrain','mTest','mR2','mEpoch'].forEach(k=>$(k).textContent='—'); return; }
+  const {coef,b}=rawCoef(m);
+  const terms=coef.map((a,c)=>`<b>${a.toFixed(2)}</b> × ${FEATS[m.idx[c]]}`).join(' + ');
+  $('eq').innerHTML=`가격 = ${terms} + <b>${Math.round(b).toLocaleString()}</b><small>회귀계수 — 그 특징이 1 늘 때 가격의 평균 변화량 · 절편 — 특징이 모두 0일 때의 예측값</small>`;
+  $('mTrain').textContent=Math.round(mae(m,m.rows)).toLocaleString()+'원';
+  $('mTest').textContent=Math.round(mae(m,TEST)).toLocaleString()+'원';
+  $('mR2').textContent=Math.max(-9.99,r2(m,TEST)).toFixed(2);
+  $('mEpoch').textContent=S.hand?'손':m.epoch;
+}
+
+/* ═══ 그림 ═══ */
+const ch=$('chart'), cx=ch.getContext('2d');
+const PAD={l:70,r:20,t:18,b:46};
+let axis=null;
+function drawChart(){
+  const W=ch.width,H=ch.height; cx.clearRect(0,0,W,H); cx.fillStyle='#fff'; cx.fillRect(0,0,W,H);
+  const idx=sel(); const rows=dataset(); const m=S.model;
+  const one = idx.length===1;
+  let xs, ys, xl, yl;
+  if(one){ xs=rows.map(r=>r.x[idx[0]]); ys=rows.map(r=>r.y); xl=FEATS[idx[0]]+(UNIT[idx[0]]?' ('+UNIT[idx[0]]+')':''); yl='가격 (원)'; }
+  else if(idx.length>1 && m){ xs=rows.map(r=>predict(m,r.x)); ys=rows.map(r=>r.y); xl='예측값 (원)'; yl='실젯값 (원)'; }
+  else { xs=rows.map(r=>r.x[0]); ys=rows.map(r=>r.y); xl='무게 (g)'; yl='가격 (원)'; }
+  let xmin=Math.min(...xs), xmax=Math.max(...xs), ymin=Math.min(...ys), ymax=Math.max(...ys);
+  if(idx.length>1 && m){ xmin=ymin=Math.min(xmin,ymin); xmax=ymax=Math.max(xmax,ymax); }
+  const px=v=>PAD.l+(v-xmin)/(xmax-xmin||1)*(W-PAD.l-PAD.r), py=v=>H-PAD.b-(v-ymin)/(ymax-ymin||1)*(H-PAD.t-PAD.b);
+  axis={px,py,xmin,xmax,ymin,ymax};
+  cx.strokeStyle='#d9ded b'.replace(' ',''); cx.lineWidth=1; cx.beginPath(); cx.moveTo(PAD.l,PAD.t); cx.lineTo(PAD.l,H-PAD.b); cx.lineTo(W-PAD.r,H-PAD.b); cx.stroke();
+  cx.fillStyle='#6b7280'; cx.font='12px Pretendard, sans-serif'; cx.textAlign='center';
+  for(let i=0;i<=4;i++){ const v=xmin+(xmax-xmin)*i/4; cx.fillText(Math.round(v).toLocaleString(), px(v), H-PAD.b+18); }
+  cx.textAlign='right'; for(let i=0;i<=4;i++){ const v=ymin+(ymax-ymin)*i/4; cx.fillText(Math.round(v).toLocaleString(), PAD.l-8, py(v)+4); }
+  cx.textAlign='center'; cx.fillStyle='#1c1c1c'; cx.font='bold 13px Pretendard, sans-serif'; cx.fillText(xl, (PAD.l+W-PAD.r)/2, H-8);
+  cx.save(); cx.translate(16,(PAD.t+H-PAD.b)/2); cx.rotate(-Math.PI/2); cx.fillText(yl,0,0); cx.restore();
+  // 오차 세로선 (모델 있을 때)
+  if(m && one){ cx.strokeStyle='rgba(200,16,46,.35)'; cx.lineWidth=1.5; rows.forEach((r,i)=>{ const p=predict(m,r.x); cx.beginPath(); cx.moveTo(px(xs[i]),py(ys[i])); cx.lineTo(px(xs[i]),py(p)); cx.stroke(); }); }
+  if(m && !one && idx.length>1){ cx.strokeStyle='#9aa5a0'; cx.setLineDash([5,4]); cx.beginPath(); cx.moveTo(px(xmin),py(ymin)); cx.lineTo(px(xmax),py(ymax)); cx.stroke(); cx.setLineDash([]); }
+  // 점
+  cx.fillStyle='#00703C'; rows.forEach((r,i)=>{ cx.beginPath(); cx.arc(px(xs[i]),py(ys[i]),4,0,7); cx.fill(); });
+  // 선
+  if(m && one){ const {coef,b}=rawCoef(m); cx.strokeStyle='#1c1c1c'; cx.lineWidth=2.5; cx.beginPath(); cx.moveTo(px(xmin),py(b+coef[0]*xmin)); cx.lineTo(px(xmax),py(b+coef[0]*xmax)); cx.stroke();
+    if(S.hand && m.handles){ cx.fillStyle='#c8102e'; m.handles.forEach(h=>{ cx.beginPath(); cx.arc(px(h.x),py(h.y),8,0,7); cx.fill(); }); } }
+  cx.fillStyle='#6b7280'; cx.font='12px Pretendard, sans-serif'; cx.textAlign='left';
+  cx.fillText(`훈련 데이터 ${rows.length}개${m&&one?' · 빨간 세로선 = 오차':''}`, PAD.l+6, PAD.t+4);
+}
+// 손으로 긋기 — 손잡이 끌기
+let drag=null;
+function evPos(e){ const r=ch.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:(t.clientX-r.left)*ch.width/r.width, y:(t.clientY-r.top)*ch.height/r.height}; }
+function hitHandle(p){ const m=S.model; if(!m||!S.hand||!axis) return null; return m.handles.findIndex(h=>Math.hypot(axis.px(h.x)-p.x, axis.py(h.y)-p.y)<16); }
+ch.addEventListener('pointerdown',e=>{ const i=hitHandle(evPos(e)); if(i>=0){ drag=i; ch.setPointerCapture(e.pointerId); } });
+ch.addEventListener('pointermove',e=>{ if(drag===null) return; const p=evPos(e); const m=S.model; const y=axis.ymin+(ch.height-PAD.b-p.y)/(ch.height-PAD.t-PAD.b)*(axis.ymax-axis.ymin); m.handles[drag].y=y;
+  const [h0,h1]=m.handles; const a=(h1.y-h0.y)/(h1.x-h0.x||1); m.w=[a]; m.b=h0.y-a*h0.x; drawChart(); setEq(); });
+ch.addEventListener('pointerup',()=>{ drag=null; });
+
+/* ═══ 가게 — 도트 장면 ═══ */
+const sc=$('shop'), g=sc.getContext('2d'); g.imageSmoothingEnabled=false;
+const P=4; // 픽셀 크기
+const customers=[]; // {x, name, bread, state, bubble, color}
+const SK=['#f1c27d','#e0ac69','#c68642','#8d5524','#ffdbac'], SH=['#3b5bdb','#c8102e','#00703C','#b7791f','#6b21a8','#0e7490'];
+const BREADPIX = {
+  소금빵:['..3333..','.333333.','33333333','33322333','33333333','.333333.','..3333..'],
+  크루아상:['....33..','...333..','..3333..','.33333..','333333..','.3333...','..33....'],
+  단팥빵:['..4444..','.444444.','44444444','44411444','44444444','.444444.','..4444..'],
+  바게트:['33......','.33.....','..33....','...33...','....33..','.....33.','......33'],
+  식빵:['.555555.','55555555','55555555','55555555','55555555','55555555','55555555'],
+  머핀:['..2222..','.222222.','22222222','.333333.','.333333.','.333333.','..3333..'],
+  도넛:['..4444..','.44..44.','44....44','44....44','44....44','.44..44.','..4444..'],
+};
+const PIXCOL={1:'#5a2d0c',2:'#c8102e',3:'#d79a3c',4:'#8d5524',5:'#f3e2b5'};
+function drawPix(rows, x, y, s){ rows.forEach((r,j)=>{ [...r].forEach((c,i)=>{ if(c!=='.'){ g.fillStyle=PIXCOL[c]||'#000'; g.fillRect(x+i*s,y+j*s,s,s); } }); }); }
+function breadPix(name){ return BREADPIX[name]||BREADPIX['단팥빵']; }
+function drawPerson(c){
+  const x=Math.round(c.x), y=180;
+  g.fillStyle=c.skin; g.fillRect(x,y,12,12);                 // 머리
+  g.fillStyle='#222'; g.fillRect(x,y,12,4);                   // 머리카락
+  g.fillRect(x+3,y+7,2,2); g.fillRect(x+8,y+7,2,2);           // 눈
+  g.fillStyle=c.shirt; g.fillRect(x-2,y+12,16,14);            // 몸
+  g.fillStyle='#2b3a4b'; g.fillRect(x,y+26,5,10); g.fillRect(x+7,y+26,5,10);  // 다리
+  if(c.bubble){ g.fillStyle='#fff'; g.strokeStyle='#1c1c1c'; g.lineWidth=2; const w=g.measureText(c.bubble).width+16; roundRect(x-w/2+6,y-34,w,26,6); g.fill(); g.stroke();
+    g.fillStyle=c.bubbleCol||'#1c1c1c'; g.font='bold 13px Pretendard, sans-serif'; g.textAlign='center'; g.fillText(c.bubble,x+6,y-16); }
+}
+function roundRect(x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
+let shelf=[];
+function drawShop(){
+  const W=sc.width,H=sc.height;
+  g.fillStyle='#dbe9dd'; g.fillRect(0,0,W,H);                       // 벽
+  g.fillStyle='#c9b58a'; g.fillRect(0,216,W,H-216);                 // 바닥
+  for(let i=0;i<W;i+=32){ g.fillStyle=(i/32)%2?'#bda676':'#c9b58a'; g.fillRect(i,216,32,H-216); }
+  g.fillStyle='#8d5524'; g.fillRect(24,20,W-48,26);                 // 간판
+  g.fillStyle='#fff'; g.font='bold 16px DGM, Pretendard, sans-serif'; g.textAlign='center'; g.fillText('도트 빵집',W/2,39);
+  // 진열대
+  g.fillStyle='#a9743c'; g.fillRect(40,70,W-80,10); g.fillRect(40,120,W-80,10);
+  shelf.forEach((b,i)=>{ const x=56+(i%9)*64, y=i<9?44:94; drawPix(breadPix(b.name),x,y,3);
+    g.fillStyle='#1c1c1c'; g.font='11px Pretendard, sans-serif'; g.textAlign='center'; g.fillText(b.name,x+12,y+38); });
+  // 카운터
+  g.fillStyle='#6b4a2b'; g.fillRect(60,170,150,60); g.fillStyle='#8d5524'; g.fillRect(60,170,150,8);
+  g.fillStyle='#fff'; g.fillRect(80,182,110,34); g.fillStyle='#1c1c1c'; g.font='bold 12px Pretendard, sans-serif'; g.textAlign='center';
+  g.fillText('가격표', 135, 196); g.fillText(S.applied?(S.applied.hand?'손으로 그은 선':'회귀 모델'):'평균 가격', 135, 210);
+  // 점원
+  drawPerson({x:200,skin:'#ffdbac',shirt:'#00703C'});
+  customers.forEach(drawPerson);
+  // 이윤 그래프
+  const hs=S.profitHist||[]; if(hs.length>1){ g.strokeStyle='#00703C'; g.lineWidth=2; g.beginPath(); const mn=Math.min(0,...hs), mx=Math.max(1,...hs);
+    hs.forEach((v,i)=>{ const x=W-180+i/(hs.length-1)*160, y=H-14-(v-mn)/(mx-mn||1)*60; i?g.lineTo(x,y):g.moveTo(x,y); }); g.stroke();
+    g.fillStyle='#1c1c1c'; g.font='11px Pretendard, sans-serif'; g.textAlign='left'; g.fillText('누적 이윤', W-180, H-80); }
+}
+
+/* ═══ 시뮬레이션 ═══ */
+let lastSpawn=0, clock=null, frame=null;
+function priceFor(b){
+  if(!S.applied) return r10(MEAN_PRICE);
+  return Math.max(500, r10(predict(S.applied, b.x)));
+}
+function serve(c){
+  const b=c.bread, price=priceFor(b), fair=b.fair, cost=Math.round(fair*0.6);
+  const ratio=price/fair;
+  let buy=true; if(ratio>1.0){ buy = rnd() > (ratio-1)/0.2; }   // 적정가 넘으면 비싼 만큼 안 삼 (20% 넘으면 절대)
+  S.visits++;
+  let res, cls, delta;
+  if(!buy){ delta=-cost; res='안 삼'; cls='no'; c.bubble='비싸! '+fmt(fair)+'이면 샀지'; c.bubbleCol='#c8102e'; }
+  else { S.sold++; delta=price-cost; res=ratio<0.85?'싸게 팔림':'팔림'; cls=ratio<0.85?'low':'ok'; c.bubble=(ratio<0.85?'싸다! ':'딱이야 — ')+fmt(fair)+' 생각했어'; c.bubbleCol=ratio<0.85?'#b7791f':'#00703C'; }
+  S.profit+=delta;
+  S.recent.push({x:b.x, y:fair, name:b.name});            // 손님이 말한 적정가 = 실젯값
+  S.log.unshift({name:b.name, price, fair, res, cls, delta}); S.log=S.log.slice(0,6);
+  (S.profitHist=S.profitHist||[]).push(S.profit); if(S.profitHist.length>120) S.profitHist.shift();
+  renderStats(); renderLog(); noteData();
+}
+function renderStats(){ $('sProfit').textContent=fmt(S.profit); $('sProfit').className='v '+(S.profit<0?'neg':'pos'); $('sSold').textContent=`${S.sold} / ${S.visits}`;
+  const rem=Math.max(0,ROUND-S.t); $('sTime').textContent=`${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')}`; }
+function renderLog(){ $('log').innerHTML='<div class="h"><span>빵</span><span>우리 가격</span><span>손님 적정가</span><span>결과</span><span>이윤</span></div>'+S.log.map(l=>`<div><span>${l.name}</span><span>${fmt(l.price)}</span><span>${fmt(l.fair)}</span><span class="${l.cls}">${l.res}</span><span class="${l.delta<0?'no':'ok'}">${l.delta>0?'+':''}${Math.round(l.delta).toLocaleString()}</span></div>`).join(''); }
+function tick(){
+  S.t++; renderStats();
+  const ev=EVENTS[S.evIdx]; if(ev && S.t>=ev.t){ ev.apply(); S.evIdx++; $('ticker').className='ticker ev'; $('ticker').textContent='⚠ '+ev.name+' — '+ev.text; S.history.push({t:S.t, what:'사건 '+ev.name}); setTimeout(()=>{ $('ticker').className='ticker'; }, 12000); }
+  if(S.t>=ROUND) finish();
+}
+/* 움직임은 setInterval(50ms) — 탭이 가려져도 손님이 옵니다. 그리기만 requestAnimationFrame. */
+let lastStep=0;
+function step(){
+  if(!S.running) return;
+  const ts=performance.now(); const dt=Math.min(1000, ts-(lastStep||ts))/50; lastStep=ts;   // 탭이 가려져 타이머가 늦어도 같은 빠르기
+  if(ts-lastSpawn>2600 && customers.length<4){ lastSpawn=ts; const b=newBread(); shelf.unshift(b); shelf=shelf.slice(0,18); customers.push({x:sc.width+20, bread:b, state:'walk', skin:SK[rint(0,4)], shirt:SH[rint(0,5)], wait:0}); }
+  customers.forEach(c=>{ if(c.state==='walk'){ c.x-=2.2*dt; if(c.x<=260){ c.state='buy'; c.wait=0; serve(c); } } else if(c.state==='buy'){ c.wait+=dt; if(c.wait>70){ c.state='leave'; c.bubble=null; } } else { c.x+=3*dt; } });
+  for(let i=customers.length-1;i>=0;i--) if(customers[i].state==='leave'&&customers[i].x>sc.width+30) customers.splice(i,1);
+}
+let mover=null;
+function loop(){ if(!S.running) return; drawShop(); frame=requestAnimationFrame(loop); }
+function finish(){
+  S.running=false; clearInterval(clock); clearInterval(mover); cancelAnimationFrame(frame); drawShop(); $('tagShop').textContent='영업 끝';
+  const m=S.applied; const txt=`도트 빵집 — ${$('team').value||'(이름 없음)'}\n누적 이윤 ${fmt(S.profit)} · 팔림 ${S.sold} / 손님 ${S.visits}\n마지막 모델 — ${m?(m.hand?'손으로 그은 선 · ':'')+m.idx.map(i=>FEATS[i]).join(' + '):'없음'}\nMAE(새 손님 40명) ${m?Math.round(mae(m,TEST)).toLocaleString()+'원':'—'} · 학습 ${S.trainCount}번\n기록 — ${S.history.map(h=>Math.floor(h.t/60)+':'+String(h.t%60).padStart(2,'0')+' '+h.what).join(' · ')||'없음'}`;
+  $('result').textContent=txt; $('endBox').classList.remove('hidden');
+  $('btnCopy').onclick=()=>{ navigator.clipboard.writeText(txt).then(()=>$('btnCopy').textContent='복사됨'); };
+}
+$('btnStart').onclick=()=>{ $('intro').classList.add('hidden'); S.running=true; clock=setInterval(tick,1000); lastSpawn=performance.now()-2000; mover=setInterval(step,50); frame=requestAnimationFrame(loop); };
+
+buildFeats(); noteData(); drawChart(); drawShop(); renderLog(); renderStats();
+/* ?auto — 확인용: 이름 없이 바로 시작 */
+if(location.search.includes('auto')){ $('team').value='확인'; $('btnStart').click(); }
+</script>
+</body>
+</html>
