@@ -48,7 +48,7 @@ document.addEventListener('click', e => {
       .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
-  if(act === 'a2-run'){ a2RunStudent(A2_SNUM); return; }
+  if(act === 'a2-run'){ a2RunStudent(A2_SNUM, el.dataset.cid || null); return; }
   if(act === 'a2-mode'){ A2_MODE = el.dataset.m === 'essay' ? 'essay' : 'code'; render(); return; }
 });
 
@@ -78,7 +78,7 @@ document.addEventListener('change', e => {
    출력은 화면에만 붙습니다. 학생 진도(notebookProgress)에는 쓰지 않습니다.
    노트북 화면의 출력 흐름(nbAppendOut)이 NB_CELL_OUTPUTS[셀 id] 에 모아 주므로
    셀마다 그 자리를 잠깐 열었다가 결과를 옮겨 담고 지웁니다. */
-async function a2RunStudent(snum){
+async function a2RunStudent(snum, focusId){
   if(A2_OUT.run){ toast('이미 실행 중입니다', 'err'); return; }
   const doc = (A2_ALL || {})[snum];
   if(!doc){ toast('저장한 답안이 없습니다', 'err'); return; }
@@ -87,7 +87,13 @@ async function a2RunStudent(snum){
   }
   const cells = (doc.cells || []).filter(c => c && (c.type || 'code') === 'code' && String(c.source || '').trim());
   A2_OUT = { snum, outs: {}, run: true, cur: null, msg: '파이썬 준비 중' };
-  render();
+  // 누른 셀 자리를 기억했다가 다시 그린 뒤 그 자리로 돌아갑니다
+  const keep = () => {
+    if(!focusId) return;
+    const box = document.querySelector(`.a2-out[data-a2out="${focusId}"]`);
+    if(box) box.scrollIntoView({ block: 'center' });
+  };
+  render(); keep();
   const paint = id => {
     const box = document.querySelector(`.a2-out[data-a2out="${id}"]`);
     if(box && A2_SNUM === snum) box.innerHTML = _a2OutHtml(snum, id);
@@ -116,7 +122,7 @@ async function a2RunStudent(snum){
     A2_OUT.msg = '실행이 멈췄습니다 — ' + (err.message || err);
   } finally {
     if(A2_OUT.snum === snum){ A2_OUT.run = false; A2_OUT.cur = null; }
-    if(A2_SNUM === snum) render();
+    if(A2_SNUM === snum){ render(); keep(); }
   }
 }
 

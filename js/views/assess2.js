@@ -568,10 +568,12 @@ function _a2ModeBtns(){
 
 /* ▶ 실행 결과 — 셀 하나의 출력 */
 function _a2OutHtml(snum, id){
-  if(A2_OUT.snum !== snum) return '';
+  const runBtn = `<button class="btn-xs a2-runcell" data-action="a2-run" data-cid="${esc(id)}"
+    title="이 학생 노트북을 처음부터 차례대로 돌려 이 셀의 출력을 보여 줍니다">▶ 실행 결과 보기</button>`;
+  if(A2_OUT.snum !== snum) return A2_OUT.run ? '' : runBtn;
   const o = A2_OUT.outs[id];
   if(A2_OUT.cur === id) return `<div class="a2-out-h">⏳ 실행 중…</div>`;
-  if(!o) return A2_OUT.run ? `<div class="a2-out-h a1-dim">차례를 기다리는 중</div>` : '';
+  if(!o) return A2_OUT.run ? `<div class="a2-out-h a1-dim">차례를 기다리는 중</div>` : runBtn;
   const items = o.items || [];
   return `<div class="a2-out-h">▶ 실행 결과${o.ok ? '' : ' — <b style="color:#C8102E">오류</b>'}</div>
     <div class="cb-out-items">${items.length ? vNbItems(items) : '<span class="a1-dim">(출력 없음)</span>'}</div>`;
