@@ -7,12 +7,15 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%98%94%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
 <style>
-/* 도트 기상청 — 턴제 (2026-11-09 선생님 「우리가 기상청이 되는 거지 — 강수량을 예측하는 모델」).
-   하루에 네 지역의 내일 강수량을 예보 → 발표 → 실제 강수량(실젯값)이 드러남 → 하루 정산.
-   10일 = 테스트 데이터 40일 (verify/rain-facts.json). 사건 둘(5일차 · 8일차)이 실젯값의 식을 바꿈 → 최근 관측으로 다시 학습.
+/* 도트 기상청 v3 (2026-11-09 낮 — 선생님 「에포크 → 학습 횟수 · 단순 선형 회귀는 변수 하나 · 적용하면 피드백 ·
+   복습·학습이 되면서 게임화」).
+   하루: 네 지역의 내일 강수량 예보 → 발표 → 실젯값 · 오차 · 점수 → 정산(피드백 · 기준선과 견줌).
+   분석실: 2일차부터 **단순 선형 회귀**(독립 변수 하나 고름) · 6일차부터 **다중 선형 회귀**(여럿).
+   개념 확인 여섯 번(+10점) — 오차 · 회귀계수와 절편 · 절편 변화 · 차원 · 회귀계수 변화 · 결정계수.
+   10일 = 테스트 데이터 40일 (verify/rain-facts.json). 사건 둘(5 · 8일차)이 실젯값의 식을 바꿈.
    화면의 말은 교과서 96~98쪽 것 — 독립 변수 · 종속 변수 · 훈련 데이터 · 회귀계수 · 절편 · 오차 · MAE · 예측값 · 실젯값 · 결정계수. */
 @font-face{font-family:'DGM';src:url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');font-display:swap}
-:root{--bg:#f4f6f3;--card:#fff;--ink:#1c1c1c;--sub:#6b7280;--line:#dfe5e0;--acc:#00703C;--acc2:#e8f2ec;--red:#c8102e;--amber:#b7791f;--paper:#fbf7ee}
+:root{--bg:#f4f6f3;--card:#fff;--ink:#1c1c1c;--sub:#6b7280;--line:#dfe5e0;--acc:#00703C;--acc2:#e8f2ec;--red:#c8102e;--amber:#b7791f;--paper:#fbf7ee;--blue:#2b5a8a}
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif}
 body{padding:12px 16px 40px}
@@ -22,15 +25,16 @@ header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom
 header.top h1{font-size:22px;font-weight:800}
 header.top h1 small{font-size:13px;color:var(--sub);font-weight:500;margin-left:8px}
 .stats{display:flex;gap:10px;margin-left:auto;flex-wrap:wrap}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 14px;min-width:110px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 14px;min-width:104px}
 .stat .k{font-size:11px;color:var(--sub);font-weight:600}
 .stat .v{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
 .stat .v.pos{color:var(--acc)}
 .grid{display:grid;grid-template-columns:1.05fr 1fr;gap:14px}
 @media (max-width:980px){.grid{grid-template-columns:1fr}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px 16px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-.card h2{font-size:15px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card h2{font-size:15px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card h2 .tag{font-size:11px;font-weight:700;color:var(--acc);background:var(--acc2);padding:2px 8px;border-radius:999px}
+.card h2 .tag.gray{color:var(--sub);background:#f1f4f2}
 canvas.sky{width:100%;height:auto;image-rendering:pixelated;border-radius:10px;background:#cfe3f3;display:block}
 .day{margin-top:10px}
 .reg{display:grid;grid-template-columns:52px 1fr 150px;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;background:#fff}
@@ -52,9 +56,11 @@ canvas.sky{width:100%;height:auto;image-rendering:pixelated;border-radius:10px;b
 .lbl{font-size:12px;font-weight:700;color:var(--sub);min-width:74px}
 .chk{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:var(--card);user-select:none}
 .chk.on{border-color:var(--acc);background:var(--acc2);color:var(--acc)}
+.chk.off{opacity:.45;cursor:not-allowed}
 .seg{display:inline-flex;border:1.5px solid var(--line);border-radius:10px;overflow:hidden}
 .seg button{border:none;background:var(--card);padding:6px 12px;font-size:13px;font-weight:700;color:var(--sub);cursor:pointer;font-family:inherit}
 .seg button.on{background:var(--ink);color:#fff}
+.seg button:disabled{opacity:.4;cursor:not-allowed}
 .seg button.new::after{content:' NEW';color:var(--red);font-size:10px}
 button.btn{border:none;border-radius:10px;padding:9px 16px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit;background:var(--acc);color:#fff}
 button.btn.big{font-size:16px;padding:11px 22px}
@@ -68,10 +74,21 @@ canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:
 .m{flex:1;min-width:100px;border:1px solid var(--line);border-radius:10px;padding:6px 10px}
 .m .k{font-size:11px;color:var(--sub);font-weight:700}
 .m .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.m .v small{font-size:11px;font-weight:600;color:var(--sub);margin-left:4px}
 .hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5}
 .hint b{color:var(--ink)}
+.fb{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--acc2);border:1px solid #cfe3d6;font-size:13.5px;line-height:1.6}
+.fb.warn{background:#fdf2e3;border-color:#efd9b5}
+.fb.bad{background:#fbe9ec;border-color:#f0c4cb}
+.fb b{color:var(--ink)}
 .sum{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--paper);border:1px solid #e9dfc8;font-size:14px;line-height:1.6;font-variant-numeric:tabular-nums}
 .sum b.big{font-size:20px}
+.meter{position:relative;height:26px;margin:8px 0 4px;border-radius:6px;background:linear-gradient(90deg,#d9efe2 0%,#f6e7c8 55%,#f3cfd4 100%)}
+.meter .tick{position:absolute;top:0;bottom:0;width:2px;background:var(--sub)}
+.meter .tick span{position:absolute;top:28px;left:-40px;width:80px;text-align:center;font-size:10.5px;color:var(--sub);white-space:nowrap}
+.meter .me{position:absolute;top:-6px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:12px solid var(--ink);margin-left:-9px}
+.meter .me span{position:absolute;top:-18px;left:-30px;width:60px;text-align:center;font-size:11px;font-weight:800;color:var(--ink)}
+.meterwrap{padding:14px 10px 22px}
 .ledger{margin-top:10px;font-size:12px;border-top:1px solid var(--line)}
 .ledger div{display:grid;grid-template-columns:.6fr .9fr 1fr 1fr 1.2fr;gap:6px;padding:3px 2px;border-bottom:1px dashed var(--line);font-variant-numeric:tabular-nums}
 .ledger div.h{color:var(--sub);font-weight:700;border-bottom:1px solid var(--line)}
@@ -81,10 +98,16 @@ canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:
 .overlay p{font-size:14.5px;line-height:1.65;margin-bottom:8px}
 .overlay ol,.overlay ul{padding-left:20px;font-size:14px;line-height:1.7;margin:6px 0 12px}
 .overlay input{font:inherit;font-size:15px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;width:100%;margin:6px 0 12px}
-.news{background:var(--paper);border:3px double #2b5a8a;padding:14px 16px;margin:6px 0 12px}
+.news{background:var(--paper);border:3px double var(--blue);padding:14px 16px;margin:6px 0 12px}
 .news .hd{font-size:18px;font-weight:900}
+.quiz .q{font-size:17px;font-weight:800;margin:6px 0 12px;line-height:1.5}
+.quiz .opt{display:block;width:100%;text-align:left;font:inherit;font-size:15px;font-weight:600;padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;background:#fff;margin-bottom:8px;cursor:pointer}
+.quiz .opt:hover{border-color:var(--ink)}
+.quiz .opt.right{border-color:var(--acc);background:var(--acc2)}
+.quiz .opt.wrong{border-color:var(--red);background:#fbe9ec}
+.quiz .exp{font-size:14px;line-height:1.6;background:var(--paper);border-radius:10px;padding:10px 12px;margin:6px 0 12px}
 .result{font-size:14px;line-height:1.7;background:var(--paper);border-radius:10px;padding:10px 12px;margin:8px 0 12px;white-space:pre-wrap;font-variant-numeric:tabular-nums}
-.score{display:flex;gap:6px;font-size:12px;color:var(--sub);flex-wrap:wrap;align-items:center}
+.score{display:flex;gap:6px;font-size:12px;color:var(--sub);flex-wrap:wrap;align-items:center;margin:-4px 0 8px}
 .score span{background:#f1f4f2;border-radius:6px;padding:1px 6px}
 .hidden{display:none}
 </style>
@@ -96,8 +119,9 @@ canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:
   <div class="stats">
     <div class="stat"><div class="k">일차</div><div class="v" id="sDay">1 / 10</div></div>
     <div class="stat"><div class="k">예보 점수</div><div class="v pos" id="sScore">0점</div></div>
-    <div class="stat"><div class="k">적중 / 예보</div><div class="v" id="sHit">0 / 0</div></div>
+    <div class="stat"><div class="k">개념 확인</div><div class="v" id="sQuiz">0 / 6</div></div>
     <div class="stat"><div class="k">오차 평균 (MAE)</div><div class="v" id="sMae">—</div></div>
+    <div class="stat"><div class="k">등급</div><div class="v" id="sRank" style="font-size:15px">수습 예보관</div></div>
     <div class="stat"><div class="k">예보 방법</div><div class="v" id="sModel" style="font-size:14px">손으로</div></div>
   </div>
 </header>
@@ -105,7 +129,7 @@ canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:
 <div class="grid">
   <section class="card">
     <h2>예보실 <span class="tag" id="tagDay">1일차 아침</span></h2>
-    <div class="score" style="margin:-4px 0 8px">점수 — <span>오차 3 mm 이내 10점 (적중)</span><span>8 mm 이내 6점</span><span>15 mm 이내 3점</span><span>그 밖 0점</span></div>
+    <div class="score">점수 — <span>오차 3 mm 이내 10점 (적중)</span><span>8 mm 이내 6점</span><span>15 mm 이내 3점</span><span>그 밖 0점</span><span>개념 확인 맞히면 +10점</span></div>
     <canvas class="sky" id="sky" width="640" height="190"></canvas>
     <div class="day" id="day"></div>
     <div class="row" id="dayBtns">
@@ -118,26 +142,27 @@ canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:
   </section>
 
   <section class="card">
-    <h2>분석실 — 강수량 예측 모델 <span class="tag">선형 회귀</span></h2>
+    <h2>분석실 — 강수량 예측 모델 <span class="tag" id="tagMode">2일차부터 열림</span></h2>
+    <div class="row"><span class="lbl">모델</span>
+      <span class="seg" id="modeSeg"><button class="on" data-mode="simple" disabled>단순 선형 회귀 — 독립 변수 1개</button><button data-mode="multi" disabled>다중 선형 회귀 — 2개 이상 (6일차부터)</button></span></div>
     <div class="row"><span class="lbl">독립 변수</span><span id="feats"></span></div>
     <div class="row"><span class="lbl">훈련 데이터</span>
       <span class="seg" id="dataSeg"><button class="on" data-set="first">지난 관측 60일</button><button data-set="survey" class="hidden">최근 관측</button></span>
       <span class="hint" id="dataNote" style="margin:0">예보 전 60일 기록 — 종속 변수는 다음 날 실제 강수량(실젯값)</span></div>
     <div class="row">
-      <button class="btn" id="btnTrain">학습</button>
+      <button class="btn" id="btnTrain" disabled>학습</button>
       <button class="btn sec" id="btnApply" disabled>예보에 적용</button>
-      <span class="hint" id="trainNote" style="margin:0"></span>
+      <span class="hint" id="trainNote" style="margin:0">분석실은 2일차 아침에 엽니다 — 1일차는 손으로 예보해 보세요.</span>
     </div>
-    <canvas class="chart" id="chart" width="640" height="360" style="margin-top:10px"></canvas>
-    <div class="eq" id="eq">아직 모델이 없습니다 — 독립 변수를 고르고 <b>학습</b>을 누르세요.</div>
+    <canvas class="chart" id="chart" width="640" height="340" style="margin-top:10px"></canvas>
+    <div class="eq" id="eq">아직 모델이 없습니다.</div>
     <div class="metrics">
       <div class="m"><div class="k">MAE — 훈련 데이터</div><div class="v" id="mTrain">—</div></div>
       <div class="m"><div class="k">결정계수 R² — 훈련 데이터</div><div class="v" id="mR2">—</div></div>
-      <div class="m"><div class="k">에포크</div><div class="v" id="mEpoch">—</div></div>
-      <div class="m"><div class="k">학습 횟수</div><div class="v" id="mCount">0</div></div>
+      <div class="m"><div class="k">학습 횟수 (회귀계수 · 절편을 고친 횟수)</div><div class="v" id="mEpoch">—</div></div>
     </div>
-    <div class="hint">종속 변수는 <b>내일 강수량(mm)</b>. 독립 변수가 하나면 점 사이로 <b>회귀선</b>이 맞춰지는 것이 보이고(빨간 세로선 = 오차),
-      둘 이상이면 <b>예측값 ↔ 실젯값</b> 그림(대각선에 가까울수록 오차가 작음). 적용하면 다음 날부터 예보 칸을 모델이 채웁니다 — 고쳐도 됩니다.</div>
+    <div class="fb hidden" id="fbModel"></div>
+    <div class="hint" id="chartNote">종속 변수는 <b>내일 강수량(mm)</b>. 단순 선형 회귀 — 가로축이 고른 독립 변수, 점 사이로 <b>회귀선</b>이 맞춰지는 것이 보입니다(빨간 세로선 = 오차).</div>
   </section>
 </div>
 </div>
@@ -148,13 +173,13 @@ canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:
     <p>우리가 기상청입니다. 매일 아침 네 지역의 <b>오늘 관측값</b>(습도 · 구름양 · 기압 차 · 풍속 · 요일)이 들어옵니다.
       지역마다 <b>내일 강수량(mm)</b>을 예보하고, 다음 날 실제 강수량과 견줍니다. 오차가 작을수록 점수가 높습니다.</p>
     <ol>
-      <li><b>1~2일차</b> — 지난 관측 기록을 보고 손으로 적어 본다. 오차가 얼마나 나는지 느낀다</li>
-      <li><b>분석실</b> — 독립 변수를 골라 <b>학습</b> → 회귀식 → <b>예보에 적용</b>. 다음 날부터 모델이 예보 칸을 채운다</li>
+      <li><b>1일차</b> — 지난 관측 기록을 보고 손으로 적는다. 오차가 얼마나 나는지 본다</li>
+      <li><b>2일차부터 분석실</b> — 단순 선형 회귀: 독립 변수 <b>하나</b>를 골라 학습 → 회귀식 → 예보에 적용</li>
+      <li><b>6일차부터</b> — 다중 선형 회귀: 독립 변수를 여럿 고를 수 있다</li>
       <li>중간에 <b>사건</b>이 생긴다 — 날씨의 식이 바뀐다. 어느 데이터로 다시 학습할지 정한다</li>
-      <li>10일차 끝 — <b>예보 점수</b>(400점 만점)가 점수. 반 순위를 매긴다</li>
+      <li>정산마다 <b>피드백</b>, 고비마다 <b>개념 확인</b>(+10점). 10일차 끝 — 예보 400점 + 개념 60점</li>
     </ol>
-    <p>짝 중 한 명은 <b>예보관</b>(예보 · 발표), 한 명은 <b>분석가</b>(분석실)를 맡고 둘이 상의해서 정하세요.</p>
-    <input id="team" placeholder="학번 · 이름 (둘)" maxlength="40">
+    <input id="team" placeholder="학번 · 이름" maxlength="40">
     <button class="btn" id="btnStart">예보 시작</button>
   </div>
 </div>
@@ -164,6 +189,16 @@ canvas.chart{width:100%;height:auto;display:block;border-radius:10px;background:
     <div class="news"><div class="hd px" id="newsHd"></div><p id="newsTx" style="margin-top:6px"></p></div>
     <p id="newsHint"></p>
     <button class="btn" id="btnNewsOk">알겠다</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="quizBox">
+  <div class="box quiz">
+    <h3 class="px">개념 확인 <span id="quizNo" style="font-size:14px;color:#6b7280;font-weight:600"></span></h3>
+    <div class="q" id="quizQ"></div>
+    <div id="quizOpts"></div>
+    <div class="exp hidden" id="quizExp"></div>
+    <button class="btn hidden" id="btnQuizOk">계속</button>
   </div>
 </div>
 
@@ -285,7 +320,8 @@ const TEST  = /*TEST*/[
 {"x":[57.0, 47.0, -11.0, 2.9, 6.0],"y":22.8}
 ]/*/TEST*/;
 const REGION = ['서울','부산','대구','광주'];
-const DAYS = 10, PER = 4;
+const DAYS = 10, PER = 4, MULTI_DAY = 6, LAB_DAY = 2;
+const REF = {mean: 11.0, best: 2.5};   // 기준선 — 평균으로만 예보할 때 MAE · 네 변수 모델 MAE (verify/rain.py 검산값)
 /* 사건 — 실젯값의 식이 바뀜. shift = 절편 변화 · wind = 풍속 회귀계수에 더해지는 값 */
 const EVENTS = {
   5: {hd:'장마 전선 북상', tx:'모든 지역의 내일 강수량이 15 mm 쯤 늘었습니다. 지난 관측으로 만든 모델은 이제 적게 예보합니다.',
@@ -298,8 +334,26 @@ const EVENTS = {
 let RULE = {shift:0, wind:0};
 function fairOf(row){ return Math.max(0, Math.round((row.y + RULE.shift + RULE.wind*row.x[3])*10)/10); }
 function pts(err){ const a=Math.abs(err); return a<=3?10:a<=8?6:a<=15?3:0; }
+function r2word(r){ return r<=0?'예측력이 없다':r<0.3?'약한 설명력':r<0.5?'중간 정도 설명력':r<0.7?'높은 설명력':'매우 강한 설명력'; }   // 교과서 98쪽
 
-/* ═══ 난수 (씨앗 고정 — 모든 짝이 같은 날씨) ═══ */
+/* 개념 확인 — 고비마다 하나 (+10점) */
+const QUIZ = {
+  err:  {q:'실젯값(실제 강수량)과 예측값(우리 예보)의 차이를 무엇이라 하는가?', opts:['오차','결정계수','절편'], a:0,
+         exp:'실젯값과 예측값의 차이를 <b>오차</b>라고 한다(97쪽). 오차의 절댓값을 평균한 것이 MAE.'},
+  wb:   {q:'「학습」 버튼이 훈련 데이터로 찾아낸 두 수는?', opts:['회귀계수와 절편','실젯값과 예측값','독립 변수와 종속 변수'], a:0,
+         exp:'모델 학습은 선형 회귀 모델의 <b>회귀계수와 절편을 찾는 과정</b>(100쪽). 회귀계수는 기울기, 절편은 독립 변수가 모두 0일 때의 예측값.'},
+  shift:{q:'장마로 모든 날의 강수량이 15 mm 씩 늘었다. 회귀식에서 무엇이 바뀌어야 하나?', opts:['절편','회귀계수','독립 변수'], a:0,
+         exp:'모든 날이 똑같이 15 mm 늘면 기울기(회귀계수)는 그대로이고 <b>절편</b>만 15 커진다. 최근 관측으로 다시 학습하면 절편이 바뀐 것이 보인다.'},
+  dim:  {q:'독립 변수가 둘(습도 · 기압 차)이면 회귀 모델의 그래프는?', opts:['3차원 공간의 평면','2차원의 직선','그래프는 바뀌지 않는다'], a:0,
+         exp:'독립 변수가 하나 늘면 차원이 하나 는다 — 둘이면 <b>평면</b>, 셋 이상이면 그릴 수 없다. 그래서 분석실은 예측값과 실젯값을 견주는 그림으로 바뀐다.'},
+  wind: {q:'태풍으로 풍속 1 m/s 마다 비가 2.5 mm 더 온다. 회귀식에서 무엇이 바뀌나?', opts:['풍속의 회귀계수','절편','습도의 회귀계수'], a:0,
+         exp:'풍속이 1 늘 때 종속 변수가 더 많이 변하므로 <b>풍속의 회귀계수</b>가 커진다. 풍속을 독립 변수에 넣지 않은 모델은 이 변화를 잡을 수 없다.'},
+  r2:   {q:'결정계수 R² 가 1에 가까우면?', opts:['모델이 데이터를 매우 잘 설명한다','오차가 크다','절편이 0이다'], a:0,
+         exp:'결정계수는 모델이 데이터를 얼마나 잘 설명하는지 — 0~1, <b>1에 가까우면 매우 잘 설명</b>(98쪽).'},
+};
+const QUIZ_ORDER = ['err','wb','shift','dim','wind','r2'];
+
+/* ═══ 난수 (씨앗 고정 — 모두 같은 날씨) ═══ */
 let seed = 20261109;
 function rnd(){ seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; }
 function rint(a,b){ return a + Math.floor(rnd()*(b-a+1)); }
@@ -308,10 +362,11 @@ const mm = v => (Math.round(v*10)/10).toLocaleString('ko-KR') + ' mm';
 const r1 = v => Math.round(v*10)/10;
 
 /* ═══ 상태 ═══ */
-const S = { day:1, phase:'morning', score:0, hit:0, served:0, absErr:0, feats:[true,false,false,false,false],
-            dataset:'first', survey:null, model:null, applied:null, trainCount:0, log:[], hist:[], usedFeats:'', dayMae:[] };
+const S = { day:1, phase:'morning', score:0, quiz:0, quizDone:{}, hit:0, served:0, absErr:0,
+            mode:'simple', feats:[true,false,false,false,false], dataset:'first', survey:null,
+            model:null, applied:null, trained:{}, log:[], hist:[], usedFeats:'', dayMae:[], handMae:null, lastMae:null, eventDay:0 };
 
-/* ═══ 선형 회귀 — 표준화한 특징에 경사 하강 (에포크마다 그림) ═══ */
+/* ═══ 선형 회귀 — 표준화한 특징에 경사 하강 (학습 횟수마다 그림) ═══ */
 function dataset(){ return (S.dataset==='survey' && S.survey) ? S.survey : TRAIN; }
 function sel(){ return FEATS.map((_,i)=>i).filter(i=>S.feats[i]); }
 function fitStart(rows, idx){
@@ -330,35 +385,66 @@ function rawCoef(m){ const coef=m.w.map((w,c)=>w/m.sd[c]); const b=m.b-coef.redu
 function predict(m, x){ const {coef,b}=rawCoef(m); return b+coef.reduce((s,a,c)=>s+a*x[m.idx[c]],0); }
 function mae(m, rows){ return rows.reduce((s,r)=>s+Math.abs(predict(m,r.x)-r.y),0)/rows.length; }
 function r2(m, rows){ const ym=rows.reduce((s,r)=>s+r.y,0)/rows.length; const sst=rows.reduce((s,r)=>s+(r.y-ym)**2,0); const sse=rows.reduce((s,r)=>s+(r.y-predict(m,r.x))**2,0); return 1-sse/sst; }
+function meanMae(rows){ const ym=rows.reduce((s,r)=>s+r.y,0)/rows.length; return rows.reduce((s,r)=>s+Math.abs(r.y-ym),0)/rows.length; }
 
 /* ═══ 분석실 UI ═══ */
 const $ = id => document.getElementById(id);
+function labOpen(){ return S.day>=LAB_DAY; }
 function buildFeats(){
-  $('feats').innerHTML = FEATS.map((f,i)=>`<label class="chk ${S.feats[i]?'on':''}" data-i="${i}">${f}${UNIT[i]?' ('+UNIT[i]+')':''}</label>`).join(' ');
-  $('feats').querySelectorAll('.chk').forEach(el=>el.onclick=()=>{ const i=+el.dataset.i; S.feats[i]=!S.feats[i]; el.classList.toggle('on',S.feats[i]); S.model=null; $('btnApply').disabled=true; drawChart(); setEq(); });
+  $('feats').innerHTML = FEATS.map((f,i)=>`<label class="chk ${S.feats[i]?'on':''} ${labOpen()?'':'off'}" data-i="${i}">${f}${UNIT[i]?' ('+UNIT[i]+')':''}</label>`).join(' ');
+  $('feats').querySelectorAll('.chk').forEach(el=>el.onclick=()=>{ if(!labOpen()) return; const i=+el.dataset.i;
+    if(S.mode==='simple'){ S.feats=FEATS.map((_,k)=>k===i); } else { S.feats[i]=!S.feats[i]; }
+    buildFeats(); S.model=null; $('btnApply').disabled=true; drawChart(); setEq(); });
 }
+$('modeSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{ if(b.disabled) return; $('modeSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on','new')); b.classList.add('on'); S.mode=b.dataset.mode;
+  if(S.mode==='simple'){ const first=sel()[0]??0; S.feats=FEATS.map((_,k)=>k===first); }
+  $('tagMode').textContent = S.mode==='simple' ? '단순 선형 회귀' : '다중 선형 회귀';
+  $('chartNote').innerHTML = S.mode==='simple'
+    ? '종속 변수는 <b>내일 강수량(mm)</b>. 단순 선형 회귀 — 가로축이 고른 독립 변수, 점 사이로 <b>회귀선</b>이 맞춰지는 것이 보입니다(빨간 세로선 = 오차).'
+    : '다중 선형 회귀는 독립 변수가 둘 이상이라 <b>2차원 그래프로 그릴 수 없습니다</b>. 대신 모델의 <b>예측값(가로)</b>과 <b>실젯값(세로)</b>을 견줍니다 — 점이 대각선에 가까울수록 오차가 작습니다.';
+  buildFeats(); S.model=null; $('btnApply').disabled=true; drawChart(); setEq(); });
 $('dataSeg').querySelectorAll('button').forEach(b=>b.onclick=()=>{ $('dataSeg').querySelectorAll('button').forEach(x=>x.classList.remove('on','new')); b.classList.add('on'); S.dataset=b.dataset.set; S.model=null; $('btnApply').disabled=true; drawChart(); setEq(); noteData(); });
-function noteData(){ $('dataNote').innerHTML = S.dataset==='survey' ? `${S.day>=8?'8일차':'5일차'}부터의 최근 관측 60일 — 요즘 날씨의 기록` : '예보 전 60일 기록 — 종속 변수는 다음 날 실제 강수량(실젯값)'; }
+function noteData(){ $('dataNote').innerHTML = S.dataset==='survey' ? `${S.eventDay}일차부터의 최근 관측 60일 — 요즘 날씨의 기록` : '예보 전 60일 기록 — 종속 변수는 다음 날 실제 강수량(실젯값)'; }
+function openLab(){
+  $('btnTrain').disabled=false; $('modeSeg').querySelector('[data-mode=simple]').disabled=false; $('tagMode').textContent='단순 선형 회귀';
+  $('trainNote').textContent='독립 변수 하나를 고르고 학습을 누르세요'; buildFeats();
+}
+function openMulti(){
+  const b=$('modeSeg').querySelector('[data-mode=multi]'); b.disabled=false; b.classList.add('new'); b.textContent='다중 선형 회귀 — 2개 이상';
+}
 
 let animTimer=null;
 $('btnTrain').onclick=()=>{
   const idx=sel(); if(!idx.length){ $('trainNote').textContent='독립 변수를 하나 이상 고르세요'; return; }
   clearInterval(animTimer);
-  const m=fitStart(dataset(), idx); S.model=m; S.trainCount++; $('mCount').textContent=S.trainCount;
-  $('btnApply').disabled=true; $('btnTrain').disabled=true; $('trainNote').textContent='학습 중 — 회귀계수와 절편을 찾는 중';
+  const m=fitStart(dataset(), idx); S.model=m;
+  $('btnApply').disabled=true; $('btnTrain').disabled=true; $('trainNote').textContent='학습 중 — 오차가 작아지는 쪽으로 회귀계수와 절편을 고치는 중'; $('fbModel').classList.add('hidden');
   animTimer=setInterval(()=>{ for(let i=0;i<3;i++) fitStep(m); drawChart(); setEq();
-    if(m.epoch>=240){ clearInterval(animTimer); $('btnApply').disabled=false; $('btnTrain').disabled=false; $('trainNote').textContent='학습 끝 — 예보에 적용할 수 있습니다'; } }, 40);
+    if(m.epoch>=240){ clearInterval(animTimer); $('btnApply').disabled=false; $('btnTrain').disabled=false; $('trainNote').textContent='학습 끝'; modelFeedback(m); } }, 40);
 };
+function modelFeedback(m){
+  const rows=m.rows, mm_=mae(m,rows), rr=r2(m,rows), base=meanMae(rows), key=m.idx.join('+')+'|'+S.dataset;
+  const names=m.idx.map(i=>FEATS[i]).join(' + ');
+  const prev=Object.entries(S.trained).filter(([k])=>k!==key);
+  let msg=`<b>${names}</b> — 결정계수 ${rr.toFixed(2)} · <b>${r2word(rr)}</b>(98쪽 기준). 평균으로만 예보하면 MAE ${mm(base)} → 이 모델 <b>${mm(mm_)}</b>.`;
+  if(rr<0.1) msg+=` 이 독립 변수는 강수량과 <b>관계가 거의 없습니다</b> — 다른 변수를 골라 보세요.`;
+  else if(prev.length){ const best=prev.reduce((a,b)=>a[1].mae<b[1].mae?a:b); if(mm_<best[1].mae) msg+=` 지금까지 학습한 모델 가운데 <b>오차가 가장 작습니다</b> → 예보에 적용해 보세요.`; else msg+=` 앞서 학습한 <b>${best[1].names}</b>(MAE ${mm(best[1].mae)})이 더 낫습니다.`; }
+  else msg+=` 예보에 적용하면 내일부터 모델이 예보 칸을 채웁니다.`;
+  if(S.mode==='simple' && S.day>=MULTI_DAY) msg+=` 독립 변수 하나로는 여기까지 — <b>다중 선형 회귀</b>로 변수를 더 넣어 보세요.`;
+  S.trained[key]={names, mae:mm_, r2:rr};
+  const el=$('fbModel'); el.className='fb'+(rr<0.1?' bad':''); el.innerHTML=msg; el.classList.remove('hidden');
+  if(!S.quizDone.wb) askQuiz('wb');
+}
 $('btnApply').onclick=()=>{ if(!S.model) return; S.applied={...S.model, w:[...S.model.w], idx:[...S.model.idx]}; S.usedFeats=S.model.idx.map(i=>FEATS[i]).join('+');
-  $('sModel').textContent='모델 · '+S.usedFeats; S.hist.push(`${S.day}일차 적용 ${S.usedFeats}${S.dataset==='survey'?'(최근)':''}`);
+  $('sModel').textContent=(S.mode==='simple'?'단순 · ':'다중 · ')+S.usedFeats; S.hist.push(`${S.day}일차 적용 ${S.usedFeats}${S.dataset==='survey'?'(최근)':''}`);
   $('trainNote').textContent='적용됨 — 예보 칸을 모델이 채웁니다'; if(S.phase==='morning'){ $('btnFill').disabled=false; fillModel(); } };
 function setEq(){
-  const m=S.model; if(!m){ $('eq').innerHTML='아직 모델이 없습니다 — 독립 변수를 고르고 <b>학습</b>을 누르세요.'; ['mTrain','mR2','mEpoch'].forEach(k=>$(k).textContent='—'); return; }
+  const m=S.model; if(!m){ $('eq').innerHTML=labOpen()?'아직 모델이 없습니다 — 독립 변수를 고르고 <b>학습</b>을 누르세요.':'분석실은 2일차에 엽니다.'; ['mTrain','mR2','mEpoch'].forEach(k=>$(k).textContent='—'); return; }
   const {coef,b}=rawCoef(m);
   const terms=coef.map((a,c)=>`${c===0?(a<0?'−':''):(a<0?' − ':' + ')}<b>${Math.abs(a).toFixed(2)}</b> × ${FEATS[m.idx[c]]}`).join('');
   $('eq').innerHTML=`강수량 = ${terms} ${b<0?'−':'+'} <b>${Math.abs(b).toFixed(1)}</b><small>회귀계수 — 독립 변수가 1 늘 때 종속 변수의 평균 변화량 · 절편 — 독립 변수가 모두 0일 때의 예측값</small>`;
   $('mTrain').textContent=mm(mae(m,m.rows));
-  $('mR2').textContent=Math.max(-9.99,r2(m,m.rows)).toFixed(2);
+  const rr=Math.max(-9.99,r2(m,m.rows)); $('mR2').innerHTML=rr.toFixed(2)+`<small>${r2word(rr)}</small>`;
   $('mEpoch').textContent=m.epoch;
 }
 
@@ -367,13 +453,13 @@ const ch=$('chart'), cx=ch.getContext('2d');
 const PAD={l:62,r:20,t:18,b:46};
 function drawChart(){
   const W=ch.width,H=ch.height; cx.clearRect(0,0,W,H); cx.fillStyle='#fff'; cx.fillRect(0,0,W,H);
-  const idx=sel(); const rows=dataset(); const m=S.model; const one=idx.length===1;
+  const idx=sel(); const rows=dataset(); const m=S.model; const one=S.mode==='simple' && idx.length===1;
   let xs, ys, xl, yl;
   if(one){ xs=rows.map(r=>r.x[idx[0]]); ys=rows.map(r=>r.y); xl=FEATS[idx[0]]+(UNIT[idx[0]]?' ('+UNIT[idx[0]]+')':''); yl='내일 강수량 (mm)'; }
-  else if(idx.length>1 && m){ xs=rows.map(r=>predict(m,r.x)); ys=rows.map(r=>r.y); xl='예측값 (mm)'; yl='실젯값 (mm)'; }
-  else { xs=rows.map(r=>r.x[0]); ys=rows.map(r=>r.y); xl='습도 (%)'; yl='내일 강수량 (mm)'; }
+  else if(m){ xs=rows.map(r=>predict(m,r.x)); ys=rows.map(r=>r.y); xl='예측값 (mm)'; yl='실젯값 (mm)'; }
+  else { xs=rows.map(r=>r.y); ys=rows.map(r=>r.y); xl='예측값 (mm) — 학습하면 나타남'; yl='실젯값 (mm)'; }
   let xmin=Math.min(...xs), xmax=Math.max(...xs), ymin=Math.min(...ys), ymax=Math.max(...ys);
-  if(idx.length>1 && m){ xmin=ymin=Math.min(xmin,ymin); xmax=ymax=Math.max(xmax,ymax); }
+  if(!one){ xmin=ymin=Math.min(xmin,ymin); xmax=ymax=Math.max(xmax,ymax); }
   const px=v=>PAD.l+(v-xmin)/(xmax-xmin||1)*(W-PAD.l-PAD.r), py=v=>H-PAD.b-(v-ymin)/(ymax-ymin||1)*(H-PAD.t-PAD.b);
   cx.strokeStyle='#d9dedb'; cx.lineWidth=1; cx.beginPath(); cx.moveTo(PAD.l,PAD.t); cx.lineTo(PAD.l,H-PAD.b); cx.lineTo(W-PAD.r,H-PAD.b); cx.stroke();
   cx.fillStyle='#6b7280'; cx.font='12px Pretendard, sans-serif'; cx.textAlign='center';
@@ -382,23 +468,19 @@ function drawChart(){
   cx.textAlign='center'; cx.fillStyle='#1c1c1c'; cx.font='bold 13px Pretendard, sans-serif'; cx.fillText(xl, (PAD.l+W-PAD.r)/2, H-8);
   cx.save(); cx.translate(16,(PAD.t+H-PAD.b)/2); cx.rotate(-Math.PI/2); cx.fillText(yl,0,0); cx.restore();
   if(m && one){ cx.strokeStyle='rgba(200,16,46,.35)'; cx.lineWidth=1.5; rows.forEach((r,i)=>{ const p=predict(m,r.x); cx.beginPath(); cx.moveTo(px(xs[i]),py(ys[i])); cx.lineTo(px(xs[i]),py(p)); cx.stroke(); }); }
-  if(m && !one && idx.length>1){ cx.strokeStyle='#9aa5a0'; cx.setLineDash([5,4]); cx.beginPath(); cx.moveTo(px(xmin),py(ymin)); cx.lineTo(px(xmax),py(ymax)); cx.stroke(); cx.setLineDash([]); }
-  cx.fillStyle='#00703C'; rows.forEach((r,i)=>{ cx.beginPath(); cx.arc(px(xs[i]),py(ys[i]),4,0,7); cx.fill(); });
+  if(!one){ cx.strokeStyle='#9aa5a0'; cx.setLineDash([5,4]); cx.beginPath(); cx.moveTo(px(xmin),py(ymin)); cx.lineTo(px(xmax),py(ymax)); cx.stroke(); cx.setLineDash([]); }
+  if(one || m){ cx.fillStyle='#00703C'; rows.forEach((r,i)=>{ cx.beginPath(); cx.arc(px(xs[i]),py(ys[i]),4,0,7); cx.fill(); }); }
   if(m && one){ const {coef,b}=rawCoef(m); cx.strokeStyle='#1c1c1c'; cx.lineWidth=2.5; cx.beginPath(); cx.moveTo(px(xmin),py(b+coef[0]*xmin)); cx.lineTo(px(xmax),py(b+coef[0]*xmax)); cx.stroke(); }
   cx.fillStyle='#6b7280'; cx.font='12px Pretendard, sans-serif'; cx.textAlign='left';
-  cx.fillText(`훈련 데이터 ${rows.length}일${m&&one?' · 빨간 세로선 = 오차 (실젯값 − 예측값)':''}`, PAD.l+6, PAD.t+4);
+  cx.fillText(one?`훈련 데이터 ${rows.length}일${m?' · 빨간 세로선 = 오차 (실젯값 − 예측값)':' · 아직 회귀선 없음'}`:`다중 선형 회귀 — 예측값 ↔ 실젯값 · 점선 = 오차 0`, PAD.l+6, PAD.t+4);
 }
 
 /* ═══ 도트 그림 — 하늘 · 네 지역 표지판 · 예보관 ═══ */
 const sc=$('sky'), g=sc.getContext('2d'); g.imageSmoothingEnabled=false;
 const CLOUD=['..3333..','.333333.','33333333','.333333.'];
-const PIXCOL={1:'#5a2d0c',3:'#ffffff',4:'#8d5524',5:'#2b5a8a',6:'#2b3a4b'};
-function pix(ctx, rows, x, y, s, col){ rows.forEach((r,j)=>{ [...r].forEach((c,i)=>{ if(c!=='.'){ ctx.fillStyle=col||PIXCOL[c]; ctx.fillRect(x+i*s,y+j*s,s,s); } }); }); }
-function iconFor(ctx, rain){ // 지역 카드 아이콘 — 강수량에 따라 구름 + 빗줄기
-  ctx.clearRect(0,0,32,28); pix(ctx, CLOUD, 0, 2, 4, rain==null?'#c9d3dc':'#8aa0b4');
-  if(rain!=null){ const n=Math.min(6,Math.ceil(rain/10)); ctx.fillStyle='#2b5a8a'; for(let k=0;k<n;k++) ctx.fillRect(4+k*5, 20, 2, 6); }
-}
-let drops=[];
+function pix(ctx, rows, x, y, s, col){ rows.forEach((r,j)=>{ [...r].forEach((c,i)=>{ if(c!=='.'){ ctx.fillStyle=col; ctx.fillRect(x+i*s,y+j*s,s,s); } }); }); }
+function iconFor(ctx, rain){ ctx.clearRect(0,0,32,28); pix(ctx, CLOUD, 0, 2, 4, rain==null?'#c9d3dc':'#8aa0b4');
+  if(rain!=null){ const n=Math.min(6,Math.ceil(rain/10)); ctx.fillStyle='#2b5a8a'; for(let k=0;k<n;k++) ctx.fillRect(4+k*5, 20, 2, 6); } }
 function roundRect(x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
 function drawPerson(c){
   const x=Math.round(c.x), y=118;
@@ -418,7 +500,7 @@ function drawSky(){
     if(b.revealed){ const n=Math.min(8,Math.ceil(b.fair/8)); g.fillStyle='#2b5a8a'; for(let k=0;k<n;k++) g.fillRect(x+2+k*4, y+20+(k%2)*5, 2, 8); }
     g.fillStyle='#6b4a2b'; g.fillRect(x+14,100,4,52); g.fillStyle='#fff'; g.fillRect(x-8,92,48,30); g.strokeStyle='#1c1c1c'; g.lineWidth=1; g.strokeRect(x-8,92,48,30);
     g.fillStyle='#1c1c1c'; g.font='bold 11px Pretendard, sans-serif'; g.textAlign='center'; g.fillText(b.name,x+16,104);
-    g.font='bold 11px Pretendard, sans-serif'; g.fillText(b.price!=null? r1(b.price)+' mm':'— mm', x+16, 117); });
+    g.fillText(b.price!=null? r1(b.price)+' mm':'— mm', x+16, 117); });
   g.fillStyle='#fff'; g.fillRect(60,110,150,42); g.strokeStyle='#2b5a8a'; g.lineWidth=2; g.strokeRect(60,110,150,42);
   g.fillStyle='#1c1c1c'; g.font='bold 12px Pretendard, sans-serif'; g.textAlign='center'; g.fillText('내일 예보', 135, 126); g.fillText(S.applied?'회귀 모델':'손으로', 135, 142);
   drawPerson({x:230,shirt:'#2b5a8a'});
@@ -467,43 +549,96 @@ function serve(b,i){
   S.log.unshift({day:S.day, name:b.name, price, fair, err, p}); S.log=S.log.slice(0,8);
   renderStats(); renderLedger();
 }
+function meter(v){ // 오늘 MAE 를 기준선(최고 모델 · 평균 예보) 사이에 표시
+  const lo=0, hi=Math.max(REF.mean*1.6, v*1.1); const pc=x=>Math.min(100,Math.max(0,(x-lo)/(hi-lo)*100));
+  return `<div class="meterwrap"><div class="meter">
+    <div class="tick" style="left:${pc(REF.best)}%"><span>네 변수 모델 ${mm(REF.best)}</span></div>
+    <div class="tick" style="left:${pc(REF.mean)}%"><span>평균으로만 ${mm(REF.mean)}</span></div>
+    <div class="me" style="left:${pc(v)}%"><span>오늘 ${mm(v)}</span></div></div></div>`;
+}
+function dayFeedback(dm){
+  const ev=EVENTS[S.day]; const prev=S.lastMae;
+  let cls='fb', msg='';
+  if(!S.applied){
+    S.handMae = S.handMae==null ? dm : (S.handMae+dm)/2;
+    if(dm<REF.mean) msg=`손으로 적은 예보 — 오차 평균 <b>${mm(dm)}</b>. 평균으로만 찍는 것(${mm(REF.mean)})보다는 낫습니다.`;
+    else msg=`손으로 적은 예보 — 오차 평균 <b>${mm(dm)}</b>. 평균으로만 찍어도 ${mm(REF.mean)} 입니다.`;
+    msg += S.day>=LAB_DAY ? ` <b>분석실</b>에서 독립 변수 하나를 골라 학습해 보세요 — 컴퓨터가 60일로 찾은 회귀선이 손보다 낫습니다.` : ` 내일 아침 <b>분석실</b>이 열립니다.`;
+    if(dm>REF.mean) cls='fb warn';
+  } else if(ev){
+    cls='fb bad';
+    msg=`오차가 <b>${mm(dm)}</b> — 어제(${mm(prev)})보다 크게 뛰었습니다. 날씨의 식이 바뀌어 <b>지난 관측으로 만든 모델이 맞지 않습니다</b>. 분석실에서 훈련 데이터를 <b>최근 관측</b>으로 바꿔 다시 학습하세요.`
+      + (ev.wind ? ' 이번에는 <b>풍속</b>의 영향이 커졌습니다 — 풍속을 독립 변수에 넣었는지 보세요.' : ' 모든 날이 같이 늘었으니 <b>절편</b>이 달라질 것입니다.');
+  } else {
+    const h=S.handMae;
+    msg=`모델 <b>${S.usedFeats}</b> — 오차 평균 <b>${mm(dm)}</b>.`;
+    if(h!=null) msg+= dm<h ? ` 손으로 할 때(${mm(h)})보다 <b>${mm(h-dm)} 줄었습니다</b> ✓` : ` 손으로 할 때(${mm(h)})와 비슷하거나 큽니다 — 다른 독립 변수를 시험해 보세요.`;
+    if(dm<=REF.best+1) msg+=` 네 변수 모델(${mm(REF.best)})에 가깝습니다 — <b>이 이상은 잡음</b>입니다.`;
+    else if(S.mode==='simple' && S.day>=MULTI_DAY) msg+=` 독립 변수 하나로는 여기까지 — <b>다중 선형 회귀</b>로 변수를 더 넣으면 ${mm(REF.best)} 까지 줄어듭니다.`;
+    else if(S.mode==='simple') msg+=` 독립 변수 하나로 할 수 있는 만큼입니다. 6일차에 다중 선형 회귀가 열립니다.`;
+    else if(S.applied.idx.length<4) msg+=` 변수를 더 넣어 보세요 — 관계없는 변수(요일)는 넣어도 오차가 줄지 않습니다.`;
+    if(dm>REF.mean) cls='fb warn';
+  }
+  S.lastMae=dm;
+  return `<div class="${cls}">${msg}</div>`+meter(dm);
+}
 function endDay(){
   S.phase='evening'; citizen=null; drawSky(); $('tagDay').textContent=`${S.day}일차 정산`;
   const dp=S.today.reduce((s,b)=>s+b.delta,0), dm=S.today.reduce((s,b)=>s+Math.abs(b.err),0)/PER, ds=S.today.filter(b=>b.delta===10).length;
   const best=S.dayMae.length>0 && dm<=Math.min(...S.dayMae); S.dayMae.push(r1(dm));
   $('sum').classList.remove('hidden');
-  $('sum').innerHTML=`<b class="big">${S.day}일차</b> 점수 <b class="big ok">+${dp}점</b> / 40 · 적중 ${ds} / ${PER} · 오늘 오차 평균(MAE) <b>${mm(dm)}</b>${best?' <span class="ok">— 지금까지 가장 작음</span>':''}
-    ${S.applied?` · 예보 ${S.usedFeats}`:' · 손으로 정한 값'}${!S.applied&&S.day>=2?'<br><span class="hint">분석실에서 모델을 학습해 적용하면 오차가 줄어듭니다.</span>':''}`;
+  $('sum').innerHTML=`<b class="big">${S.day}일차</b> 점수 <b class="big ok">+${dp}점</b> / 40 · 적중 ${ds} / ${PER} · 오늘 오차 평균(MAE) <b>${mm(dm)}</b>${best?' <span class="ok">— 지금까지 가장 작음</span>':''}`+dayFeedback(dm);
   $('btnOpen').disabled=false; $('btnOpen').textContent= S.day>=DAYS ? '예보 마감' : `${S.day+1}일차로`;
-  $('btnOpen').onclick=nextDay;
+  $('btnOpen').onclick=nextDay; renderStats();
+  if(S.day===1) askQuiz('err');
+  else if(S.day===5) askQuiz('shift');
+  else if(S.day===8) askQuiz('wind');
 }
 function nextDay(){
   if(S.day>=DAYS){ finish(); return; }
   S.day++; $('btnOpen').onclick=openDay;
+  if(S.day===LAB_DAY) openLab();
+  if(S.day===MULTI_DAY){ openMulti(); askQuiz('dim'); }
   const ev=EVENTS[S.day];
-  if(ev){ RULE={shift:ev.shift, wind:ev.wind}; S.survey=TRAIN.map(r=>({x:r.x, y:fairOf(r)})); S.hist.push(`${S.day}일차 사건 ${ev.hd}`);
+  if(ev){ RULE={shift:ev.shift, wind:ev.wind}; S.eventDay=S.day; S.survey=TRAIN.map(r=>({x:r.x, y:fairOf(r)})); S.hist.push(`${S.day}일차 사건 ${ev.hd}`);
     const sb=$('dataSeg').querySelector('[data-set=survey]'); sb.classList.remove('hidden'); sb.classList.add('new'); sb.textContent=`최근 관측 60일 (${S.day}일차)`;
     S.model=null; $('btnApply').disabled=true; drawChart(); setEq(); noteData();
     $('newsHd').textContent='⚠ '+ev.hd; $('newsTx').textContent=ev.tx; $('newsHint').innerHTML=ev.hint; $('newsBox').classList.remove('hidden'); }
   startDay();
 }
 $('btnNewsOk').onclick=()=>$('newsBox').classList.add('hidden');
-function renderStats(){ $('sScore').textContent=S.score+'점'; $('sHit').textContent=`${S.hit} / ${S.served}`; $('sMae').textContent=S.served?mm(S.absErr/S.served):'—'; }
+
+/* ═══ 개념 확인 ═══ */
+let quizKey=null;
+function askQuiz(key){
+  if(S.quizDone[key]) return; quizKey=key; const q=QUIZ[key];
+  $('quizNo').textContent=`${QUIZ_ORDER.indexOf(key)+1} / ${QUIZ_ORDER.length}`; $('quizQ').textContent=q.q;
+  $('quizOpts').innerHTML=q.opts.map((o,i)=>`<button class="opt" data-i="${i}">${['①','②','③'][i]} ${o}</button>`).join('');
+  $('quizExp').classList.add('hidden'); $('btnQuizOk').classList.add('hidden');
+  $('quizOpts').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i; const right=i===q.a;
+    $('quizOpts').querySelectorAll('.opt').forEach((x,k)=>{ x.disabled=true; if(k===q.a) x.classList.add('right'); else if(k===i) x.classList.add('wrong'); });
+    S.quizDone[key]= right?'O':'X'; if(right){ S.quiz++; S.score+=10; }
+    $('quizExp').innerHTML=(right?'<b>맞았습니다 +10점.</b> ':'<b>아쉽습니다.</b> ')+q.exp; $('quizExp').classList.remove('hidden'); $('btnQuizOk').classList.remove('hidden'); renderStats(); });
+  $('quizBox').classList.remove('hidden');
+}
+$('btnQuizOk').onclick=()=>$('quizBox').classList.add('hidden');
+
+function rank(){ const f=S.served? (S.score-10*S.quiz)/(S.served*10) : 0; return f>=0.8?'수석 예보관':f>=0.6?'선임 예보관':f>=0.4?'예보관':'수습 예보관'; }
+function renderStats(){ $('sScore').textContent=S.score+'점'; $('sQuiz').textContent=`${S.quiz} / ${QUIZ_ORDER.length}`; $('sMae').textContent=S.served?mm(S.absErr/S.served):'—'; $('sRank').textContent=rank(); }
 function renderLedger(){ $('ledger').innerHTML='<div class="h"><span>일차</span><span>지역</span><span>예보</span><span>실제</span><span>오차 · 점수</span></div>'+S.log.map(l=>`<div><span>${l.day}</span><span>${l.name}</span><span>${mm(l.price)}</span><span>${mm(l.fair)}</span><span>${l.err>0?'+':''}${l.err} · <span class="${l.p?'ok':'no'}">+${l.p}</span></span></div>`).join(''); }
 function finish(){
   S.phase='end'; $('tagDay').textContent='예보 끝';
-  const m=S.applied; const txt=`도트 기상청 — ${$('team').value||'(이름 없음)'}\n예보 점수 ${S.score} / 400 · 적중 ${S.hit} / ${S.served}\n오차 평균(MAE) ${mm(S.absErr/S.served)} · 날마다 ${S.dayMae.join(' → ')}\n마지막 모델 — ${m?m.idx.map(i=>FEATS[i]).join(' + '):'손으로'} · 학습 ${S.trainCount}번\n기록 — ${S.hist.join(' · ')||'없음'}`;
-  $('result').textContent=txt; $('endBox').classList.remove('hidden');
-  $('btnCopy').onclick=()=>{ navigator.clipboard.writeText(txt).then(()=>$('btnCopy').textContent='복사됨'); };
+  const go=()=>{ const m=S.applied; const fore=S.score-10*S.quiz;
+    const txt=`도트 기상청 — ${$('team').value||'(이름 없음)'}\n총점 ${S.score}점 = 예보 ${fore} / 400 + 개념 확인 ${10*S.quiz} / 60 · ${rank()}\n적중 ${S.hit} / ${S.served} · 오차 평균(MAE) ${mm(S.absErr/S.served)} · 날마다 ${S.dayMae.join(' → ')}\n마지막 모델 — ${m?m.idx.map(i=>FEATS[i]).join(' + '):'손으로'}\n기록 — ${S.hist.join(' · ')||'없음'}`;
+    $('result').textContent=txt; $('endBox').classList.remove('hidden');
+    $('btnCopy').onclick=()=>{ navigator.clipboard.writeText(txt).then(()=>$('btnCopy').textContent='복사됨'); }; };
+  if(!S.quizDone.r2){ askQuiz('r2'); $('btnQuizOk').onclick=()=>{ $('quizBox').classList.add('hidden'); go(); }; } else go();
 }
 $('btnStart').onclick=()=>{ $('intro').classList.add('hidden'); startDay(); };
 
 buildFeats(); noteData(); drawChart(); drawSky(); renderLedger(); renderStats();
 /* ?auto — 확인용: 이름 없이 바로 시작 */
 if(location.search.includes('auto')){ $('team').value='확인'; $('btnStart').click(); }
-/* ?demo — 캡처용: 1일차를 손으로 돌리고 네 독립 변수로 학습해 적용한 2일차 아침 */
-if(location.search.includes('demo')){ (async()=>{ const sl=ms=>new Promise(r=>setTimeout(r,ms)); S.today.forEach((b,i)=>{ $('p'+i).value=[20,30,25,35][i]; $('p'+i).dispatchEvent(new Event('input')); });
-  $('btnOpen').click(); await sl(4600); $('btnOpen').click(); await sl(100); [1,2,3].forEach(i=>$('feats').querySelectorAll('.chk')[i].click()); $('btnTrain').click(); await sl(4000); $('btnApply').click(); })(); }
 </script>
 </body>
 </html>
