@@ -116,17 +116,35 @@ function a2TcStart(cid){
   const ref = db.ref(`notebookProgress/${cid}/${A2_NB_ID}`);
   const fn = s => {
     A2_ALL = s.val() || {};
-    if(VIEW === 'teacher' && TC_TAB === 'assess2' && TC_CLS?.id === cid) render();
+    if(VIEW === 'teacher' && TC_TAB === 'assess2' && TC_CLS?.id === cid) a2Rerender();
   };
   ref.on('value', fn, err => {
     A2_ERR = err.message || String(err); A2_ALL = {};
     if(VIEW === 'teacher' && TC_TAB === 'assess2') render();
   });
-  A2_WATCH = { ref, fn };
+  // 채점 (2026-11-09) — 학생 진도와 따로 쌓입니다
+  A2_GRADE = null;
+  const gref = db.ref(`aiactivity/submissions/${cid}/assess2grade`);
+  const gfn = s => {
+    A2_GRADE = s.val() || {};
+    if(VIEW === 'teacher' && TC_TAB === 'assess2' && TC_CLS?.id === cid) a2Rerender();
+  };
+  gref.on('value', gfn, () => { A2_GRADE = {}; });
+  A2_WATCH = { ref, fn, gref, gfn };
 }
 function a2TcStop(){
-  if(A2_WATCH){ A2_WATCH.ref.off('value', A2_WATCH.fn); A2_WATCH = null; }
+  if(A2_WATCH){
+    A2_WATCH.ref.off('value', A2_WATCH.fn);
+    if(A2_WATCH.gref) A2_WATCH.gref.off('value', A2_WATCH.gfn);
+    A2_WATCH = null;
+  }
   A2_FOR = null;
+}
+/* 메모나 논술 칸에 적는 중이면 다시 그리지 않습니다 — 적던 글이 날아갑니다 */
+function a2Rerender(){
+  const a = document.activeElement;
+  if(a && (a.id === 'a2g-note' || a.id === 'a2g-essay')) return;
+  render();
 }
 
 /* 이 셀이 ✍️ 적는 표인가 */
@@ -206,6 +224,9 @@ function _a2TcList(nb){
     return `<tr>
       <td>${esc(st.number)}</td><td>${esc(st.name)}</td>${tds}
       <td class="n">${doc ? _a2Time(doc.updatedAt) : ''}</td>
+      ${(() => { const g = a2gOf(st.number); const nbs = a2gNb(g); const tot = a2gTotal(g);
+        return `<td class="n"><b>${nbs === null ? '' : nbs}</b></td><td class="n">${tot === null ? '' : tot}</td>
+          <td class="n">${g && g.ai ? a2gStateDot(g) + (a2gFlagCount(g) ? ` <span class="a1-dim">⚑${a2gFlagCount(g)}</span>` : '') : ''}</td>`; })()}
       <td>${doc
         ? `<button class="btn-xs" data-action="a2-view" data-snum="${esc(st.number)}">답안 보기 →</button>`
         : '<span class="a1-dim">미응시</span>'}</td>
@@ -227,12 +248,15 @@ function _a2TcList(nb){
     </div>
     <div class="ml-sub-explain">칸의 숫자는 그 문제에서 <b>답이 남는 셀 가운데 몇 개를 채웠는가</b>입니다
       (🧩 블록을 쌓은 셀 · ✍️ 표에 적은 셀). 학생이 저장할 때마다 바로 바뀝니다.
-      <b>실행 결과는 저장되지 않습니다</b> — 남는 것은 코드와 적은 글자뿐입니다.</div>
+      <b>실행 결과는 저장되지 않습니다</b> — 남는 것은 코드와 적은 글자뿐입니다
+      (답안 보기에서 <b>▶ 실행 결과 보기</b> 로 그 자리에서 돌려 봅니다).
+      <b>노트북 /19</b> 는 코드 채점(기본 8 + 항목 11), <b>총점</b>은 논술 점수를 넣으면 나옵니다.
+      검토 — ○ 미검토 · ◐ 검토 중 · ✔ 확정 · ⚑ 판단이 필요한 항목 수.</div>
     ${sts.length === 0 ? emptyBox('👥', '먼저 학생을 등록하세요.')
       : `<div style="overflow-x:auto"><table class="tbl a1-tc-table">
           <thead><tr><th>학번</th><th>이름</th>${groups.map(g =>
             `<th>${esc(g.label.replace('문제 ', '문'). replace('준비 단계', '준비'))}</th>`).join('')}
-            <th>마지막 저장</th><th></th></tr></thead>
+            <th>마지막 저장</th><th>노트북 /19</th><th>총점 /25</th><th>검토</th><th></th></tr></thead>
           <tbody>${rows}</tbody></table></div>`}
     ${extra.length ? `<div class="ml-sub-explain">명단에 없는 학번으로 저장된 것 —
       ${extra.map(k => `<button class="btn-xs" data-action="a2-view" data-snum="${esc(k)}">${esc(k)}</button>`).join(' ')}</div>` : ''}`;
@@ -330,13 +354,199 @@ function _a2CellBox(oc, sc){
   return '';
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   ✅ 코드 채점 검토 (2026-11-09)
+
+   선생님 — 「그 사이트에서 너가 채점 한 근거를 보고 내가 다시 검토할 수 있도록 해줘.
+   그리고 애들 지금 실행 결과가 안나와 내가 애들 코드 볼 때 그것도 나오도록 해줘」.
+
+   · 채점 자리 aiactivity/submissions/{반}/assess2grade/{학번}
+       = { ai:{항목:0|1}, ev:{항목:근거}, fl:{항목:검토할 것}, ans:{모범 답안}, sit,
+           s:{항목:고친 점수}, essay:논술 항목 점수, note, state:''|wip|done, at }
+     ai · ev · fl · ans · sit 는 레포 밖의 채점 스크립트가 넣습니다 (학생 코드를 실제로 돌린 결과).
+     선생님이 고친 것은 s · essay · note · state 에만 씁니다 — 처음 점수는 덮어쓰지 않습니다.
+     (1차와 같은 자리 · 같은 방식 — aiactivity/submissions 아래만 열려 있습니다)
+   · 학생 화면은 이 자리를 읽지 않습니다. DB 규칙이 열려 있는 것은 1차와 같은 조건입니다.
+   · 항목 11개(노트북 19점 = 기본 8 + 항목 11) — tools/samples/assess2-rubric.md 의 묶음 1~3.
+     논술(묶음 4, 6점 = 기본 2 + 항목 4)은 종이라 선생님이 숫자만 넣습니다.
+   · ▶ 실행 결과 — 선생님 브라우저의 노트북 엔진(Pyodide)으로 학생 코드 셀을 차례대로
+     돌려 셀 밑에 출력을 붙입니다 (events/assess2.js 의 a2RunStudent). 학생 진도에는 쓰지 않습니다.
+═══════════════════════════════════════════════════════════════ */
+const A2G_ITEMS = [
+  { k: 'b1_na',    q: 1, b: 1, n: '결측치 처리' },
+  { k: 'b1_graph', q: 2, b: 1, n: '근거 그래프' },
+  { k: 'b1_pick',  q: 3, b: 1, n: '핵심 속성 선정' },
+  { k: 'b1_why',   q: 3, b: 1, n: '근거 제시' },
+  { k: 'b2_xy',    q: 4, b: 2, n: '특성 분할' },
+  { k: 'b2_split', q: 4, b: 2, n: '학습 · 테스트 분할' },
+  { k: 'b2_fit',   q: 5, b: 2, n: '모델 정의와 학습' },
+  { k: 'b3_score', q: 6, b: 3, n: '테스트 데이터로 정확도' },
+  { k: 'b3_try',   q: 6, b: 3, n: '세 번 시도와 고른 까닭' },
+  { k: 'b3_cm',    q: 7, b: 3, n: '혼동 행렬 코드' },
+  { k: 'b3_fold',  q: 7, b: 3, n: '네 수로 접기' },
+];
+const A2G_BASE = 8;        // 묶음 1·2·3 기본점수 3 + 2 + 3
+let A2_GRADE = null;       // { [학번]: 채점 } — null 이면 불러오는 중
+let A2_OUT = { snum: null, outs: {}, run: false, cur: null, msg: '' };   // ▶ 실행 결과
+
+function a2gOf(snum){ return (A2_GRADE || {})[snum] || null; }
+function a2gVal(g, k){
+  if(!g) return null;
+  const s = g.s || {};
+  if(s[k] === 0 || s[k] === 1) return s[k];
+  const a = (g.ai || {})[k];
+  return (a === 0 || a === 1) ? a : null;
+}
+function a2gNb(g){
+  if(!g || !g.ai) return null;
+  return A2G_BASE + A2G_ITEMS.reduce((t, it) => t + (a2gVal(g, it.k) || 0), 0);
+}
+function a2gEssay(g){
+  const v = g && g.essay;
+  return (v === 0 || (v !== '' && v != null)) ? Number(v) : null;
+}
+function a2gTotal(g){
+  const nb = a2gNb(g);
+  if(nb === null) return null;
+  const e = a2gEssay(g);
+  return e === null ? null : nb + 2 + e;
+}
+function a2gStateDot(g){
+  const st = g?.state || '';
+  if(st === 'done') return '<span class="a2g-dot done" title="확정">✔</span>';
+  if(st === 'wip') return '<span class="a2g-dot wip" title="검토 중">◐</span>';
+  return '<span class="a2g-dot" title="미검토">○</span>';
+}
+function a2gFlagCount(g){
+  const fl = (g && g.fl) || {};
+  return Object.keys(fl).filter(k => String(fl[k] || '').trim()).length;
+}
+
+/* 문제 하나 밑에 붙는 채점 칸 */
+function _a2gCard(snum, q){
+  const g = a2gOf(snum);
+  const items = A2G_ITEMS.filter(it => it.q === q);
+  if(!items.length) return '';
+  if(!g || !g.ai) return `<div class="a2g-card a2g-none">채점 자료가 아직 없습니다.</div>`;
+  return `<div class="a2g-card">${items.map(it => {
+    const ai = (g.ai || {})[it.k];
+    const cur = a2gVal(g, it.k);
+    const sv = (g.s || {})[it.k];
+    const changed = (sv === 0 || sv === 1) && sv !== ai;
+    const fl = String((g.fl || {})[it.k] || '').trim();
+    const ev = String((g.ev || {})[it.k] || '').trim();
+    return `<div class="a2g-item${fl ? ' flag' : ''}${changed ? ' changed' : ''}">
+      <div class="a2g-top">
+        <span class="a2g-name">묶음 ${it.b} · ${esc(it.n)}</span>
+        <span class="a2g-btns">
+          <button class="a2g-b${cur === 0 ? ' on' : ''}" data-action="a2g-set" data-k="${it.k}" data-v="0">0</button>
+          <button class="a2g-b${cur === 1 ? ' on' : ''}" data-action="a2g-set" data-k="${it.k}" data-v="1">1</button>
+        </span>
+        ${changed ? `<span class="a2g-was">처음 <s>${ai}점</s> → <b>${cur}점으로 고침</b>
+          <button class="btn-xs" data-action="a2g-set" data-k="${it.k}" data-v="ai">↺ 처음 점수로</button></span>` : ''}
+      </div>
+      ${ev ? `<div class="a2g-ev"><span class="a2g-lab">근거</span>${esc(ev)}</div>` : ''}
+      ${fl ? `<div class="a2g-fl"><span class="a2g-lab">⚑ 검토</span>${esc(fl)}</div>` : ''}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* 맨 위 — 점수 합계 · 논술 · 검토 상태 */
+function _a2gSummary(snum){
+  const g = a2gOf(snum);
+  if(!g || !g.ai) return `<div class="a2g-sum a2g-none">이 학생의 채점 자료가 아직 없습니다.</div>`;
+  const nb = a2gNb(g), e = a2gEssay(g), tot = a2gTotal(g);
+  const st = g.state || '';
+  const stLabel = st === 'done' ? '✔ 확정 완료' : (st === 'wip' ? '◐ 검토 중' : '○ 미검토');
+  return `<div class="a2g-sum">
+    <div class="a2g-sum-n"><span>노트북</span><b>${nb}</b><small>/ 19</small></div>
+    <div class="a2g-sum-n"><span>논술 항목</span>
+      <input class="a2g-essay" id="a2g-essay" type="number" min="0" max="4" step="1" value="${e === null ? '' : e}"
+        placeholder="0~4"/><small>+ 기본 2</small></div>
+    <div class="a2g-sum-n"><span>총점</span><b>${tot === null ? '–' : tot}</b><small>/ 25</small></div>
+    <div class="a2g-sum-n"><span>상황</span><b class="a2g-sit">${esc(g.sit || '–')}</b></div>
+    <button class="a2g-state ${st}" data-action="a2g-state" title="누를 때마다 미검토 → 검토 중 → 확정">${stLabel}</button>
+    <span class="a1-dim">⚑ 검토할 것 ${a2gFlagCount(g)}개</span>
+  </div>`;
+}
+
+function _a2gFold(x, title){
+  if(!x) return '';
+  const f = v => (v === null || v === undefined) ? '계산 안 됨' : Number(v).toFixed(2);
+  return `<table class="tbl a2g-cm"><tr><th colspan="3">${esc(title)}</th></tr>
+    <tr><th>실젯값 \\ 예측값</th><th>NO(0)</th><th>Yes(1)</th></tr>
+    <tr><th>NO(0)</th><td>TN ${x.TN}</td><td>FP ${x.FP}</td></tr>
+    <tr><th>Yes(1)</th><td>FN ${x.FN}</td><td>TP ${x.TP}</td></tr>
+    <tr><td colspan="3">정밀도 ${f(x.P)} · 재현율 ${f(x.R)}</td></tr></table>`;
+}
+
+/* 맨 아래 — 모범 답안 · 메모 */
+function _a2gBottom(snum){
+  const g = a2gOf(snum);
+  if(!g) return '';
+  const a = g.ans;
+  let ans = '';
+  if(a && a.m){
+    const labels = a.labels || [];
+    const cm = `<table class="tbl a2g-cm"><tr><th>실젯값 \\ 예측값</th>${labels.map(l => `<th>${esc(l)}</th>`).join('')}</tr>
+      ${a.m.map((r, i) => `<tr><th>${esc(labels[i])}</th>${r.map(v => `<td>${v}</td>`).join('')}</tr>`).join('')}</table>`;
+    const showKey = !a.mine || (a.mine.cls !== a.key?.cls);
+    ans = `<div class="a2-q-head">📄 논술 모범 답안 — 이 학생의 코드로 계산</div>
+      <div class="a2-ans-c">
+        <div class="a2-ans-h">${esc(a.model || '')} · 분류 정확도 ${a.acc != null ? Number(a.acc).toFixed(2) : '–'} · 테스트 ${a.n || '–'}행 — ${esc(a.src || '')}</div>
+        <div class="a2g-cms">${cm}
+          ${a.mine ? _a2gFold(a.mine, '학생 기준 클래스 — ' + a.mine.cls) : `<div class="a1-dim">학생 기준 클래스: ${esc(a.kc || '안 적음')}</div>`}
+          ${showKey ? _a2gFold(a.key, '상황 클래스 — ' + (a.key?.cls || '')) : ''}
+          ${a.tab ? _a2gFold(a.tab, '학생이 ✍️ 에 적은 네 수 그대로') : ''}
+        </div>
+        <div class="a2g-essay-h">논술 1</div><div class="a2g-model">${esc(a.e1 || '')}</div>
+        ${a.e2m ? `<div class="a2g-essay-h">논술 2 — 학생 기준 클래스 ${esc(a.mine?.cls || '')}</div><div class="a2g-model">${esc(a.e2m)}</div>` : ''}
+        <div class="a2g-essay-h">논술 2 — 상황 클래스 ${esc(a.key?.cls || '')}</div><div class="a2g-model">${esc(a.e2k || '')}</div>
+        ${a.note ? `<div class="a1-dim" style="margin-top:6px">※ ${esc(a.note)}</div>` : ''}
+      </div>`;
+  } else if(g.ai){
+    ans = `<div class="a2-q-head">📄 논술 모범 답안</div>
+      <div class="a2-ans-c a1-dim">혼동 행렬을 만들 모델이 코드에 없어 모범 답안을 만들지 않았습니다.</div>`;
+  }
+  return ans + `<div class="a2-q-head">📝 선생님 메모</div>
+    <textarea class="a2g-note" id="a2g-note" placeholder="이 학생 채점에 대한 메모 — 칸을 벗어나면 저장됩니다">${esc(g.note || '')}</textarea>`;
+}
+
+/* ▶ 실행 결과 — 셀 하나의 출력 */
+function _a2OutHtml(snum, id){
+  if(A2_OUT.snum !== snum) return '';
+  const o = A2_OUT.outs[id];
+  if(A2_OUT.cur === id) return `<div class="a2-out-h">⏳ 실행 중…</div>`;
+  if(!o) return A2_OUT.run ? `<div class="a2-out-h a1-dim">차례를 기다리는 중</div>` : '';
+  const items = o.items || [];
+  return `<div class="a2-out-h">▶ 실행 결과${o.ok ? '' : ' — <b style="color:#C8102E">오류</b>'}</div>
+    <div class="cb-out-items">${items.length ? vNbItems(items) : '<span class="a1-dim">(출력 없음)</span>'}</div>`;
+}
+function _a2OutSlot(snum, id){
+  return `<div class="a2-out" data-a2out="${esc(id)}">${_a2OutHtml(snum, id)}</div>`;
+}
+function _a2RunMsg(snum){
+  if(A2_OUT.snum !== snum) return '';
+  const n = Object.keys(A2_OUT.outs).length;
+  if(A2_OUT.run) return `⏳ ${esc(A2_OUT.msg || '실행 중')} (${n}개 끝남)`;
+  return A2_OUT.msg ? esc(A2_OUT.msg) : (n ? `✔ 셀 ${n}개를 실행했습니다` : '');
+}
+function _a2RunBar(snum){
+  const busy = A2_OUT.run;
+  return `<div class="a2-runbar">
+    <button class="btn-p btn-sm" data-action="a2-run" ${busy ? 'disabled' : ''}>▶ 실행 결과 보기</button>
+    <span class="a2-runmsg" id="a2-runmsg">${_a2RunMsg(snum)}</span>
+    <span class="a1-dim">학생 코드 셀을 노트북 차례대로 돌립니다 (처음엔 파이썬 준비에 10~20초). 학생 진도는 바꾸지 않습니다.</span>
+  </div>`;
+}
+
 function _a2TcStudent(nb){
   const snum = A2_SNUM;
   const list = _a2TcNums();
   const at = list.indexOf(snum);
   const st = (typeof STUDENTS !== 'undefined' ? STUDENTS : []).find(s => s.number === snum);
   const doc = (A2_ALL || {})[snum];
-  const cells = a2Cells(doc);
+  const g = a2gOf(snum);
 
   const nav = `<div style="display:flex;gap:4px;margin-left:auto;align-items:center">
     <span class="a1-dim">${at < 0 ? '' : (at + 1) + ' / ' + list.length}</span>
@@ -347,31 +557,65 @@ function _a2TcStudent(nb){
     <button class="btn-sm" data-action="a2-back">← 목록</button>
     <div class="aia-tcs-info"><span class="aia-tcs-snum">${esc(snum)}</span>
       <span class="aia-tcs-name">${esc(st?.name || '')}</span>
+      ${a2gStateDot(g)}
       <span class="a1-dim">마지막 저장 ${esc(_a2Time(doc?.updatedAt)) || '–'}</span></div>
     ${nav}
   </div>`;
   if(!doc) return head + emptyBox('📭', '저장한 답안이 없습니다.');
 
+  // 학생이 저장한 차례대로 — 학생이 더한 셀도 그 자리에 보입니다
+  const byId = {};
+  for(const c of (nb.cells || [])) if(c.id) byId[c.id] = c;
+  const order = (doc.cells && doc.cells.length) ? doc.cells : (nb.cells || []);
+  const scById = a2Cells(doc);
+
   let out = '';
   let wait = '';   // 아래에 답이 하나라도 나올 때까지 제목을 쥐고 있습니다
-  for(const oc of (nb.cells || [])){
-    const t = oc.type || oc.cell_type || 'code';
+  let curQ = 0;
+  const flush = () => { if(curQ){ out += _a2gCard(snum, curQ); curQ = 0; } };
+  for(const c0 of order){
+    if(!c0) continue;
+    const oc = byId[c0.id] || null;
+    const sc = scById[c0.id] || null;
+    const base = oc || c0;
+    const t = base.type || base.cell_type || 'code';
     const m = (t === 'markdown')
-      ? (oc.source || '').match(/^#+\s*\*\*\s*((?:준비 단계|문제)\s*\d+\.?)\s*\*\*\s*(.*)$/m) : null;
+      ? (base.source || '').match(/^#+\s*\*\*\s*((?:준비 단계|문제)\s*(\d+)\.?)\s*\*\*\s*(.*)$/m) : null;
     if(m){
-      wait = `${m[1].replace(/\s+/g, ' ').trim()} ${a2Txt(m[2]).split('\n')[0]}`;
+      flush();
+      wait = `${m[1].replace(/\s+/g, ' ').trim()} ${a2Txt(m[3]).split('\n')[0]}`;
+      // 채점 항목이 있는 문제는 제목을 바로 냅니다 — 답이 비어 있어도 채점 칸은 보여야 합니다
+      if(/^문제/.test(m[1]) && A2G_ITEMS.some(it => it.q === Number(m[2]))){
+        curQ = Number(m[2]);
+        out += `<div class="a2-q-head">${esc(wait)}</div>`; wait = '';
+      }
       continue;
     }
-    if(!a2IsAns(oc)) continue;
-    const box = _a2CellBox(oc, cells[oc.id]);
+    let box = '';
+    if(oc){
+      if(!a2IsAns(oc)) continue;
+      box = _a2CellBox(oc, sc);
+    } else {
+      // 원본에 없는 셀 — 학생이 더한 것
+      const src = String(c0.source || '').trim();
+      if(!src) continue;
+      box = t === 'markdown'
+        ? `<div class="a2-ans-c"><div class="a2-ans-h">＋ 학생이 더한 글 셀</div><div class="a2g-model">${esc(src)}</div></div>`
+        : `<div class="a2-ans-c"><div class="a2-ans-h">＋ 학생이 더한 코드 셀</div><pre class="a2-code">${esc(src)}</pre></div>`;
+    }
     if(!box) continue;
     if(wait){ out += `<div class="a2-q-head">${esc(wait)}</div>`; wait = ''; }
     out += box;
+    if(t === 'code' && String((sc || c0).source || '').trim()) out += _a2OutSlot(snum, c0.id);
   }
+  flush();
   return head
-    + `<div class="ml-sub-explain">아래는 <b>학생이 저장한 그대로</b>입니다. 이 화면은 읽기만 하며
-       학생 답안을 바꾸지 않습니다. <b>틀린 칸</b>은 함수 이름 · train/test 처럼
-       <b>답이 하나로 정해진 칸</b>만 표시합니다 — 열 이름과 타깃은 상황마다 달라
-       표시하지 않으니 직접 보십시오.</div>`
-    + (out || emptyBox('📭', '손댄 셀이 없습니다.'));
+    + _a2gSummary(snum)
+    + _a2RunBar(snum)
+    + `<div class="ml-sub-explain">아래는 <b>학생이 저장한 그대로</b>이고, 문제마다 밑에 <b>채점 칸</b>이 붙습니다.
+       <b>0 · 1</b> 을 누르면 바로 저장되고 합계가 바뀝니다 — 처음 매긴 점수는 지워지지 않습니다.
+       <b>노란 칸</b>은 판단이 필요한 항목입니다. 근거는 <b>지금 남은 코드를 실제로 돌려</b> 기록한 것이라,
+       학생이 수업 중에 본 값과 다를 수 있습니다.</div>`
+    + (out || emptyBox('📭', '손댄 셀이 없습니다.'))
+    + _a2gBottom(snum);
 }
