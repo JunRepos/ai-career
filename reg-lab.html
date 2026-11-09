@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>회귀 다시 보기</title>
+<!--
+  reg-lab.html — 회귀 복습 실습 (2026-11-09)
+  선생님 — 「학생들 오늘 회귀 나갔는데 좀 이해를 못해. 학습지를 못해서 그런가봐.
+  복습 할 수 있는 것과 이해할 수 있는 실습 만들어주고」.
+  데이터와 값은 verify/reg-lab-data.py 가 스크립트 맨 앞의 DATA 자리에 넣습니다 (덱 · 학습지 · 도트 기상청과 같은 데이터).
+  교과서 96~98 · 100쪽 문장. 경사 하강법은 덱 · 학습지와 같은 규칙(습도 표준화 · 학습률 0.1).
+-->
+<style>
+:root{--g:#00703C;--g2:#e6f2ec;--ink:#1c1c1c;--sub:#5b6460;--line:#d9dfdc;--bg:#f6f8f7;--card:#fff;--bad:#c8102e;--warn:#fff4cc}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif;line-height:1.6}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.hw{max-width:1080px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{font-size:20px;margin:0;color:var(--g)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1.5px solid var(--line);background:var(--card);border-radius:20px;padding:5px 12px;font-size:14px;font-weight:700;cursor:pointer;color:var(--sub)}
+.tab.on{background:var(--g);border-color:var(--g);color:#fff}
+.tab.done::after{content:' ✔'}
+.score{margin-left:auto;font-weight:800;color:var(--g);font-size:14px}
+main{max-width:1080px;margin:0 auto;padding:16px}
+section{display:none}
+section.on{display:block}
+h2{font-size:22px;margin:4px 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.card h3{margin:0 0 8px;font-size:15px;color:var(--g)}
+.defs{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:15.5px}
+.defs b{white-space:nowrap}
+.book{font-size:15.5px}
+.book p{margin:4px 0}
+.eq{font-size:20px;font-weight:800;text-align:center;margin:8px 0;font-variant-numeric:tabular-nums}
+.two{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:820px){.two{grid-template-columns:1fr !important}}
+.two>*{min-width:0}
+main,section,.card{min-width:0}
+html,body{overflow-x:hidden}
+canvas{width:100%;height:auto;display:block;background:#fff;border:1px solid var(--line);border-radius:10px;touch-action:none}
+.ctrl{display:grid;grid-template-columns:auto 1fr auto;gap:8px 10px;align-items:center;font-size:15px;margin:10px 0}
+.ctrl input[type=range]{width:100%}
+.ctrl output{font-weight:800;font-variant-numeric:tabular-nums;min-width:56px;text-align:right}
+.big{font-size:28px;font-weight:800;color:var(--g);font-variant-numeric:tabular-nums}
+.meter{height:12px;background:#eef1ef;border-radius:6px;overflow:hidden;margin:6px 0}
+.meter i{display:block;height:100%;background:var(--g);transition:width .25s}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+button.b{border:1.5px solid var(--g);background:var(--card);color:var(--g);border-radius:8px;padding:7px 14px;font-weight:800;font-size:14.5px;cursor:pointer}
+button.b.p{background:var(--g);color:#fff}
+button.b:disabled{opacity:.4;cursor:default}
+table.t{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+table.t th,table.t td{border:1px solid var(--line);padding:5px 8px;text-align:center}
+table.t th{background:var(--g2)}
+table.t td.l{text-align:left}
+.ok{color:var(--g);font-weight:800}
+.no{color:var(--bad);font-weight:800}
+.q{border-top:1px dashed var(--line);padding:12px 0 4px}
+.q:first-of-type{border-top:0;padding-top:0}
+.q .qt{font-weight:700;font-size:15.5px;margin-bottom:6px}
+.q .ch{display:flex;gap:8px;flex-wrap:wrap}
+.q .ch button{border:1.5px solid var(--line);background:var(--card);border-radius:8px;padding:6px 12px;font-size:15px;cursor:pointer}
+.q .ch button.right{border-color:var(--g);background:var(--g2)}
+.q .ch button.wrong{border-color:var(--bad);background:#fde8ec}
+.q input.n{width:96px;font-size:16px;padding:5px 8px;border:1.5px solid var(--line);border-radius:8px;font-variant-numeric:tabular-nums}
+.fb{margin-top:6px;font-size:14.5px;min-height:1em}
+.sort{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.sort .ch button{padding:4px 10px}
+.pt{font-size:15px;background:var(--g2);border-radius:8px;padding:8px 12px;margin-top:8px;font-variant-numeric:tabular-nums}
+.chk{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.chk label{border:1.5px solid var(--line);border-radius:20px;padding:5px 12px;cursor:pointer;font-weight:700;font-size:14.5px;user-select:none}
+.chk label.on{border-color:var(--g);background:var(--g2);color:var(--g)}
+.chk input{display:none}
+.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-weight:800;font-size:13.5px;background:var(--g);color:#fff}
+.tag.s{background:#7a8a83}
+.next{display:flex;justify-content:space-between;margin-top:6px}
+.small{font-size:13.5px;color:var(--sub)}
+.legend{font-size:13.5px;color:var(--sub);margin-top:4px}
+.legend span{display:inline-block;width:18px;height:3px;vertical-align:middle;margin:0 4px 0 10px}
+</style>
+</head>
+<body>
+<header><div class="hw">
+  <h1>회귀 다시 보기</h1>
+  <nav class="tabs" id="tabs"></nav>
+  <span class="score" id="score"></span>
+</div></header>
+<main>
+
+<!-- 1 -->
+<section data-step="1">
+  <h2>1. 독립 변수와 종속 변수</h2>
+  <div class="card book">
+    <h3>교과서 96쪽</h3>
+    <p>지도학습에서 수치를 예측하는 선형 회귀는 정답이 있는 데이터를 이용해 연속적인 값을 예측한다.</p>
+    <div class="defs" style="margin-top:8px">
+      <b>독립 변수</b><span>입력 변수(종속 변수를 예측하는 데 사용되는 변수)</span>
+      <b>종속 변수</b><span>결과 변수(예측하려는 변수)</span>
+    </div>
+  </div>
+  <div class="card">
+    <h3>기상청 데이터 (훈련 데이터 60일 가운데 6일)</h3>
+    <div style="overflow-x:auto"><table class="t" id="t1"></table></div>
+    <p class="small">오늘 관측한 값으로 내일 강수량을 예측합니다. 요일은 번호로 적은 값입니다.</p>
+  </div>
+  <div class="card" id="q1"></div>
+</section>
+
+<!-- 2 -->
+<section data-step="2">
+  <h2>2. 회귀선 맞추기</h2>
+  <div class="card book">
+    <h3>교과서 96쪽</h3>
+    <p>1개의 독립 변수로 종속 변수를 예측하는 단순 선형 회귀</p>
+    <div class="eq">y = a x + b</div>
+    <div class="defs">
+      <b>회귀계수 a</b><span>독립 변수의 변화에 따른 종속 변수의 평균 변화량 (직선의 기울기)</span>
+      <b>절편 b</b><span>독립 변수의 값이 모두 0일 때 종속 변수의 예측값</span>
+    </div>
+  </div>
+  <div class="two">
+    <div class="card">
+      <canvas id="c2" width="720" height="460"></canvas>
+      <div class="legend">점 = 훈련 데이터 60일 <span style="background:#00703C"></span>내 선 <span style="background:#c8102e;height:2px"></span>오차 <span id="lg2" style="background:#888;display:none"></span><b id="lg2t" style="display:none;font-weight:400">컴퓨터가 찾은 선</b></div>
+    </div>
+    <div class="card">
+      <h3>슬라이더로 선을 움직이세요</h3>
+      <div class="ctrl">
+        <span>회귀계수 a</span><input type="range" id="a2" min="0" max="1.6" step="0.01" value="0.30"><output id="a2o"></output>
+        <span>절편 b</span><input type="range" id="b2" min="-80" max="30" step="0.5" value="0"><output id="b2o"></output>
+      </div>
+      <div class="eq" id="eq2"></div>
+      <div>MAE <span class="big" id="mae2"></span> mm</div>
+      <div class="small">목표 · MAE 9 mm 아래 (MAE 가 작을수록 선이 점에 가깝습니다)</div>
+      <div class="btns">
+        <label class="small"><input type="checkbox" id="err2" checked> 오차 보기</label>
+        <button class="b" id="best2">컴퓨터가 찾은 선 보기</button>
+      </div>
+      <div class="pt" id="best2t" style="display:none"></div>
+    </div>
+  </div>
+  <div class="card" id="q2"></div>
+</section>
+
+<!-- 3 -->
+<section data-step="3">
+  <h2>3. 오차와 MAE</h2>
+  <div class="card book">
+    <h3>교과서 97쪽</h3>
+    <p>실젯값과 예측값의 차이를 오차라고 한다.</p>
+    <div class="defs" style="margin-top:6px">
+      <b>오차</b><span>실젯값 − 예측값</span>
+      <b>MAE(평균절대오차)</b><span>오차의 절댓값을 평균한 값</span>
+    </div>
+    <p style="margin-top:6px">오차 함수의 값이 작을수록 선형 회귀 모델의 성능은 우수하다.</p>
+  </div>
+  <div class="two">
+    <div class="card">
+      <canvas id="c3" width="720" height="460"></canvas>
+      <div class="legend">선 = 컴퓨터가 찾은 회귀선 · <b>점을 누르세요</b></div>
+    </div>
+    <div class="card">
+      <h3>누른 날</h3>
+      <div id="pick3" class="pt">점을 하나 누르면 그날의 실젯값 · 예측값 · 오차가 나옵니다.</div>
+      <h3 style="margin-top:14px">누른 날 모으기</h3>
+      <table class="t" id="t3"></table>
+      <div class="pt" id="mae3" style="display:none"></div>
+      <div class="btns"><button class="b" id="clr3">지우기</button></div>
+    </div>
+  </div>
+  <div class="card" id="q3"></div>
+</section>
+
+<!-- 4 -->
+<section data-step="4">
+  <h2>4. 경사 하강법</h2>
+  <div class="card book">
+    <h3>모델 학습 (교과서 100쪽)</h3>
+    <p>훈련 데이터로 선형 회귀 모델의 회귀계수와 절편을 찾는 과정</p>
+    <table class="t" style="margin-top:8px">
+      <tr><th style="width:56px">1</th><td class="l">아무 직선(a = 0 · b = 0, 수평선)에서 시작한다.</td></tr>
+      <tr><th>2</th><td class="l">오차 함수(MSE)의 값이 작아지는 쪽으로 a 와 b 를 조금씩 고친다. 이것을 반복한다.</td></tr>
+      <tr><th>3</th><td class="l">값이 더 줄지 않으면 멈춘다. 그때의 a · b 가 최적의 회귀계수와 절편이다.</td></tr>
+    </table>
+    <div class="defs" style="margin-top:8px"><b>MSE(평균제곱오차)</b><span>실젯값과 예측값 차이의 제곱을 평균한 값 (교과서 97쪽)</span></div>
+  </div>
+  <div class="two">
+    <div class="card">
+      <canvas id="c4" width="720" height="460"></canvas>
+      <div class="legend">점 = 훈련 데이터 60일 <span style="background:#00703C"></span>지금의 선 <span style="background:#bbb"></span>지나온 선</div>
+    </div>
+    <div class="card">
+      <div class="btns">
+        <button class="b p" data-gd="1">1번 학습</button>
+        <button class="b p" data-gd="10">10번 학습</button>
+        <button class="b" data-gd="300">300번까지</button>
+        <button class="b" id="gd0">처음으로</button>
+      </div>
+      <table class="t" id="t4"></table>
+      <canvas id="c4m" width="520" height="250" style="margin-top:10px"></canvas>
+      <div class="legend">가로 = 학습 횟수 · 세로 = MSE</div>
+    </div>
+  </div>
+  <div class="card" id="q4"></div>
+</section>
+
+<!-- 5 -->
+<section data-step="5">
+  <h2>5. 다중 선형 회귀</h2>
+  <div class="card book">
+    <h3>교과서 96쪽</h3>
+    <p>2개 이상의 독립 변수로 종속 변수를 예측하는 다중 선형 회귀</p>
+    <div class="eq">y = a₁x₁ + a₂x₂ + … + b</div>
+  </div>
+  <div class="card">
+    <h3>독립 변수를 고르세요 (테스트 데이터 40일로 잰 값)</h3>
+    <div class="chk" id="chk5"></div>
+    <div id="out5"></div>
+  </div>
+  <div class="card" id="q5"></div>
+</section>
+
+<!-- 6 -->
+<section data-step="6">
+  <h2>6. 결정계수(R²)</h2>
+  <div class="card book">
+    <h3>교과서 98쪽</h3>
+    <p>결정계수는 모델이 데이터를 얼마나 잘 설명하는지를 나타내는 값이다. 값의 범위는 0~1 사이로, 결정계수(R²)가 1에 가까우면 선형 회귀 모델이 데이터를 매우 잘 설명함을 의미한다.</p>
+    <table class="t" style="margin-top:8px">
+      <tr><th>R²</th><th>해석</th></tr>
+      <tr><td>R² = 0</td><td class="l">모델이 예측력이 없다.</td></tr>
+      <tr><td>0.0 &lt; R² &lt; 0.3</td><td class="l">약한 설명력</td></tr>
+      <tr><td>0.3 ≤ R² &lt; 0.5</td><td class="l">중간 정도 설명력</td></tr>
+      <tr><td>0.5 ≤ R² &lt; 0.7</td><td class="l">높은 설명력</td></tr>
+      <tr><td>0.7 ≤ R² ≤ 1</td><td class="l">매우 강한 설명력</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>구하는 방법 · 평균선과 회귀선의 오차 견주기</h3>
+    <div class="two" style="grid-template-columns:1fr 1fr">
+      <div><canvas id="c6a" width="520" height="340"></canvas><div class="legend">평균선 (모든 날 평균 <b id="mean6"></b> mm)</div></div>
+      <div><canvas id="c6b" width="520" height="340"></canvas><div class="legend">회귀선 (습도 하나)</div></div>
+    </div>
+    <table class="t" style="margin-top:10px" id="t6"></table>
+    <div class="eq" id="eq6"></div>
+  </div>
+  <div class="card" id="q6"></div>
+</section>
+
+<!-- 정리 -->
+<section data-step="7">
+  <h2>정리</h2>
+  <div class="card">
+    <table class="t" id="t7"></table>
+  </div>
+</section>
+
+</main>
+<script>
+/*DATA*/const D = {"feats":["습도","구름양","기압 차","풍속","요일"],"unit":{"습도":"%","구름양":"%","기압 차":"hPa","풍속":"m/s","요일":""},"train":[[80.0,39.0,-5.0,0.4,5.0,32.1],[72.0,99.0,9.0,2.0,6.0,27.1],[92.0,11.0,5.0,2.8,4.0,30.8],[61.0,100.0,-4.0,0.4,2.0,24.3],[85.0,61.0,-13.0,2.5,1.0,48.1],[51.0,70.0,11.0,1.8,3.0,5.4],[82.0,98.0,-10.0,0.8,1.0,52.3],[88.0,13.0,4.0,1.8,1.0,27.4],[98.0,63.0,3.0,1.8,3.0,48.4],[54.0,68.0,6.0,2.5,7.0,7.3],[75.0,38.0,-13.0,9.4,5.0,46.4],[76.0,15.0,4.0,8.3,5.0,29.7],[68.0,45.0,-12.0,8.5,2.0,37.2],[93.0,38.0,-6.0,1.6,4.0,47.3],[57.0,94.0,4.0,6.7,7.0,22.5],[89.0,40.0,0.0,9.0,6.0,40.5],[60.0,46.0,6.0,5.5,2.0,10.8],[90.0,78.0,-3.0,5.0,6.0,53.5],[52.0,57.0,-8.0,0.9,3.0,14.2],[82.0,36.0,11.0,9.9,7.0,27.8],[91.0,69.0,2.0,5.4,5.0,42.3],[64.0,29.0,-9.0,8.3,5.0,30.1],[79.0,31.0,3.0,6.2,7.0,30.0],[75.0,58.0,12.0,0.2,4.0,13.3],[76.0,30.0,-8.0,4.6,7.0,35.3],[70.0,29.0,-3.0,5.8,3.0,27.5],[56.0,52.0,-8.0,3.7,2.0,16.1],[64.0,27.0,0.0,5.5,1.0,19.6],[53.0,94.0,-1.0,4.3,3.0,20.6],[88.0,80.0,3.0,2.0,3.0,35.5],[57.0,85.0,8.0,1.8,4.0,11.6],[77.0,6.0,9.0,3.7,5.0,20.6],[79.0,28.0,8.0,1.9,5.0,18.2],[98.0,69.0,-4.0,0.5,2.0,44.4],[90.0,81.0,8.0,9.3,2.0,48.2],[80.0,35.0,4.0,1.8,5.0,26.1],[83.0,90.0,-3.0,4.3,4.0,45.8],[69.0,96.0,-2.0,0.9,5.0,33.5],[71.0,97.0,-1.0,4.9,6.0,36.1],[91.0,37.0,-6.0,9.8,6.0,50.6],[51.0,38.0,5.0,5.5,7.0,4.2],[59.0,4.0,-12.0,6.1,2.0,17.7],[63.0,70.0,6.0,9.9,1.0,23.7],[69.0,3.0,7.0,5.1,5.0,13.0],[77.0,30.0,-1.0,2.1,2.0,20.7],[83.0,80.0,3.0,3.5,1.0,42.5],[92.0,68.0,8.0,5.8,6.0,45.0],[87.0,98.0,0.0,9.4,7.0,53.4],[77.0,54.0,5.0,4.7,2.0,26.8],[83.0,2.0,-13.0,1.2,1.0,34.2],[86.0,37.0,-9.0,3.1,4.0,45.4],[63.0,77.0,6.0,8.2,1.0,24.1],[54.0,4.0,5.0,10.0,7.0,6.8],[91.0,99.0,8.0,0.7,2.0,43.0],[57.0,13.0,0.0,4.2,5.0,12.8],[71.0,65.0,-12.0,5.8,7.0,46.0],[91.0,35.0,11.0,0.2,2.0,29.1],[59.0,94.0,6.0,7.4,2.0,26.5],[68.0,54.0,6.0,5.1,4.0,25.1],[76.0,47.0,-9.0,5.4,3.0,42.0]],"test":[[62.0,63.0,8.0,3.0,5.0,15.5],[63.0,44.0,4.0,4.8,4.0,11.6],[93.0,45.0,-7.0,5.4,5.0,50.4],[54.0,9.0,-11.0,6.8,5.0,15.2],[55.0,49.0,-9.0,4.4,5.0,21.9],[68.0,81.0,-5.0,6.3,1.0,34.6],[67.0,53.0,-13.0,0.6,7.0,32.1],[96.0,45.0,7.0,3.2,1.0,37.2],[69.0,54.0,0.0,5.4,3.0,29.9],[53.0,56.0,3.0,6.6,2.0,11.1],[53.0,91.0,-8.0,4.7,3.0,23.2],[81.0,23.0,-2.0,8.5,6.0,34.2],[63.0,43.0,-13.0,6.9,1.0,32.7],[95.0,6.0,11.0,6.0,5.0,28.5],[71.0,56.0,-11.0,2.1,7.0,32.2],[70.0,93.0,7.0,8.5,5.0,30.6],[88.0,40.0,-11.0,3.7,6.0,44.2],[85.0,67.0,10.0,8.1,4.0,38.1],[60.0,90.0,-2.0,3.1,7.0,22.0],[98.0,100.0,12.0,5.5,7.0,53.7],[60.0,58.0,9.0,7.0,2.0,12.5],[95.0,83.0,-1.0,9.8,3.0,62.8],[72.0,89.0,8.0,6.6,2.0,35.0],[75.0,12.0,7.0,4.2,2.0,18.5],[58.0,86.0,8.0,1.0,4.0,14.1],[69.0,80.0,-7.0,9.6,5.0,45.1],[84.0,70.0,10.0,1.7,7.0,24.9],[50.0,65.0,-8.0,6.3,7.0,23.8],[100.0,72.0,12.0,3.6,3.0,41.1],[50.0,22.0,-2.0,0.0,1.0,0.0],[83.0,29.0,3.0,2.7,7.0,31.5],[57.0,34.0,0.0,1.9,1.0,8.6],[89.0,47.0,7.0,7.1,5.0,38.8],[96.0,5.0,11.0,5.5,6.0,33.1],[85.0,31.0,5.0,0.5,4.0,21.8],[78.0,86.0,-2.0,0.2,6.0,38.4],[75.0,0.0,-4.0,4.5,4.0,21.9],[99.0,68.0,-7.0,1.4,2.0,62.6],[65.0,4.0,-10.0,7.8,2.0,22.0],[57.0,47.0,-11.0,2.9,6.0,22.8]],"combos":{"습도":{"coef":[0.79],"b":-28.3,"mae":7.84,"r2":0.556},"구름양":{"coef":[0.13],"b":23.18,"mae":10.4,"r2":0.112},"기압 차":{"coef":[-0.8],"b":30.62,"mae":12.58,"r2":-0.175},"풍속":{"coef":[0.45],"b":28.34,"mae":10.79,"r2":0.033},"요일":{"coef":[-0.15],"b":30.94,"mae":11.0,"r2":-0.012},"습도,구름양":{"coef":[0.79,0.14],"b":-36.28,"mae":6.65,"r2":0.686},"습도,기압 차":{"coef":[0.77,-0.75],"b":-27.13,"mae":5.84,"r2":0.723},"습도,풍속":{"coef":[0.82,0.96],"b":-34.84,"mae":7.66,"r2":0.593},"습도,요일":{"coef":[0.79,0.05],"b":-28.51,"mae":7.82,"r2":0.557},"구름양,기압 차":{"coef":[0.16,-0.87],"b":22.26,"mae":12.0,"r2":-0.05},"구름양,풍속":{"coef":[0.14,0.63],"b":19.86,"mae":10.21,"r2":0.161},"구름양,요일":{"coef":[0.13,-0.0],"b":23.18,"mae":10.4,"r2":0.112},"기압 차,풍속":{"coef":[-0.79,0.41],"b":28.79,"mae":12.32,"r2":-0.137},"기압 차,요일":{"coef":[-0.8,0.22],"b":29.77,"mae":12.54,"r2":-0.172},"풍속,요일":{"coef":[0.52,-0.38],"b":29.49,"mae":10.84,"r2":0.015},"습도,구름양,기압 차":{"coef":[0.78,0.16,-0.82],"b":-36.23,"mae":3.57,"r2":0.896},"습도,구름양,풍속":{"coef":[0.83,0.16,1.18],"b":-45.22,"mae":6.26,"r2":0.721},"습도,구름양,요일":{"coef":[0.79,0.14,0.21],"b":-37.26,"mae":6.63,"r2":0.686},"습도,기압 차,풍속":{"coef":[0.8,-0.74,0.92],"b":-33.39,"mae":5.38,"r2":0.777},"습도,기압 차,요일":{"coef":[0.78,-0.77,0.4],"b":-28.85,"mae":5.95,"r2":0.722},"습도,풍속,요일":{"coef":[0.82,1.04,-0.4],"b":-33.65,"mae":7.82,"r2":0.582},"구름양,기압 차,풍속":{"coef":[0.17,-0.86,0.62],"b":19.01,"mae":11.82,"r2":0.003},"구름양,기압 차,요일":{"coef":[0.16,-0.88,0.44],"b":20.41,"mae":11.97,"r2":-0.048},"구름양,풍속,요일":{"coef":[0.14,0.69,-0.3],"b":20.8,"mae":10.34,"r2":0.148},"기압 차,풍속,요일":{"coef":[-0.79,0.4,0.04],"b":28.67,"mae":12.32,"r2":-0.137},"습도,구름양,기압 차,풍속":{"coef":[0.82,0.18,-0.82,1.16],"b":-45.02,"mae":2.51,"r2":0.956},"습도,구름양,기압 차,요일":{"coef":[0.78,0.17,-0.85,0.63],"b":-39.15,"mae":3.74,"r2":0.887},"습도,구름양,풍속,요일":{"coef":[0.83,0.16,1.24,-0.3],"b":-44.26,"mae":6.34,"r2":0.714},"습도,기압 차,풍속,요일":{"coef":[0.8,-0.74,0.92,-0.01],"b":-33.37,"mae":5.38,"r2":0.777},"구름양,기압 차,풍속,요일":{"coef":[0.17,-0.87,0.59,0.18],"b":18.43,"mae":11.8,"r2":0.003},"습도,구름양,기압 차,풍속,요일":{"coef":[0.82,0.18,-0.83,1.13,0.15],"b":-45.48,"mae":2.45,"r2":0.956}},"one":{"a":0.79,"b":-28.3,"mae":6.87,"r2":0.611,"sse":4251.2,"sst":10920.5,"mean":30.3},"gd":[{"it":0,"w":0.0,"b":0.0,"mse":1102.6,"mae":30.3},{"it":1,"w":0.16,"b":-5.7,"mse":731.2,"mae":24.3},{"it":2,"w":0.28,"b":-10.2,"mse":493.4,"mae":19.4},{"it":3,"w":0.38,"b":-13.8,"mse":341.3,"mae":15.7},{"it":5,"w":0.53,"b":-19.0,"mse":181.6,"mae":11.0},{"it":10,"w":0.7,"b":-25.3,"mse":82.7,"mae":7.5},{"it":20,"w":0.78,"b":-28.0,"mse":70.9,"mae":6.8},{"it":50,"w":0.79,"b":-28.3,"mse":70.8,"mae":6.8},{"it":100,"w":0.79,"b":-28.3,"mse":70.8,"mae":6.8},{"it":300,"w":0.79,"b":-28.3,"mse":70.8,"mae":6.8}],"gd_lr":0.1,"ask":{"rain":15.5,"h":62.0,"pred":20.7},"errs":[-0.6,10.3,5.4],"p60":19.1,"p70":27.0,"mean_guess_mae":10.96};/*END*/
+
+/* ───────── 공통 ───────── */
+const F = D.feats, IH = F.indexOf('습도');
+const TR = D.train.map(r => ({h: r[IH], y: r[r.length - 1], row: r}));
+const STEPS = ['1 변수', '2 회귀선', '3 오차', '4 경사 하강법', '5 다중 회귀', '6 결정계수', '정리'];
+const fx = (v, d = 1) => (Math.round(v * 10 ** d) / 10 ** d).toFixed(d);
+const sgn = (v, d = 1) => (v < 0 ? '− ' + fx(-v, d) : '+ ' + fx(v, d));
+const $ = id => document.getElementById(id);
+const store = {get(k){ try { return JSON.parse(localStorage.getItem('reglab.' + k)); } catch(e){ return null; } },
+               set(k, v){ try { localStorage.setItem('reglab.' + k, JSON.stringify(v)); } catch(e){} }};
+
+let cur = +(new URLSearchParams(location.search).get('step')) || store.get('step') || 1;
+function go(n){
+  cur = n; store.set('step', n);
+  document.querySelectorAll('section').forEach(s => s.classList.toggle('on', +s.dataset.step === n));
+  drawTabs(); window.scrollTo(0, 0);
+  ({2: draw2, 3: draw3, 4: draw4, 6: draw6})[n]?.();
+}
+function drawTabs(){
+  $('tabs').innerHTML = STEPS.map((t, i) => `<button class="tab${cur === i + 1 ? ' on' : ''}${stepDone(i + 1) ? ' done' : ''}" data-go="${i + 1}">${t}</button>`).join('');
+  const all = Object.keys(QS).length, ok = Object.keys(QS).filter(k => SOLVED[k]).length;
+  $('score').textContent = `확인 문제 ${ok} / ${all}`;
+}
+document.addEventListener('click', e => { const t = e.target.closest('[data-go]'); if(t) go(+t.dataset.go); });
+
+/* ───────── 그래프 ───────── */
+const XR = [Math.floor(Math.min(...TR.map(p => p.h)) / 5) * 5 - 5, Math.ceil(Math.max(...TR.map(p => p.h)) / 5) * 5 + 5];
+const YR = [Math.min(-5, Math.floor(Math.min(...TR.map(p => p.y)) / 10) * 10), Math.ceil(Math.max(...TR.map(p => p.y)) / 10) * 10 + 5];
+function frame(cv, opt = {}){
+  const g = cv.getContext('2d'), W = cv.width, H = cv.height;
+  const P = {l: 58, r: 16, t: 14, b: 46};
+  const xr = opt.xr || XR, yr = opt.yr || YR;
+  const X = v => P.l + (v - xr[0]) / (xr[1] - xr[0]) * (W - P.l - P.r);
+  const Y = v => H - P.b - (v - yr[0]) / (yr[1] - yr[0]) * (H - P.t - P.b);
+  g.clearRect(0, 0, W, H);
+  g.font = '15px Malgun Gothic, sans-serif'; g.fillStyle = '#5b6460'; g.strokeStyle = '#e6ebe8'; g.lineWidth = 1;
+  const xs = opt.xstep || 10, ys = opt.ystep || 10;
+  for(let v = Math.ceil(xr[0] / xs) * xs; v <= xr[1]; v += xs){ g.beginPath(); g.moveTo(X(v), P.t); g.lineTo(X(v), H - P.b); g.stroke(); g.textAlign = 'center'; g.fillText(v, X(v), H - P.b + 20); }
+  for(let v = Math.ceil(yr[0] / ys) * ys; v <= yr[1]; v += ys){ g.beginPath(); g.moveTo(P.l, Y(v)); g.lineTo(W - P.r, Y(v)); g.stroke(); g.textAlign = 'right'; g.fillText(v, P.l - 8, Y(v) + 5); }
+  g.strokeStyle = '#9aa5a0'; g.beginPath(); g.moveTo(P.l, Y(Math.max(0, yr[0]))); g.lineTo(W - P.r, Y(Math.max(0, yr[0]))); g.stroke();
+  g.fillStyle = '#1c1c1c'; g.textAlign = 'center'; g.fillText(opt.xl || '오늘 습도 (%)', (P.l + W - P.r) / 2, H - 8);
+  g.save(); g.translate(16, (P.t + H - P.b) / 2); g.rotate(-Math.PI / 2); g.fillText(opt.yl || '내일 강수량 (mm)', 0, 0); g.restore();
+  return {g, X, Y, W, H, P, xr, yr};
+}
+function dots(f, pts, color = '#00703C', r = 5){
+  f.g.fillStyle = color;
+  for(const p of pts){ f.g.beginPath(); f.g.arc(f.X(p.h), f.Y(p.y), r, 0, 7); f.g.fill(); }
+}
+function line(f, a, b, color, w = 3, dash){
+  f.g.save(); f.g.beginPath(); f.g.rect(f.P.l, f.P.t, f.W - f.P.l - f.P.r, f.H - f.P.t - f.P.b); f.g.clip();
+  f.g.strokeStyle = color; f.g.lineWidth = w; if(dash) f.g.setLineDash(dash);
+  f.g.beginPath(); f.g.moveTo(f.X(f.xr[0]), f.Y(a * f.xr[0] + b)); f.g.lineTo(f.X(f.xr[1]), f.Y(a * f.xr[1] + b)); f.g.stroke(); f.g.restore();
+}
+function errs(f, a, b, color = '#c8102e'){
+  f.g.strokeStyle = color; f.g.lineWidth = 1.6;
+  for(const p of TR){ f.g.beginPath(); f.g.moveTo(f.X(p.h), f.Y(p.y)); f.g.lineTo(f.X(p.h), f.Y(a * p.h + b)); f.g.stroke(); }
+}
+const maeOf = (a, b) => TR.reduce((s, p) => s + Math.abs(p.y - (a * p.h + b)), 0) / TR.length;
+const mseOf = (a, b) => TR.reduce((s, p) => s + (p.y - (a * p.h + b)) ** 2, 0) / TR.length;
+
+/* ───────── 확인 문제 ───────── */
+const QS = {};      // id → 문제
+const SOLVED = store.get('solved') || {};
+function quiz(boxId, list){
+  const box = $(boxId);
+  box.innerHTML = '<h3>확인 문제</h3>' + list.map(q => { QS[q.id] = q; return qhtml(q); }).join('');
+  list.forEach(q => { if(SOLVED[q.id]) markSolved(q); });
+}
+function qhtml(q){
+  if(q.type === 'num') return `<div class="q" id="q-${q.id}"><div class="qt">${q.q}</div>
+    <input class="n" type="number" step="any" id="in-${q.id}"> ${q.unit || ''} <button class="b" data-chk="${q.id}">확인</button><div class="fb" id="fb-${q.id}"></div></div>`;
+  if(q.type === 'sort') return `<div class="q" id="q-${q.id}"><div class="qt">${q.q}</div><div class="sort">${q.items.map((it, i) =>
+    `<span>${it[0]}</span><span class="ch">${q.choices.map(c => `<button data-sort="${q.id}" data-i="${i}" data-v="${c}">${c}</button>`).join('')}</span>`).join('')}</div><div class="fb" id="fb-${q.id}"></div></div>`;
+  return `<div class="q" id="q-${q.id}"><div class="qt">${q.q}</div><div class="ch">${q.choices.map((c, i) =>
+    `<button data-pick="${q.id}" data-i="${i}">${c}</button>`).join('')}</div><div class="fb" id="fb-${q.id}"></div></div>`;
+}
+function solve(q){ SOLVED[q.id] = 1; store.set('solved', SOLVED); drawTabs(); }
+function markSolved(q){
+  const fb = $('fb-' + q.id);
+  if(q.type === 'choice') document.querySelector(`[data-pick="${q.id}"][data-i="${q.ans}"]`)?.classList.add('right');
+  if(q.type === 'num'){ const inp = $('in-' + q.id); if(inp) inp.value = q.ans; }
+  if(q.type === 'sort') q.items.forEach((it, i) => document.querySelector(`[data-sort="${q.id}"][data-i="${i}"][data-v="${it[1]}"]`)?.classList.add('right'));
+  fb.innerHTML = '<span class="ok">맞음.</span> ' + q.why;
+}
+document.addEventListener('click', e => {
+  const p = e.target.closest('[data-pick]');
+  if(p){
+    const q = QS[p.dataset.pick], i = +p.dataset.i, fb = $('fb-' + q.id);
+    p.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('wrong'));
+    if(i === q.ans){ p.classList.add('right'); fb.innerHTML = '<span class="ok">맞음.</span> ' + q.why; solve(q); }
+    else { p.classList.add('wrong'); fb.innerHTML = '<span class="no">다시.</span> ' + (q.hint || ''); }
+    return;
+  }
+  const s = e.target.closest('[data-sort]');
+  if(s){
+    const q = QS[s.dataset.sort], i = +s.dataset.i;
+    s.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('right', 'wrong'));
+    s.classList.add(s.dataset.v === q.items[i][1] ? 'right' : 'wrong');
+    const all = q.items.every((it, k) => document.querySelector(`[data-sort="${q.id}"][data-i="${k}"].right`));
+    const fb = $('fb-' + q.id);
+    if(all){ fb.innerHTML = '<span class="ok">맞음.</span> ' + q.why; solve(q); }
+    else fb.innerHTML = s.classList.contains('wrong') ? '<span class="no">다시.</span> ' + (q.hint || '') : '';
+    return;
+  }
+  const c = e.target.closest('[data-chk]');
+  if(c){
+    const q = QS[c.dataset.chk], v = parseFloat($('in-' + q.id).value), fb = $('fb-' + q.id);
+    if(isNaN(v)){ fb.innerHTML = '<span class="no">수를 적으세요.</span>'; return; }
+    if(Math.abs(v - q.ans) <= (q.tol ?? 0.15)){ fb.innerHTML = '<span class="ok">맞음.</span> ' + q.why; solve(q); }
+    else fb.innerHTML = '<span class="no">다시.</span> ' + (q.hint || '');
+  }
+});
+function stepDone(n){ const ids = Object.keys(QS).filter(k => QS[k].step === n); return ids.length > 0 && ids.every(k => SOLVED[k]); }
+
+/* ───────── 1 ───────── */
+(function(){
+  const pick = [0, 7, 15, 22, 36, 51];
+  const hd = F.map(f => `${f}${D.unit[f] ? ' (' + D.unit[f] + ')' : ''}`);
+  $('t1').innerHTML = `<tr><th colspan="${F.length}">독립 변수 후보 (오늘 관측)</th><th>종속 변수</th></tr>
+    <tr>${hd.map(h => `<th>${h}</th>`).join('')}<th>내일 강수량 (mm)</th></tr>` +
+    pick.map(i => `<tr>${D.train[i].map((v, k) => `<td>${k === F.indexOf('요일') ? v : v}</td>`).join('')}</tr>`).join('');
+  quiz('q1', [
+    {id: '1a', step: 1, type: 'choice', q: '기상청이 오늘 습도로 내일 강수량을 예측한다. 종속 변수는?',
+     choices: ['오늘 습도', '내일 강수량', '요일'], ans: 1, why: '예측하려는 값(결과 변수)이 종속 변수입니다. 오늘 습도는 입력, 곧 독립 변수입니다.',
+     hint: '종속 변수는 「예측하려는 변수」입니다.'},
+    {id: '1b', step: 1, type: 'sort', q: '회귀 문제인가, 분류 문제인가? 하나씩 누르세요.', choices: ['회귀', '분류'],
+     items: [['내일 비가 몇 mm 오는가', '회귀'], ['내일 우산이 필요한가 (예 / 아니요)', '분류'], ['공부 시간에 따른 성적', '회귀'], ['메일이 스팸인가', '분류'], ['온도, 강수량에 따른 배춧값', '회귀']],
+     why: '연속적인 수치를 예측하면 회귀, 정해진 클래스 가운데 하나를 고르면 분류입니다.',
+     hint: '답이 수치(몇 mm, 몇 점, 몇 원)이면 회귀입니다.'},
+  ]);
+})();
+
+/* ───────── 2 ───────── */
+const ONE = D.one;
+let show2 = false;
+function draw2(){
+  const a = +$('a2').value, b = +$('b2').value;
+  $('a2o').textContent = fx(a, 2); $('b2o').textContent = fx(b, 1);
+  $('eq2').textContent = `강수량 = ${fx(a, 2)} × 습도 ${sgn(b)}`;
+  const f = frame($('c2'));
+  if($('err2').checked) errs(f, a, b);
+  dots(f, TR);
+  if(show2) line(f, ONE.a, ONE.b, '#888', 2.5, [8, 6]);
+  line(f, a, b, '#00703C', 3.5);
+  const m = maeOf(a, b);
+  $('mae2').textContent = fx(m, 1);
+  $('mae2').style.color = m < 9 ? '#00703C' : '#1c1c1c';
+}
+['a2', 'b2', 'err2'].forEach(id => $(id).addEventListener('input', draw2));
+$('best2').onclick = () => {
+  show2 = !show2;
+  $('best2').textContent = show2 ? '컴퓨터가 찾은 선 감추기' : '컴퓨터가 찾은 선 보기';
+  $('best2t').style.display = show2 ? '' : 'none';
+  $('lg2').style.display = $('lg2t').style.display = show2 ? '' : 'none';
+  $('best2t').innerHTML = `컴퓨터가 찾은 선 · 강수량 = ${fx(ONE.a, 2)} × 습도 ${sgn(ONE.b)}<br>훈련 데이터 MAE ${fx(ONE.mae, 2)} mm`;
+  draw2();
+};
+// 캔버스를 끌면 절편이 바뀝니다
+(function(){
+  let drag = null;
+  const cv = $('c2');
+  cv.addEventListener('pointerdown', e => { drag = e.clientY; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => {
+    if(drag === null) return;
+    const r = cv.getBoundingClientRect(), dy = (e.clientY - drag) / r.height * (YR[1] - YR[0]) * (cv.height / (cv.height - 60));
+    drag = e.clientY; $('b2').value = +$('b2').value - dy; draw2();
+  });
+  cv.addEventListener('pointerup', () => { drag = null; });
+})();
+quiz('q2', [
+  {id: '2a', step: 2, type: 'choice', q: '회귀계수 a 를 키우면 선은 어떻게 되나?', choices: ['더 가파르게 올라간다', '모양은 그대로, 위아래로만 옮겨진다', '변하지 않는다'], ans: 0,
+   why: '회귀계수는 직선의 기울기입니다. 습도가 1 % 오를 때 강수량이 평균 얼마나 늘어나는지를 나타냅니다.', hint: 'a 슬라이더만 움직여 보세요.'},
+  {id: '2b', step: 2, type: 'choice', q: '절편 b 를 바꾸면 선은 어떻게 되나?', choices: ['더 가파르게 올라간다', '기울기는 그대로, 위아래로 옮겨진다', '점이 움직인다'], ans: 1,
+   why: '절편은 독립 변수가 0 일 때의 예측값이라, 바꾸면 선 전체가 위아래로 옮겨집니다.', hint: 'b 슬라이더만 움직여 보세요.'},
+  {id: '2c', step: 2, type: 'choice', q: '「가장 잘 맞는 회귀선」은 어떤 선인가?', choices: ['점을 가장 많이 지나는 선', '오차를 가장 작게 하는 선', '가운데 점 두 개를 잇는 선'], ans: 1,
+   why: '최적의 선형 회귀 모델은 회귀계수와 절편을 찾아 오차를 가장 작게 만든 선입니다.', hint: 'MAE 가 무엇을 재는지 보세요.'},
+]);
+
+/* ───────── 3 ───────── */
+let pick3 = null, list3 = [];
+function draw3(){
+  const f = frame($('c3'));
+  line(f, ONE.a, ONE.b, '#00703C', 3);
+  dots(f, TR, '#7fb89c', 5);
+  for(const p of list3){ f.g.strokeStyle = '#c8102e'; f.g.lineWidth = 2; f.g.beginPath(); f.g.moveTo(f.X(p.h), f.Y(p.y)); f.g.lineTo(f.X(p.h), f.Y(ONE.a * p.h + ONE.b)); f.g.stroke(); }
+  dots(f, list3, '#00703C', 6);
+  if(pick3){ f.g.strokeStyle = '#1c1c1c'; f.g.lineWidth = 2.5; f.g.beginPath(); f.g.arc(f.X(pick3.h), f.Y(pick3.y), 10, 0, 7); f.g.stroke(); }
+  $('t3').innerHTML = '<tr><th>습도</th><th>실젯값</th><th>예측값</th><th>오차</th><th>|오차|</th></tr>' + list3.map(p => {
+    const pr = ONE.a * p.h + ONE.b, e = p.y - pr;
+    return `<tr><td>${p.h}</td><td>${fx(p.y)}</td><td>${fx(pr)}</td><td>${e < 0 ? '−' : '+'}${fx(Math.abs(e))}</td><td>${fx(Math.abs(e))}</td></tr>`;
+  }).join('');
+  if(list3.length){
+    const s = list3.reduce((t, p) => t + Math.abs(p.y - (ONE.a * p.h + ONE.b)), 0);
+    $('mae3').style.display = '';
+    $('mae3').innerHTML = `MAE = |오차| 의 합 ÷ 날 수 = ${fx(s)} ÷ ${list3.length} = <b>${fx(s / list3.length)} mm</b>`;
+  } else $('mae3').style.display = 'none';
+}
+$('c3').addEventListener('click', e => {
+  const cv = $('c3'), r = cv.getBoundingClientRect(), f = frame(cv);
+  const mx = (e.clientX - r.left) * cv.width / r.width, my = (e.clientY - r.top) * cv.height / r.height;
+  let best = null, bd = 1e9;
+  for(const p of TR){ const d = (f.X(p.h) - mx) ** 2 + (f.Y(p.y) - my) ** 2; if(d < bd){ bd = d; best = p; } }
+  if(bd > 30 ** 2){ draw3(); return; }
+  pick3 = best;
+  const pr = ONE.a * best.h + ONE.b, er = best.y - pr;
+  $('pick3').innerHTML = `습도 <b>${best.h} %</b> 인 날<br>실젯값 <b>${fx(best.y)} mm</b><br>
+    예측값 = ${fx(ONE.a, 2)} × ${best.h} ${sgn(ONE.b)} = <b>${fx(pr)} mm</b><br>
+    오차 = 실젯값 − 예측값 = ${fx(best.y)} − ${fx(pr)} = <b>${er < 0 ? '−' : ''}${fx(Math.abs(er))}</b><br>
+    <span class="small">${er > 0 ? '점이 선보다 위 · 실제 비가 예측보다 많이 옴' : '점이 선보다 아래 · 실제 비가 예측보다 적게 옴'}</span>`;
+  if(!list3.includes(best) && list3.length < 6) list3.push(best);
+  draw3();
+});
+$('clr3').onclick = () => { list3 = []; pick3 = null; draw3(); $('pick3').textContent = '점을 하나 누르면 그날의 실젯값 · 예측값 · 오차가 나옵니다.'; };
+(function(){
+  const A = D.ask, E3 = D.errs;
+  const pr = Math.round((ONE.a * A.h + ONE.b) * 10) / 10, er = Math.round((A.rain - pr) * 10) / 10;
+  const mae = Math.round(E3.reduce((s, v) => s + Math.abs(v), 0) / E3.length * 10) / 10;
+  quiz('q3', [
+    {id: '3a', step: 3, type: 'num', q: `회귀선 강수량 = ${fx(ONE.a, 2)} × 습도 ${sgn(ONE.b)}. 습도가 ${A.h} % 인 날의 예측값은? (소수 첫째 자리)`, ans: pr, unit: 'mm',
+     why: `${fx(ONE.a, 2)} × ${A.h} ${sgn(ONE.b)} = ${fx(pr)} mm`, hint: '습도 자리에 수를 넣어 계산하세요.'},
+    {id: '3b', step: 3, type: 'num', q: `그날 실제로 ${fx(A.rain)} mm 가 왔다. 오차는? (부호까지)`, ans: er,
+     why: `오차 = 실젯값 − 예측값 = ${fx(A.rain)} − ${fx(pr)} = ${fx(er)}. 음수이면 예측보다 비가 적게 온 날입니다.`, hint: '오차 = 실젯값 − 예측값'},
+    {id: '3c', step: 3, type: 'num', q: `사흘의 오차가 ${E3.map(v => (v < 0 ? '−' : '+') + fx(Math.abs(v))).join(', ')} 이다. MAE 는? (소수 첫째 자리)`, ans: mae, unit: 'mm',
+     why: `(${E3.map(v => fx(Math.abs(v))).join(' + ')}) ÷ ${E3.length} = ${fx(mae)} mm. 음수 오차도 절댓값으로 더합니다.`, hint: '오차의 절댓값을 평균합니다. 음수는 부호를 떼고 더하세요.'},
+  ]);
+})();
+
+/* ───────── 4 ───────── */
+const hs = TR.map(p => p.h), MU = hs.reduce((s, v) => s + v, 0) / hs.length;
+const SD = Math.sqrt(hs.reduce((s, v) => s + (v - MU) ** 2, 0) / hs.length);
+let GD = {it: 0, wz: 0, bz: 0, hist: []};
+const raw = () => ({a: GD.wz / SD, b: GD.bz - GD.wz * MU / SD});
+function gdStep(n){
+  for(let k = 0; k < n && GD.it < 300; k++){
+    let gw = 0, gb = 0;
+    for(const p of TR){ const z = (p.h - MU) / SD, e = (GD.wz * z + GD.bz) - p.y; gw += e * z; gb += e; }
+    GD.wz -= D.gd_lr * 2 * gw / TR.length; GD.bz -= D.gd_lr * 2 * gb / TR.length; GD.it++;
+    const r = raw(); GD.hist.push({it: GD.it, a: r.a, b: r.b, mse: mseOf(r.a, r.b)});
+  }
+  draw4();
+}
+function gdReset(){ GD = {it: 0, wz: 0, bz: 0, hist: [{it: 0, a: 0, b: 0, mse: mseOf(0, 0)}]}; draw4(); }
+function draw4(){
+  const f = frame($('c4'));
+  dots(f, TR);
+  const hist = GD.hist, show = hist.filter((h, i) => i > 0 && (h.it <= 5 || h.it % 10 === 0) && h.it < GD.it).slice(-8);
+  for(const h of show) line(f, h.a, h.b, '#c9cfcc', 1.5);
+  const r = raw(); line(f, r.a, r.b, '#00703C', 3.5);
+  const last = hist[hist.length - 1];
+  $('t4').innerHTML = `<tr><th>학습 횟수</th><th>회귀계수 a</th><th>절편 b</th><th>MSE</th></tr>
+    <tr><td><b>${GD.it}</b></td><td>${fx(r.a, 2)}</td><td>${fx(r.b, 1)}</td><td>${fx(last.mse, 1)}</td></tr>`;
+  const m = frame($('c4m'), {xr: [0, Math.max(20, GD.it)], yr: [0, Math.ceil(hist[0].mse / 200) * 200], xstep: GD.it > 100 ? 50 : (GD.it > 40 ? 10 : 5), ystep: 200, xl: '학습 횟수', yl: 'MSE'});
+  m.g.strokeStyle = '#00703C'; m.g.lineWidth = 3; m.g.beginPath();
+  hist.forEach((h, i) => { const x = m.X(h.it), y = m.Y(h.mse); i ? m.g.lineTo(x, y) : m.g.moveTo(x, y); }); m.g.stroke();
+  m.g.fillStyle = '#00703C'; m.g.beginPath(); m.g.arc(m.X(last.it), m.Y(last.mse), 6, 0, 7); m.g.fill();
+  document.querySelectorAll('[data-gd]').forEach(b => b.disabled = GD.it >= 300);
+}
+document.querySelectorAll('[data-gd]').forEach(b => b.onclick = () => gdStep(+b.dataset.gd === 300 ? 300 - GD.it : +b.dataset.gd));
+$('gd0').onclick = gdReset;
+quiz('q4', [
+  {id: '4a', step: 4, type: 'choice', q: '학습을 반복할수록 작아지는 것은?', choices: ['MSE (오차 함수의 값)', '습도', '훈련 데이터의 수'], ans: 0,
+   why: '경사 하강법은 오차 함수의 값이 작아지는 쪽으로 회귀계수와 절편을 고쳐 나갑니다.', hint: '오른쪽 그래프의 세로축을 보세요.'},
+  {id: '4b', step: 4, type: 'choice', q: '학습하는 동안 컴퓨터가 고쳐 나가는 두 수는?', choices: ['습도와 강수량', '회귀계수와 절편', '훈련 데이터와 테스트 데이터'], ans: 1,
+   why: '모델 학습은 훈련 데이터로 회귀계수와 절편을 찾는 과정입니다. 데이터(점)는 그대로입니다.', hint: '표에서 바뀌는 칸을 보세요.'},
+  {id: '4c', step: 4, type: 'choice', q: '300번까지 학습한 선은 2단계의 「컴퓨터가 찾은 선」과 견주면?', choices: ['거의 같다', '훨씬 가파르다', '수평선이다'], ans: 0,
+   why: `학습이 끝나면 a ${fx(ONE.a, 2)} · b ${fx(ONE.b, 1)} 근처에서 더 줄지 않습니다. 그것이 최적의 회귀계수와 절편입니다.`, hint: '300번까지 눌러 표의 a · b 를 2단계 값과 견주어 보세요.'},
+]);
+
+/* ───────── 5 ───────── */
+const S5 = new Set(['습도']);
+function draw5(){
+  $('chk5').innerHTML = F.map(f => `<label class="${S5.has(f) ? 'on' : ''}"><input type="checkbox" data-f="${f}" ${S5.has(f) ? 'checked' : ''}>${f}</label>`).join('');
+  const cols = F.filter(f => S5.has(f));
+  if(!cols.length){ $('out5').innerHTML = '<p class="small">독립 변수를 하나 이상 고르세요.</p>'; return; }
+  const c = D.combos[cols.join(',')], one = D.combos['습도'];
+  const eq = '강수량 = ' + cols.map((f, i) => (i ? (c.coef[i] < 0 ? ' − ' : ' + ') : (c.coef[i] < 0 ? '−' : '')) + fx(Math.abs(c.coef[i]), 2) + ' × ' + f).join('') + ' ' + sgn(c.b, 2);
+  const worst = D.mean_guess_mae;
+  $('out5').innerHTML = `<p><span class="tag ${cols.length > 1 ? '' : 's'}">${cols.length > 1 ? '다중 선형 회귀' : '단순 선형 회귀'}</span> 독립 변수 ${cols.length}개</p>
+    <div class="eq" style="font-size:18px">${eq}</div>
+    <table class="t"><tr><th>테스트 MAE</th><th>결정계수 R²</th></tr><tr><td class="big" style="font-size:24px">${fx(c.mae, 2)} mm</td><td class="big" style="font-size:24px">${fx(c.r2, 3)}</td></tr></table>
+    <div class="meter" title="MAE"><i style="width:${Math.max(3, 100 - c.mae / worst * 100)}%"></i></div>
+    <p class="small">막대가 길수록 오차가 작습니다. 모든 날을 평균 강수량으로 맞히면 MAE ${fx(worst, 2)} mm.</p>`;
+}
+$('chk5').addEventListener('change', e => { const f = e.target.dataset.f; if(!f) return; e.target.checked ? S5.add(f) : S5.delete(f); draw5(); });
+(function(){
+  const four = D.combos['습도,구름양,기압 차,풍속'], five = D.combos['습도,구름양,기압 차,풍속,요일'];
+  const day = D.combos['요일'];
+  quiz('q5', [
+    {id: '5a', step: 5, type: 'choice', q: '습도 · 구름양 · 기압 차 · 풍속 넷으로 예측하는 모델은?', choices: ['단순 선형 회귀', '다중 선형 회귀', '분류 모델'], ans: 1,
+     why: '독립 변수가 2개 이상이면 다중 선형 회귀입니다.', hint: '독립 변수의 개수를 세어 보세요.'},
+    {id: '5b', step: 5, type: 'choice', q: `넷에 요일을 더하면 테스트 MAE 는? (넷 ${fx(four.mae, 2)} mm)`, choices: ['크게 줄어든다', '거의 그대로다', '크게 늘어난다'], ans: 1,
+     why: `${fx(five.mae, 2)} mm 로 거의 그대로입니다. 요일 하나만 쓰면 MAE ${fx(day.mae, 2)} mm 로 모든 날을 평균으로 맞힌 것(${fx(D.mean_guess_mae, 2)} mm)과 다를 게 없습니다. 강수량과 관계없는 변수는 더해도 도움이 되지 않습니다.`,
+     hint: '요일을 켰다 껐다 해 보세요.'},
+    {id: '5c', step: 5, type: 'choice', q: '독립 변수가 2개인 다중 선형 회귀를 그래프로 그리면?', choices: ['평면의 직선', '공간(3차원)의 평면', '점 하나'], ans: 1,
+     why: '독립 변수가 둘이면 축이 셋(x₁ · x₂ · y)이 되어, 회귀선 대신 평면이 됩니다.', hint: '축이 몇 개 필요한지 세어 보세요.'},
+  ]);
+})();
+
+/* ───────── 6 ───────── */
+function draw6(){
+  const mean = ONE.mean;
+  $('mean6').textContent = fx(mean);
+  const fa = frame($('c6a')), fb = frame($('c6b'));
+  errs(fa, 0, mean, '#e3a0ad'); line(fa, 0, mean, '#5b6460', 3); dots(fa, TR, '#00703C', 4);
+  errs(fb, ONE.a, ONE.b, '#e3a0ad'); line(fb, ONE.a, ONE.b, '#00703C', 3); dots(fb, TR, '#00703C', 4);
+  const sst = TR.reduce((s, p) => s + (p.y - mean) ** 2, 0), sse = TR.reduce((s, p) => s + (p.y - (ONE.a * p.h + ONE.b)) ** 2, 0);
+  $('t6').innerHTML = `<tr><th></th><th>오차 제곱의 합</th></tr>
+    <tr><td class="l">평균선 (모든 날을 평균으로 예측)</td><td>${fx(ONE.sst, 1)}</td></tr>
+    <tr><td class="l">회귀선 (습도로 예측)</td><td>${fx(ONE.sse, 1)}</td></tr>`;
+  $('eq6').innerHTML = `R² = 1 − ${fx(ONE.sse, 1)} ÷ ${fx(ONE.sst, 1)} = <span style="color:#00703C">${fx(ONE.r2, 3)}</span>`;
+  console.assert(Math.abs(sst - ONE.sst) < 1 && Math.abs(sse - ONE.sse) < 1, 'R² 검산', sst, sse);
+}
+(function(){
+  const four = D.combos['습도,구름양,기압 차,풍속'];
+  quiz('q6', [
+    {id: '6a', step: 6, type: 'choice', q: `습도 하나로 예측한 회귀선의 결정계수는 ${fx(ONE.r2, 3)} (훈련 데이터). 교과서 해석은?`, choices: ['약한 설명력', '중간 정도 설명력', '높은 설명력', '매우 강한 설명력'], ans: 2,
+     why: '0.5 ≤ R² < 0.7 은 높은 설명력입니다. 습도로 내일 강수량을 예측하는 데 약 61 %의 설명력이 있습니다.', hint: '위 표의 범위에 넣어 보세요.'},
+    {id: '6b', step: 6, type: 'choice', q: `테스트 데이터로 잰 결정계수 · 습도 하나 ${fx(D.combos['습도'].r2, 3)} · 독립 변수 넷 ${fx(four.r2, 3)}. 넷을 쓴 모델은`, choices: ['데이터를 더 잘 설명한다', '데이터를 덜 설명한다', '견줄 수 없다'], ans: 0,
+     why: '결정계수가 1에 가까울수록 선형 회귀 모델이 데이터를 잘 설명합니다.', hint: '1에 더 가까운 쪽은?'},
+    {id: '6c', step: 6, type: 'choice', q: '회귀선의 오차 제곱 합이 평균선의 오차 제곱 합과 같다면 R² 은?', choices: ['0', '0.5', '1'], ans: 0,
+     why: '1 − 1 = 0. 평균으로 맞힌 것보다 나을 게 없으니 예측력이 없는 모델입니다.', hint: '1 − (같은 수 ÷ 같은 수)'},
+  ]);
+})();
+
+/* ───────── 정리 ───────── */
+$('t7').innerHTML = '<tr><th>용어</th><th>뜻</th><th>기상청 데이터에서</th></tr>' + [
+  ['독립 변수', '입력 변수(종속 변수를 예측하는 데 사용되는 변수)', '오늘 습도 · 구름양 · 기압 차 · 풍속'],
+  ['종속 변수', '결과 변수(예측하려는 변수)', '내일 강수량'],
+  ['단순 선형 회귀', '1개의 독립 변수로 종속 변수를 예측', `강수량 = ${fx(ONE.a, 2)} × 습도 ${sgn(ONE.b)}`],
+  ['다중 선형 회귀', '2개 이상의 독립 변수로 종속 변수를 예측', '습도 · 구름양 · 기압 차 · 풍속 넷'],
+  ['회귀계수', '독립 변수의 변화에 따른 종속 변수의 평균 변화량', `습도 1 % 오르면 강수량 평균 ${fx(ONE.a, 2)} mm 늘어남`],
+  ['절편', '독립 변수의 값이 모두 0일 때 종속 변수의 예측값', fx(ONE.b, 1)],
+  ['오차', '실젯값과 예측값의 차이', '실제 강수량 − 예측한 강수량'],
+  ['MAE · MSE', '오차의 절댓값을 평균한 값 · 오차 제곱을 평균한 값', '작을수록 성능이 우수'],
+  ['경사 하강법', '오차 함수의 값이 작아지는 쪽으로 회귀계수와 절편을 조금씩 고쳐 나감', `학습 300번 뒤 a ${fx(ONE.a, 2)} · b ${fx(ONE.b, 1)}`],
+  ['결정계수(R²)', '모델이 데이터를 얼마나 잘 설명하는지를 나타내는 값 (0~1)', `테스트 데이터 · 습도 하나 ${fx(D.combos['습도'].r2, 3)} · 넷 ${fx(D.combos['습도,구름양,기압 차,풍속'].r2, 3)}`],
+].map(r => `<tr><td><b>${r[0]}</b></td><td class="l">${r[1]}</td><td class="l">${r[2]}</td></tr>`).join('');
+
+/* 시작 */
+$('a2').value = 0.30; $('b2').value = 0;
+gdReset(); draw5();
+go(cur);
+</script>
+</body>
+</html>
