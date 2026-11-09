@@ -7233,3 +7233,15 @@ button{border-radius:2px}
 .a2-out .cb-out-items{border-left:3px solid var(--border);padding:4px 0 4px 10px;max-height:520px;overflow:auto}
 .a2-out .cb-out-img{max-width:min(560px,100%)}
 .a2g-cms .a2g-cm{min-width:0;width:auto}
+/* 📝 2차 논술 채점 (2026-11-09) */
+.a2-mode{display:inline-flex;gap:4px;margin-left:8px}
+.a2-mode .btn-sm.on{background:#00703C;color:#fff;border-color:#00703C}
+.a2e-wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;align-items:start;margin:6px 0 10px}
+@media (max-width:900px){.a2e-wrap{grid-template-columns:1fr}}
+.a2e-img img{width:100%;border:1px solid var(--border);border-radius:8px;display:block;background:#fff}
+.a2e-img{position:sticky;top:8px}
+.a2e-tr .a2-fill th{width:28%}
+.a2e-wrap>*{min-width:0}
+.a2e-tr .tbl{min-width:0;width:100%;table-layout:fixed}
+.a2e-tr .tbl td,.a2e-tr .tbl th{word-break:break-word;white-space:pre-wrap}
+.a2e-tr .a2g-cm th:first-child{width:34%}

@@ -226,8 +226,9 @@ function _a2TcList(nb){
       <td class="n">${doc ? _a2Time(doc.updatedAt) : ''}</td>
       ${(() => { const g = a2gOf(st.number); const nbs = a2gNb(g); const tot = a2gTotal(g);
         return `<td class="n"><b>${nbs === null ? '' : nbs}</b></td><td class="n">${tot === null ? '' : tot}</td>
-          <td class="n">${g && g.ai ? a2gStateDot(g) + (a2gFlagCount(g) ? ` <span class="a1-dim">⚑${a2gFlagCount(g)}</span>` : '') : ''}</td>`; })()}
-      <td>${doc
+          <td class="n">${g && g.eai ? '<b>' + a2gEssay(g) + '</b>' + (a2gFlagCount(g, 'essay') ? ` <span class="a1-dim">⚑${a2gFlagCount(g, 'essay')}</span>` : '') : ''}</td>
+          <td class="n">${g && (g.ai || g.eai) ? a2gStateDot(g) + (a2gFlagCount(g) ? ` <span class="a1-dim">⚑${a2gFlagCount(g)}</span>` : '') : ''}</td>`; })()}
+      <td>${doc || a2gOf(st.number)?.eai
         ? `<button class="btn-xs" data-action="a2-view" data-snum="${esc(st.number)}">답안 보기 →</button>`
         : '<span class="a1-dim">미응시</span>'}</td>
     </tr>`;
@@ -238,6 +239,7 @@ function _a2TcList(nb){
 
   return `<div class="a2-head">
       <div class="sec-title" style="margin:0">📋 학생 답안</div>
+      ${_a2ModeBtns()}
       <button class="btn-sm" data-action="a2-md">📤 답안 묶어 내려받기</button>
     </div>
     ${A2_ERR ? `<div class="a1-notice err">답안을 불러오지 못했습니다 — ${esc(A2_ERR)}</div>` : ''}
@@ -256,7 +258,7 @@ function _a2TcList(nb){
       : `<div style="overflow-x:auto"><table class="tbl a1-tc-table">
           <thead><tr><th>학번</th><th>이름</th>${groups.map(g =>
             `<th>${esc(g.label.replace('문제 ', '문'). replace('준비 단계', '준비'))}</th>`).join('')}
-            <th>마지막 저장</th><th>노트북 /19</th><th>총점 /25</th><th>검토</th><th></th></tr></thead>
+            <th>마지막 저장</th><th>노트북 /19</th><th>총점 /25</th><th>논술 /4</th><th>검토</th><th></th></tr></thead>
           <tbody>${rows}</tbody></table></div>`}
     ${extra.length ? `<div class="ml-sub-explain">명단에 없는 학번으로 저장된 것 —
       ${extra.map(k => `<button class="btn-xs" data-action="a2-view" data-snum="${esc(k)}">${esc(k)}</button>`).join(' ')}</div>` : ''}`;
@@ -269,7 +271,7 @@ function _a2TcList(nb){
 function _a2TcNums(){
   const sts = [...(typeof STUDENTS !== 'undefined' ? STUDENTS : [])]
     .sort((a, b) => String(a.number).localeCompare(String(b.number)));
-  return sts.filter(s => (A2_ALL || {})[s.number]).map(s => s.number);
+  return sts.filter(s => (A2_ALL || {})[s.number] || (A2_MODE === 'essay' && a2gOf(s.number)?.eai)).map(s => s.number);
 }
 
 /* ✍️ 표 → 줄 묶음. `+++`(칸 높이 표시)와 **굵게**를 떼고, <br> 은 줄바꿈으로. */
@@ -385,6 +387,15 @@ const A2G_ITEMS = [
   { k: 'b3_cm',    q: 7, b: 3, n: '혼동 행렬 코드' },
   { k: 'b3_fold',  q: 7, b: 3, n: '네 수로 접기' },
 ];
+/* 논술 — 종이 논술지의 채점 기준 네 항목 (assess2.worksheet — 논술 1 2점 · 논술 2 2점 + 기본 2).
+   처음 점수는 eai · 근거 eev · 확인할 것 efl · 옮겨 적은 글 etr · 스캔 eimg (레포 밖 스크립트가 넣음). */
+const A2E_ITEMS = [
+  { k: 'e1a', n: '논술 1 · 표에 옮기고 정의와 식' },
+  { k: 'e1b', n: '논술 1 · 정밀도와 재현율의 값' },
+  { k: 'e2a', n: '논술 2 · 정확도만으로 안 되는 까닭' },
+  { k: 'e2b', n: '논술 2 · 더 중요한 지표 · FP · FN · 상황' },
+];
+let A2_MODE = 'code';      // 'code' 코드 채점 | 'essay' 논술 채점
 const A2G_BASE = 8;        // 묶음 1·2·3 기본점수 3 + 2 + 3
 let A2_GRADE = null;       // { [학번]: 채점 } — null 이면 불러오는 중
 let A2_OUT = { snum: null, outs: {}, run: false, cur: null, msg: '' };   // ▶ 실행 결과
@@ -394,7 +405,7 @@ function a2gVal(g, k){
   if(!g) return null;
   const s = g.s || {};
   if(s[k] === 0 || s[k] === 1) return s[k];
-  const a = (g.ai || {})[k];
+  const a = (g.ai || {})[k] ?? (g.eai || {})[k];
   return (a === 0 || a === 1) ? a : null;
 }
 function a2gNb(g){
@@ -402,11 +413,12 @@ function a2gNb(g){
   return A2G_BASE + A2G_ITEMS.reduce((t, it) => t + (a2gVal(g, it.k) || 0), 0);
 }
 function a2gEssay(g){
+  if(g && g.eai) return A2E_ITEMS.reduce((t, it) => t + (a2gVal(g, it.k) || 0), 0);
   const v = g && g.essay;
   return (v === 0 || (v !== '' && v != null)) ? Number(v) : null;
 }
 function a2gTotal(g){
-  const nb = a2gNb(g);
+  const nb = a2gNb(g) ?? (g && g.eai ? A2G_BASE : null);
   if(nb === null) return null;
   const e = a2gEssay(g);
   return e === null ? null : nb + 2 + e;
@@ -417,8 +429,8 @@ function a2gStateDot(g){
   if(st === 'wip') return '<span class="a2g-dot wip" title="검토 중">◐</span>';
   return '<span class="a2g-dot" title="미검토">○</span>';
 }
-function a2gFlagCount(g){
-  const fl = (g && g.fl) || {};
+function a2gFlagCount(g, which){
+  const fl = (g && (which === 'essay' ? g.efl : g.fl)) || {};
   return Object.keys(fl).filter(k => String(fl[k] || '').trim()).length;
 }
 
@@ -428,16 +440,18 @@ function _a2gCard(snum, q){
   const items = A2G_ITEMS.filter(it => it.q === q);
   if(!items.length) return '';
   if(!g || !g.ai) return `<div class="a2g-card a2g-none">채점 자료가 아직 없습니다.</div>`;
-  return `<div class="a2g-card">${items.map(it => {
-    const ai = (g.ai || {})[it.k];
+  return `<div class="a2g-card">${items.map(it => _a2gItem(g, it, g.ai, g.ev, g.fl, `묶음 ${it.b} · ${it.n}`)).join('')}</div>`;
+}
+function _a2gItem(g, it, aiM, evM, flM, label){
+    const ai = (aiM || {})[it.k];
     const cur = a2gVal(g, it.k);
     const sv = (g.s || {})[it.k];
     const changed = (sv === 0 || sv === 1) && sv !== ai;
-    const fl = String((g.fl || {})[it.k] || '').trim();
-    const ev = String((g.ev || {})[it.k] || '').trim();
+    const fl = String((flM || {})[it.k] || '').trim();
+    const ev = String((evM || {})[it.k] || '').trim();
     return `<div class="a2g-item${fl ? ' flag' : ''}${changed ? ' changed' : ''}">
       <div class="a2g-top">
-        <span class="a2g-name">묶음 ${it.b} · ${esc(it.n)}</span>
+        <span class="a2g-name">${esc(label)}</span>
         <span class="a2g-btns">
           <button class="a2g-b${cur === 0 ? ' on' : ''}" data-action="a2g-set" data-k="${it.k}" data-v="0">0</button>
           <button class="a2g-b${cur === 1 ? ' on' : ''}" data-action="a2g-set" data-k="${it.k}" data-v="1">1</button>
@@ -446,27 +460,27 @@ function _a2gCard(snum, q){
           <button class="btn-xs" data-action="a2g-set" data-k="${it.k}" data-v="ai">↺ 처음 점수로</button></span>` : ''}
       </div>
       ${ev ? `<div class="a2g-ev"><span class="a2g-lab">근거</span>${esc(ev)}</div>` : ''}
-      ${fl ? `<div class="a2g-fl"><span class="a2g-lab">⚑ 검토</span>${esc(fl)}</div>` : ''}
+      ${fl ? `<div class="a2g-fl"><span class="a2g-lab">⚑ 확인 필요</span>${esc(fl)}</div>` : ''}
     </div>`;
-  }).join('')}</div>`;
 }
 
 /* 맨 위 — 점수 합계 · 논술 · 검토 상태 */
 function _a2gSummary(snum){
   const g = a2gOf(snum);
-  if(!g || !g.ai) return `<div class="a2g-sum a2g-none">이 학생의 채점 자료가 아직 없습니다.</div>`;
-  const nb = a2gNb(g), e = a2gEssay(g), tot = a2gTotal(g);
+  if(!g || (!g.ai && !g.eai)) return `<div class="a2g-sum a2g-none">이 학생의 채점 자료가 아직 없습니다.</div>`;
+  const nb = a2gNb(g) ?? A2G_BASE, e = a2gEssay(g), tot = e === null ? null : nb + 2 + e;
   const st = g.state || '';
   const stLabel = st === 'done' ? '✔ 확정 완료' : (st === 'wip' ? '◐ 검토 중' : '○ 미검토');
   return `<div class="a2g-sum">
-    <div class="a2g-sum-n"><span>노트북</span><b>${nb}</b><small>/ 19</small></div>
+    <div class="a2g-sum-n"><span>노트북</span><b>${nb}</b><small>/ 19${g.ai ? '' : ' (노트북 없음)'}</small></div>
     <div class="a2g-sum-n"><span>논술 항목</span>
-      <input class="a2g-essay" id="a2g-essay" type="number" min="0" max="4" step="1" value="${e === null ? '' : e}"
-        placeholder="0~4"/><small>+ 기본 2</small></div>
+      ${g.eai ? `<b>${e}</b><small>/ 4 + 기본 2</small>`
+        : `<input class="a2g-essay" id="a2g-essay" type="number" min="0" max="4" step="1" value="${e === null ? '' : e}"
+        placeholder="0~4"/><small>+ 기본 2</small>`}</div>
     <div class="a2g-sum-n"><span>총점</span><b>${tot === null ? '–' : tot}</b><small>/ 25</small></div>
     <div class="a2g-sum-n"><span>상황</span><b class="a2g-sit">${esc(g.sit || '–')}</b></div>
     <button class="a2g-state ${st}" data-action="a2g-state" title="누를 때마다 미검토 → 검토 중 → 확정">${stLabel}</button>
-    <span class="a1-dim">⚑ 검토할 것 ${a2gFlagCount(g)}개</span>
+    <span class="a1-dim">⚑ 코드 ${a2gFlagCount(g)}개${g.eai ? ' · 논술 ' + a2gFlagCount(g, 'essay') + '개' : ''}</span>
   </div>`;
 }
 
@@ -510,6 +524,46 @@ function _a2gBottom(snum){
   }
   return ans + `<div class="a2-q-head">📝 선생님 메모</div>
     <textarea class="a2g-note" id="a2g-note" placeholder="이 학생 채점에 대한 메모 — 칸을 벗어나면 저장됩니다">${esc(g.note || '')}</textarea>`;
+}
+
+/* 📝 논술 — 스캔 · 옮겨 적은 글 · 채점 네 항목 */
+function _a2eSection(snum){
+  const g = a2gOf(snum);
+  if(!g || !g.eai) return `<div class="a2-q-head">📝 논술</div>
+    <div class="a2-ans-c a1-dim">이 학생의 논술 답안 자료가 없습니다 (스캔에 없거나 아직 넣지 않음).</div>`;
+  const tr = g.etr || {};
+  const c = tr.cells || {};
+  const arr = v => Array.isArray(v) ? v : Object.values(v || {});
+  const row = (k, v) => (v && String(v).trim()) ? `<tr><th>${k}</th><td>${esc(v)}</td></tr>` : '';
+  const unsure = arr(tr.unsure).filter(Boolean);
+  return `<div class="a2-q-head">📝 논술 답안 — 스캔과 옮겨 적은 글</div>
+    <div class="a2e-wrap">
+      <div class="a2e-img">${g.eimg
+        ? `<a href="${esc(g.eimg)}" target="_blank" rel="noopener"><img src="${esc(g.eimg)}" alt="논술 답안 스캔"></a>
+           <div class="a1-dim">누르면 새 창에서 크게 열립니다</div>`
+        : '<div class="a1-dim">스캔이 없습니다</div>'}</div>
+      <div class="a2e-tr">
+        <table class="tbl a2-fill">
+          ${row('적은 모델', tr.model)}${row('분류 정확도', tr.acc)}${row('기준 클래스', tr.base_class)}
+        </table>
+        <table class="tbl a2g-cm" style="margin:8px 0"><tr><th>실젯값 \ 예측값</th><th>NO(0)</th><th>Yes(1)</th></tr>
+          <tr><th>NO(0)</th><td>${esc(c.no_neg || '')}</td><td>${esc(c.no_pos || '')}</td></tr>
+          <tr><th>Yes(1)</th><td>${esc(c.yes_neg || '')}</td><td>${esc(c.yes_pos || '')}</td></tr></table>
+        <table class="tbl a2-fill">
+          ${row('정밀도 정의', tr.prec_def)}${row('정밀도 식', tr.prec_formula)}${row('정밀도 값', tr.prec_value)}
+          ${row('재현율 정의', tr.rec_def)}${row('재현율 식', tr.rec_formula)}${row('재현율 값', tr.rec_value)}
+          ${row('논술 2', tr.e2)}${row('논술 3', tr.e3)}
+        </table>
+        ${unsure.length ? `<div class="a2g-fl" style="margin-top:6px"><span class="a2g-lab">읽기 어려웠던 곳</span>${esc(unsure.join(' · '))}</div>` : ''}
+        ${tr.notes ? `<div class="a1-dim" style="margin-top:4px">${esc(tr.notes)}</div>` : ''}
+      </div>
+    </div>
+    <div class="a2g-card">${A2E_ITEMS.map(it => _a2gItem(g, it, g.eai, g.eev, g.efl, it.n)).join('')}</div>`;
+}
+function _a2ModeBtns(){
+  return `<span class="a2-mode">
+    <button class="btn-sm${A2_MODE === 'code' ? ' on' : ''}" data-action="a2-mode" data-m="code">💻 코드 채점</button>
+    <button class="btn-sm${A2_MODE === 'essay' ? ' on' : ''}" data-action="a2-mode" data-m="essay">📝 논술 채점</button></span>`;
 }
 
 /* ▶ 실행 결과 — 셀 하나의 출력 */
@@ -559,9 +613,13 @@ function _a2TcStudent(nb){
       <span class="aia-tcs-name">${esc(st?.name || '')}</span>
       ${a2gStateDot(g)}
       <span class="a1-dim">마지막 저장 ${esc(_a2Time(doc?.updatedAt)) || '–'}</span></div>
+    ${_a2ModeBtns()}
     ${nav}
   </div>`;
-  if(!doc) return head + emptyBox('📭', '저장한 답안이 없습니다.');
+  if(A2_MODE === 'essay'){
+    return head + _a2gSummary(snum) + _a2eSection(snum) + _a2gBottom(snum);
+  }
+  if(!doc) return head + emptyBox('📭', '저장한 노트북 답안이 없습니다.');
 
   // 학생이 저장한 차례대로 — 학생이 더한 셀도 그 자리에 보입니다
   const byId = {};

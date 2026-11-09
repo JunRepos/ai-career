@@ -31,7 +31,7 @@ document.addEventListener('click', e => {
     const g = a2gOf(A2_SNUM);
     if(!g || !TC_CLS) return;
     const path = `aiactivity/submissions/${TC_CLS.id}/assess2grade/${A2_SNUM}`;
-    const ai = (g.ai || {})[k];
+    const ai = (g.ai || {})[k] ?? (g.eai || {})[k];
     const nv = v === 'ai' ? null : Number(v);
     const up = { at: new Date().toISOString() };
     up['s/' + k] = (nv === null || nv === ai) ? null : nv;   // 처음 점수와 같으면 고친 표시를 지웁니다
@@ -49,6 +49,7 @@ document.addEventListener('click', e => {
     return;
   }
   if(act === 'a2-run'){ a2RunStudent(A2_SNUM); return; }
+  if(act === 'a2-mode'){ A2_MODE = el.dataset.m === 'essay' ? 'essay' : 'code'; render(); return; }
 });
 
 /* 메모 · 논술 점수 — 칸을 벗어나면 저장 */
