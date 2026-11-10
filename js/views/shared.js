@@ -218,6 +218,8 @@ function contentWidthClass(){
   if(VIEW === 'oj-solve') return 'full';   // 분할 패널 — 전체 폭
   const key = IS_TC ? TC_TAB : ST_TAB;
   if(key === 'notebook') return 'full';
+  // 학생 수업자료 — 슬라이드가 작아 안 보인다고 해서 전체 폭으로 (2026-11-10)
+  if(!IS_TC && VIEW === 'student' && key === 'slides') return 'full';
   const wide = IS_TC ? (typeof _tcWideTab === 'function' && _tcWideTab())
                      : (VIEW === 'student' && typeof _stWideTab === 'function' && _stWideTab());
   return wide ? 'wide' : '';

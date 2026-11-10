@@ -41,6 +41,7 @@ function vStSlides(){
   const im = imgs[page];
 
   if(SLIDE_SHOW_ALL) return _vStNotesAll();
+  if(SLIDE_FULL && !_isGame(im)) return _vStSlideFull(imgs, page, live, teacherPage, unitView);
 
   // 실습 슬라이드 — 선생님이 이 장으로 넘기면 각자 화면에서 게임이 시작 가능
   if(_isGame(im)){
@@ -82,12 +83,12 @@ function vStSlides(){
       <div class="sl-left">
         <div class="sl-stage">
           <img class="sl-img" decoding="sync" fetchpriority="high" src="${esc(im.url)}" alt="${page + 1}번째 슬라이드"
-               data-action="sl-zoom" data-url="${esc(im.url)}"/>
+               data-action="sl-full"/>
         </div>
         <div class="sl-dots">${dots}</div>
         <div class="sl-nav">
           <button class="sl-btn" data-action="sl-prev" ${page === 0 ? 'disabled' : ''}>← 이전</button>
-          <button class="sl-btn" data-action="sl-zoom" data-url="${esc(im.url)}">크게 보기</button>
+          <button class="sl-btn" data-action="sl-full">⛶ 전체 화면</button>
           <button class="sl-btn" data-action="sl-next" ${page === imgs.length - 1 ? 'disabled' : ''}>다음 →</button>
         </div>
       </div>
@@ -105,6 +106,44 @@ function vStSlides(){
         <div class="sl-note-foot">이 메모는 선생님이 볼 수 있어요</div>
       </div>
     </div>`;
+}
+
+/* ⛶ 전체 화면 (2026-11-10 선생님 — 「전체보기 했을 때도 메모 작성할 수 있도록 · 같이 넘어가도록」)
+   예전 「크게 보기」는 사진 한 장을 띄우는 창이라 선생님이 넘겨도 그대로였고 메모도 못 썼습니다.
+   이제는 render() 가 그리는 화면이라 선생님이 넘기면 함께 넘어가고, 오른쪽 메모 칸에 바로 씁니다.
+   메모는 보통 화면과 같은 칸(data-action="sl-note")이라 저장도 같습니다. */
+let SLIDE_FULL = false;
+let SLIDE_FULL_MEMO = true;      // 전체 화면에서 메모 칸 보이기
+function _vStSlideFull(imgs, page, live, teacherPage, unitView){
+  const im = imgs[page];
+  const back = (live.on && !SLIDE_FOLLOW)
+    ? `<button class="slf-rejoin" data-action="sl-follow">선생님 화면으로 (${teacherPage + 1}장)</button>` : '';
+  const chip = unitView ? '<span class="slf-chip">다시 보기</span>'
+    : live.on ? '<span class="sl-live"><i></i>같이 보는 중</span>' : '<span class="slf-chip">혼자 보는 중</span>';
+  const savedTxt = SLIDE_NOTE_SAVED ? `저장됨 ${fmtDt(SLIDE_NOTE_SAVED)}` : '입력하면 자동 저장돼요';
+  return `<div class="slf${SLIDE_FULL_MEMO ? ' memo' : ''}" id="slf">
+    <div class="slf-bar">
+      ${chip}
+      <span class="slf-page">${page + 1} / ${imgs.length}</span>
+      ${back}
+      <span class="slf-sp"></span>
+      <button class="slf-b" data-action="sl-full-memo">${SLIDE_FULL_MEMO ? '메모 숨기기' : '📝 메모'}</button>
+      <button class="slf-b" data-action="sl-full-close">✕ 닫기</button>
+    </div>
+    <div class="slf-body">
+      <div class="slf-stage">
+        <button class="slf-arrow l" data-action="sl-prev" ${page === 0 ? 'disabled' : ''} aria-label="이전">‹</button>
+        <img class="slf-img" decoding="sync" fetchpriority="high" src="${esc(im.url)}" alt="${page + 1}번째 슬라이드"/>
+        <button class="slf-arrow r" data-action="sl-next" ${page === imgs.length - 1 ? 'disabled' : ''} aria-label="다음">›</button>
+      </div>
+      ${SLIDE_FULL_MEMO ? `<div class="slf-memo">
+        <div class="sl-note-title">${page + 1}장 메모</div>
+        <div class="sl-note-sub">${esc(savedTxt)}</div>
+        <textarea class="sl-note slf-note" data-action="sl-note" data-page="${page}"
+          placeholder="이 장에서 기억할 점을 적어보세요.">${esc(SLIDE_NOTES[page] || '')}</textarea>
+      </div>` : ''}
+    </div>
+  </div>`;
 }
 
 /* 내 메모 모아보기 — 수업 끝나고 복습·정리용 */

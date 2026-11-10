@@ -97,8 +97,21 @@ document.addEventListener('click', async e => {
     SLIDE_FOLLOW = true; render(); return;
   }
 
-  // 학생: 크게 보기
+  // 학생: 크게 보기 (옛 단추 — 남아 있는 화면이 있을 수 있어 둡니다)
   if(act === 'sl-zoom'){ showImgModal(el.dataset.url, '슬라이드'); return; }
+  // 학생: ⛶ 전체 화면 — 선생님을 따라 넘어가고 메모도 씁니다
+  if(act === 'sl-full'){
+    SLIDE_FULL = true; render();
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    return;
+  }
+  if(act === 'sl-full-close'){
+    await _slFlushNote();
+    SLIDE_FULL = false;
+    if(document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+    render(); return;
+  }
+  if(act === 'sl-full-memo'){ await _slFlushNote(); SLIDE_FULL_MEMO = !SLIDE_FULL_MEMO; render(); return; }
 
   // 선생님: 같이 보기 켜기/끄기
   if(act === 'sl-toggle' && TC_CLS){
@@ -399,4 +412,19 @@ document.addEventListener('click', async e => {
     if(TC_CLS && !SLIDE_TC_NOTES) await loadAllNotes(TC_CLS.id);
     SLIDE_TC_NOTES = !SLIDE_TC_NOTES; render(); return;
   }
+});
+
+/* 전체 화면 — Esc 로 브라우저 전체 화면이 풀리면 우리 화면도 닫습니다.
+   ← → 는 전체 화면일 때 이전 · 다음 (메모를 쓰는 중이면 글자 이동이라 건드리지 않음) */
+document.addEventListener('fullscreenchange', () => {
+  if(!document.fullscreenElement && typeof SLIDE_FULL !== 'undefined' && SLIDE_FULL && !IS_TC){
+    _slFlushNote(); SLIDE_FULL = false; render();
+  }
+});
+document.addEventListener('keydown', e => {
+  if(typeof SLIDE_FULL === 'undefined' || !SLIDE_FULL || IS_TC) return;
+  if(e.target && (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) return;
+  if(e.key === 'ArrowRight') document.querySelector('.slf [data-action="sl-next"]')?.click();
+  else if(e.key === 'ArrowLeft') document.querySelector('.slf [data-action="sl-prev"]')?.click();
+  else if(e.key === 'Escape') document.querySelector('.slf [data-action="sl-full-close"]')?.click();
 });
