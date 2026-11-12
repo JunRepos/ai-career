@@ -39,6 +39,7 @@ const NAV_ICON_D = {
   /* 계획 */
   curriculum: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14h4M7.5 17.5h8"/>',
   aiplan:     '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M7.5 14h4M7.5 17.5h8"/>',
+  observe:    '<path d="M4 20h4l10-10-4-4L4 16v4z"/><path d="M13 7l4 4"/>',
 };
 
 /* 메뉴 키에 맞는 그림. 없으면 넘겨받은 글자를 그대로 씁니다. */
