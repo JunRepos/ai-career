@@ -224,13 +224,17 @@ function _a2TcList(nb){
     return `<tr>
       <td>${esc(st.number)}</td><td>${esc(st.name)}</td>${tds}
       <td class="n">${doc ? _a2Time(doc.updatedAt) : ''}</td>
-      ${(() => { const g = a2gOf(st.number); const nbs = a2gNb(g); const tot = a2gTotal(g);
+      ${(() => { const g = a2gOf(st.number); const nbs = a2gNb(g) ?? (g && g.absent ? A2G_BASE : null); const tot = a2gTotal(g);
         return `<td class="n"><b>${nbs === null ? '' : nbs}</b></td><td class="n">${tot === null ? '' : tot}</td>
           <td class="n">${g && (g.eai || g.es) ? `<b>${a2eVal(g, 'q1') ?? '–'}</b> · <b>${a2eVal(g, 'q2') ?? '–'}</b>` + (a2gFlagCount(g, 'essay') ? ` <span class="a1-dim">⚑${a2gFlagCount(g, 'essay')}</span>` : '') : ''}</td>
           <td class="n">${g && (g.ai || g.eai || g.es) ? a2gStateDot(g) + (a2gFlagCount(g) ? ` <span class="a1-dim">⚑${a2gFlagCount(g)}</span>` : '') : ''}</td>`; })()}
-      <td>${doc || a2gOf(st.number)?.eai || a2gOf(st.number)?.es
+      <td>${a2gOf(st.number)?.absent
+        ? `<span class="a1-dim">미응시 · 기본점수</span>
+           <button class="btn-xs" data-action="a2-base-undo" data-snum="${esc(st.number)}">↺ 취소</button>`
+        : doc || a2gOf(st.number)?.eai || a2gOf(st.number)?.es
         ? `<button class="btn-xs" data-action="a2-view" data-snum="${esc(st.number)}">답안 보기 →</button>`
-        : '<span class="a1-dim">미응시</span>'}</td>
+        : `<span class="a1-dim">미응시</span>
+           <button class="btn-xs" data-action="a2-base" data-snum="${esc(st.number)}">기본점수 처리</button>`}</td>
     </tr>`;
   }).join('');
 
@@ -241,6 +245,8 @@ function _a2TcList(nb){
       <div class="sec-title" style="margin:0">📋 학생 답안</div>
       ${_a2ModeBtns()}
       <button class="btn-sm" data-action="a2-md">📤 답안 묶어 내려받기</button>
+      ${A2_GRADE !== null && a2NoShowNums().length
+        ? `<button class="btn-sm" data-action="a2-base-all">미응시 ${a2NoShowNums().length}명 기본점수 처리</button>` : ''}
     </div>
     ${A2_ERR ? `<div class="a1-notice err">답안을 불러오지 못했습니다 — ${esc(A2_ERR)}</div>` : ''}
     <div class="a1-stats">
@@ -395,6 +401,20 @@ const A2G_ITEMS = [
      es:{q1:0|1, q2:2|3|4|5} 점수 · ew:{q1,q2} 근거 — 선생님만 씁니다.
    옮겨 적은 글 etr · 스캔 eimg · 확인할 것 efl 은 그대로 보여 주기만 합니다.
    옛 처음 점수 eai · 근거 eev · 고친 값 s.e1a… 는 DB 에 남아 있지만 **점수 계산에 쓰지 않습니다.** */
+/* 미응시 기본점수 (2026-11-16 선생님 — 「미응시 학생 대상으로 기본 점수 처리 할 수 있도록」).
+   노트북도 논술도 없는 학생 — 명단의 「기본점수 처리」. absent:true 와 함께 논술 기본점수(es)를 넣습니다.
+   노트북 답안이 없으면 노트북 쪽은 기본 8점으로 셉니다(a2gTotal) → 8 + 0 + 2 = 10점.
+   논술만 안 본 학생 — 논술 채점 칸의 「논술 미응시 — 기본점수」 (노트북 점수는 그대로). */
+const A2E_BASE = { q1: 0, q2: 2 };
+function a2IsNoShow(snum){
+  if(A2_ALL === null || A2_GRADE === null || !/^\d+$/.test(String(snum))) return false;   // 다 읽기 전에는 미응시로 보지 않습니다
+  const g = a2gOf(snum);
+  return !A2_ALL[snum] && !(g && (g.ai || g.eai || g.es));
+}
+function a2NoShowNums(){
+  return [...(typeof STUDENTS !== 'undefined' ? STUDENTS : [])]
+    .filter(s => /^\d+$/.test(String(s.number)) && a2IsNoShow(s.number)).map(s => s.number);
+}
 const A2E_QS = [
   { q: 'q1', n: '논술 1', opts: [0, 1],       max: 1 },
   { q: 'q2', n: '논술 2', opts: [2, 3, 4, 5], max: 5 },
@@ -554,7 +574,9 @@ function _a2eGrade(snum){
         placeholder="${d.n} 채점 근거 — 칸을 벗어나면 저장됩니다">${esc(ew[d.q] || '')}</textarea>
     </div>`;
   };
-  return `<div class="a2-q-head">✅ 논술 채점</div>
+  return `<div class="a2-q-head">✅ 논술 채점
+      <button class="btn-xs" data-action="a2e-base" style="margin-left:10px"
+        title="논술 1 은 0점, 논술 2 는 기본점수 2점으로 넣습니다">논술 미응시 — 기본점수</button></div>
     <div class="a2g-card">${A2E_QS.map(item).join('')}
       ${fl.length ? `<div class="a2g-item flag"><div class="a2g-fl" style="margin-top:0"><span class="a2g-lab">⚑ 확인 필요</span>${esc(fl.join(' · '))}</div></div>` : ''}
     </div>`;

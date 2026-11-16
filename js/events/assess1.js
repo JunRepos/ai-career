@@ -232,6 +232,37 @@ async function _a1GradeSave(snum, patch){
 }
 
 document.addEventListener('click', async e => {
+  // 미응시 기본점수 (2026-11-16) — 영역 넷을 2점씩
+  const bs = e.target.closest?.('[data-action="a1-base"],[data-action="a1-base-all"]');
+  if(bs){
+    if(!TC_CLS || !IS_TC) return;
+    const nums = bs.dataset.action === 'a1-base' ? [bs.dataset.snum].filter(a1IsNoShow) : a1NoShowNums();
+    if(!nums.length) return;
+    const names = nums.map(n => (STUDENTS.find(x => x.number === n)?.name || n));
+    const n = (A1.scale || []).length;
+    if(!confirm(`미응시 ${nums.length}명을 기본점수(${n * 2}점)로 처리할까요?\n\n${names.join(', ')}`)) return;
+    const at = new Date().toISOString(), up = {};
+    for(const num of nums){
+      const sc = {}; for(let i = 1; i <= n; i++) sc[i] = 2;
+      up[`${num}/absent`] = true; up[`${num}/s`] = sc; up[`${num}/at`] = at;
+    }
+    try {
+      await db.ref(`aiactivity/submissions/${TC_CLS.id}/assess1grade`).update(up);
+      toast(`${nums.length}명을 기본점수로 처리했습니다`, 'ok');
+    } catch(err){ toast('저장하지 못했습니다 — ' + (err.message || err), 'err'); }
+    return;
+  }
+  const bu = e.target.closest?.('[data-action="a1-base-undo"]');
+  if(bu){
+    if(!TC_CLS || !IS_TC || !_a1G(bu.dataset.snum).absent) return;
+    if(!confirm('미응시 기본점수 처리를 취소할까요?')) return;
+    try {
+      await db.ref(`aiactivity/submissions/${TC_CLS.id}/assess1grade/${bu.dataset.snum}`)
+        .update({ absent: null, s: null, at: new Date().toISOString() });
+      toast('취소했습니다', 'ok');
+    } catch(err){ toast('저장하지 못했습니다 — ' + (err.message || err), 'err'); }
+    return;
+  }
   const b = e.target.closest?.('[data-action="a1-g-score"]');
   if(b){
     const g = _a1G(b.dataset.snum);

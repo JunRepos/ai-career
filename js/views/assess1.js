@@ -366,6 +366,23 @@ function _a1State(doc){
   return { key: 'done', label: '제출', chip: 'a1-chip-ok' };
 }
 
+/* 미응시 기본점수 (2026-11-16 선생님 — 「미응시 학생 대상으로 기본 점수 처리 할 수 있도록」).
+   답안이 없거나 한 글자도 없는 학생 — 명단의 「기본점수 처리」.
+   assess1grade/{학번} 에 absent:true 와 영역 넷을 2점씩(s) 넣습니다 → 합계 8점(기본점수).
+   이미 점수가 있는 학생에게는 단추가 안 보입니다. */
+function _a1Blank(doc){
+  if(!doc) return true;
+  const len = a => _a1Fields().reduce((n, f) => n + String((a || {})[f.id] || '').trim().length, 0);
+  return len(doc.answers) === 0 && len(doc.submitted?.answers) === 0;
+}
+function a1IsNoShow(snum){
+  if(A1_GRADE === null || A1_ALL === null || !/^\d+$/.test(String(snum))) return false;   // 확인용 test 계정은 뺍니다
+  return _a1Blank((A1_ALL || {})[snum]) && _a1Total(_a1G(snum)) == null;
+}
+function a1NoShowNums(){
+  return [...STUDENTS].filter(s => /^\d+$/.test(String(s.number)) && a1IsNoShow(s.number)).map(s => s.number);
+}
+
 function vTcAssess1(){
   if(typeof A1 === 'undefined') return emptyBox('📝', '평가 문항 파일(js/assess1-data.js)을 불러오지 못했습니다.');
   const cid = TC_CLS?.id;
@@ -406,13 +423,18 @@ function vTcAssess1(){
       <td>${s.chip ? `<span class="a1-chip ${s.chip}">${s.label}</span>` : `<span class="a1-dim">${s.label}</span>`}</td>
       <td class="n">${doc?.submitted ? _a1Time(doc.submitted.at) : ''}</td>
       <td class="n">${_a1ListScore(st.number)}</td>
-      <td>${doc ? `<button class="btn-xs" data-action="a1-tc-view" data-snum="${esc(st.number)}">답안 · 채점 →</button>` : ''}</td>
+      <td>${_a1G(st.number).absent
+        ? `<span class="a1-dim">미응시 · 기본점수</span>
+           <button class="btn-xs" data-action="a1-base-undo" data-snum="${esc(st.number)}">↺ 취소</button>`
+        : (doc ? `<button class="btn-xs" data-action="a1-tc-view" data-snum="${esc(st.number)}">답안 · 채점 →</button> ` : '')
+          + (a1IsNoShow(st.number) ? `<button class="btn-xs" data-action="a1-base" data-snum="${esc(st.number)}">기본점수 처리</button>` : '')}</td>
     </tr>`;
   }).join('');
 
   return `<div class="aia-tc-head">
       <div class="aia-tc-head-title">📝 1차 수행평가 · ${esc(A1.title)}</div>
       <button class="btn-sm" data-action="a1-tc-csv">📤 제출본 CSV</button>
+      ${a1NoShowNums().length ? `<button class="btn-sm" data-action="a1-base-all">미응시 ${a1NoShowNums().length}명 기본점수 처리</button>` : ''}
     </div>
     ${control}
     ${A1_TC_ERR ? `<div class="a1-notice err">답안을 불러오지 못했습니다 — ${esc(A1_TC_ERR)}</div>` : ''}

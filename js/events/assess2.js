@@ -52,6 +52,46 @@ document.addEventListener('click', e => {
       .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
+  // 논술만 안 본 학생 — 논술 1 은 0점, 논술 2 는 기본점수
+  if(act === 'a2e-base'){
+    if(!TC_CLS || !A2_SNUM) return;
+    const g = a2gOf(A2_SNUM);
+    if(a2gEssay(g) !== null && !confirm('이미 매긴 논술 점수를 기본점수(논술 1 0점 · 논술 2 2점)로 바꿀까요?')) return;
+    const up = { at: new Date().toISOString(), es: { ...A2E_BASE } };
+    up['ew/q2'] = '논술 미응시 — 기본점수 2점';
+    if(!g || !g.state) up.state = 'wip';
+    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade/${A2_SNUM}`).update(up)
+      .then(() => toast('논술 기본점수를 넣었습니다', 'ok'))
+      .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
+    return;
+  }
+  // 미응시(노트북도 논술도 없음) — 기본점수 10점 (노트북 기본 8 + 논술 기본 2)
+  if(act === 'a2-base' || act === 'a2-base-all'){
+    if(!TC_CLS) return;
+    const nums = act === 'a2-base' ? [el.dataset.snum].filter(a2IsNoShow) : a2NoShowNums();
+    if(!nums.length) return;
+    const names = nums.map(n => ((typeof STUDENTS !== 'undefined' ? STUDENTS : []).find(s => s.number === n)?.name || n));
+    if(!confirm(`미응시 ${nums.length}명을 기본점수(10점)로 처리할까요?\n\n${names.join(', ')}`)) return;
+    const at = new Date().toISOString(), up = {};
+    for(const n of nums){   // 칸 단위로 씁니다 — 그 학번에 다른 기록이 있어도 지우지 않게
+      up[`${n}/absent`] = true; up[`${n}/es`] = { ...A2E_BASE };
+      up[`${n}/ew/q2`] = '미응시 — 기본점수'; up[`${n}/at`] = at;
+    }
+    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade`).update(up)
+      .then(() => toast(`${nums.length}명을 기본점수로 처리했습니다`, 'ok'))
+      .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
+    return;
+  }
+  if(act === 'a2-base-undo'){
+    const n = el.dataset.snum, g = a2gOf(n);
+    if(!TC_CLS || !g || !g.absent) return;
+    if(!confirm('미응시 기본점수 처리를 취소할까요?')) return;
+    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade/${n}`)
+      .update({ absent: null, es: null, ew: null, at: new Date().toISOString() })
+      .then(() => toast('취소했습니다', 'ok'))
+      .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
+    return;
+  }
   if(act === 'a2g-state'){
     const g = a2gOf(A2_SNUM);
     if(!g || !TC_CLS) return;
