@@ -12,7 +12,7 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');
   if(!el) return;
   const act = el.dataset.action;
-  if(act.indexOf('a2-') !== 0 && act.indexOf('a2g-') !== 0) return;
+  if(act.indexOf('a2-') !== 0 && act.indexOf('a2g-') !== 0 && act.indexOf('a2e-') !== 0) return;
 
   if(act === 'a2-view'){ A2_SNUM = el.dataset.snum; A2_VIEW = 'student'; render(); return; }
   if(act === 'a2-back'){ A2_VIEW = 'list'; A2_SNUM = null; render(); return; }
@@ -39,6 +39,19 @@ document.addEventListener('click', e => {
     db.ref(path).update(up).catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
+  // 📝 논술 점수 (2026-11-16) — 선생님이 직접 고릅니다. 같은 점수를 다시 누르면 지워집니다
+  if(act === 'a2e-set'){
+    const d = A2E_QS.find(x => x.q === el.dataset.q);
+    const v = Number(el.dataset.v);
+    if(!d || d.opts.indexOf(v) < 0 || !TC_CLS || !A2_SNUM) return;
+    const g = a2gOf(A2_SNUM);
+    const up = { at: new Date().toISOString() };
+    up['es/' + d.q] = a2eVal(g, d.q) === v ? null : v;
+    if(!g || !g.state) up.state = 'wip';
+    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade/${A2_SNUM}`).update(up)
+      .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
+    return;
+  }
   if(act === 'a2g-state'){
     const g = a2gOf(A2_SNUM);
     if(!g || !TC_CLS) return;
@@ -52,25 +65,21 @@ document.addEventListener('click', e => {
   if(act === 'a2-mode'){ A2_MODE = el.dataset.m === 'essay' ? 'essay' : 'code'; render(); return; }
 });
 
-/* 메모 · 논술 점수 — 칸을 벗어나면 저장 */
+/* 메모 · 논술 채점 근거 — 칸을 벗어나면 저장 */
 document.addEventListener('change', e => {
   const el = e.target;
-  if(!el || (el.id !== 'a2g-note' && el.id !== 'a2g-essay')) return;
+  if(!el || !el.classList) return;
+  const why = el.classList.contains('a2e-why');
+  if(el.id !== 'a2g-note' && !why) return;
   if(!TC_CLS || !A2_SNUM) return;
   const path = `aiactivity/submissions/${TC_CLS.id}/assess2grade/${A2_SNUM}`;
   const up = { at: new Date().toISOString() };
-  if(el.id === 'a2g-note') up.note = el.value;
-  else {
-    const s = String(el.value).trim();
-    if(s === '') up.essay = null;
-    else {
-      const n = Math.round(Number(s));
-      if(!(n >= 0 && n <= 4)){ toast('논술 항목 점수는 0~4 입니다', 'err'); return; }
-      up.essay = n;
-    }
-  }
+  if(why){
+    if(!A2E_QS.some(x => x.q === el.dataset.q)) return;
+    up['ew/' + el.dataset.q] = el.value.trim() ? el.value : null;
+  } else up.note = el.value;
   db.ref(path).update(up)
-    .then(() => { toast('저장했습니다', 'ok'); el.blur(); setTimeout(render, 0); })
+    .then(() => { toast('저장했습니다', 'ok'); })
     .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
 });
 

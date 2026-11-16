@@ -143,7 +143,7 @@ function a2TcStop(){
 /* 메모나 논술 칸에 적는 중이면 다시 그리지 않습니다 — 적던 글이 날아갑니다 */
 function a2Rerender(){
   const a = document.activeElement;
-  if(a && (a.id === 'a2g-note' || a.id === 'a2g-essay')) return;
+  if(a && (a.id === 'a2g-note' || (a.classList && a.classList.contains('a2e-why')))) return;
   render();
 }
 
@@ -226,9 +226,9 @@ function _a2TcList(nb){
       <td class="n">${doc ? _a2Time(doc.updatedAt) : ''}</td>
       ${(() => { const g = a2gOf(st.number); const nbs = a2gNb(g); const tot = a2gTotal(g);
         return `<td class="n"><b>${nbs === null ? '' : nbs}</b></td><td class="n">${tot === null ? '' : tot}</td>
-          <td class="n">${g && g.eai ? '<b>' + a2gEssay(g) + '</b>' + (a2gFlagCount(g, 'essay') ? ` <span class="a1-dim">⚑${a2gFlagCount(g, 'essay')}</span>` : '') : ''}</td>
-          <td class="n">${g && (g.ai || g.eai) ? a2gStateDot(g) + (a2gFlagCount(g) ? ` <span class="a1-dim">⚑${a2gFlagCount(g)}</span>` : '') : ''}</td>`; })()}
-      <td>${doc || a2gOf(st.number)?.eai
+          <td class="n">${g && (g.eai || g.es) ? `<b>${a2eVal(g, 'q1') ?? '–'}</b> · <b>${a2eVal(g, 'q2') ?? '–'}</b>` + (a2gFlagCount(g, 'essay') ? ` <span class="a1-dim">⚑${a2gFlagCount(g, 'essay')}</span>` : '') : ''}</td>
+          <td class="n">${g && (g.ai || g.eai || g.es) ? a2gStateDot(g) + (a2gFlagCount(g) ? ` <span class="a1-dim">⚑${a2gFlagCount(g)}</span>` : '') : ''}</td>`; })()}
+      <td>${doc || a2gOf(st.number)?.eai || a2gOf(st.number)?.es
         ? `<button class="btn-xs" data-action="a2-view" data-snum="${esc(st.number)}">답안 보기 →</button>`
         : '<span class="a1-dim">미응시</span>'}</td>
     </tr>`;
@@ -252,13 +252,14 @@ function _a2TcList(nb){
       (🧩 블록을 쌓은 셀 · ✍️ 표에 적은 셀). 학생이 저장할 때마다 바로 바뀝니다.
       <b>실행 결과는 저장되지 않습니다</b> — 남는 것은 코드와 적은 글자뿐입니다
       (답안 보기에서 <b>▶ 실행 결과 보기</b> 로 그 자리에서 돌려 봅니다).
-      <b>노트북 /19</b> 는 코드 채점(기본 8 + 항목 11), <b>총점</b>은 논술 점수를 넣으면 나옵니다.
+      <b>노트북 /19</b> 는 코드 채점(기본 8 + 항목 11), <b>논술</b>은 <b>1번(0 · 1) · 2번(2~5)</b> 차례이고 선생님이 직접 매깁니다.
+      <b>총점</b>은 논술 두 문항을 다 매기면 나옵니다.
       검토 — ○ 미검토 · ◐ 검토 중 · ✔ 확정 · ⚑ 판단이 필요한 항목 수.</div>
     ${sts.length === 0 ? emptyBox('👥', '먼저 학생을 등록하세요.')
       : `<div style="overflow-x:auto"><table class="tbl a1-tc-table">
           <thead><tr><th>학번</th><th>이름</th>${groups.map(g =>
             `<th>${esc(g.label.replace('문제 ', '문'). replace('준비 단계', '준비'))}</th>`).join('')}
-            <th>마지막 저장</th><th>노트북 /19</th><th>총점 /25</th><th>논술 /4</th><th>검토</th><th></th></tr></thead>
+            <th>마지막 저장</th><th>노트북 /19</th><th>총점 /25</th><th>논술 1 · 2</th><th>검토</th><th></th></tr></thead>
           <tbody>${rows}</tbody></table></div>`}
     ${extra.length ? `<div class="ml-sub-explain">명단에 없는 학번으로 저장된 것 —
       ${extra.map(k => `<button class="btn-xs" data-action="a2-view" data-snum="${esc(k)}">${esc(k)}</button>`).join(' ')}</div>` : ''}`;
@@ -271,7 +272,7 @@ function _a2TcList(nb){
 function _a2TcNums(){
   const sts = [...(typeof STUDENTS !== 'undefined' ? STUDENTS : [])]
     .sort((a, b) => String(a.number).localeCompare(String(b.number)));
-  return sts.filter(s => (A2_ALL || {})[s.number] || (A2_MODE === 'essay' && a2gOf(s.number)?.eai)).map(s => s.number);
+  return sts.filter(s => (A2_ALL || {})[s.number] || (A2_MODE === 'essay' && (a2gOf(s.number)?.eai || a2gOf(s.number)?.es))).map(s => s.number);
 }
 
 /* ✍️ 표 → 줄 묶음. `+++`(칸 높이 표시)와 **굵게**를 떼고, <br> 은 줄바꿈으로. */
@@ -370,7 +371,7 @@ function _a2CellBox(oc, sc){
      (1차와 같은 자리 · 같은 방식 — aiactivity/submissions 아래만 열려 있습니다)
    · 학생 화면은 이 자리를 읽지 않습니다. DB 규칙이 열려 있는 것은 1차와 같은 조건입니다.
    · 항목 11개(노트북 19점 = 기본 8 + 항목 11) — tools/samples/assess2-rubric.md 의 묶음 1~3.
-     논술(묶음 4, 6점 = 기본 2 + 항목 4)은 종이라 선생님이 숫자만 넣습니다.
+     논술(묶음 4, 6점)은 종이라 선생님이 직접 보고 매깁니다 — 아래 A2E_QS.
    · ▶ 실행 결과 — 선생님 브라우저의 노트북 엔진(Pyodide)으로 학생 코드 셀을 차례대로
      돌려 셀 밑에 출력을 붙입니다 (events/assess2.js 의 a2RunStudent). 학생 진도에는 쓰지 않습니다.
 ═══════════════════════════════════════════════════════════════ */
@@ -387,13 +388,16 @@ const A2G_ITEMS = [
   { k: 'b3_cm',    q: 7, b: 3, n: '혼동 행렬 코드' },
   { k: 'b3_fold',  q: 7, b: 3, n: '네 수로 접기' },
 ];
-/* 논술 — 종이 논술지의 채점 기준 네 항목 (assess2.worksheet — 논술 1 2점 · 논술 2 2점 + 기본 2).
-   처음 점수는 eai · 근거 eev · 확인할 것 efl · 옮겨 적은 글 etr · 스캔 eimg (레포 밖 스크립트가 넣음). */
-const A2E_ITEMS = [
-  { k: 'e1a', n: '논술 1 · 표에 옮기고 정의와 식' },
-  { k: 'e1b', n: '논술 1 · 정밀도와 재현율의 값' },
-  { k: 'e2a', n: '논술 2 · 정확도만으로 안 되는 까닭' },
-  { k: 'e2b', n: '논술 2 · 더 중요한 지표 · FP · FN · 상황' },
+/* 논술 — 선생님이 종이를 직접 보고 매깁니다 (2026-11-16 선생님 — 「논술형 다 내가 보고 채점할 거야.
+   1번 문항은 1점 or 0점, 2번 문항은 2 3 4 5 중 하나. 내가 선택하고 그 근거를 적을 수 있는 칸만」).
+   예전에는 0·1 항목 넷(논술 1 에 둘 · 논술 2 에 둘 + 기본 2)이라 논술 1 이 2점 · 논술 2 가 4점 만점으로
+   매겨졌습니다 — 논술지의 배점(1점 · 5점)과 달랐습니다.
+     es:{q1:0|1, q2:2|3|4|5} 점수 · ew:{q1,q2} 근거 — 선생님만 씁니다.
+   옮겨 적은 글 etr · 스캔 eimg · 확인할 것 efl 은 그대로 보여 주기만 합니다.
+   옛 처음 점수 eai · 근거 eev · 고친 값 s.e1a… 는 DB 에 남아 있지만 **점수 계산에 쓰지 않습니다.** */
+const A2E_QS = [
+  { q: 'q1', n: '논술 1', opts: [0, 1],       max: 1 },
+  { q: 'q2', n: '논술 2', opts: [2, 3, 4, 5], max: 5 },
 ];
 let A2_MODE = 'code';      // 'code' 코드 채점 | 'essay' 논술 채점
 const A2G_BASE = 8;        // 묶음 1·2·3 기본점수 3 + 2 + 3
@@ -412,16 +416,23 @@ function a2gNb(g){
   if(!g || !g.ai) return null;
   return A2G_BASE + A2G_ITEMS.reduce((t, it) => t + (a2gVal(g, it.k) || 0), 0);
 }
+/* 논술 한 문항의 점수 — 아직 안 매겼으면 null */
+function a2eVal(g, q){
+  const d = A2E_QS.find(x => x.q === q);
+  const v = ((g && g.es) || {})[q];
+  return (d && d.opts.indexOf(v) >= 0) ? v : null;
+}
+/* 논술 합(6점 만점) — **두 문항을 다 매겨야** 나옵니다. 하나라도 비면 null */
 function a2gEssay(g){
-  if(g && g.eai) return A2E_ITEMS.reduce((t, it) => t + (a2gVal(g, it.k) || 0), 0);
-  const v = g && g.essay;
-  return (v === 0 || (v !== '' && v != null)) ? Number(v) : null;
+  let t = 0;
+  for(const d of A2E_QS){ const v = a2eVal(g, d.q); if(v === null) return null; t += v; }
+  return t;
 }
 function a2gTotal(g){
-  const nb = a2gNb(g) ?? (g && g.eai ? A2G_BASE : null);
-  if(nb === null) return null;
+  if(!g) return null;
   const e = a2gEssay(g);
-  return e === null ? null : nb + 2 + e;
+  if(e === null) return null;
+  return (a2gNb(g) ?? A2G_BASE) + e;     // 노트북 답안이 없으면 기본점수 8
 }
 function a2gStateDot(g){
   const st = g?.state || '';
@@ -467,16 +478,15 @@ function _a2gItem(g, it, aiM, evM, flM, label){
 /* 맨 위 — 점수 합계 · 논술 · 검토 상태 */
 function _a2gSummary(snum){
   const g = a2gOf(snum);
-  if(!g || (!g.ai && !g.eai)) return `<div class="a2g-sum a2g-none">이 학생의 채점 자료가 아직 없습니다.</div>`;
-  const nb = a2gNb(g) ?? A2G_BASE, e = a2gEssay(g), tot = e === null ? null : nb + 2 + e;
+  if(!g || (!g.ai && !g.eai && !g.es)) return `<div class="a2g-sum a2g-none">이 학생의 채점 자료가 아직 없습니다.</div>`;
+  const nb = a2gNb(g) ?? A2G_BASE, tot = a2gTotal(g);
+  const ev = q => { const v = a2eVal(g, q); return v === null ? '–' : v; };
   const st = g.state || '';
   const stLabel = st === 'done' ? '✔ 확정 완료' : (st === 'wip' ? '◐ 검토 중' : '○ 미검토');
   return `<div class="a2g-sum">
     <div class="a2g-sum-n"><span>노트북</span><b>${nb}</b><small>/ 19${g.ai ? '' : ' (노트북 없음)'}</small></div>
-    <div class="a2g-sum-n"><span>논술 항목</span>
-      ${g.eai ? `<b>${e}</b><small>/ 4 + 기본 2</small>`
-        : `<input class="a2g-essay" id="a2g-essay" type="number" min="0" max="4" step="1" value="${e === null ? '' : e}"
-        placeholder="0~4"/><small>+ 기본 2</small>`}</div>
+    <div class="a2g-sum-n"><span>논술 1</span><b>${ev('q1')}</b><small>/ 1</small></div>
+    <div class="a2g-sum-n"><span>논술 2</span><b>${ev('q2')}</b><small>/ 5</small></div>
     <div class="a2g-sum-n"><span>총점</span><b>${tot === null ? '–' : tot}</b><small>/ 25</small></div>
     <div class="a2g-sum-n"><span>상황</span><b class="a2g-sit">${esc(g.sit || '–')}</b></div>
     <button class="a2g-state ${st}" data-action="a2g-state" title="누를 때마다 미검토 → 검토 중 → 확정">${stLabel}</button>
@@ -526,11 +536,36 @@ function _a2gBottom(snum){
     <textarea class="a2g-note" id="a2g-note" placeholder="이 학생 채점에 대한 메모 — 칸을 벗어나면 저장됩니다">${esc(g.note || '')}</textarea>`;
 }
 
-/* 📝 논술 — 스캔 · 옮겨 적은 글 · 채점 네 항목 */
+/* 📝 논술 채점 칸 — 문항마다 점수 단추와 근거 칸. 선생님이 고르고 적습니다 */
+function _a2eGrade(snum){
+  const g = a2gOf(snum) || {};
+  const ew = g.ew || {};
+  const fl = Object.values(g.efl || {}).map(v => String(v || '').trim()).filter(Boolean);
+  const item = d => {
+    const cur = a2eVal(g, d.q);
+    return `<div class="a2g-item">
+      <div class="a2g-top">
+        <span class="a2g-name" style="min-width:110px">${d.n} <span class="a1-dim">/ ${d.max}점</span></span>
+        <span class="a2g-btns">${d.opts.map(v =>
+          `<button class="a2g-b${cur === v ? ' on' : ''}" data-action="a2e-set" data-q="${d.q}" data-v="${v}">${v}</button>`).join('')}</span>
+        <span class="a1-dim">${cur === null ? '아직 안 매김' : '같은 점수를 다시 누르면 지워집니다'}</span>
+      </div>
+      <textarea class="a2g-note a2e-why" data-q="${d.q}" style="min-height:58px;margin-top:8px"
+        placeholder="${d.n} 채점 근거 — 칸을 벗어나면 저장됩니다">${esc(ew[d.q] || '')}</textarea>
+    </div>`;
+  };
+  return `<div class="a2-q-head">✅ 논술 채점</div>
+    <div class="a2g-card">${A2E_QS.map(item).join('')}
+      ${fl.length ? `<div class="a2g-item flag"><div class="a2g-fl" style="margin-top:0"><span class="a2g-lab">⚑ 확인 필요</span>${esc(fl.join(' · '))}</div></div>` : ''}
+    </div>`;
+}
+
+/* 📝 논술 — 스캔 · 옮겨 적은 글 · 채점 칸 */
 function _a2eSection(snum){
   const g = a2gOf(snum);
   if(!g || !g.eai) return `<div class="a2-q-head">📝 논술</div>
-    <div class="a2-ans-c a1-dim">이 학생의 논술 답안 자료가 없습니다 (스캔에 없거나 아직 넣지 않음).</div>`;
+    <div class="a2-ans-c a1-dim">이 학생의 논술 답안 자료가 없습니다 (스캔에 없거나 아직 넣지 않음).</div>`
+    + _a2eGrade(snum);
   const tr = g.etr || {};
   const c = tr.cells || {};
   const arr = v => Array.isArray(v) ? v : Object.values(v || {});
@@ -558,7 +593,7 @@ function _a2eSection(snum){
         ${tr.notes ? `<div class="a1-dim" style="margin-top:4px">${esc(tr.notes)}</div>` : ''}
       </div>
     </div>
-    <div class="a2g-card">${A2E_ITEMS.map(it => _a2gItem(g, it, g.eai, g.eev, g.efl, it.n)).join('')}</div>`;
+    ${_a2eGrade(snum)}`;
 }
 function _a2ModeBtns(){
   return `<span class="a2-mode">
