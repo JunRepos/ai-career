@@ -76,6 +76,8 @@ function _stNavGroups(){
     }
     // 평가 그룹: 진행 중인 항목이 하나라도 있을 때만 노출(시즌성). 점은 항상 진행 중 의미.
     if(asmtItems.length) groups.push({ label:'평가', dot:true, items: asmtItems });
+    // 📊 내 점수 (인공지능 기초 — 선생님이 확정한 반만 · js/score-final.js)
+    if(typeof aiScoreMine === 'function' && aiScoreMine()) groups.push({ items:[{key:'aiscore', ico:'📊', label:'내 점수'}] });
     // 내 점수 (정보반 — 공개된 수행평가 점수)
     if(isInfo) groups.push({ items:[{key:'myscore', ico:'📊', label:'내 점수'}] });
   } else {
@@ -159,6 +161,7 @@ function _stTabBody(){
   else if(ST_TAB === 'assess1') return vStAssess1();
   else if(ST_TAB === 'game')    return vStUnitGame();
   else if(ST_TAB === 'myscore') return vStMyScore();
+  else if(ST_TAB === 'aiscore') return vStAiScore();
   return '';
 }
 

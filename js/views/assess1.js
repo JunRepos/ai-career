@@ -436,6 +436,7 @@ function vTcAssess1(){
       <button class="btn-sm" data-action="a1-tc-csv">📤 제출본 CSV</button>
       ${a1NoShowNums().length ? `<button class="btn-sm" data-action="a1-base-all">미응시 ${a1NoShowNums().length}명 기본점수 처리</button>` : ''}
     </div>
+    ${typeof scoreFinalBanner === 'function' ? scoreFinalBanner(cid) : ''}
     ${control}
     ${A1_TC_ERR ? `<div class="a1-notice err">답안을 불러오지 못했습니다 — ${esc(A1_TC_ERR)}</div>` : ''}
     <div class="a1-stats">

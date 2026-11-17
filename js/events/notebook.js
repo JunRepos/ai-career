@@ -1228,6 +1228,8 @@ document.addEventListener('click', async e => {
     if(!cid) return;
     const nb = NOTEBOOKS.find(n => n.id === act.nid);
     const on = !nbIsOpen(cid, act.nid);
+    if(on && typeof nbIsGated === 'function' && nbIsGated(cid, act.nid) && typeof scoreLockAsk === 'function'
+       && !scoreLockAsk(cid, `「${nb ? nb.title : act.nid}」 을 열면 학생이 수행평가 노트북을 다시 고칠 수 있습니다.`)) return;
     if(on && !confirm(`「${nb ? nb.title : act.nid}」 을 지금 학생에게 보여 줍니다.\n괜찮습니까?`)) return;
     try { await nbSetOpen(cid, act.nid, on); }
     catch(err){ alert('바꾸지 못했습니다 — ' + (err.message || err)); return; }

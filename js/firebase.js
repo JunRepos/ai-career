@@ -866,9 +866,11 @@ async function loadAllClassData(cid){
     loadActivityOpen(cid),
     loadActivityHidden(cid),
     loadDecks(cid),
-    loadA1Open(cid)
+    loadA1Open(cid),
+    loadScoreFinal(cid)   // 🔒 확정된 수행평가 점수 — 학생 「내 점수」 · 채점 화면 확인창 (js/score-final.js)
   ]);
-  a1WatchOpen(cid);   // 1차 수행평가 작성 범위 — 인공지능 기초 반만 (views/assess1.js)
+  a1WatchOpen(cid);
+  scoreFinalWatch(cid);   // 1차 수행평가 작성 범위 — 인공지능 기초 반만 (views/assess1.js)
   await loadNbGate(cid);   // 🔒 평가용 노트북이 지금 열려 있나 (js/nb-open.js)
   await loadNbPw(cid);     // 🔑 입장 비밀번호 해시 (원래 글자는 어디에도 없습니다)
   nbWatchGate(cid);        // 선생님이 열고 닫으면 학생 화면이 바로 따라옵니다

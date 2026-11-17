@@ -186,6 +186,7 @@ document.addEventListener('click', async e => {
     if(!TC_CLS) return;
     const stage = el.dataset.stage;
     if(!A1_STAGES[stage] || stage === a1Stage(TC_CLS.id)) return;
+    if(stage !== 'closed' && !scoreLockAsk(TC_CLS.id, `1차 수행평가 작성 범위를 「${A1_STAGE_LABEL[stage]}」(으)로 열면 학생이 답안을 다시 고칠 수 있습니다.`)) return;
     if(!confirm(`${TC_CLS.label} 학생 작성 범위를 「${A1_STAGE_LABEL[stage]}」(으)로 바꿀까요?`)) return;
     try {
       await withTimeout(_a1OpenRef(TC_CLS.id).set(stage), 10000, '작성 범위 저장');
@@ -240,6 +241,7 @@ document.addEventListener('click', async e => {
     if(!nums.length) return;
     const names = nums.map(n => (STUDENTS.find(x => x.number === n)?.name || n));
     const n = (A1.scale || []).length;
+    if(!scoreLockAsk(TC_CLS.id, `1차 수행평가 — 미응시 ${nums.length}명을 기본점수로 처리`)) return;
     if(!confirm(`미응시 ${nums.length}명을 기본점수(${n * 2}점)로 처리할까요?\n\n${names.join(', ')}`)) return;
     const at = new Date().toISOString(), up = {};
     for(const num of nums){
@@ -249,17 +251,20 @@ document.addEventListener('click', async e => {
     try {
       await db.ref(`aiactivity/submissions/${TC_CLS.id}/assess1grade`).update(up);
       toast(`${nums.length}명을 기본점수로 처리했습니다`, 'ok');
+      for(const num of nums) await scoreFinalRefresh(TC_CLS.id, num, '1차 미응시 기본점수');
     } catch(err){ toast('저장하지 못했습니다 — ' + (err.message || err), 'err'); }
     return;
   }
   const bu = e.target.closest?.('[data-action="a1-base-undo"]');
   if(bu){
     if(!TC_CLS || !IS_TC || !_a1G(bu.dataset.snum).absent) return;
+    if(!scoreLockAsk(TC_CLS.id, `1차 수행평가 — ${bu.dataset.snum} 미응시 기본점수 취소`)) return;
     if(!confirm('미응시 기본점수 처리를 취소할까요?')) return;
     try {
       await db.ref(`aiactivity/submissions/${TC_CLS.id}/assess1grade/${bu.dataset.snum}`)
         .update({ absent: null, s: null, at: new Date().toISOString() });
       toast('취소했습니다', 'ok');
+      await scoreFinalRefresh(TC_CLS.id, bu.dataset.snum, '1차 미응시 기본점수 취소');
     } catch(err){ toast('저장하지 못했습니다 — ' + (err.message || err), 'err'); }
     return;
   }
@@ -267,8 +272,13 @@ document.addEventListener('click', async e => {
   if(b){
     const g = _a1G(b.dataset.snum);
     const s = { ...(g.s || {}) };
-    s[b.dataset.idx] = parseInt(b.dataset.val, 10);
+    const nv = parseInt(b.dataset.val, 10);
+    if(_a1Pick(g, b.dataset.idx) === nv) return;
+    const what = `1차 수행평가 — ${b.dataset.snum} ${(STUDENTS.find(x => x.number === b.dataset.snum)?.name || '')} · 영역 ${b.dataset.idx} 을 ${_a1Pick(g, b.dataset.idx) ?? '–'}점 → ${nv}점`;
+    if(!scoreLockAsk(TC_CLS?.id, what)) return;
+    s[b.dataset.idx] = nv;
     await _a1GradeSave(b.dataset.snum, { s });
+    await scoreFinalRefresh(TC_CLS?.id, b.dataset.snum, what);
     return;
   }
   const st = e.target.closest?.('[data-action="a1-g-state"]');

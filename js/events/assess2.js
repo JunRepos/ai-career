@@ -33,10 +33,17 @@ document.addEventListener('click', e => {
     const path = `aiactivity/submissions/${TC_CLS.id}/assess2grade/${A2_SNUM}`;
     const ai = (g.ai || {})[k] ?? (g.eai || {})[k];
     const nv = v === 'ai' ? null : Number(v);
+    const cur = a2gVal(g, k), to = nv === null ? ai : nv;
+    if(cur === to) return;
+    const it = A2G_ITEMS.find(x => x.k === k);
+    const what = `2차 수행평가 — ${A2_SNUM} ${_a2Nm(A2_SNUM)} · 노트북 「${it ? it.n : k}」 ${cur ?? '–'}점 → ${to ?? '–'}점`;
+    if(!scoreLockAsk(TC_CLS.id, what)) return;
     const up = { at: new Date().toISOString() };
     up['s/' + k] = (nv === null || nv === ai) ? null : nv;   // 처음 점수와 같으면 고친 표시를 지웁니다
     if(!g.state) up.state = 'wip';
-    db.ref(path).update(up).catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
+    const sn = A2_SNUM, cid = TC_CLS.id;
+    db.ref(path).update(up).then(() => scoreFinalRefresh(cid, sn, what))
+      .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
   // 📝 논술 점수 (2026-11-16) — 선생님이 직접 고릅니다. 같은 점수를 다시 누르면 지워집니다
@@ -45,10 +52,14 @@ document.addEventListener('click', e => {
     const v = Number(el.dataset.v);
     if(!d || d.opts.indexOf(v) < 0 || !TC_CLS || !A2_SNUM) return;
     const g = a2gOf(A2_SNUM);
+    const cur = a2eVal(g, d.q), to = cur === v ? null : v;
+    const what = `2차 수행평가 — ${A2_SNUM} ${_a2Nm(A2_SNUM)} · ${d.n} ${cur ?? '–'}점 → ${to ?? '지움'}`;
+    if(!scoreLockAsk(TC_CLS.id, what)) return;
     const up = { at: new Date().toISOString() };
-    up['es/' + d.q] = a2eVal(g, d.q) === v ? null : v;
+    up['es/' + d.q] = to;
     if(!g || !g.state) up.state = 'wip';
-    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade/${A2_SNUM}`).update(up)
+    const sn = A2_SNUM, cid = TC_CLS.id;
+    db.ref(`aiactivity/submissions/${cid}/assess2grade/${sn}`).update(up).then(() => scoreFinalRefresh(cid, sn, what))
       .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
@@ -56,12 +67,15 @@ document.addEventListener('click', e => {
   if(act === 'a2e-base'){
     if(!TC_CLS || !A2_SNUM) return;
     const g = a2gOf(A2_SNUM);
+    const what = `2차 수행평가 — ${A2_SNUM} ${_a2Nm(A2_SNUM)} · 논술 기본점수(논술 1 0점 · 논술 2 2점)`;
+    if(!scoreLockAsk(TC_CLS.id, what)) return;
     if(a2gEssay(g) !== null && !confirm('이미 매긴 논술 점수를 기본점수(논술 1 0점 · 논술 2 2점)로 바꿀까요?')) return;
     const up = { at: new Date().toISOString(), es: { ...A2E_BASE } };
     up['ew/q2'] = '논술 미응시 — 기본점수 2점';
     if(!g || !g.state) up.state = 'wip';
-    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade/${A2_SNUM}`).update(up)
-      .then(() => toast('논술 기본점수를 넣었습니다', 'ok'))
+    const sn = A2_SNUM, cid = TC_CLS.id;
+    db.ref(`aiactivity/submissions/${cid}/assess2grade/${sn}`).update(up)
+      .then(() => { toast('논술 기본점수를 넣었습니다', 'ok'); return scoreFinalRefresh(cid, sn, what); })
       .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
@@ -71,24 +85,29 @@ document.addEventListener('click', e => {
     const nums = act === 'a2-base' ? [el.dataset.snum].filter(a2IsNoShow) : a2NoShowNums();
     if(!nums.length) return;
     const names = nums.map(n => ((typeof STUDENTS !== 'undefined' ? STUDENTS : []).find(s => s.number === n)?.name || n));
+    if(!scoreLockAsk(TC_CLS.id, `2차 수행평가 — 미응시 ${nums.length}명을 기본점수로 처리`)) return;
     if(!confirm(`미응시 ${nums.length}명을 기본점수(10점)로 처리할까요?\n\n${names.join(', ')}`)) return;
     const at = new Date().toISOString(), up = {};
     for(const n of nums){   // 칸 단위로 씁니다 — 그 학번에 다른 기록이 있어도 지우지 않게
       up[`${n}/absent`] = true; up[`${n}/es`] = { ...A2E_BASE };
       up[`${n}/ew/q2`] = '미응시 — 기본점수'; up[`${n}/at`] = at;
     }
-    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade`).update(up)
-      .then(() => toast(`${nums.length}명을 기본점수로 처리했습니다`, 'ok'))
+    const cid = TC_CLS.id;
+    db.ref(`aiactivity/submissions/${cid}/assess2grade`).update(up)
+      .then(async () => { toast(`${nums.length}명을 기본점수로 처리했습니다`, 'ok');
+        for(const n of nums) await scoreFinalRefresh(cid, n, '2차 미응시 기본점수'); })
       .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
   if(act === 'a2-base-undo'){
     const n = el.dataset.snum, g = a2gOf(n);
     if(!TC_CLS || !g || !g.absent) return;
+    if(!scoreLockAsk(TC_CLS.id, `2차 수행평가 — ${n} ${_a2Nm(n)} 미응시 기본점수 취소`)) return;
     if(!confirm('미응시 기본점수 처리를 취소할까요?')) return;
-    db.ref(`aiactivity/submissions/${TC_CLS.id}/assess2grade/${n}`)
+    const cid = TC_CLS.id;
+    db.ref(`aiactivity/submissions/${cid}/assess2grade/${n}`)
       .update({ absent: null, es: null, ew: null, at: new Date().toISOString() })
-      .then(() => toast('취소했습니다', 'ok'))
+      .then(() => { toast('취소했습니다', 'ok'); return scoreFinalRefresh(cid, n, '2차 미응시 기본점수 취소'); })
       .catch(err => toast('저장하지 못했습니다 — ' + (err.message || err), 'err'));
     return;
   }
@@ -239,3 +258,5 @@ function _a2ExportMd(){
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   toast(`📤 ${n}명의 답안을 내렸습니다`, 'ok');
 }
+
+function _a2Nm(n){ return ((typeof STUDENTS !== 'undefined' ? STUDENTS : []).find(x => x.number === n)?.name) || ''; }

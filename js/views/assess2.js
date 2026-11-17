@@ -53,6 +53,7 @@ function vTcAssess2(){
 
   return `<div class="section">
     <div class="sec-title">📝 2차 수행평가 — 기계학습 알고리즘을 적용하여 데이터 기반 문제 해결하기</div>
+    ${typeof scoreFinalBanner === 'function' ? scoreFinalBanner(cid) : ''}
 
     <div class="box-info" style="margin-bottom:10px">
       노트북 <b>15점</b>(전처리 근거 · 알고리즘 선정 · 성능 평가) +
