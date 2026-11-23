@@ -62,7 +62,7 @@ function a3Visible(cls){
 }
 // 지금 준비 칸을 쓸 수 있는가
 function _a3CanPrep(cid){ return a3Stage(cid) === 'prep' || _a3MyExtra(cid) || (_a3IsTest() && a3Stage(cid) === 'closed'); }
-function _a3Fields(){ return A3.prep.flatMap(g => g.fields); }
+function _a3Fields(){ return A3.items.flatMap(it => it.fields); }
 function _a3Filled(prep){ return _a3Fields().filter(f => String((prep || {})[f.id] || '').trim()).length; }
 function _a3Need(){ return _a3Fields().filter(f => !f.optional).length; }
 
@@ -129,10 +129,55 @@ function a3RenderKeep(){
 }
 
 /* ─────────── 함께 쓰는 조각 ─────────── */
-function _a3PartsHtml(){
-  return `<div class="a3-parts">${A3.parts.map((p, i) => `<div class="a3-part"><span class="n">${i + 1}</span>
-    <div><b>${esc(p[0])}</b> <span class="mla-pt">[5점]</span><div class="d">${esc(p[1])}</div></div></div>`).join('')}</div>`;
+// **굵게** 표시만 살려서 (나머지는 이스케이프)
+function _a3Md(t){ return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
+// 문항마다 그 문항의 결격 사유 — 1차와 같은 상자
+function _a3Crit(it){
+  return `<div class="a1-crit"><div class="ct">📌 채점 기준 <span>— 아래에 해당하면 감점 (1가지면 4점 · 2가지 이상이면 3점)</span></div>
+    ${it.crit.map(x => `<div class="cl"><span class="mk">${esc(x[0])}</span><span>${_a3Md(x[1])}</span></div>`).join('')}</div>`;
 }
+function _a3ItemHead(it, extra){
+  return `<div class="a1-qh"><span class="a1-qn">${esc(it.no)}.</span> ${esc(it.title)} <span class="mla-pt">[${it.pt}점]</span>${extra || ''}</div>`;
+}
+
+/* 🗂 사례 카드 — 1차의 「문제 상황 카드」와 같은 팝업 (js/assess3-data.js 의 A3_CARDS).
+   화면을 다시 그려도 팝업은 body 에 따로 남습니다. */
+let A3_CARD_F = '*';
+function _a3CardsBar(can){
+  if(typeof A3_CARDS === 'undefined') return '';
+  return `<button class="a1-cardsbar" data-action="a3-cards">
+    <span class="ic">🗂</span>
+    <span class="tx"><b>사례 카드 ${A3_CARDS.cards.length}장 보기</b><small>교과서 · 모둠 토론 · 기사에서 고를 수 있습니다 · 직접 찾은 사례를 써도 됩니다 (점수와는 관계없음)</small></span>
+    <span class="go">열기 ›</span></button>`;
+}
+function _a3CardsHtml(){
+  const fs = A3_CARDS.fields;
+  const list = A3_CARDS.cards.map((c, i) => ({ c, i })).filter(x => A3_CARD_F === '*' || x.c.field === A3_CARD_F);
+  const can = !!(SEL_CLS && VIEW === 'student' && _a3CanPrep(SEL_CLS.id) && A3_READY);
+  const note = (A3_CARDS.note || {})[A3_CARD_F];
+  return `<div class="a1-cm">
+    <div class="a1-cm-h"><b>🗂 사례 카드 <small>${A3_CARDS.cards.length}장</small></b><button class="a1-cm-x" data-action="a3-cards-close">✕ 닫기</button></div>
+    <div class="a1-cm-note">📣 사례는 <b>${A3.caseRule.map(esc).join(' · ')}</b>.<br>
+      카드에서 고르거나 <b>직접 찾은 사례</b>를 써도 됩니다. 「이 사례로 정하기」를 누르면 1번의 「활용 사례」와 「출처」 칸에 들어갑니다.</div>
+    <div class="a1-cm-f">${['*', ...fs].map(f => `<button class="${f === A3_CARD_F ? 'on' : ''}" data-action="a3-cards-f" data-f="${esc(f)}">${f === '*' ? '전체' : esc(f)}</button>`).join('')}</div>
+    ${note ? `<div class="a1-cm-note">${esc(note)}</div>` : ''}
+    <div class="a1-cm-grid">${list.map(({ c, i }) => `<div class="a1-cc"><div class="fl">${esc(c.field)}</div><div class="t">${esc(c.title)}</div>
+      <div class="s">${esc(c.summary)}</div>
+      ${c.url ? `<a class="src" href="${esc(c.url)}" target="_blank" rel="noopener">📰 기사 읽기<br><span>${esc(c.src)}</span></a>`
+              : `<div class="src">📖 ${esc(c.src)}</div>`}
+      ${can ? `<button class="a1-cc-copy" data-action="a3-cards-pick" data-i="${i}">✔ 이 사례로 정하기</button>` : ''}</div>`).join('')}</div>
+  </div>`;
+}
+function a3CardsOpen(){
+  a3CardsClose();
+  const ov = document.createElement('div');
+  ov.id = 'a3-cards-ov'; ov.className = 'modal-ov a1-cards-ov'; ov.dataset.action = 'a3-cards-close';
+  ov.innerHTML = _a3CardsHtml();
+  document.body.appendChild(ov);
+}
+function a3CardsRepaint(){ const ov = document.getElementById('a3-cards-ov'); if(ov) ov.innerHTML = _a3CardsHtml(); }
+function a3CardsClose(){ const ov = document.getElementById('a3-cards-ov'); if(ov) ov.remove(); }
+
 function _a3ScaleTable(){
   const mk = '㉮㉯㉰㉱';
   const rows = A3.scale.map(s => `<tr><th>${esc(s.no)}<br><small>${esc(s.name)}</small></th>
@@ -147,15 +192,6 @@ function _a3ScaleTable(){
       ${list('성의 없는 답안 — 결격 사유와 관계없이 그 문항 3점', A3.sloppy)}
       ${list('감점하지 않는 것', A3.nopenalty)}
       <div class="a1-rule"><div>${esc(A3.base)}</div></div>
-    </div></details>`;
-}
-function _a3CasesTable(){
-  const rows = A3.cases.map((c, i) => `<tr><td class="n">${i + 1}</td><td><b>${esc(c[0])}</b></td><td>${esc(c[1])}</td><td>${esc(c[2])}</td></tr>`).join('');
-  return `<details class="mla-rubric"><summary>🗂 사례 목록 보기 — 여기서 고르거나 직접 찾는다</summary>
-    <div class="mla-rubric-body">
-      <div class="a1-rule"><b>사례가 갖추어야 할 것</b>${A3.caseRule.map(x => `<div>∙ ${esc(x)}</div>`).join('')}</div>
-      <div style="overflow-x:auto"><table class="tbl a3-cases">
-      <thead><tr><th></th><th>사례</th><th>들여다볼 것</th><th>어디서</th></tr></thead><tbody>${rows}</tbody></table></div>
     </div></details>`;
 }
 function _a3RefsHtml(){
@@ -236,12 +272,17 @@ function vStAssess3(){
   const testNote = (_a3IsTest() && stage === 'closed')
     ? `<div class="a1-stagebar test">🔍 확인용 계정 — 학생에게는 지금 <b>닫혀</b> 있습니다. 여기서 쓴 내용도 저장됩니다.</div>` : '';
   const stageBar = can
-    ? `<div class="a1-stagebar">지금은 <b>준비 시간</b>입니다. 사례를 정하고 아래 칸에 메모하세요.${_a3MyExtra(cid) && stage !== 'prep' ? ' (선생님이 따로 열어 준 준비 시간)' : ''}</div>`
+    ? `<div class="a1-stagebar">지금은 <b>준비 시간</b>입니다. 1번의 사례 카드를 보고 사례를 정한 뒤, 문항마다 준비 칸에 메모하세요.${_a3MyExtra(cid) && stage !== 'prep' ? ' (선생님이 따로 열어 준 준비 시간)' : ''}</div>`
     : `<div class="a1-stagebar">준비 시간이 끝났습니다. 준비 내용은 고칠 수 없고, 작성 시간에 다시 볼 수 있습니다.</div>`;
 
-  const groups = A3.prep.map(g => `<div class="a1-q ${can ? '' : 'locked'}">
-      <div class="a1-qh">${esc(g.name)}${can ? '' : '<span class="a1-lock">🔒 지금은 고칠 수 없음</span>'}</div>
-      <div class="a1-qb">${g.fields.map(f => _a3Field(f, can, A3_ANS)).join('')}</div></div>`).join('');
+  const items = A3.items.map(it => `<div class="a1-q ${can ? '' : 'locked'}">
+      ${_a3ItemHead(it, can ? '' : '<span class="a1-lock">🔒 지금은 고칠 수 없음</span>')}
+      <div class="a1-qb">
+        <div class="a1-ask">${esc(it.ask)}</div>
+        ${_a3Crit(it)}${it.no === '1' ? _a3CardsBar(can) : ''}
+        <div class="a3-prepnote">✏️ 준비 — 작성 시간에 쓸 내용을 칸마다 메모합니다 (한 칸 ${A3.prepMax}자 · 점수에 넣지 않음)</div>
+        ${it.fields.map(f => _a3Field(f, can, A3_ANS)).join('')}
+      </div></div>`).join('');
 
   return `<div class="a1-wrap">
     <div class="a1-head">
@@ -249,13 +290,11 @@ function vStAssess3(){
     </div>
     ${sc ? `<div class="a3-sched"><div><small>준비</small><b>${esc(sc.prep)}</b></div><div><small>작성</small><b>${esc(sc.write)}</b></div>
       <div class="tag">컴퓨터로 작성</div><div class="tag no">생성형 인공지능 사용 금지</div></div>` : ''}
-    <div class="a1-topic">평가 내용 <span class="mla-pt">[총 ${A3.total}점]</span></div>
-    ${_a3PartsHtml()}
     <div class="a1-notice"><b>유의 사항</b>${A3.notice.map(n => `<div>∙ ${esc(n)}</div>`).join('')}</div>
-    ${_a3ScaleTable()}${_a3CasesTable()}${_a3RefsHtml()}
+    ${_a3ScaleTable()}${_a3RefsHtml()}
     ${testNote}${stageBar}
-    <div class="a1-topic">준비 <span class="mla-pt">점수에 넣지 않음 · 한 칸 ${A3.prepMax}자</span></div>
-    ${groups}
+    <div class="a1-topic">${esc(A3.title)} <span class="mla-pt">[총 ${A3.total}점]</span></div>
+    ${items}
     <div class="a1-bar">
       <div class="a1-status" id="a3-status">${_a3StatusHtml()}</div>
       <button class="btn-p btn-sm" data-action="a3-save" data-a3busy ${A3_SAVING || !can ? 'disabled' : ''}>💾 저장</button>
@@ -292,8 +331,8 @@ function _a3TcStudent(){
   const snum = A3_TC_SNUM;
   const st = STUDENTS.find(s => String(s.number) === String(snum));
   const doc = (A3_ALL || {})[snum] || {};
-  const groups = A3.prep.map(g => `<div class="a1-q"><div class="a1-qh">${esc(g.name)}</div>
-    <div class="a1-qb">${g.fields.map(f => {
+  const groups = A3.items.map(it => `<div class="a1-q">${_a3ItemHead(it)}
+    <div class="a1-qb"><div class="a1-ask">${esc(it.ask)}</div>${it.fields.map(f => {
       const v = String((doc.prep || {})[f.id] || '');
       return `<div class="a1-flabel">${esc(f.label)}</div><div class="a1-ans ${v ? '' : 'empty'}">${v ? esc(v) : '(비어 있음)'}</div>`;
     }).join('')}</div></div>`).join('');

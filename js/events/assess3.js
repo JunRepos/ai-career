@@ -75,6 +75,8 @@ document.addEventListener('drop', e => { if(_a3NoPaste(e.target)) e.preventDefau
 document.addEventListener('beforeinput', e => {
   if(_a3NoPaste(e.target) && /^insertFrom(Paste|Drop|PasteAsQuotation)/.test(e.inputType || '')) e.preventDefault();
 }, true);
+// Esc 로 사례 카드 팝업 닫기
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('a3-cards-ov')) a3CardsClose(); });
 // 저장 안 된 입력이 있으면 창을 닫기 전에 묻습니다
 window.addEventListener('beforeunload', e => {
   if(A3_DIRTY || A3_SAVING){ e.preventDefault(); e.returnValue = ''; }
@@ -96,6 +98,27 @@ document.addEventListener('click', async e => {
     A3_TOUCHED.add(fid); A3_DIRTY = true;
     a3RenderKeep();
     a3SaveNow(true);
+    return;
+  }
+
+  /* 사례 카드 팝업 */
+  if(act === 'a3-cards'){ a3CardsOpen(); return; }
+  if(act === 'a3-cards-f'){ A3_CARD_F = el.dataset.f; a3CardsRepaint(); return; }
+  if(act === 'a3-cards-close'){
+    if(el.id === 'a3-cards-ov' && e.target !== el) return;   // 팝업 안쪽(카드 · 기사 링크)을 누른 것은 닫지 않음
+    a3CardsClose(); return;
+  }
+  if(act === 'a3-cards-pick'){
+    const c = A3_CARDS.cards[Number(el.dataset.i)];
+    if(!c || !SEL_CLS || !A3_READY || !_a3CanPrep(SEL_CLS.id)) return;
+    if(String(A3_ANS.case || '').trim() && A3_ANS.case !== c.title
+       && !confirm(`「활용 사례」 칸에 이미 쓴 내용이 있습니다.\n「${c.title}」(으)로 바꿀까요?`)) return;
+    A3_ANS.case = c.title.slice(0, A3.prepMax); A3_ANS.src = c.src.slice(0, A3.prepMax);
+    A3_TOUCHED.add('case'); A3_TOUCHED.add('src'); A3_DIRTY = true;
+    a3CardsClose();
+    a3RenderKeep();
+    a3SaveNow(true);
+    toast(`「${c.title}」 — 1번의 활용 사례와 출처 칸에 넣었습니다`, 'ok');
     return;
   }
 
