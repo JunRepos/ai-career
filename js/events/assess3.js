@@ -84,6 +84,26 @@ async function a3Submit(){
   }
 }
 
+/* ─── 입장 비밀번호 ─── */
+async function a3GateSubmit(){
+  if(A3_GATE_BUSY || !SEL_CLS) return;
+  const pw = (document.getElementById('a3-gate-pw')?.value || '').trim();
+  if(!pw){ A3_GATE_ERR = '비밀번호를 입력하세요.'; render(); return; }
+  A3_GATE_BUSY = true; A3_GATE_ERR = ''; render();
+  let ok = false;
+  try { ok = await nbPwCheck(SEL_CLS.id, A3_PW_ID, pw); }
+  catch(err){ A3_GATE_ERR = '확인하지 못했습니다 — ' + (err.message || err); }
+  if(!ok) await new Promise(r => setTimeout(r, 800));   // 마구 넣어 보기 늦추기
+  A3_GATE_BUSY = false;
+  if(ok) toast('🔓 입장했습니다', 'ok');
+  else if(!A3_GATE_ERR) A3_GATE_ERR = '비밀번호가 맞지 않습니다.';
+  render();
+  if(ok) a3Grow(); else setTimeout(() => document.getElementById('a3-gate-pw')?.focus(), 0);
+}
+document.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && e.target && e.target.id === 'a3-gate-pw'){ e.preventDefault(); a3GateSubmit(); }
+});
+
 /* ─── 입력 ─── */
 document.addEventListener('input', e => {
   const el = e.target.closest && e.target.closest('[data-a3fid]');
@@ -161,7 +181,25 @@ document.addEventListener('click', async e => {
     return;
   }
 
+  if(act === 'a3-gate'){ await a3GateSubmit(); return; }
+
   /* 선생님 */
+  if(act === 'a3-set-pw'){
+    const cid = TC_CLS?.id; if(!cid) return;
+    const has = nbHasPw(cid, A3_PW_ID);
+    const pw = prompt(has
+      ? `${TC_CLS.label} — 새 비밀번호를 넣으세요. (비우고 확인하면 비밀번호를 없앱니다)`
+      : `${TC_CLS.label} — 학생이 들어올 때 넣을 비밀번호를 정하세요.`);
+    if(pw === null) return;
+    const v = pw.trim();
+    if(v && v.length < 4){ alert('4자 이상으로 해 주세요.'); return; }
+    if(!v && !confirm('비밀번호를 없앱니다. 「작성」으로 열려 있으면 학생이 바로 들어옵니다.\n괜찮습니까?')) return;
+    try { await nbSetPw(cid, A3_PW_ID, v); }
+    catch(err){ alert('정하지 못했습니다 — ' + (err.message || err)); return; }
+    alert(v ? '비밀번호를 정했습니다. 수업 때 학생에게 알려 주세요.' : '비밀번호를 없앴습니다.');
+    render();
+    return;
+  }
   if(act === 'a3-stage'){
     if(!TC_CLS) return;
     const stage = el.dataset.stage;

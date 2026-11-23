@@ -128,7 +128,9 @@ function a3RenderKeep(){
   const sel = fid ? [ae.selectionStart, ae.selectionEnd] : null;
   const content = document.querySelector('.content');
   const cTop = content ? content.scrollTop : 0, wTop = window.scrollY;
+  const openD = [...document.querySelectorAll('details[data-a3d][open]')].map(d => d.dataset.a3d);
   render();
+  openD.forEach(k => { const d = document.querySelector(`details[data-a3d="${k}"]`); if(d) d.open = true; });
   a3Grow();
   const c2 = document.querySelector('.content');
   if(c2) c2.scrollTop = cTop;
@@ -164,11 +166,12 @@ function _a3ScaleTable(){
 function _a3RefsHtml(){
   const r = A3.refs;
   const dl = a => a.map(x => `<div class="a3-ref-row"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('');
-  return `<details class="mla-rubric"><summary>📖 참고 — 윤리적 딜레마 · 6가지 윤리적 쟁점 · 10대 핵심 요건 · 이해관계자</summary>
+  return `<details class="mla-rubric"><summary>📖 참고 — 윤리적 딜레마 · 6가지 윤리적 쟁점 · 3대 원칙 · 10대 핵심 요건 · 이해관계자</summary>
     <div class="mla-rubric-body">
       <div class="a1-rule"><b>${esc(r.dilemma[0])}</b><div>${esc(r.dilemma[1])}</div></div>
       <div class="a1-rule"><b>6가지 윤리적 쟁점 (교과서 179쪽)</b>${dl(r.issues)}</div>
-      <div class="a1-rule"><b>10대 핵심 요건 (교과서 190쪽)</b><div>${esc(r.reqs)}</div></div>
+      <div class="a1-rule"><b>3대 원칙 (교과서 190쪽)</b>${dl(r.principles)}</div>
+      <div class="a1-rule"><b>10대 핵심 요건 (교과서 190쪽)</b>${dl(r.reqs.map((x, i) => [(i + 1) + ' ' + x[0], x[1]]))}</div>
       <div class="a1-rule"><b>이해관계자의 역할 (교과서 185쪽)</b>${dl(r.roles)}</div>
     </div></details>`;
 }
@@ -215,6 +218,21 @@ function _a3Chips(id, ans, edit){
   const f = _a3F(id), v = String((ans || {})[id] || '');
   return `<div class="a3-chips">${f.options.map(o => `<button class="${v === o ? 'on' : ''}" data-action="a3-choice" data-fid="${id}" data-val="${esc(o)}" ${edit ? '' : 'disabled'}>${esc(o)}</button>`).join('')}</div>`;
 }
+// 6가지 윤리적 쟁점 설명 — 쟁점 단추 바로 아래 (고른 쟁점은 진하게)
+function _a3IssueHelp(ans, edit){
+  if(!edit) return '';
+  const v = String((ans || {}).issue || '');
+  return `<div class="a3-iss">${A3.refs.issues.map(x => `<div class="${v === x[0] ? 'on' : ''}"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>`;
+}
+// 「인공지능(AI) 윤리 기준」 3대 원칙 · 10대 핵심 요건 — 칸 안에서 펼쳐 봅니다 (key 는 펼침 상태를 기억하는 이름)
+function _a3StdHtml(key, edit){
+  if(!edit) return '';
+  const r = A3.refs;
+  return `<details class="a3-std" data-a3d="${key}"><summary>「인공지능(AI) 윤리 기준」 3대 원칙 · 10대 핵심 요건 (교과서 190쪽)</summary>
+    <div class="a3-std-p">${r.principles.map(x => `<div><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
+    <div class="a3-std-r">${r.reqs.map((x, i) => `<div><b>${i + 1} ${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
+  </details>`;
+}
 function _a3Q(it, body, edit){
   return `<div class="a3-q">
     <div class="a3-qh"><b>${esc(it.no)}. ${esc(it.title)}</b><span>${it.pt}점</span></div>
@@ -233,14 +251,14 @@ function _a3Sheet(ans, edit, who){
       <div><div class="cap">㉮ 선택과 그 결과</div>${c('da', 3)}</div>
       <div class="e"><div class="cap">㉯ 선택과 그 결과</div>${c('db', 3)}</div>
       <div class="l">쟁점과<br>나의 입장</div>
-      <div class="e a3-s2">${_a3Chips('issue', ans, edit)}${c('stance', 4)}</div>
+      <div class="e a3-s2">${_a3Chips('issue', ans, edit)}${_a3IssueHelp(ans, edit)}${_a3StdHtml('std1', edit)}${c('stance', 4)}</div>
     </div>`;
   const b2 = `<div class="a3-tb a3-g3">
       <div class="l c">개발자</div><div class="l c">운영·관리자</div><div class="l c e">사용자</div>
       <div>${c('dev', 4)}</div><div>${c('op', 4)}</div><div class="e">${c('user', 4)}</div>
     </div>
     <div class="a3-tb a3-g2 a3-nt">
-      <div class="l">공존 방안과<br>그 한계</div><div class="e">${c('plan', 4)}</div>
+      <div class="l">공존 방안과<br>그 한계</div><div class="e">${_a3StdHtml('std2', edit)}${c('plan', 4)}</div>
     </div>`;
   const b3 = `<div class="a3-tb a3-g112">
       <div class="l c">대상</div><div class="l c">전달 방법</div><div class="l c e">실천할 내용</div>
@@ -261,7 +279,7 @@ async function a3LoadMine(){
   if(!cid || !snum) return;
   A3_LOADING = true; A3_LOAD_ERR = ''; A3_READY = false;
   try {
-    const [s] = await withTimeout(Promise.all([_a3Ref(cid, snum).get(), loadA3Open(cid)]), 12000, '내 답안 불러오기');
+    const [s] = await withTimeout(Promise.all([_a3Ref(cid, snum).get(), loadA3Open(cid), loadNbPw(cid)]), 12000, '내 답안 불러오기');
     A3_DOC = s.exists() ? s.val() : null;
     A3_ANS = { ...((A3_DOC && A3_DOC.answers) || {}) };
     A3_TOUCHED = new Set(); A3_DIRTY = false; A3_SAVE_ERR = '';
@@ -297,6 +315,24 @@ function a3PaintStatus(){
   document.querySelectorAll('[data-a3busy]').forEach(b => { b.disabled = !!A3_SAVING; });
 }
 
+/* ─────────── 입장 비밀번호 ───────────
+   2차 수행평가와 같은 자리(js/nb-open.js)에 둡니다 — aiactivity/submissions/{반}/nbPw/assess3 = {salt, iter, hash}.
+   원래 글자는 어디에도 저장하지 않습니다. 선생님이 평가 화면에서 정하고, 정하지 않으면 묻지 않습니다.
+   맞게 넣으면 그 탭을 닫을 때까지 다시 묻지 않습니다. 선생님 화면에는 걸지 않습니다. */
+const A3_PW_ID = 'assess3';
+let A3_GATE_BUSY = false, A3_GATE_ERR = '';
+function _a3NeedPw(cid){ return nbHasPw(cid, A3_PW_ID) && !nbPwPassed(cid, A3_PW_ID); }
+function _a3GateView(){
+  return `<div class="a1-gate"><div class="a1-gate-box">
+    <div class="a1-gate-ic">🔒</div>
+    <div class="a1-gate-t">3차 수행평가 입장</div>
+    <div class="a1-gate-s">선생님이 알려 준 입장 비밀번호를 입력하세요.</div>
+    <input type="password" id="a3-gate-pw" class="a1-in a1-gate-in" autocomplete="off" maxlength="32" placeholder="비밀번호" ${A3_GATE_BUSY ? 'disabled' : ''}/>
+    ${A3_GATE_ERR ? `<div class="a1-gate-err">${esc(A3_GATE_ERR)}</div>` : ''}
+    <button class="btn-p" data-action="a3-gate" ${A3_GATE_BUSY ? 'disabled' : ''}>${A3_GATE_BUSY ? '확인 중…' : '입장하기'}</button>
+  </div></div>`;
+}
+
 function vStAssess3(){
   if(typeof A3 === 'undefined') return emptyBox('📝', '평가 자료를 불러오지 못했습니다. 새로고침 해 주세요.');
   const cid = SEL_CLS?.id, snum = ST_USER?.number;
@@ -309,6 +345,7 @@ function vStAssess3(){
       불러오기 전에는 쓸 수 없습니다. 인터넷 연결을 확인하고 다시 시도하세요.</div>
       <button class="btn-p btn-sm" data-action="a3-retry">다시 불러오기</button></div>`;
   }
+  if(_a3NeedPw(cid)) return _a3GateView();          // 입장 비밀번호를 넣기 전에는 아무것도 보이지 않음
 
   const stage = a3Stage(cid);
   const can = _a3CanWrite(cid) && A3_READY;
@@ -396,6 +433,14 @@ function vTcAssess3(){
       <div class="a1-stage-sub">「작성」으로 열면 학생 메뉴에 3차 수행평가가 나타나고 답안을 쓸 수 있습니다. 시간이 끝나면 「닫힘」으로 바꿉니다 — 쓴 글은 남아 있고, 다음 시간에 다시 열면 이어서 씁니다.</div>
       ${sc ? `<div class="a1-stage-sub">이 반의 일정 — 1차시 ${esc(sc[0])} · 2차시 ${esc(sc[1])}</div>` : ''}</div>
     <div class="a1-seg">${seg}</div>
+  </div>
+  <div class="a1-stage ${nbHasPw(cid, A3_PW_ID) ? 'on' : ''}">
+    <div><b>입장 비밀번호</b> · ${nbHasPw(cid, A3_PW_ID) ? '🔒 <b>정해 둠</b>' : '없음'}
+      <div class="a1-stage-sub">${nbHasPw(cid, A3_PW_ID)
+        ? '학생은 비밀번호를 넣어야 문항과 답안이 보입니다 (확인용 test 계정 포함). 탭을 닫으면 다시 묻습니다.'
+        : '정하지 않으면 「작성」으로 열었을 때 학생이 바로 들어옵니다.'}
+        비밀번호는 반마다 따로 정하고, 원래 글자는 저장하지 않습니다 — 잊으면 새로 정하면 됩니다.</div></div>
+    <div><button class="btn-s" data-action="a3-set-pw">🔑 비밀번호 ${nbHasPw(cid, A3_PW_ID) ? '바꾸기' : '정하기'}</button></div>
   </div>`;
   const title = `<div class="aia-tc-head"><div class="aia-tc-head-title">📝 3차 수행평가 · ${esc(A3.title)}</div></div>`;
   if(A3_ALL === null) return `${title}${control}<div class="ml-sub-explain">⏳ 답안을 불러오는 중…</div>`;

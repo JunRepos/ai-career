@@ -7324,10 +7324,25 @@ button{border-radius:2px}
 .a3-chips button.on{background:#00703C;border-color:#00703C;color:#fff;font-weight:700}
 .a3-chips button:disabled{cursor:default;opacity:.9}
 .a3-chips button:disabled:not(.on){opacity:.45}
+.a3-iss{font-size:12.5px;line-height:1.5;color:#555;margin:0 0 8px;border-left:3px solid #d9d9d4;padding-left:9px}
+.a3-iss>div{display:flex;gap:8px;padding:1px 0}
+.a3-iss b{flex:0 0 46px;color:#333}
+.a3-iss>div.on{color:#1b1b1b}
+.a3-iss>div.on b{color:#00703C}
+.a3-std{font-size:12.5px;line-height:1.5;color:#444;margin:0 0 8px;border:1px solid #cfd8d2;background:#f6faf7;border-radius:6px;padding:5px 10px}
+.a3-std summary{cursor:pointer;font-weight:700;color:#00703C}
+.a3-std-p{margin-top:6px}
+.a3-std-p>div{display:flex;gap:8px;padding:2px 0}
+.a3-std-p b{flex:0 0 132px;color:#1b1b1b}
+.a3-std-r{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px 16px;margin-top:6px;border-top:1px solid #cfd8d2;padding-top:6px}
+.a3-std-r>div{display:flex;gap:8px}
+.a3-std-r b{flex:0 0 104px;color:#1b1b1b}
 @media (max-width:640px){
   .a3-sheet{padding:18px 14px 26px}
   .a3-g1,.a3-g2{grid-template-columns:76px minmax(0,1fr) minmax(0,1fr)}
   .a3-g2{grid-template-columns:76px minmax(0,1fr)}
   .a3-g3,.a3-g112{grid-template-columns:minmax(0,1fr)}
   .a3-g3>div,.a3-g112>div{border-right:none}
+  .a3-std-r{grid-template-columns:minmax(0,1fr)}
+  .a3-std-p>div{display:block}
 }
