@@ -262,7 +262,10 @@ function _a3Sheet(ans, edit, who){
     </div>`;
   const b3 = `<div class="a3-tb a3-g2">
       <div class="l">대상과<br>전달 방법</div><div class="e">${_a3Chips('method', ans, edit)}${c('target', 3)}</div>
-      <div class="l">캠페인 내용</div><div class="e">${c('act', 7)}</div>
+    </div>
+    <div class="a3-tb a3-g3 a3-nt a3-flow">
+      <div class="l c">캠페인 설계</div><div class="l c">캠페인 진행 방식</div><div class="l c e">캠페인으로 인한 효과</div>
+      <div>${c('act', 6)}</div><div>${c('run', 6)}</div><div class="e">${c('effect', 6)}</div>
     </div>`;
   return `<div class="a3-sheet">
     <div class="a3-top">

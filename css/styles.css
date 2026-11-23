@@ -7315,6 +7315,8 @@ button{border-radius:2px}
 .a3-tb>div.l{background:#f1f1ee;font-weight:700;display:flex;align-items:center;font-size:13.5px}
 .a3-tb>div.l.c{justify-content:center}
 .a3-s2{grid-column:span 2}
+.a3-flow>div.l{position:relative}
+.a3-flow>div.l:not(.e)::after{content:'→';position:absolute;right:-9px;top:50%;transform:translateY(-50%);z-index:1;background:#f1f1ee;color:#00703C;font-weight:800;padding:0 2px;line-height:1}
 .a3-caserow{display:flex;gap:8px;align-items:center}
 .a3-sheet textarea,.a3-sheet input[type=text]{width:100%;border:none;outline:none;background:transparent;color:#1b1b1b;padding:0;margin:0;font:inherit;font-size:14px;line-height:1.75;resize:none;overflow:hidden;box-shadow:none;border-radius:0}
 .a3-sheet textarea{min-height:66px;display:block}
@@ -7346,5 +7348,6 @@ button{border-radius:2px}
   .a3-g3,.a3-g112{grid-template-columns:minmax(0,1fr)}
   .a3-g3>div,.a3-g112>div{border-right:none}
   .a3-std-r{grid-template-columns:minmax(0,1fr)}
+  .a3-flow>div.l:not(.e)::after{display:none}
   .a3-std-p>div{display:block}
 }
