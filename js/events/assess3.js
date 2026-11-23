@@ -133,7 +133,10 @@ document.addEventListener('beforeinput', e => {
   if(_a3NoPaste(e.target) && /^insertFrom(Paste|Drop|PasteAsQuotation)/.test(e.inputType || '')) e.preventDefault();
 }, true);
 // Esc 로 사례 카드 팝업 닫기
-document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('a3-cards-ov')) a3CardsClose(); });
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape' || !document.getElementById('a3-cards-ov')) return;
+  if(A3_CARD_OPEN != null){ A3_CARD_OPEN = null; a3CardsRepaint(); } else a3CardsClose();
+});
 // 저장 안 된 입력이 있으면 창을 닫기 전에 묻습니다
 window.addEventListener('beforeunload', e => {
   if(A3_DIRTY || A3_SAVING){ e.preventDefault(); e.returnValue = ''; }
@@ -162,6 +165,13 @@ document.addEventListener('click', async e => {
   /* 사례 카드 팝업 */
   if(act === 'a3-cards'){ a3CardsOpen(); return; }
   if(act === 'a3-cards-f'){ A3_CARD_F = el.dataset.f; a3CardsRepaint(); return; }
+  if(act === 'a3-cards-open'){
+    if(e.target.closest('a')) return;                       // 기사 링크를 누른 것은 그대로 새 창
+    A3_CARD_OPEN = Number(el.dataset.i); a3CardsRepaint();
+    const m = document.querySelector('#a3-cards-ov .a1-cm'); if(m) m.scrollTop = 0;
+    return;
+  }
+  if(act === 'a3-cards-back'){ A3_CARD_OPEN = null; a3CardsRepaint(); return; }
   if(act === 'a3-cards-close'){
     if(el.id === 'a3-cards-ov' && e.target !== el) return;   // 팝업 안쪽(카드 · 기사 링크)을 누른 것은 닫지 않음
     a3CardsClose(); return;

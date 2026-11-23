@@ -178,26 +178,48 @@ function _a3RefsHtml(){
 
 /* 🗂 사례 카드 — 1차의 「문제 상황 카드」와 같은 팝업 (A3_CARDS). 화면을 다시 그려도 body 에 따로 남습니다. */
 let A3_CARD_F = '*';
+let A3_CARD_OPEN = null;      // 자세히 보고 있는 카드 번호 (없으면 목록)
+function _a3CardLinks(c){
+  return (c.links || []).length
+    ? `<div class="src a3-links">${c.links.map(l => `<a href="${esc(l[1])}" target="_blank" rel="noopener">📰 ${esc(l[0])}</a>`).join('')}</div>`
+    : `<div class="src">📖 ${esc(c.src)}</div>`;
+}
 function _a3CardsHtml(){
   const fs = A3_CARDS.fields;
-  const list = A3_CARDS.cards.map((c, i) => ({ c, i })).filter(x => A3_CARD_F === '*' || x.c.field === A3_CARD_F);
   const can = !!(SEL_CLS && VIEW === 'student' && _a3CanWrite(SEL_CLS.id) && A3_READY);
+  const head = `<div class="a1-cm-h"><b>🗂 사례 카드 <small>${A3_CARDS.cards.length}장</small></b><button class="a1-cm-x" data-action="a3-cards-close">✕ 닫기</button></div>`;
+  // 한 장 자세히
+  const oc = A3_CARD_OPEN == null ? null : A3_CARDS.cards[A3_CARD_OPEN];
+  if(oc){
+    return `<div class="a1-cm">${head}
+      <div class="a3-cd">
+        <button class="a3-cd-back" data-action="a3-cards-back">← 목록으로</button>
+        <div class="fl">${esc(oc.field)}</div>
+        <div class="t">${esc(oc.title)}</div>
+        <div class="s">${esc(oc.summary)}</div>
+        ${(oc.more || []).length ? `<div class="a3-cd-h">더 알아보기</div><ul class="a3-cd-more">${oc.more.map(m => `<li>${esc(m)}</li>`).join('')}</ul>` : ''}
+        <div class="a3-cd-h">출처 — 눌러서 기사 · 자료 원문 읽기</div>
+        ${_a3CardLinks(oc)}
+        ${can ? `<button class="a1-cc-copy" data-action="a3-cards-pick" data-i="${A3_CARD_OPEN}">✔ 이 사례로 정하기</button>` : ''}
+      </div></div>`;
+  }
+  const list = A3_CARDS.cards.map((c, i) => ({ c, i })).filter(x => A3_CARD_F === '*' || x.c.field === A3_CARD_F);
   const note = (A3_CARDS.note || {})[A3_CARD_F];
-  return `<div class="a1-cm">
-    <div class="a1-cm-h"><b>🗂 사례 카드 <small>${A3_CARDS.cards.length}장</small></b><button class="a1-cm-x" data-action="a3-cards-close">✕ 닫기</button></div>
+  return `<div class="a1-cm">${head}
     <div class="a1-cm-note">📣 사례는 <b>${A3.caseRule.map(esc).join(' · ')}</b>.<br>
-      카드에서 고르거나 <b>직접 찾은 사례</b>를 써도 됩니다. 「이 사례로 정하기」를 누르면 1번의 「활용 사례」 칸에 들어갑니다.</div>
+      카드를 누르면 <b>자세한 내용</b>이 나옵니다. 카드에서 고르거나 <b>직접 찾은 사례</b>를 써도 됩니다. 「이 사례로 정하기」를 누르면 1번의 「활용 사례」 칸에 들어갑니다.</div>
     <div class="a1-cm-f">${['*', ...fs].map(f => `<button class="${f === A3_CARD_F ? 'on' : ''}" data-action="a3-cards-f" data-f="${esc(f)}">${f === '*' ? '전체' : esc(f)}</button>`).join('')}</div>
     ${note ? `<div class="a1-cm-note">${esc(note)}</div>` : ''}
-    <div class="a1-cm-grid">${list.map(({ c, i }) => `<div class="a1-cc"><div class="fl">${esc(c.field)}</div><div class="t">${esc(c.title)}</div>
+    <div class="a1-cm-grid">${list.map(({ c, i }) => `<div class="a1-cc a3-cc" data-action="a3-cards-open" data-i="${i}"><div class="fl">${esc(c.field)}</div><div class="t">${esc(c.title)}</div>
       <div class="s">${esc(c.summary)}</div>
-      ${(c.links || []).length ? `<div class="src a3-links">${c.links.map(l => `<a href="${esc(l[1])}" target="_blank" rel="noopener">📰 ${esc(l[0])}</a>`).join('')}</div>`
-              : `<div class="src">📖 ${esc(c.src)}</div>`}
+      <div class="a3-cc-more">자세히 보기 ›</div>
+      ${_a3CardLinks(c)}
       ${can ? `<button class="a1-cc-copy" data-action="a3-cards-pick" data-i="${i}">✔ 이 사례로 정하기</button>` : ''}</div>`).join('')}</div>
   </div>`;
 }
 function a3CardsOpen(){
   a3CardsClose();
+  A3_CARD_OPEN = null;
   const ov = document.createElement('div');
   ov.id = 'a3-cards-ov'; ov.className = 'modal-ov a1-cards-ov'; ov.dataset.action = 'a3-cards-close';
   ov.innerHTML = _a3CardsHtml();
