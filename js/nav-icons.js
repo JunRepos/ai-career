@@ -32,6 +32,7 @@ const NAV_ICON_D = {
   /* 평가 · 점수 */
   asmt:      '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="m9.4 14.4 1.8 1.8 3.4-3.6"/>',
   assess1:   '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="m9.4 14.4 1.8 1.8 3.4-3.6"/>',
+  assess3:   '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="m9.4 14.4 1.8 1.8 3.4-3.6"/>',
   mlassess:  '<path d="M9.5 3v6.2L5 18.4A1.6 1.6 0 0 0 6.4 21h11.2a1.6 1.6 0 0 0 1.4-2.6L14.5 9.2V3"/><path d="M8.5 3h7"/><path d="M7.6 15h8.8"/>',
   scores:    '<path d="M4 20h16"/><rect x="5.5" y="12" width="3.4" height="6"/><rect x="10.3" y="7.5" width="3.4" height="10.5"/><rect x="15.1" y="10" width="3.4" height="8"/>',
   myscore:   '<path d="M4 20h16"/><rect x="5.5" y="12" width="3.4" height="6"/><rect x="10.3" y="7.5" width="3.4" height="10.5"/><rect x="15.1" y="10" width="3.4" height="8"/>',

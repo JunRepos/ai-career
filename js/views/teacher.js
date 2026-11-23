@@ -86,6 +86,7 @@ function _tcNavGroups(isInfo){
   if(TC_CLS?.type === 'ai') groups.push({ label: '평가', items: [
     {key:'assess1', ico:'📝', label:'1차 수행평가'},
     {key:'assess2', ico:'📝', label:'2차 수행평가'},
+    {key:'assess3', ico:'📝', label:'3차 수행평가'},
     {key:'observe', ico:'✍️', label:'관찰 기록'},
     {key:'scan', ico:'📄', label:'활동지 스캔'},
   ] });
@@ -115,7 +116,7 @@ function _tcNavGroups(isInfo){
 
 // 본문을 넓게(IDE/표형) 쓰는 선생님 탭
 function _tcWideTab(){
-  return ['notebook','oj','coderead','curriculum','asmt','scores','mlassess','aicode','assess1','assess2','aiplan','observe','scan'].includes(TC_TAB);
+  return ['notebook','oj','coderead','curriculum','asmt','scores','mlassess','aicode','assess1','assess2','assess3','aiplan','observe','scan'].includes(TC_TAB);
 }
 function _tcAutoCollapse(){ return TC_TAB === 'notebook'; }
 function toggleTcNav(){ TC_NAV_COLLAPSED = !TC_NAV_COLLAPSED; render(); }
@@ -140,6 +141,7 @@ function _tcTabBody(){
   else if(TC_TAB === 'mlassess')   return vTcMlAssess();
   else if(TC_TAB === 'assess1')    return vTcAssess1();
   else if(TC_TAB === 'assess2')    return vTcAssess2();
+  else if(TC_TAB === 'assess3')    return vTcAssess3();
   else if(TC_TAB === 'aiplan')     return vTcAiPlan();
   else if(TC_TAB === 'observe')    return vTcObserve();
   else if(TC_TAB === 'scan')       return vTcScan();
@@ -163,6 +165,7 @@ function setTC(t){
   if(t !== 'assess1') a1TcStop(); else { A1_TC_VIEW = 'list'; A1_TC_SNUM = null; }
   // 2차도 같습니다 (2026-11-05) — 탭을 떠나면 구독을 끊고, 들어오면 명단부터
   if(t !== 'assess2') a2TcStop(); else { A2_VIEW = 'list'; A2_SNUM = null; }
+  if(t !== 'assess3') a3TcStop(); else { A3_TC_VIEW = 'list'; A3_TC_SNUM = null; }
   // 수업자료 탭은 늘 목록부터 (지난번에 열어본 자료가 그대로 뜨지 않게)
   if(t === 'slides' && TC_CLS){
     SLIDE_TC_SEL = null; SLIDE_TC_NOTES = false;

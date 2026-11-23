@@ -21,6 +21,8 @@ function _stNavGroups(){
   if(on(MLA_ACTIVE))                   asmtItems.push({key:'mlassess', ico:'🧪', label:'ML 수행평가'});
   // 인공지능 기초 1차 수행평가 — 선생님이 작성 범위를 열었을 때만 (확인용 test 계정은 늘)
   if(a1Visible(SEL_CLS))                asmtItems.push({key:'assess1', ico:'📝', label:'1차 수행평가'});
+  // 3차 수행평가 — 선생님이 단계를 열었을 때만 (결석자에게 따로 연 경우 · 확인용 test 계정 포함)
+  if(a3Visible(SEL_CLS))                asmtItems.push({key:'assess3', ico:'📝', label:'3차 수행평가'});
   /* 🔒 노트북 수행평가 — **왼쪽 메뉴로만** 들어갑니다 (2026-11-03 선생님 —
      「노트북에서는 없애고 저렇게 왼쪽 메뉴에서만 들어갈 수 있게 만들어줘」).
      문이 달린(closed · open) 노트북이 그것입니다. 학생에게는 선생님이 열었을
@@ -157,6 +159,7 @@ function _stTabBody(){
   else if(ST_TAB === 'asmt')    return vStAsmt();
   else if(ST_TAB === 'mlassess')return vStMlAssess();
   else if(ST_TAB === 'assess1') return vStAssess1();
+  else if(ST_TAB === 'assess3') return vStAssess3();
   else if(ST_TAB === 'game')    return vStUnitGame();
   else if(ST_TAB === 'myscore') return vStMyScore();
   return '';
@@ -303,6 +306,7 @@ function setAsmtMode(m){
 function setST(t){
   // 1차 수행평가에서 다른 메뉴로 갈 때 저장 안 된 칸을 먼저 보냅니다
   if(ST_TAB === 'assess1' && t !== 'assess1' && A1_TOUCHED.size) a1SaveNow(true);
+  if(ST_TAB === 'assess3' && t !== 'assess3' && A3_TOUCHED.size) a3SaveNow(true);
   UNIT_RETURN = null;  // 사이드바로 이동하면 단원 복귀 마커 해제
   // 단원에서 열어둔 실습 게임 정리 (타이머가 계속 돌지 않게)
   if(UNIT_GAME && t !== 'game'){ gameLeaveAll(); UNIT_GAME = null; }
@@ -375,6 +379,10 @@ function setST(t){
     AIA_SUB = null;
     AIA_SAVING = false;
     loadAiaActive(SEL_CLS.id).then(() => render());
+  } else if(t === 'assess3' && SEL_CLS && ST_USER){
+    // 📝 3차 수행평가 — 들어올 때마다 서버의 내 준비 내용을 새로 읽습니다
+    if(!A3_DIRTY) A3_FOR = null;
+    render();
   } else if(t === 'assess1' && SEL_CLS && ST_USER){
     // 📝 1차 수행평가 — 들어올 때마다 서버의 내 답안을 새로 읽습니다 (화면이 그리면서 불러옴)
     if(!A1_DIRTY) A1_FOR = null;
