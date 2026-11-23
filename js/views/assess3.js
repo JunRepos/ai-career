@@ -410,6 +410,7 @@ function a3TcStart(cid){
   const xf = s => { A3_EXTRA[cid] = s.val() || {}; on(); };
   xr.on('value', xf);
   A3_TC_WATCH = [[ref, fn], [xr, xf]];
+  loadNbPw(cid).then(on);
   loadA3Open(cid).then(on);
 }
 function a3TcStop(){
