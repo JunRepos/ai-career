@@ -191,7 +191,7 @@ function _a3CardsHtml(){
     ${note ? `<div class="a1-cm-note">${esc(note)}</div>` : ''}
     <div class="a1-cm-grid">${list.map(({ c, i }) => `<div class="a1-cc"><div class="fl">${esc(c.field)}</div><div class="t">${esc(c.title)}</div>
       <div class="s">${esc(c.summary)}</div>
-      ${c.url ? `<a class="src" href="${esc(c.url)}" target="_blank" rel="noopener">📰 기사 읽기<br><span>${esc(c.src)}</span></a>`
+      ${(c.links || []).length ? `<div class="src a3-links">${c.links.map(l => `<a href="${esc(l[1])}" target="_blank" rel="noopener">📰 ${esc(l[0])}</a>`).join('')}</div>`
               : `<div class="src">📖 ${esc(c.src)}</div>`}
       ${can ? `<button class="a1-cc-copy" data-action="a3-cards-pick" data-i="${i}">✔ 이 사례로 정하기</button>` : ''}</div>`).join('')}</div>
   </div>`;
@@ -260,9 +260,9 @@ function _a3Sheet(ans, edit, who){
     <div class="a3-tb a3-g2 a3-nt">
       <div class="l">공존 방안과<br>그 한계</div><div class="e">${_a3StdHtml('std2', edit)}${c('plan', 4)}</div>
     </div>`;
-  const b3 = `<div class="a3-tb a3-g112">
-      <div class="l c">대상</div><div class="l c">전달 방법</div><div class="l c e">실천할 내용</div>
-      <div>${c('target', 3)}</div><div>${_a3Chips('method', ans, edit)}</div><div class="e">${c('act', 3)}</div>
+  const b3 = `<div class="a3-tb a3-g2">
+      <div class="l">대상과<br>전달 방법</div><div class="e">${_a3Chips('method', ans, edit)}${c('target', 3)}</div>
+      <div class="l">캠페인 내용</div><div class="e">${c('act', 7)}</div>
     </div>`;
   return `<div class="a3-sheet">
     <div class="a3-top">
