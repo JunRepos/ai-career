@@ -251,7 +251,7 @@ function _a3Sheet(ans, edit, who){
       <div><div class="cap">㉮ 선택과 그 결과</div>${c('da', 3)}</div>
       <div class="e"><div class="cap">㉯ 선택과 그 결과</div>${c('db', 3)}</div>
       <div class="l">쟁점과<br>나의 입장</div>
-      <div class="e a3-s2">${_a3Chips('issue', ans, edit)}${_a3IssueHelp(ans, edit)}${_a3StdHtml('std1', edit)}${c('stance', 4)}</div>
+      <div class="e a3-s2">${_a3Chips('issue', ans, edit)}${_a3IssueHelp(ans, edit)}${c('stance', 4)}</div>
     </div>`;
   const b2 = `<div class="a3-tb a3-g3">
       <div class="l c">개발자</div><div class="l c">운영·관리자</div><div class="l c e">사용자</div>
