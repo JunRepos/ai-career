@@ -270,8 +270,7 @@ function _a3Sheet(ans, edit, who){
       <div class="l">활용 사례</div>
       <div class="e a3-s2 a3-caserow">${c('case')}${edit ? '<button class="a3-cardbtn" data-action="a3-cards">🗂 사례 카드</button>' : ''}</div>
       <div class="l">딜레마 상황</div>
-      <div><div class="cap">㉮ 선택과 그 결과</div>${c('da', 3)}</div>
-      <div class="e"><div class="cap">㉯ 선택과 그 결과</div>${c('db', 3)}</div>
+      <div class="e a3-s2">${c('dil', 4)}</div>
       <div class="l">쟁점과<br>나의 입장</div>
       <div class="e a3-s2">${_a3Chips('issue', ans, edit)}${_a3IssueHelp(ans, edit)}${c('stance', 4)}</div>
     </div>`;
