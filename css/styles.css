@@ -7349,6 +7349,10 @@ button{border-radius:2px}
 .a3-std .h{font-weight:700;color:#00703C}
 .a3-tb+.a3-std{margin:8px 0}
 .a3-urlrow{display:flex;gap:8px;align-items:center;margin-top:6px}
+.a3-picked{margin-top:6px;font-size:13px;line-height:1.65;color:#333;border:1px solid #cfd8d2;background:#f6faf7;border-radius:6px;padding:6px 10px;cursor:pointer}
+.a3-picked .m{display:block;margin-top:2px;font-size:12.5px;font-weight:700;color:#00703C}
+.a3-picked:hover .m{text-decoration:underline}
+.a3-hint{font-size:12.5px;font-weight:700;color:#00703C;margin-bottom:4px}
 .a3-urlrow span{flex:0 0 auto;font-size:12.5px;font-weight:700;color:#555}
 .a3-std-p{margin-top:6px}
 .a3-std-p>div{display:flex;gap:8px;padding:2px 0}

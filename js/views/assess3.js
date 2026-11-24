@@ -200,9 +200,9 @@ function _a3CardsHtml(){
       ${can ? `<button class="a1-cc-copy" data-action="a3-cards-pick" data-i="${i}">✔ 이 사례로 정하기</button>` : ''}</div>`).join('')}</div>
   </div>`;
 }
-function a3CardsOpen(){
+function a3CardsOpen(i){
   a3CardsClose();
-  A3_CARD_OPEN = null;
+  A3_CARD_OPEN = (i == null || !A3_CARDS.cards[i]) ? null : i;   // 번호를 주면 그 카드의 자세한 내용부터
   const ov = document.createElement('div');
   ov.id = 'a3-cards-ov'; ov.className = 'modal-ov a1-cards-ov'; ov.dataset.action = 'a3-cards-close';
   ov.innerHTML = _a3CardsHtml();
@@ -246,6 +246,14 @@ function _a3Q(it, body, edit){
       ${it.crit.map(x => `<div>∙ ${esc(x)}</div>`).join('')}</div>
     ${body}</div>`;
 }
+// 고른 사례 카드의 내용 — 활용 사례 칸 아래 (2026-11-24 「제목만 뜨잖아 내용도 같이」).
+// 누르면 그 카드의 자세한 내용(더 알아보기 · 출처)이 열립니다
+function _a3PickedCard(ans){
+  const t = String((ans || {}).case || '');
+  const i = A3_CARDS.cards.findIndex(c => t.indexOf(c.title) === 0);
+  if(i < 0) return '';
+  return `<div class="a3-picked" data-action="a3-cards-detail" data-i="${i}">${esc(A3_CARDS.cards[i].summary)}<span class="m">더 알아보기 ›</span></div>`;
+}
 function _a3Sheet(ans, edit, who){
   const [q1, q2, q3] = A3.items;
   const c = (id, rows) => _a3Cell(id, ans, edit, rows);
@@ -254,9 +262,9 @@ function _a3Sheet(ans, edit, who){
       <div class="l">활용 사례</div>
       <div class="e a3-s2">${_a3Chips('src', ans, edit)}
         <div class="a3-caserow">${c('case')}${edit && !own ? '<button class="a3-cardbtn" data-action="a3-cards">🗂 사례 카드</button>' : ''}</div>
-        ${own ? `<div class="a3-urlrow"><span>출처 URL</span>${c('url')}</div>` : ''}</div>
+        ${own ? `<div class="a3-urlrow"><span>출처 URL</span>${c('url')}</div>` : _a3PickedCard(ans)}</div>
       <div class="l">딜레마 상황</div>
-      <div class="e a3-s2">${c('dil', 4)}</div>
+      <div class="e a3-s2">${own && edit ? '<div class="a3-hint">직접 찾은 사례는 해당 기사나 글의 내용을 요약하여 함께 쓰시오.</div>' : ''}${c('dil', 4)}</div>
     </div>
     ${_a3IssueHelp(ans, edit)}
     <div class="a3-tb a3-g2">

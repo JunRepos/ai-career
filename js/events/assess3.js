@@ -129,6 +129,7 @@ document.addEventListener('click', async e => {
 
   /* 사례 카드 팝업 */
   if(act === 'a3-cards'){ a3CardsOpen(); return; }
+  if(act === 'a3-cards-detail'){ a3CardsOpen(Number(el.dataset.i)); return; }
   if(act === 'a3-cards-f'){ A3_CARD_F = el.dataset.f; a3CardsRepaint(); return; }
   if(act === 'a3-cards-open'){
     if(e.target.closest('a')) return;                       // 기사 링크를 누른 것은 그대로 새 창
