@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════
    events/assess3.js — 📝 3차 수행평가 이벤트
-   학생: 입력(칸 단위 자동 저장) · 제출(서버에서 다시 읽어 확인) · 붙여넣기 막기 · 사례 카드
+   학생: 입력(쓰는 대로 자동 저장 · 저장한 시각 기록 · 제출 없음) · 붙여넣기 막기 · 사례 카드
    선생님: 단계 여닫기 · 결석자 따로 열기 · 답안 보기
 ═══════════════════════════════════════ */
 
@@ -16,6 +16,10 @@ async function a3SaveNow(silent, force){
   A3_TOUCHED.clear();
   const now = new Date().toISOString();
   const upd = { updatedAt: now, name: ST_USER.name || '' };
+  // 저장한 시각 기록 — 분마다 한 줄, 값은 서버 시각 (학생 컴퓨터의 시계를 믿지 않음)
+  const _d = new Date(), _p = n => String(n).padStart(2, '0');
+  const _sv = (window.firebase && firebase.database && firebase.database.ServerValue) ? firebase.database.ServerValue.TIMESTAMP : Date.now();
+  upd[`log/${_d.getFullYear()}${_p(_d.getMonth() + 1)}${_p(_d.getDate())}-${_p(_d.getHours())}${_p(_d.getMinutes())}`] = _sv;
   fids.forEach(f => { upd['answers/' + f] = A3_ANS[f] == null ? '' : String(A3_ANS[f]); });
   A3_SAVING = 'save'; a3PaintStatus();
   try {
@@ -42,46 +46,7 @@ async function a3SaveNow(silent, force){
 }
 function a3QueueSave(){
   if(A3_SAVE_TIMER) clearTimeout(A3_SAVE_TIMER);
-  A3_SAVE_TIMER = setTimeout(() => { A3_SAVE_TIMER = null; a3SaveNow(true); }, 1500);
-}
-
-/* ─── 학생 제출 ─── */
-async function a3Submit(){
-  if(!SEL_CLS || !ST_USER || !A3_READY || A3_SAVING) return;
-  const cid = SEL_CLS.id, snum = ST_USER.number;
-  if(!_a3CanWrite(cid)) return;
-  const empty = _a3Fields().filter(f => !String(A3_ANS[f.id] || '').trim()).map(f => f.label);
-  const msg = (empty.length ? `비어 있는 칸이 있습니다: ${empty.join(', ')}\n\n` : '')
-    + '지금까지 쓴 내용으로 제출할까요?\n제출한 뒤에도 작성 시간 안에는 고쳐서 다시 제출할 수 있습니다.';
-  if(!confirm(msg)) return;
-
-  // 1) 저장 안 된 칸부터 보냅니다 — 실패하면 제출하지 않습니다
-  if(A3_TOUCHED.size){
-    const ok = await a3SaveNow(true);
-    if(!ok){ alert('저장이 되지 않아 제출하지 못했습니다.\n인터넷 연결을 확인하고 다시 [제출하기]를 누르세요.'); return; }
-  }
-  A3_SAVING = 'submit'; a3PaintStatus();
-  const now = new Date().toISOString();
-  const snap = {};
-  _a3Fields().forEach(f => { snap[f.id] = A3_ANS[f.id] == null ? '' : String(A3_ANS[f.id]); });
-  const ref = _a3Ref(cid, snum);
-  try {
-    await withTimeout(ref.update({ submitted: { answers: snap, at: now }, updatedAt: now, name: ST_USER.name || '' }), 10000, '제출');
-    // 2) 서버에서 다시 읽어 같은지 확인한 다음에만 '제출 확인'
-    const back = (await withTimeout(ref.get(), 10000, '제출 확인')).val();
-    const ok = back && back.submitted && back.submitted.at === now
-      && _a3Fields().every(f => String((back.submitted.answers || {})[f.id] || '') === snap[f.id]);
-    if(!ok) throw new Error('서버에서 제출 내용을 확인하지 못했습니다');
-    A3_DOC = back;
-    A3_SAVE_ERR = '';
-    toast('✅ 제출 확인 — 선생님 화면에 표시됩니다', 'ok');
-  } catch(err){
-    A3_SAVE_ERR = err.message || String(err);
-    alert(`제출되지 않았습니다 (${A3_SAVE_ERR}).\n인터넷 연결을 확인하고 다시 [제출하기]를 누르세요.`);
-  } finally {
-    A3_SAVING = null;
-    a3RenderKeep();
-  }
+  A3_SAVE_TIMER = setTimeout(() => { A3_SAVE_TIMER = null; a3SaveNow(true); }, 1000);
 }
 
 /* ─── 입장 비밀번호 ─── */
@@ -121,7 +86,8 @@ document.addEventListener('focusout', e => {
   if(e.target.closest && e.target.closest('[data-a3fid]') && A3_TOUCHED.size) a3SaveNow(true);
 });
 // 답안 칸에는 붙여넣기 · 끌어다 놓기를 받지 않습니다 (생성형 인공지능 답변 붙여넣기 방지)
-function _a3NoPaste(t){ return !!(t && t.closest && t.closest('[data-a3fid]')); }
+// 출처 URL 칸만은 붙여넣기를 받습니다 (2026-11-24)
+function _a3NoPaste(t){ const el = t && t.closest && t.closest('[data-a3fid]'); return !!(el && !(_a3F(el.dataset.a3fid) || {}).paste); }
 document.addEventListener('paste', e => {
   if(_a3NoPaste(e.target)){
     e.preventDefault();
@@ -151,7 +117,6 @@ document.addEventListener('click', async e => {
 
   if(act === 'a3-retry'){ A3_FOR = null; A3_LOAD_ERR = ''; render(); return; }
   if(act === 'a3-save'){ await a3SaveNow(false); return; }
-  if(act === 'a3-submit'){ await a3Submit(); return; }
   if(act === 'a3-choice'){
     if(el.disabled || !A3_READY) return;
     const fid = el.dataset.fid;
@@ -182,8 +147,8 @@ document.addEventListener('click', async e => {
     const text = `${c.title} (${c.src})`;
     if(String(A3_ANS.case || '').trim() && A3_ANS.case !== text
        && !confirm(`「활용 사례」 칸에 이미 쓴 내용이 있습니다.\n「${c.title}」(으)로 바꿀까요?`)) return;
-    A3_ANS.case = text;
-    A3_TOUCHED.add('case'); A3_DIRTY = true;
+    A3_ANS.case = text; A3_ANS.src = '선생님이 제시한 사례';
+    A3_TOUCHED.add('case'); A3_TOUCHED.add('src'); A3_DIRTY = true;
     a3CardsClose();
     a3RenderKeep();
     a3SaveNow(true);

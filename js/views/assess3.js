@@ -8,7 +8,7 @@
 
    단계 — 선생님이 반마다 엽니다
      closed  닫힘   학생 메뉴에 보이지 않음 (쓰던 글은 그대로 저장되어 있음)
-     open    작성   답안을 씀 (칸마다 자동 저장 · 붙여넣기 안 됨) · 제출
+     open    작성   답안을 씀 (쓰는 대로 자동 저장 · 붙여넣기 안 됨 · 제출 없음 — 2026-11-24)
 
    저장 (1차와 같은 가지 — 규칙을 다시 배포하지 않습니다)
      aiactivity/submissions/{cid}/assess3Open            : 'closed' | 'open'
@@ -16,7 +16,7 @@
      aiactivity/submissions/{cid}/assess3/{학번}          : { name, answers:{칸:글}, updatedAt,
                                                             submitted:{ answers, at } }
    · 입력은 칸 단위로 보냅니다 — 불러오기에 실패한 채로 써도 앞 시간의 글을 덮지 않습니다.
-   · 채점은 제출본(submitted)으로 합니다.
+   · 채점은 저장된 답안(answers)으로 합니다. log/{YYYYMMDD-HHmm} = 서버 시각 — 저장한 시각 기록.
 ═══════════════════════════════════════ */
 
 const A3_STAGE_LABEL = { closed: '닫힘', open: '작성' };
@@ -33,7 +33,7 @@ let A3_DOC        = null;
 let A3_ANS        = {};
 let A3_TOUCHED    = new Set();
 let A3_DIRTY      = false;
-let A3_SAVING     = null;    // null | 'save' | 'submit'
+let A3_SAVING     = null;    // null | 'save'
 let A3_PENDING    = false;
 let A3_SAVE_ERR   = '';
 let A3_SAVE_TIMER = null;
@@ -67,7 +67,19 @@ function a3Visible(cls){
 function _a3CanWrite(cid){ return a3Stage(cid) === 'open' || _a3MyExtra(cid) || (_a3IsTest() && a3Stage(cid) === 'closed'); }
 function _a3Fields(){ return A3.items.flatMap(it => it.fields); }
 function _a3F(id){ return _a3Fields().find(f => f.id === id); }
-function _a3Filled(ans){ return _a3Fields().filter(f => String((ans || {})[f.id] || '').trim()).length; }
+function _a3Req(){ return _a3Fields().filter(f => !f.opt); }      // 채운 칸을 셀 때는 꼭 쓰는 칸만 (출처 URL 은 직접 찾은 사례만 씀)
+function _a3Filled(ans){ return _a3Req().filter(f => String((ans || {})[f.id] || '').trim()).length; }
+// 저장한 시각 기록(log) — 날마다 처음~마지막 시각. 값은 서버 시각.
+function _a3LogDays(doc){
+  const ts = Object.values((doc && doc.log) || {}).map(Number).filter(n => n > 0).sort((a, b) => a - b);
+  const p = n => String(n).padStart(2, '0'), days = [];
+  ts.forEach(t => {
+    const d = new Date(t), k = `${d.getMonth() + 1}/${d.getDate()}`, hm = `${p(d.getHours())}:${p(d.getMinutes())}`;
+    const last = days[days.length - 1];
+    if(last && last.k === k){ last.b = hm; last.n++; } else days.push({ k, a: hm, b: hm, n: 1 });
+  });
+  return days.map(x => `${x.k} ${x.a}${x.a === x.b ? '' : '~' + x.b}`);
+}
 function _a3Same(a, b){
   a = a || {}; b = b || {};
   return _a3Fields().every(f => String(a[f.id] || '').trim() === String(b[f.id] || '').trim());
@@ -147,35 +159,6 @@ function a3RenderKeep(){
 /* ─────────── 함께 쓰는 조각 ─────────── */
 // **굵게** 표시만 살려서 (나머지는 이스케이프)
 function _a3Md(t){ return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); }
-function _a3ScaleTable(){
-  const mk = '㉮㉯㉰㉱';
-  const rows = A3.scale.map(s => `<tr><th>${esc(s.no)}<br><small>${esc(s.name)}</small></th>
-    <td class="df">${s.defects.map((d, i) => `<div>${mk[i]} ${esc(d)}</div>`).join('')}</td>
-    ${s.levels.map(l => `<td>${esc(l)}</td>`).join('')}</tr>`).join('');
-  const list = (t, a) => `<div class="a1-rule"><b>${t}</b>${a.map(x => `<div>∙ ${esc(x)}</div>`).join('')}</div>`;
-  return `<details class="mla-rubric"><summary>📊 채점 기준 보기</summary>
-    <div class="mla-rubric-body">
-      <div class="a1-rule"><b>채점 원칙</b><div>${esc(A3.principle)}</div></div>
-      <div style="overflow-x:auto"><table class="tbl a1-scale">
-      <thead><tr><th>문항</th><th>결격 사유</th><th>5점</th><th>4점</th><th>3점</th><th>2점</th></tr></thead><tbody>${rows}</tbody></table></div>
-      ${list('성의 없는 답안 — 결격 사유와 관계없이 그 문항 3점', A3.sloppy)}
-      ${list('감점하지 않는 것', A3.nopenalty)}
-      <div class="a1-rule"><div>${esc(A3.base)}</div></div>
-    </div></details>`;
-}
-function _a3RefsHtml(){
-  const r = A3.refs;
-  const dl = a => a.map(x => `<div class="a3-ref-row"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('');
-  return `<details class="mla-rubric"><summary>📖 참고 — 윤리적 딜레마 · 6가지 윤리적 쟁점 · 3대 원칙 · 10대 핵심 요건 · 이해관계자</summary>
-    <div class="mla-rubric-body">
-      <div class="a1-rule"><b>${esc(r.dilemma[0])}</b><div>${esc(r.dilemma[1])}</div></div>
-      <div class="a1-rule"><b>6가지 윤리적 쟁점 (교과서 179쪽)</b>${dl(r.issues)}</div>
-      <div class="a1-rule"><b>3대 원칙 (교과서 190쪽)</b>${dl(r.principles)}</div>
-      <div class="a1-rule"><b>10대 핵심 요건 (교과서 190쪽)</b>${dl(r.reqs.map((x, i) => [(i + 1) + ' ' + x[0], x[1]]))}</div>
-      <div class="a1-rule"><b>이해관계자의 역할 (교과서 185쪽)</b>${dl(r.roles)}</div>
-    </div></details>`;
-}
-
 /* 🗂 사례 카드 — 1차의 「문제 상황 카드」와 같은 팝업 (A3_CARDS). 화면을 다시 그려도 body 에 따로 남습니다. */
 let A3_CARD_F = '*';
 let A3_CARD_OPEN = null;      // 자세히 보고 있는 카드 번호 (없으면 목록)
@@ -246,29 +229,32 @@ function _a3IssueHelp(ans, edit){
   const v = String((ans || {}).issue || '');
   return `<div class="a3-iss">${A3.refs.issues.map(x => `<div class="${v === x[0] ? 'on' : ''}"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>`;
 }
-// 「인공지능(AI) 윤리 기준」 3대 원칙 · 10대 핵심 요건 — 칸 안에서 펼쳐 봅니다 (key 는 펼침 상태를 기억하는 이름)
+// 「인공지능(AI) 윤리 기준」 3대 원칙 · 10대 핵심 요건 — 공존 방안 칸 **위에 따로** 둡니다 (2026-11-24 「칸이 너무 작아 보여」)
 function _a3StdHtml(key, edit){
   if(!edit) return '';
   const r = A3.refs;
-  return `<details class="a3-std" data-a3d="${key}"><summary>「인공지능(AI) 윤리 기준」 3대 원칙 · 10대 핵심 요건 (교과서 190쪽)</summary>
+  return `<div class="a3-std"><div class="h">「인공지능(AI) 윤리 기준」 3대 원칙 · 10대 핵심 요건 (교과서 190쪽)</div>
     <div class="a3-std-p">${r.principles.map(x => `<div><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
     <div class="a3-std-r">${r.reqs.map((x, i) => `<div><b>${i + 1} ${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
-  </details>`;
+  </div>`;
 }
 function _a3Q(it, body, edit){
   return `<div class="a3-q">
     <div class="a3-qh"><b>${esc(it.no)}. ${esc(it.title)}</b><span>${it.pt}점</span></div>
     <div class="a3-ask">${esc(it.ask)}</div>
-    ${edit ? `<details class="a3-crit"><summary>채점 기준 — 아래에 해당하면 감점 (1가지면 4점 · 2가지 이상이면 3점)</summary>
-      ${it.crit.map(x => `<div><span>${esc(x[0])}</span> ${_a3Md(x[1])}</div>`).join('')}</details>` : ''}
+    <div class="a3-crit"><b class="h">${esc(A3.critHead)}</b>
+      ${it.crit.map(x => `<div>∙ ${esc(x)}</div>`).join('')}</div>
     ${body}</div>`;
 }
 function _a3Sheet(ans, edit, who){
   const [q1, q2, q3] = A3.items;
   const c = (id, rows) => _a3Cell(id, ans, edit, rows);
+  const own = String((ans || {}).src || '') === '직접 찾은 사례';
   const b1 = `<div class="a3-tb a3-g1">
       <div class="l">활용 사례</div>
-      <div class="e a3-s2 a3-caserow">${c('case')}${edit ? '<button class="a3-cardbtn" data-action="a3-cards">🗂 사례 카드</button>' : ''}</div>
+      <div class="e a3-s2">${_a3Chips('src', ans, edit)}
+        <div class="a3-caserow">${c('case')}${edit && !own ? '<button class="a3-cardbtn" data-action="a3-cards">🗂 사례 카드</button>' : ''}</div>
+        ${own ? `<div class="a3-urlrow"><span>출처 URL</span>${c('url')}</div>` : ''}</div>
       <div class="l">딜레마 상황</div>
       <div class="e a3-s2">${c('dil', 4)}</div>
       <div class="l">쟁점과<br>나의 입장</div>
@@ -278,15 +264,13 @@ function _a3Sheet(ans, edit, who){
       <div class="l c">개발자</div><div class="l c">운영·관리자</div><div class="l c e">사용자</div>
       <div>${c('dev', 4)}</div><div>${c('op', 4)}</div><div class="e">${c('user', 4)}</div>
     </div>
-    <div class="a3-tb a3-g2 a3-nt">
-      <div class="l">공존 방안과<br>그 한계</div><div class="e">${_a3StdHtml('std2', edit)}${c('plan', 4)}</div>
+    ${_a3StdHtml('std2', edit)}
+    <div class="a3-tb a3-g2">
+      <div class="l">공존 방안과<br>그 한계</div><div class="e">${c('plan', 6)}</div>
     </div>`;
-  const b3 = `<div class="a3-tb a3-g2">
-      <div class="l">대상과<br>전달 방법</div><div class="e">${_a3Chips('method', ans, edit)}${c('target', 3)}</div>
-    </div>
-    <div class="a3-tb a3-g3 a3-nt a3-flow">
-      <div class="l c">캠페인 설계</div><div class="l c">캠페인 진행 방식</div><div class="l c e">캠페인으로 인한 효과</div>
-      <div>${c('act', 6)}</div><div>${c('run', 6)}</div><div class="e">${c('effect', 6)}</div>
+  const b3 = `<div class="a3-tb a3-g3 a3-flow">
+      <div class="l c">캠페인 목표</div><div class="l c">캠페인 진행 방식</div><div class="l c e">그로 인한 효과</div>
+      <div>${c('goal', 6)}</div><div>${c('run', 6)}</div><div class="e">${c('effect', 6)}</div>
     </div>`;
   return `<div class="a3-sheet">
     <div class="a3-top">
@@ -320,18 +304,12 @@ async function a3LoadMine(){
 
 function _a3StatusHtml(){
   let s1;
-  if(A3_SAVE_ERR) s1 = `<span class="err">⚠ 저장되지 않았습니다 — ${esc(A3_SAVE_ERR)}. 인터넷 연결을 확인하고 [저장]을 다시 누르세요.</span>`;
-  else if(A3_SAVING === 'submit') s1 = '<span class="s1">📤 제출 중…</span>';
-  else if(A3_SAVING === 'save') s1 = '<span class="s1">💾 저장 중…</span>';
+  if(A3_SAVE_ERR) s1 = `<span class="err">⚠ 저장되지 않았습니다 — ${esc(A3_SAVE_ERR)}. 인터넷 연결을 확인하세요. 연결되면 [다시 저장]을 누르세요.</span>`;
+  else if(A3_SAVING) s1 = '<span class="s1">💾 저장 중…</span>';
   else if(A3_DIRTY) s1 = '<span class="s1">입력 중 — 곧 자동 저장됩니다</span>';
-  else if(A3_DOC && A3_DOC.updatedAt) s1 = `<span class="s1">💾 저장됨 ${_a3Time(A3_DOC.updatedAt)}</span>`;
-  else s1 = '<span class="s1">아직 저장한 내용이 없습니다</span>';
-  const sub = A3_DOC && A3_DOC.submitted;
-  let s2;
-  if(!sub) s2 = '<span class="warn">아직 제출하지 않았습니다 — 마지막 시간에 [제출하기]를 눌러야 합니다.</span>';
-  else if(!_a3Same(sub.answers, A3_ANS)) s2 = `<span class="warn">⚠ ${_a3Time(sub.at)}에 제출한 뒤 고친 내용이 있습니다 — [제출하기]를 다시 눌러야 반영됩니다.</span>`;
-  else s2 = `<span class="ok">✅ 제출 확인 ${_a3Time(sub.at)} — 선생님 화면에 표시되어 있습니다.</span>`;
-  return `<div>${s1}</div><div>${s2}</div>`;
+  else if(A3_DOC && A3_DOC.updatedAt) s1 = `<span class="ok">✅ 저장됨 ${_a3Time(A3_DOC.updatedAt)} — 선생님 화면에 그대로 보입니다.</span>`;
+  else s1 = '<span class="s1">아직 쓴 내용이 없습니다</span>';
+  return `<div>${s1}</div><div><span class="s1">쓰는 대로 자동으로 저장됩니다. 따로 제출하지 않습니다.</span></div>`;
 }
 function a3PaintStatus(){
   const el = document.getElementById('a3-status');
@@ -387,13 +365,11 @@ function vStAssess3(){
     ${sc ? `<div class="a3-sched">${sc.map((d, i) => `<div><small>${i + 1}차시</small><b>${esc(d)}</b></div>`).join('')}
       <div class="tag">컴퓨터로 작성</div><div class="tag no">생성형 인공지능 사용 금지</div></div>` : ''}
     <div class="a1-notice"><b>유의 사항</b>${A3.notice.map(n => `<div>∙ ${esc(n)}</div>`).join('')}</div>
-    ${_a3ScaleTable()}${_a3RefsHtml()}
     ${testNote}${stageBar}
     ${_a3Sheet(A3_ANS, can, `${snum} ${ST_USER.name || ''}`)}
     <div class="a1-bar">
       <div class="a1-status" id="a3-status">${_a3StatusHtml()}</div>
-      <button class="btn-sm" data-action="a3-save" data-a3busy ${A3_SAVING || !can ? 'disabled' : ''}>💾 저장</button>
-      <button class="btn-p btn-sm" data-action="a3-submit" data-a3busy ${A3_SAVING || !can ? 'disabled' : ''}>📤 제출하기</button>
+      ${A3_SAVE_ERR ? `<button class="btn-sm" data-action="a3-save" data-a3busy ${A3_SAVING || !can ? 'disabled' : ''}>💾 다시 저장</button>` : ''}
     </div>
   </div>`;
 }
@@ -418,11 +394,9 @@ function a3TcStop(){
   A3_TC_FOR = null;
 }
 function _a3State(doc){
-  if(!doc || (!_a3Filled(doc.answers) && !doc.submitted)) return { key: 'none', label: '안 씀', chip: '' };
-  const sub = doc.submitted;
-  if(!sub) return { key: 'draft', label: '작성 중 · 미제출', chip: 'a1-chip-draft' };
-  if(!_a3Same(sub.answers, doc.answers)) return { key: 'changed', label: '제출 후 수정 · 미제출', chip: 'a1-chip-warn' };
-  return { key: 'done', label: '제출', chip: 'a1-chip-ok' };
+  if(!doc || !_a3Filled(doc.answers)) return { key: 'none', label: '안 씀', chip: '' };
+  if(_a3Filled(doc.answers) >= _a3Req().length) return { key: 'done', label: '다 채움', chip: 'a1-chip-ok' };
+  return { key: 'draft', label: '작성 중', chip: 'a1-chip-draft' };
 }
 
 function _a3TcStudent(){
@@ -430,15 +404,15 @@ function _a3TcStudent(){
   const st = STUDENTS.find(s => String(s.number) === String(snum));
   const doc = (A3_ALL || {})[snum] || {};
   const s = _a3State(doc);
-  const useSub = !!doc.submitted;
+  const days = _a3LogDays(doc);
   setTimeout(a3Grow, 0);
   return `<div class="aia-tc-head">
       <button class="btn-sm" data-action="a3-tc-back">← 명단</button>
       <div class="aia-tc-head-title">${esc(snum)} ${esc(st?.name || doc.name || '')}</div>
     </div>
-    <div class="a1-stagebar">${useSub ? `<b>제출본</b> (${_a3Time(doc.submitted.at)})` : '<b>아직 제출하지 않음</b> — 지금까지 저장된 내용'}
-      · 상태: ${esc(s.label)}${doc.updatedAt ? ' · 마지막 저장 ' + _a3Time(doc.updatedAt) : ''}</div>
-    <div class="a3-wrap">${_a3Sheet(useSub ? doc.submitted.answers : doc.answers, false, `${snum} ${st?.name || doc.name || ''}`)}</div>`;
+    <div class="a1-stagebar">상태: ${esc(s.label)}${doc.updatedAt ? ' · 마지막 저장 ' + _a3Time(doc.updatedAt) : ''}
+      <br><b>기록한 시간</b> — ${days.length ? days.map(esc).join(' · ') : '기록 없음'}</div>
+    <div class="a3-wrap">${_a3Sheet(doc.answers, false, `${snum} ${st?.name || doc.name || ''}`)}</div>`;
 }
 
 function vTcAssess3(){
@@ -471,9 +445,9 @@ function vTcAssess3(){
   if(A3_ALL === null) return `${title}${control}<div class="ml-sub-explain">⏳ 답안을 불러오는 중…</div>`;
 
   const all = A3_ALL || {}, extra = A3_EXTRA[cid] || {};
-  const total = _a3Fields().length;
+  const total = _a3Req().length;
   const sts = [...STUDENTS].sort((a, b) => String(a.number).localeCompare(String(b.number)));
-  const cnt = { none: 0, draft: 0, changed: 0, done: 0 };
+  const cnt = { none: 0, draft: 0, done: 0 };
   const rows = sts.map(st => {
     const doc = all[st.number];
     const s = _a3State(doc);
@@ -484,7 +458,7 @@ function vTcAssess3(){
       <td>${esc(String((doc?.answers || {}).case || '').slice(0, 40))}</td>
       <td class="n">${doc ? _a3Filled(doc.answers) : 0} / ${total}</td>
       <td>${s.chip ? `<span class="a1-chip ${s.chip}">${s.label}</span>` : `<span class="a1-dim">${s.label}</span>`}</td>
-      <td class="n">${doc?.submitted ? _a3Time(doc.submitted.at) : ''}</td>
+      <td class="n">${doc ? esc(_a3LogDays(doc).join(' · ') || (doc.updatedAt ? _a3Time(doc.updatedAt) : '')) : ''}</td>
       <td><button class="btn-xs ${ex ? 'on' : ''}" data-action="a3-extra" data-snum="${esc(st.number)}">${ex ? '🔓 따로 열림 — 닫기' : '따로 열기'}</button></td>
       <td>${doc ? `<button class="btn-xs" data-action="a3-tc-view" data-snum="${esc(st.number)}">답안 →</button>` : ''}</td>
     </tr>`;
@@ -494,13 +468,12 @@ function vTcAssess3(){
     ${A3_TC_ERR ? `<div class="a1-notice err">답안을 불러오지 못했습니다 — ${esc(A3_TC_ERR)}</div>` : ''}
     <div class="a1-stats">
       <div class="stat-card"><div class="stat-num">${sts.length}</div><div class="stat-label">전체</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:var(--ok,#16a34a)">${cnt.done}</div><div class="stat-label">제출</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#d97706">${cnt.changed}</div><div class="stat-label">제출 후 수정</div></div>
+      <div class="stat-card"><div class="stat-num" style="color:var(--ok,#16a34a)">${cnt.done}</div><div class="stat-label">다 채움</div></div>
       <div class="stat-card"><div class="stat-num" style="color:#3b82f6">${cnt.draft}</div><div class="stat-label">작성 중</div></div>
       <div class="stat-card"><div class="stat-num">${cnt.none}</div><div class="stat-label">안 씀</div></div>
     </div>
-    <div class="a1-stage-sub" style="margin:6px 2px">「따로 열기」 — 결석한 학생만 단계가 닫혀 있어도 답안을 쓸 수 있게 합니다. 끝나면 다시 눌러 닫습니다.</div>
+    <div class="a1-stage-sub" style="margin:6px 2px">제출 단추는 없습니다. 학생이 쓰는 대로 저장되고 저장한 시각이 「기록한 시간」에 날마다 처음~마지막으로 남습니다. 「따로 열기」 — 결석한 학생만 단계가 닫혀 있어도 답안을 쓸 수 있게 합니다. 끝나면 다시 눌러 닫습니다.</div>
     <div style="overflow-x:auto"><table class="tbl aia-tc-table a1-tc-table">
-      <thead><tr><th>학번</th><th>이름</th><th>활용 사례</th><th>채운 칸</th><th>상태</th><th>제출 시각</th><th>결석자</th><th></th></tr></thead>
+      <thead><tr><th>학번</th><th>이름</th><th>활용 사례</th><th>채운 칸</th><th>상태</th><th>기록한 시간</th><th>결석자</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>`;
 }

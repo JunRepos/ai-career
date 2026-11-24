@@ -7313,7 +7313,7 @@ button{border-radius:2px}
 .a3-qh span{font-size:12px;color:#777}
 .a3-ask{color:#333;margin:7px 0 8px}
 .a3-crit{font-size:12.5px;color:#444;margin:0 0 8px;border:1px solid #e3b98f;background:#fff7ee;border-radius:6px;padding:5px 10px}
-.a3-crit summary{cursor:pointer;font-weight:700;color:#b45309}
+.a3-crit b.h{display:block;font-weight:700;color:#b45309;margin-bottom:2px}
 .a3-crit>div{padding:2px 0}
 .a3-crit>div span{font-weight:800;color:#b45309}
 .a3-crit b{color:#b45309}
@@ -7347,7 +7347,10 @@ button{border-radius:2px}
 .a3-iss>div.on{color:#1b1b1b}
 .a3-iss>div.on b{color:#00703C}
 .a3-std{font-size:12.5px;line-height:1.5;color:#444;margin:0 0 8px;border:1px solid #cfd8d2;background:#f6faf7;border-radius:6px;padding:5px 10px}
-.a3-std summary{cursor:pointer;font-weight:700;color:#00703C}
+.a3-std .h{font-weight:700;color:#00703C}
+.a3-tb+.a3-std{margin:8px 0}
+.a3-urlrow{display:flex;gap:8px;align-items:center;margin-top:6px}
+.a3-urlrow span{flex:0 0 auto;font-size:12.5px;font-weight:700;color:#555}
 .a3-std-p{margin-top:6px}
 .a3-std-p>div{display:flex;gap:8px;padding:2px 0}
 .a3-std-p b{flex:0 0 132px;color:#1b1b1b}
