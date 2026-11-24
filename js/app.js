@@ -230,6 +230,8 @@ async function init(){
     // 세션 복원 (새로고침 시 로그인 유지)
     if(restoreSession()){
       const cid = SEL_CLS?.id || TC_CLS?.id;
+      // 선생님 — 반을 고르기 전에도 비밀번호 초기화 요청이 보이게 (반을 골랐으면 loadAllClassData 가 읽습니다)
+      if(IS_TC && !cid) loadPwReqs().then(() => { if(Object.keys(PW_REQS).length) render(); }).catch(() => {});
       if(cid){
         await withTimeout(loadAllClassData(cid), 12000, '반 데이터');
         // 제출 현황은 과제 수만큼 순서대로 받으면 느립니다 — 한꺼번에

@@ -100,6 +100,23 @@ async function loadStudents(cid){
     .sort((a, b) => a.number.localeCompare(b.number));
 }
 
+// ── 비밀번호 초기화 요청 ──
+//   학생이 진로 독서 사이트(career-reading) 로그인 화면에서 「비밀번호를 잊었어요」로 보냅니다.
+//   aiactivity/submissions/{반}/reading/pwReset/{학번} = {at, name}
+//   선생님이 초기화하면(reset-st-pw · pwreq-reset) 요청을 지웁니다.
+async function loadPwReqs(){
+  const out = {};
+  await Promise.all(CLASSES.filter(c => c.type === 'career').map(async c => {
+    const s = await db.ref(`aiactivity/submissions/${c.id}/reading/pwReset`).get();
+    if(s.exists()) out[c.id] = s.val();
+  }));
+  PW_REQS = out;
+}
+async function clearPwReq(cid, num){
+  await db.ref(`aiactivity/submissions/${cid}/reading/pwReset/${num}`).remove();
+  if(PW_REQS[cid]){ delete PW_REQS[cid][num]; if(!Object.keys(PW_REQS[cid]).length) delete PW_REQS[cid]; }
+}
+
 // ── 출결 (특정 날짜) ──
 async function loadAttendance(cid, date){
   const s = await db.ref(`attendance/${cid}/${date}`).get();
@@ -867,7 +884,8 @@ async function loadAllClassData(cid){
     loadActivityHidden(cid),
     loadDecks(cid),
     loadA1Open(cid),
-    loadA3Open(cid)
+    loadA3Open(cid),
+    IS_TC ? loadPwReqs().catch(() => {}) : null   // 선생님만 — 비밀번호 초기화 요청
   ]);
   a3WatchOpen(cid);   // 3차 수행평가 단계 (views/assess3.js)
   a1WatchOpen(cid);   // 1차 수행평가 작성 범위 — 인공지능 기초 반만 (views/assess1.js)

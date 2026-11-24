@@ -211,6 +211,7 @@ document.addEventListener('click', async e => {
         }
       }
       IS_TC = true; TC_TAB = 'notice'; TC_CLS = null; VIEW = 'teacher'; render();
+      loadPwReqs().then(() => { if(IS_TC && Object.keys(PW_REQS).length) render(); }).catch(() => {});   // 비밀번호 초기화 요청
     } catch(err2){ err.textContent = '오류: ' + err2.message; t.textContent = '로그인'; t.disabled = false; }
     return;
   }

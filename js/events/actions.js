@@ -304,7 +304,26 @@ document.addEventListener('click', async e => {
     const salt = generateSalt();
     const h = await hashWithSalt(act.snum, salt);
     await db.ref(`students/${cid}/${act.snum}`).update({passwordHash: h, salt, isFirstLogin: true});
+    await clearPwReq(cid, act.snum);   // 진로 독서 사이트에서 온 초기화 요청이 있었으면 지움
     await loadStudents(cid); render(); return;
+  }
+
+  // 비밀번호 초기화 요청 상자 — 반을 고르지 않아도 바로 처리
+  if(act.action === 'pwreq-reset'){
+    if(!confirm(`${act.sname}(${act.snum}) 학생의 비밀번호를 학번으로 초기화할까요?`)) return;
+    el.disabled = true;
+    const salt = generateSalt();
+    const h = await hashWithSalt(act.snum, salt);
+    await db.ref(`students/${act.cid}/${act.snum}`).update({passwordHash: h, salt, isFirstLogin: true});
+    await clearPwReq(act.cid, act.snum);
+    if(TC_CLS?.id === act.cid) await loadStudents(act.cid);
+    toast(`${act.sname} 학생의 비밀번호를 학번으로 되돌렸습니다.`, 'ok');
+    render(); return;
+  }
+  if(act.action === 'pwreq-drop'){
+    el.disabled = true;
+    await clearPwReq(act.cid, act.snum);
+    render(); return;
   }
 
   // 학생 삭제

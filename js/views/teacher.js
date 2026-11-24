@@ -10,14 +10,15 @@ function vTeacher(){
   // 반 전환은 사이드바('관리 반' 선택)로 옮겼습니다 — views/shared.js
   const globalTabs = ['settings', 'curriculum'];
   if(!TC_CLS && !globalTabs.includes(TC_TAB)){
-    return `<div class="tc-empty">
+    return pwReqBox() + `<div class="tc-empty">
       <div class="tc-empty-dots">${_dotGrid('pick-a-class')}</div>
       <div class="tc-empty-title">관리할 반을 골라주세요</div>
       <div class="tc-empty-sub">왼쪽 메뉴 위쪽의 <b>관리 반</b>에서 선택하면 이 자리에 내용이 나옵니다.</div>
     </div>`;
   }
   _tcNormalizeTab();
-  return _tcTabBody();
+  // 비밀번호 초기화 요청은 들어오자마자 보이는 공지 탭과 학생관리 탭 위에 띄웁니다
+  return (['notice', 'students'].includes(TC_TAB) ? pwReqBox() : '') + _tcTabBody();
 }
 
 /* ── 🗂️ 포트폴리오 (선생님) ────────────────────────────────
@@ -613,6 +614,19 @@ function atExport(){
   }).catch(() => toast('클립보드 복사 실패', 'err'));
 }
 
+// ── 비밀번호 초기화 요청 (진로 독서 사이트에서 학생이 보냄) — 여섯 반 것을 한 곳에 ──
+function pwReqBox(){
+  const items = CLASSES.flatMap(c => Object.entries(PW_REQS[c.id] || {}).map(([num, r]) => ({ c, num, r })));
+  if(!items.length) return '';
+  return `<div class="box-warn">
+    <b>🔑 비밀번호 초기화 요청 ${items.length}건</b>
+    ${items.map(({ c, num, r }) => `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <span>${esc(c.short)} · ${esc(num)} ${esc(r.name || '')} <span style="opacity:.7">${fmtDt(r.at)}</span></span>
+      <span><button class="btn-xs" data-action="pwreq-reset" data-cid="${esc(c.id)}" data-snum="${esc(num)}" data-sname="${esc(r.name || '')}">학번으로 초기화</button>
+        <button class="btn-xs" data-action="pwreq-drop" data-cid="${esc(c.id)}" data-snum="${esc(num)}">요청 지우기</button></span></div>`).join('')}
+  </div>`;
+}
+
 // ── 학생 관리 ──
 function vTcStudents(){
   const addForm = `<div class="section">
@@ -645,7 +659,7 @@ function vTcStudents(){
         <tbody>${STUDENTS.map(s => `<tr>
           <td style="font-weight:600">${esc(s.number)}</td>
           <td>${esc(s.name)}</td>
-          <td><span class="chip ${s.isFirstLogin ? 'chip-orange' : 'chip-green'}">${s.isFirstLogin ? '변경 필요' : '변경완료'}</span></td>
+          <td><span class="chip ${s.isFirstLogin ? 'chip-orange' : 'chip-green'}">${s.isFirstLogin ? '변경 필요' : '변경완료'}</span>${PW_REQS[TC_CLS?.id]?.[s.number] ? ' <span class="chip chip-red">초기화 요청</span>' : ''}</td>
           <td><button class="btn-xs" data-action="reset-st-pw" data-snum="${esc(s.number)}" data-sname="${esc(s.name)}">비번초기화</button>
               <button class="btn-xs btn-danger" data-action="del-student" data-snum="${esc(s.number)}" data-sname="${esc(s.name)}">삭제</button></td>
         </tr>`).join('')}</tbody>

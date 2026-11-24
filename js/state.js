@@ -52,6 +52,7 @@ let ASSIGNMENTS = [];
 let POSTS       = [];
 let TC_FILES    = [];
 let STUDENTS    = [];
+let PW_REQS     = {};   // 비밀번호 초기화 요청 {반id: {학번: {at, name}}} — 학생이 진로 독서 사이트에서 보냄 (firebase.js loadPwReqs)
 let SUBMISSIONS = {};
 let POST_COUNTS = {};
 

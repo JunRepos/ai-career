@@ -34,6 +34,20 @@ AI코딩 · 기계학습 · 수행평가)는 **메뉴에서만 빼 두고 코드
 > 배포된 `index.html` 이 더 이상 부르지 않는 것만 지웠습니다 (지우기 전에 확인함).
 > 되살리려면 `git show 8d14250:<파일>` 로 꺼냅니다.
 
+## 비밀번호 초기화 요청 (2026-11-24)
+
+학생이 **진로 독서 사이트**(`JunRepos/career-reading` · https://junrepos.github.io/career-reading/) 로그인 화면에서
+「비밀번호를 잊었어요」로 요청을 보내면, 이 앱 선생님 화면에 **🔑 비밀번호 초기화 요청** 상자가 뜹니다.
+
+| 어디 | 무엇 |
+|---|---|
+| DB | `aiactivity/submissions/{진로 반}/reading/pwReset/{학번} = {at, name}` — 요청. 초기화하거나 지우면 없어집니다 |
+| `js/firebase.js` | `loadPwReqs()` (진로 여섯 반을 읽어 `PW_REQS` 에) · `clearPwReq(cid, num)` |
+| `js/views/teacher.js` | `pwReqBox()` — 반을 고르기 전 화면 · 공지 탭 · 학생관리 탭 위에. 학생관리 표에는 **초기화 요청** 칩 |
+| `js/events/actions.js` | `pwreq-reset`(학번으로 초기화 + 요청 지움) · `pwreq-drop`(요청만 지움). 기존 `reset-st-pw` 도 요청을 지웁니다 |
+
+`reading/` 아래는 진로 독서 사이트가 쓰는 자리입니다 (활동지 · 주간 기록 · 보고서 · 대여 · 반납). 이 앱은 `pwReset` 만 읽습니다.
+
 ## 수업자료 이름 바꾸기 (2026-09-29 배포 9bd6c01)
 
 선생님 → 수업자료 카드에 **「이름 바꾸기」** 단추. 누르면 `prompt` 로 지금 이름이 뜨고, 고치면 바로 바뀝니다.
