@@ -215,7 +215,7 @@ function a3CardsClose(){ const ov = document.getElementById('a3-cards-ov'); if(o
    ans 를 넣어 그립니다. edit 가 참이면 쓸 수 있고, 거짓이면 읽기만 (학생의 닫힌 화면 · 선생님 화면). */
 function _a3Cell(id, ans, edit, rows){
   const f = _a3F(id), v = String((ans || {})[id] || '');
-  const ph = f.ph && edit ? ` placeholder="${esc(f.ph)}"` : '';
+  const ph = '';      // 2026-11-24 — 칸 안의 회색 안내 글은 전부 뺌 (data 의 ph 는 쓰지 않음)
   if(f.line) return `<input type="text" ${edit ? `data-a3fid="${id}"` : 'readonly'} value="${esc(v)}" autocomplete="off" spellcheck="false"${ph}/>`;
   return `<textarea ${edit ? `data-a3fid="${id}"` : 'readonly'} rows="${rows || 3}" spellcheck="false"${ph}>${esc(v)}</textarea>`;
 }
