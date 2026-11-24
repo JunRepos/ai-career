@@ -223,11 +223,11 @@ function _a3Chips(id, ans, edit){
   const f = _a3F(id), v = String((ans || {})[id] || '');
   return `<div class="a3-chips">${f.options.map(o => `<button class="${v === o ? 'on' : ''}" data-action="a3-choice" data-fid="${id}" data-val="${esc(o)}" ${edit ? '' : 'disabled'}>${esc(o)}</button>`).join('')}</div>`;
 }
-// 6가지 윤리적 쟁점 설명 — 쟁점 단추 바로 아래 (고른 쟁점은 진하게)
+// 6가지 윤리적 쟁점 설명 — 윤리적 쟁점 칸 **위에 따로** (고른 쟁점은 진하게)
 function _a3IssueHelp(ans, edit){
   if(!edit) return '';
   const v = String((ans || {}).issue || '');
-  return `<div class="a3-iss">${A3.refs.issues.map(x => `<div class="${v === x[0] ? 'on' : ''}"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>`;
+  return `<div class="a3-std a3-iss"><div class="h">6가지 윤리적 쟁점 (교과서 179쪽)</div>${A3.refs.issues.map(x => `<div class="${v === x[0] ? 'on' : ''}"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>`;
 }
 // 「인공지능(AI) 윤리 기준」 3대 원칙 · 10대 핵심 요건 — 공존 방안 칸 **위에 따로** 둡니다 (2026-11-24 「칸이 너무 작아 보여」)
 function _a3StdHtml(key, edit){
@@ -257,8 +257,11 @@ function _a3Sheet(ans, edit, who){
         ${own ? `<div class="a3-urlrow"><span>출처 URL</span>${c('url')}</div>` : ''}</div>
       <div class="l">딜레마 상황</div>
       <div class="e a3-s2">${c('dil', 4)}</div>
-      <div class="l">쟁점과<br>나의 입장</div>
-      <div class="e a3-s2">${_a3Chips('issue', ans, edit)}${_a3IssueHelp(ans, edit)}${c('stance', 4)}</div>
+    </div>
+    ${_a3IssueHelp(ans, edit)}
+    <div class="a3-tb a3-g2">
+      <div class="l">윤리적 쟁점</div>
+      <div class="e">${_a3Chips('issue', ans, edit)}${c('stance', 6)}</div>
     </div>`;
   const b2 = `<div class="a3-tb a3-g3">
       <div class="l c">개발자</div><div class="l c">운영·관리자</div><div class="l c e">사용자</div>
@@ -266,7 +269,7 @@ function _a3Sheet(ans, edit, who){
     </div>
     ${_a3StdHtml('std2', edit)}
     <div class="a3-tb a3-g2">
-      <div class="l">공존 방안과<br>그 한계</div><div class="e">${c('plan', 6)}</div>
+      <div class="l">공존 방안</div><div class="e">${c('plan', 6)}</div>
     </div>`;
   const b3 = `<div class="a3-tb a3-g3 a3-flow">
       <div class="l c">캠페인 목표</div><div class="l c">캠페인 진행 방식</div><div class="l c e">그로 인한 효과</div>
